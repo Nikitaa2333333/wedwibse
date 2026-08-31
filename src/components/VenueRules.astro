@@ -14,7 +14,7 @@ const { kicker, title, rules } = Astro.props;
 ---
 
 <section class="rules section theme-dark" id="pravila">
-  <div class="container">
+  <div class="container container--wide">
     <header class="rules__head">
       <p class="rules__kicker t-caption">{kicker}</p>
       <h2 class="rules__title">{title}</h2>
@@ -34,6 +34,9 @@ const { kicker, title, rules } = Astro.props;
 </section>
 
 <style>
+  /* По полям страницы, как сцены и вопросы */
+  .rules :global(.container) { max-width: none; }
+
   .rules__head { margin-bottom: var(--section-gap-tight); }
 
   .rules__kicker {
@@ -59,6 +62,8 @@ const { kicker, title, rules } = Astro.props;
     font-weight: var(--w-head);
     margin-bottom: var(--s-3);
   }
+
+  .rule__text { max-width: var(--measure-text); }
 
   @media (min-width: 900px) {
     .rules__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

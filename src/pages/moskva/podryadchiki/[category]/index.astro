@@ -9,6 +9,7 @@ import SiteHeader from '../../../../components/SiteHeader.astro';
 import BottomDock from '../../../../components/BottomDock.astro';
 import CategoryNav from '../../../../components/CategoryNav.astro';
 import FilterSidebar from '../../../../components/FilterSidebar.astro';
+import ScopePicker from '../../../../components/ScopePicker.astro';
 import { SPECIALIST_CATEGORIES, FILTERS_BY_CATEGORY } from '../../../../data/specialists';
 
 export function getStaticPaths() {
@@ -29,14 +30,17 @@ const filters = FILTERS_BY_CATEGORY[category.slug];
   <SiteHeader />
   <CategoryNav categories={SPECIALIST_CATEGORIES} activeSlug={category.slug} />
 
-  <header class="page-head">
-    <h1 class="t-h1">{category.label}</h1>
+  <ScopePicker
+    title={category.label}
+    active={category.slug}
+    cityGroup={filters?.find((g) => g.key === 'city')}
+  >
     {filters && (
-      <button class="pill pill--sm page-head__filters" type="button" data-sidebar-open>
+      <button slot="actions" class="pill pill--sm page-head__filters" type="button" data-sidebar-open>
         Фильтры <span class="pill__caret" aria-hidden="true">▾</span>
       </button>
     )}
-  </header>
+  </ScopePicker>
 
   {filters ? (
     <div class="layout">
@@ -64,14 +68,7 @@ const filters = FILTERS_BY_CATEGORY[category.slug];
 </Layout>
 
 <style>
-  .page-head {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: var(--s-4);
-    padding: var(--s-6) var(--gutter) var(--s-5);
-  }
-
+  /* Шапка раздела живёт в ScopePicker; кнопка «Фильтры» уходит туда слотом. */
   .pill__caret { font-size: 9px; }
 
   /* Кнопка «Фильтры» нужна только там, где фильтр живёт в шторке */

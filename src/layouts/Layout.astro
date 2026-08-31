@@ -60,7 +60,12 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://wedwed.ru')
 
       const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-      if (!reduced) {
+      // ВРЕМЕННО: плавный скролл выключен — проверяем, он ли ощущается
+      // как «тормоза» (инерция Lenis даёт задержку отклика на колесо).
+      // Вернуть — поставить true.
+      const SMOOTH_SCROLL = false;
+
+      if (!reduced && SMOOTH_SCROLL) {
         const lenis = new Lenis({ lerp: 0.1 });
         const raf = (time: number) => {
           lenis.raf(time);

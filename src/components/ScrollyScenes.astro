@@ -8,6 +8,7 @@
 import { Image } from 'astro:assets';
 import type { VenueScene } from '../data/venues';
 import { resolveImage } from '../lib/images';
+import PhotoRail from './PhotoRail.astro';
 
 interface Props {
   kicker: string;
@@ -28,17 +29,28 @@ const { kicker, title, scenes } = Astro.props;
     <div class="scenes__list">
       {
         scenes.map((scene, i) => (
-          <article class="scene" style={`--row:${i + 1}`}>
-            <figure class="scene__shot media">
-              <Image
-                src={resolveImage(scene.image)}
-                alt={scene.alt}
-                widths={[480, 800, 1200, 1600]}
-                sizes="(min-width: 1024px) 55vw, 100vw"
-                loading={i === 0 ? 'eager' : 'lazy'}
-                decoding="async"
-              />
-            </figure>
+          <article class={`scene scene--${scene.layout ?? 'split'}`} style={`--row:${i + 1}`}>
+            {scene.layout === 'gallery' ? (
+              <div class="scene__rail">
+                <PhotoRail
+                  photos={scene.images?.length ? scene.images : [scene.image]}
+                  alt={scene.alt}
+                  sizes="100vw"
+                  widths={[720, 1200, 1800, 2400]}
+                />
+              </div>
+            ) : (
+              <figure class="scene__shot media">
+                <Image
+                  src={resolveImage(scene.image)}
+                  alt={scene.alt}
+                  widths={[480, 800, 1200, 1600, 2400]}
+                  sizes={scene.layout === 'wide' ? '100vw' : '(min-width: 1024px) 55vw, 100vw'}
+                  loading={i === 0 ? 'eager' : 'lazy'}
+                  decoding="async"
+                />
+              </figure>
+            )}
 
             <div class="scene__text" data-reveal>
               <p class="scene__num t-caption">{scene.num}</p>
@@ -89,12 +101,14 @@ const { kicker, title, scenes } = Astro.props;
   /* ============ МОБИЛКА: кадр, потом текст ============ */
   .scene + .scene { margin-top: var(--section-gap); }
 
-  .scene__shot {
-    aspect-ratio: 4 / 5;
+  .scene__shot,
+  .scene__rail {
     /* кадр в край экрана: гасим боковые поля контейнера */
     margin-inline: calc(var(--gutter) * -1);
     margin-bottom: var(--s-6);
   }
+
+  .scene__shot { aspect-ratio: 4 / 5; }
 
   .scene__num {
     font-weight: var(--w-medium);
@@ -127,14 +141,18 @@ const { kicker, title, scenes } = Astro.props;
     /* сцена растворяется, её половины становятся ячейками общей сетки */
     .scene { display: contents; }
 
+    /* Текст выровнен по верху своей строки, а не по центру: строка высотой
+       --scene-span (170svh), и при центрировании текст оказывался почти на
+       экран ниже кадра — сначала листалась фотография и пустая колонка,
+       и только потом приходил текст. По верху они входят в экран вместе. */
     .scene__text {
       grid-column: 1;
       grid-row: var(--row);
       min-height: var(--scene-span);
       display: flex;
       flex-direction: column;
-      justify-content: center;
-      padding-block: var(--s-8);
+      justify-content: flex-start;
+      padding-block: var(--s-7) var(--s-8);
     }
 
     .scene__shot {
@@ -150,5 +168,52 @@ const { kicker, title, scenes } = Astro.props;
       /* правым краем кадр выходит в край экрана */
       margin-right: calc(var(--gutter) * -1);
     }
+
+    /* ============ СЦЕНА ВО ВСЮ ШИРИНУ ============
+       Разрыв в ритме: кадр (или лента кадров) занимает всю ширину, текст
+       идёт под ним. Такая сцена не растворяется в общей сетке, а остаётся
+       обычным блоком на всю строку — поэтому grid-column/row её детей
+       не действуют и сбрасывать их не нужно. */
+    /* Липкие кадры соседних сцен не отпускаются на границе строки: они
+       позиционированные и висят поверх обычных блоков, как бы ни шёл
+       порядок в разметке. Поэтому широкая сцена: а) поднимается своим
+       слоем, б) занимает всю ширину экрана вместе с подложкой — иначе
+       кадр выглядывает полосой в боковых полях. */
+    .scene--wide,
+    .scene--gallery {
+      display: block;
+      grid-column: 1 / -1;
+      grid-row: var(--row);
+      position: relative;
+      z-index: 1;
+      background: var(--bg);
+      margin-inline: calc(var(--gutter) * -1);
+      padding: var(--s-8) var(--gutter);
+    }
+
+    .scene--wide .scene__shot {
+      position: static;
+      height: auto;
+      aspect-ratio: 21 / 9;
+      margin-inline: calc(var(--gutter) * -1);
+      margin-bottom: var(--s-7);
+    }
+
+    .scene--gallery .scene__rail { margin-bottom: var(--s-7); }
+
+    /* текст такой сцены — обычная колонка под кадром, меру держат абзацы */
+    .scene--wide .scene__text,
+    .scene--gallery .scene__text {
+      display: block;
+      min-height: 0;
+      padding-block: 0;
+    }
+  }
+
+  /* Лента кадров: на узком экране вертикальный кадр, на широком — панорама */
+  .scene__rail :global(.prail) { aspect-ratio: 4 / 5; }
+
+  @media (min-width: 1024px) {
+    .scene__rail :global(.prail) { aspect-ratio: 21 / 9; }
   }
 </style>

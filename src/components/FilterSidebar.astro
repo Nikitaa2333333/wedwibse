@@ -49,17 +49,24 @@ const { groups } = Astro.props;
 </div>
 
 <style>
+  /* Колонка фильтров не заливается плашкой — выделяем её структурой:
+     линия под шапкой «Фильтры» и вертикальная отбивка от каталога (ПК).
+     Заливка тут проигрывает: рядом мозаика фото, ещё один прямоугольник
+     цвета спорит с карточками. */
   .filters__head {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
     gap: var(--s-3);
-    padding-bottom: var(--s-6);
+    padding-bottom: var(--s-4);
+    margin-bottom: var(--s-6);
+    border-bottom: 1px solid var(--hairline);
   }
 
+  /* Шапка колонки крупнее пунктов — иерархия кеглем, не цветом */
   .filters__title {
-    font-size: var(--fs-small);
-    font-weight: var(--w-medium);
+    font-size: var(--fs-body);
+    font-weight: var(--w-head);
   }
 
   .filters__reset {
@@ -134,7 +141,13 @@ const { groups } = Astro.props;
     border-radius: 50%;
   }
 
-  .fopt__input:checked + .fopt__box { background: var(--fg); }
+  /* Выбранный пункт — единственный цвет проекта: видно, что фильтр включён */
+  .fopt__input:checked + .fopt__box {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .fopt__input:checked ~ .fopt__label { color: var(--accent); }
 
   .fopt__input:focus-visible + .fopt__box {
     outline: 2px solid var(--fg);
@@ -142,4 +155,12 @@ const { groups } = Astro.props;
   }
 
   .fopt__label { font-size: var(--fs-small); }
+
+  /* ПК: вертикальная отбивка отделяет колонку фильтров от мозаики каталога */
+  @media (min-width: 1024px) {
+    .filters {
+      border-right: 1px solid var(--hairline);
+      padding-right: var(--s-6);
+    }
+  }
 </style>

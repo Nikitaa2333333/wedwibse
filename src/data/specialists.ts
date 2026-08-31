@@ -92,6 +92,65 @@ export const SPECIALIST_CATEGORIES: SpecialistCategory[] = [
   { slug: 'rils-meikery', label: 'Рилс-мейкеры' },
 ];
 
+// ============ СМЫСЛОВЫЕ ГРУППЫ НАПРАВЛЕНИЙ ============
+// 19 категорий подряд человек не читает — он ищет «кто снимает» или
+// «кто оформляет». Группы идут по ходу подготовки свадьбы: сначала те,
+// кого бронируют первыми (организатор, ведущий), в конце — образ.
+// Источник правды для хаба раздела; сюда же будет смотреть блок
+// «соберите команду» на карточке специалиста.
+// Категория, не попавшая ни в одну группу, не теряется — хаб собирает
+// остаток в отдельный ряд (см. index.astro раздела).
+export interface SpecialistGroup {
+  key: string;
+  label: string;
+  /** подпись для узкой навигации (CategoryNav): все 6 групп обязаны
+      уместиться в одну строку, полный label туда не влезает */
+  short: string;
+  /** slug'и категорий в порядке показа внутри группы */
+  categories: string[];
+}
+
+export const SPECIALIST_GROUPS: SpecialistGroup[] = [
+  {
+    key: 'organizacija',
+    label: 'Организация и ведение',
+    short: 'Организация',
+    categories: ['organizatory', 'koordinatory', 'vedushchie'],
+  },
+  {
+    key: 'semka',
+    label: 'Съёмка',
+    short: 'Съёмка',
+    categories: ['fotografy', 'videografy', 'rils-meikery'],
+  },
+  {
+    key: 'muzyka',
+    label: 'Музыка и шоу',
+    short: 'Музыка и шоу',
+    categories: ['dj', 'kaver-gruppy', 'vokalisty', 'horeografy', 'animatory', 'fokusniki', 'speceffekty'],
+  },
+  {
+    key: 'oformlenie',
+    label: 'Оформление и аренда',
+    short: 'Оформление',
+    categories: ['dekoratory', 'prokat', 'prokatchiki'],
+  },
+  {
+    key: 'ugoshchenie',
+    label: 'Угощение',
+    short: 'Угощение',
+    categories: ['keitering', 'konditery'],
+  },
+  {
+    // пока одна категория, но группа заготовлена под рост: визажисты,
+    // причёски, платья и костюмы приедут именно сюда
+    key: 'obraz',
+    label: 'Образ',
+    short: 'Образ',
+    categories: ['stilisty'],
+  },
+];
+
 const IMG_M = '/specialists/vedushchie/m';
 const IMG_F = '/specialists/vedushchie/f';
 

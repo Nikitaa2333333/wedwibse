@@ -13,7 +13,7 @@ const { kicker, title, items } = Astro.props;
 ---
 
 <section class="faq section" id="voprosy">
-  <div class="container">
+  <div class="container container--wide">
     <header class="faq__head">
       <p class="faq__kicker t-caption">{kicker}</p>
       <h2 class="faq__title">{title}</h2>
@@ -35,6 +35,11 @@ const { kicker, title, items } = Astro.props;
 </section>
 
 <style>
+  /* Блок идёт по полям страницы, как сцены: потолка ширины нет.
+     Строку при этом держит сам ответ — иначе на широком мониторе
+     абзац растянулся бы за сотню знаков. */
+  .faq :global(.container) { max-width: none; }
+
   .faq__head { margin-bottom: var(--section-gap-tight); }
 
   .faq__kicker {
@@ -60,6 +65,8 @@ const { kicker, title, items } = Astro.props;
     font-weight: var(--w-head);
     margin-bottom: var(--s-4);
   }
+
+  .qa__a { max-width: var(--measure-text); }
 
   .qa__a + .qa__a { margin-top: var(--s-4); }
 

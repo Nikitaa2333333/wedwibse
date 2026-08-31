@@ -1,8 +1,16 @@
 ---
-// Переключатель категорий специалистов: прилипающая под шапкой строка
-// пилюль, скроллится вбок. Живёт под SiteHeader — top берёт готовую
-// высоту шапки из --header-h (SiteHeader сам её публикует).
+// Переключатель категорий специалистов: прилипающая под шапкой полоса
+// в ДВА уровня. Один ряд из 19 пилюль был простынёй — в кадр попадало
+// 3-4 штуки, остальное за краем экрана.
+//   ряд 1 — группы (SPECIALIST_GROUPS), помещаются в строку целиком;
+//   ряд 2 — категории только текущей группы, 3-7 пилюль.
+// Переключение групп без JS: пилюля группы ведёт в первую её категорию,
+// та рендерит свой ряд. Полный список всех направлений — на хабе раздела,
+// ссылка «Все» слева.
+// Живёт под SiteHeader — top берёт готовую высоту шапки из --header-h
+// (SiteHeader сам её публикует).
 import type { SpecialistCategory } from '../data/specialists';
+import { SPECIALIST_GROUPS } from '../data/specialists';
 
 interface Props {
   categories: SpecialistCategory[];
@@ -11,19 +19,49 @@ interface Props {
 }
 
 const { categories, activeSlug, basePath = '/moskva/podryadchiki/' } = Astro.props;
+
+const bySlug = new Map(categories.map((c) => [c.slug, c]));
+const activeGroup = SPECIALIST_GROUPS.find((g) => g.categories.includes(activeSlug));
+
+// Категория вне групп (новая, ещё не разложенная) — показываем полный
+// список, как раньше: лучше длинный ряд, чем пустой
+const rowSlugs = (activeGroup?.categories ?? categories.map((c) => c.slug)).filter((s) => bySlug.has(s));
+
+const groups = SPECIALIST_GROUPS.map((g) => {
+  const first = g.categories.find((s) => bySlug.has(s));
+  return { ...g, href: first ? `${basePath}${first}/` : basePath };
+}).filter((g) => g.href !== basePath);
 ---
 
 <nav class="cat-nav" aria-label="Категории специалистов">
-  <div class="cat-nav__scroll">
-    {categories.map((c) => (
+  <!-- РЯД 1: группы направлений -->
+  <div class="cat-nav__scroll cat-nav__scroll--groups">
+    <a href={basePath} class="cat-nav__group cat-nav__group--all">Все</a>
+
+    {groups.map((g) => (
       <a
-        href={`${basePath}${c.slug}/`}
-        class={`cat-nav__pill${c.slug === activeSlug ? ' is-active' : ''}`}
-        aria-current={c.slug === activeSlug ? 'page' : undefined}
+        href={g.href}
+        class={`cat-nav__group${g.key === activeGroup?.key ? ' is-active' : ''}`}
       >
-        {c.label}
+        {g.short}
       </a>
     ))}
+  </div>
+
+  <!-- РЯД 2: категории текущей группы -->
+  <div class="cat-nav__scroll">
+    {rowSlugs.map((slug) => {
+      const c = bySlug.get(slug)!;
+      return (
+        <a
+          href={`${basePath}${c.slug}/`}
+          class={`cat-nav__cat${c.slug === activeSlug ? ' is-active' : ''}`}
+          aria-current={c.slug === activeSlug ? 'page' : undefined}
+        >
+          {c.label}
+        </a>
+      );
+    })}
   </div>
 </nav>
 
@@ -33,7 +71,6 @@ const { categories, activeSlug, basePath = '/moskva/podryadchiki/' } = Astro.pro
     top: var(--header-h);
     z-index: calc(var(--z-nav) - 1);
     background: var(--bg);
-    border-bottom: 1px solid var(--hairline);
   }
 
   .cat-nav__scroll {
@@ -46,16 +83,24 @@ const { categories, activeSlug, basePath = '/moskva/podryadchiki/' } = Astro.pro
 
   .cat-nav__scroll::-webkit-scrollbar { display: none; }
 
-  .cat-nav__pill {
+  /* Два ряда подряд не должны дать двойной воздух на стыке */
+  .cat-nav__scroll--groups { padding-bottom: 0; }
+
+  /* В ряду категорий подложек нет — расстояние держит только зазор,
+     поэтому он крупнее, чем между пилюлями групп */
+  .cat-nav__scroll:not(.cat-nav__scroll--groups) { gap: var(--s-4); }
+
+  /* ============ РЯД 1: ГРУППЫ ============
+     Уровень выше — поэтому без обводок: текстовое меню, у активной
+     группы заливка чернилами. Обводки остаются категориям. */
+  .cat-nav__group {
     flex: none;
     display: inline-flex;
     align-items: center;
-    padding: 10px 20px;
-    font-size: var(--fs-caption);
+    padding: 8px 14px;
+    font-size: var(--fs-small);
     font-weight: var(--w-medium);
     color: var(--fg);
-    background: transparent;
-    border: 1px solid var(--fg);
     border-radius: var(--radius-pill);
     text-decoration: none;
     white-space: nowrap;
@@ -63,9 +108,36 @@ const { categories, activeSlug, basePath = '/moskva/podryadchiki/' } = Astro.pro
                 color var(--dur-fast) var(--ease-out);
   }
 
-  .cat-nav__pill.is-active { background: var(--fg); color: var(--bg); }
+  .cat-nav__group.is-active { background: var(--fg); color: var(--bg); }
+
+  /* ============ РЯД 2: КАТЕГОРИИ ============
+     Голый текст без обводок: полоса и так двухэтажная, две линии рамок
+     подряд делали из навигации забор. «Вы здесь» — прямоугольная
+     чернильная подложка (фирменный маркер), а не пилюля: круглая форма
+     осталась уровню групп, углы — уровню категорий. */
+  .cat-nav__cat {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 2px;
+    font-size: var(--fs-caption);
+    font-weight: var(--w-medium);
+    color: var(--fg);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  /* «Вы здесь» — тонкая линия под словом. Отбита от базовой линии и
+     разорвана вокруг выносных (skip-ink), чтобы не резать буквы. */
+  .cat-nav__cat.is-active,
+  .cat-nav__cat:hover {
+    text-decoration: underline;
+    text-decoration-thickness: 0.5px;
+    text-underline-offset: 6px;
+    text-decoration-skip-ink: auto;
+  }
 
   @media (hover: hover) {
-    .cat-nav__pill:hover { background: var(--fg); color: var(--bg); }
+    .cat-nav__group:not(.is-active):hover { background: var(--fg); color: var(--bg); }
   }
 </style>

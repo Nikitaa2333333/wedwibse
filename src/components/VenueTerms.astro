@@ -16,13 +16,15 @@ const { kicker, title, terms, included, extras } = Astro.props;
 ---
 
 <section class="terms section" id="usloviya">
-  <div class="container">
+  <div class="container container--wide">
     <header class="terms__head">
       <p class="terms__kicker t-caption">{kicker}</p>
       <h2 class="terms__title">{title}</h2>
     </header>
 
-    <div class="terms__grid">
+    <!-- ДЕНЬГИ: прайс и депозит. Каждая таблица занимает всю ширину —
+         в половине колонки метка и значение сталкивались и переносились. -->
+    <div class="terms__money">
       {
         terms.map((group) => (
           <div class="group" data-reveal>
@@ -38,10 +40,13 @@ const { kicker, title, terms, included, extras } = Astro.props;
           </div>
         ))
       }
+    </div>
 
+    <!-- ЧТО ВХОДИТ: чистые перечисления, поэтому колонки читаются легко -->
+    <div class="terms__included" data-reveal-group>
       {
         included.map((group) => (
-          <div class="group" data-reveal>
+          <div class="group">
             <h3 class="group__name">{group.title}</h3>
             {group.note && <p class="group__note t-small">{group.note}</p>}
             <ul class="list">
@@ -52,7 +57,10 @@ const { kicker, title, terms, included, extras } = Astro.props;
           </div>
         ))
       }
+    </div>
 
+    <!-- ЗА ОТДЕЛЬНУЮ ПЛАТУ: снова таблица, снова во всю ширину -->
+    <div class="terms__extras">
       {
         extras.map((group) => (
           <div class="group" data-reveal>
@@ -74,6 +82,9 @@ const { kicker, title, terms, included, extras } = Astro.props;
 </section>
 
 <style>
+  /* По полям страницы, как сцены и вопросы */
+  .terms :global(.container) { max-width: none; }
+
   .terms__head { margin-bottom: var(--section-gap-tight); }
 
   .terms__kicker {
@@ -89,10 +100,17 @@ const { kicker, title, terms, included, extras } = Astro.props;
     max-width: var(--measure-head);
   }
 
-  .terms__grid {
+  /* Три блока с разным характером: таблица — во всю ширину, перечисления —
+     в колонки. Разрыв между блоками один, задаётся здесь. */
+  .terms__money,
+  .terms__included,
+  .terms__extras {
     display: grid;
     gap: var(--section-gap-tight) var(--s-8);
   }
+
+  .terms__included,
+  .terms__extras { margin-top: var(--section-gap-tight); }
 
   .group__name {
     font-size: var(--fs-h3);
@@ -106,6 +124,9 @@ const { kicker, title, terms, included, extras } = Astro.props;
   .group .list { max-width: none; }
 
   @media (min-width: 900px) {
-    .terms__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    /* В колонки уходят только списки: у них короткая строка и свой маркер,
+       поэтому две колонки помогают читать, а не мешают. Таблицы «метка —
+       значение» остаются на всю ширину. */
+    .terms__included { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
 </style>

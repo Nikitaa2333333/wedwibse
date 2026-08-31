@@ -12,6 +12,7 @@ import SiteHeader from '../../../../components/SiteHeader.astro';
 import BottomDock from '../../../../components/BottomDock.astro';
 import FilterSidebar from '../../../../components/FilterSidebar.astro';
 import CategoryNav from '../../../../components/CategoryNav.astro';
+import ScopePicker from '../../../../components/ScopePicker.astro';
 import PhotoRail from '../../../../components/PhotoRail.astro';
 import { VEDUSHCHIE, VEDUSHCHIE_FILTERS, SPECIALIST_CATEGORIES } from '../../../../data/specialists';
 import { resolveImage } from '../../../../lib/images';
@@ -91,15 +92,16 @@ const priceFmt = new Intl.NumberFormat('ru-RU');
 
   <!-- Заголовок страницы — крупный, в контенте («крупно чётко»),
        а не зажатый в служебной полоске шапки -->
-  <header class="page-head">
-    <div class="page-head__text">
-      <h1 class="t-h1">Ведущие</h1>
-      <p class="page-head__count" data-results-count>{cards.length} найдено</p>
-    </div>
-    <button class="pill pill--sm page-head__filters" type="button" data-sidebar-open>
+  <ScopePicker
+    title="Ведущие"
+    active="vedushchie"
+    count={`${cards.length} найдено`}
+    cityGroup={VEDUSHCHIE_FILTERS.find((g) => g.key === 'city')}
+  >
+    <button slot="actions" class="pill pill--sm page-head__filters" type="button" data-sidebar-open>
       Фильтры <span class="pill__caret" aria-hidden="true">▾</span>
     </button>
-  </header>
+  </ScopePicker>
 
   <div class="layout">
     <!-- ФИЛЬТРЫ: постоянная колонка на широком экране; на узком — шторка -->
@@ -213,27 +215,8 @@ const priceFmt = new Intl.NumberFormat('ru-RU');
 
 <style>
   /* ============ ЗАГОЛОВОК СТРАНИЦЫ ============ */
-  .page-head {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: var(--s-4);
-    padding: var(--s-6) var(--gutter) var(--s-5);
-  }
-
-  .page-head__text {
-    display: flex;
-    align-items: baseline;
-    flex-wrap: wrap;
-    gap: var(--s-3);
-  }
-
-  /* Счётчик — рядом с заголовком, крупно: сразу видно объём каталога */
-  .page-head__count {
-    font-size: var(--fs-h3);
-    font-weight: var(--w-medium);
-  }
-
+  /* Шапка раздела живёт в ScopePicker; кнопка «Фильтры» уходит туда слотом
+     и потому стилизуется отсюда. */
   .pill__caret { font-size: 9px; }
 
   /* Кнопка «Фильтры» нужна только там, где фильтр живёт в шторке */

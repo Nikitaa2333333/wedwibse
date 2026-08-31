@@ -1,7 +1,8 @@
 ---
-// Первый экран карточки: слева типографика и характеристики,
-// справа крупный кадр в край экрана (реф. Momentum).
-// Мобилка: заголовок → фото → лид → строки характеристик.
+// Первый экран карточки площадки: кадр во весь экран, текст прижат
+// к его низу. Слева — знак и название, справа — лид и действие.
+// Телефона тут нет: он живёт в шапке и в блоке контактов.
+// Характеристики идут отдельной полосой уже под фотографией.
 import { Image } from 'astro:assets';
 import type { Venue } from '../data/venues';
 import { resolveImage } from '../lib/images';
@@ -14,43 +15,69 @@ const { venue } = Astro.props;
 ---
 
 <section class="vhero">
-  <div class="vhero__head">
-    <nav class="crumbs t-caption" aria-label="Хлебные крошки">
-      <a href="/">Главная</a>
-      <span aria-hidden="true">/</span>
-      <a href={`/${venue.citySlug}/${venue.categorySlug}/`}>{venue.category}</a>
-      <span aria-hidden="true">/</span>
-      <span>{venue.name}</span>
-    </nav>
-
-    <p class="vhero__kicker t-caption">{venue.kicker}</p>
-    <h1 class="vhero__title">{venue.title}</h1>
-  </div>
-
-  <figure class="vhero__shot media">
+  <!-- Кадр во всю ширину и высоту экрана. Он появляется первым и один
+       держит экран; текст проступает следом (data-reveal-group ниже). -->
+  <figure class="vhero__shot">
     <Image
       src={resolveImage(venue.hero.image)}
       alt={venue.hero.alt}
-      widths={[480, 800, 1200, 1600]}
-      sizes="(min-width: 1024px) 50vw, 100vw"
+      widths={[720, 1200, 1800, 2400]}
+      sizes="100vw"
       fetchpriority="high"
     />
+    <div class="veil" aria-hidden="true"></div>
   </figure>
 
-  <div class="vhero__rest">
-    <p class="vhero__lead t-lead" data-reveal>{venue.lead}</p>
+  <!-- Текст поверх кадра. Цвет задаём через --fg, а не руками по элементам:
+       .pill внутри сам становится белым, как в .theme-dark. Фон не трогаем —
+       под текстом должна остаться фотография. -->
+  <div class="vhero__over">
+    <div class="container container--wide vhero__inner">
+      <nav class="crumbs t-caption" aria-label="Хлебные крошки">
+        <a href="/">Главная</a>
+        <span aria-hidden="true">/</span>
+        <a href={`/${venue.citySlug}/${venue.categorySlug}/`}>{venue.category}</a>
+        <span aria-hidden="true">/</span>
+        <span>{venue.name}</span>
+      </nav>
 
-    <div class="vhero__actions" data-reveal>
-      <a class="pill pill--lg" href="#zayavka">Забронировать дату</a>
-      <a class="vhero__tel" href={venue.contacts.phoneHref}>{venue.contacts.phone}</a>
+      <div class="vhero__bottom" data-reveal-group>
+        <div class="vhero__id">
+          {
+            venue.logo && (
+              <span
+                class="vhero__logo"
+                role="img"
+                aria-label={`Логотип площадки «${venue.logo.label}»`}
+                style={`--logo: url('${venue.logo.src}'); --logo-ratio: ${venue.logo.ratio};`}
+              />
+            )
+          }
+
+          <p class="vhero__kicker t-caption">{venue.kicker}</p>
+          <h1 class="vhero__title">{venue.title}</h1>
+        </div>
+
+        <div class="vhero__pitch">
+          <p class="vhero__lead t-lead">{venue.lead}</p>
+          <a class="pill pill--lg" href="#zayavka">Забронировать дату</a>
+        </div>
+      </div>
     </div>
+  </div>
+</section>
 
-    <dl class="rows vhero__meta">
+<!-- Характеристики: уже на бумаге, в общей сетке страницы.
+     Не таблица «метка — значение», а крупные факты: это первое, что
+     ищут глазами, и мелкой строкой оно теряется. -->
+<section class="specs section section--tight">
+  <div class="container container--wide">
+    <dl class="specs__grid" data-reveal-group>
       {
         venue.meta.map((row) => (
-          <div class="rows__row">
-            <dt class="rows__label">{row.label}</dt>
-            <dd class="rows__value">{row.value}</dd>
+          <div class="spec">
+            <dt class="spec__label t-caption">{row.label}</dt>
+            <dd class="spec__value">{row.value}</dd>
           </div>
         ))
       }
@@ -59,26 +86,92 @@ const { venue } = Astro.props;
 </section>
 
 <style>
+  /* ============ ПЕРВЫЙ ЭКРАН ============ */
+  /* Высоту экрана задаёт ТЕКСТ, а не картинка: кадр выведен из потока и
+     растянут по всей секции. Иначе на широком мониторе картинка со своей
+     пропорцией (2400×1597) оказывалась выше вьюпорта, секция вырастала
+     под неё, и текст уезжал ниже сгиба — приходилось скроллить. */
   .vhero {
+    position: relative;
+    min-height: 100svh;
+    display: flex;
+  }
+
+  .vhero__shot {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    background: var(--surface-dim);
+  }
+
+  .vhero__shot img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* Затемнение под текстом — общий .veil из global.css, свой не заводим */
+
+  .vhero__over {
+    position: relative;
+    display: flex;
+    flex: 1;
+    --fg: var(--white);
+    color: var(--fg);
+  }
+
+  /* max-width снимаем намеренно — тот же приём, что в ScrollyScenes:
+     на первом экране текст живёт по полям экрана, а не в центрированной
+     колонке. С --page-max-wide на широком мониторе слева набегало
+     240px центрирующего поля поверх --gutter, и герой стоял заметно
+     глубже, чем секции ниже. Отступ до края теперь ровно --gutter. */
+  .vhero__inner {
+    max-width: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: var(--s-6);
+    padding-block: var(--s-6) var(--section-gap-tight);
+  }
+
+  /* ============ ХАРАКТЕРИСТИКИ КРУПНО ============
+     Колонки заданы явно, а не auto-fit: характеристик четыре, и при
+     автонаборе они складывались в 3 + 1 — одинокая ячейка во втором
+     ряду. Две колонки дают ровный квадрат на любой ширине.
+     Линия сверху здесь структурная (граница ячейки), а не декоративная. */
+  .specs :global(.container) { max-width: none; }
+
+  .specs__grid {
     display: grid;
-    grid-template-areas: 'head' 'shot' 'rest';
+    gap: var(--s-6) var(--s-8);
   }
 
-  .vhero__head {
-    grid-area: head;
-    padding: var(--section-gap-tight) var(--gutter) var(--s-6);
+  @media (min-width: 720px) {
+    .specs__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
 
-  .vhero__rest {
-    grid-area: rest;
-    padding: var(--s-6) var(--gutter) var(--section-gap);
+  .spec {
+    padding-top: var(--s-4);
+    border-top: 1px solid var(--hairline);
+  }
+
+  .spec__label {
+    font-weight: var(--w-medium);
+    margin-bottom: var(--s-3);
+  }
+
+  .spec__value {
+    font-size: clamp(24px, 2.2vw, 32px);
+    font-weight: var(--w-head);
+    line-height: var(--lh-heading);
+    letter-spacing: var(--ls-display);
+    text-wrap: balance;
   }
 
   .crumbs {
     display: flex;
     flex-wrap: wrap;
     gap: var(--s-2);
-    margin-bottom: var(--s-6);
   }
 
   .crumbs a { text-decoration: none; }
@@ -87,76 +180,61 @@ const { venue } = Astro.props;
     .crumbs a:hover { text-decoration: underline; }
   }
 
+  /* ============ НИЖНИЙ ЯРУС: имя слева, лид и действие справа ============ */
+  .vhero__bottom {
+    display: grid;
+    gap: var(--s-6);
+    align-items: end;
+  }
+
+  /* Знак площадки. Файл белый — красим маской: форма из PNG, заливка
+     из --fg. Пропорции приходят из данных, чтобы кадр не плющило. */
+  .vhero__logo {
+    display: block;
+    height: clamp(22px, 2.4vw, 32px);
+    aspect-ratio: var(--logo-ratio);
+    margin-bottom: var(--s-4);
+    background: var(--fg);
+    -webkit-mask: var(--logo) no-repeat left center / contain;
+    mask: var(--logo) no-repeat left center / contain;
+  }
+
   .vhero__kicker {
     font-weight: var(--w-medium);
     margin-bottom: var(--s-3);
   }
 
+  /* Меры тут нет намеренно: ширину задаёт сама колонка нижнего яруса.
+     С --measure-head имя ломалось на четыре строки — 26ch при кегле под
+     сотню пикселей шире колонки, и ограничивала не мера, а колонка. */
   .vhero__title {
-    font-size: clamp(46px, 9vw, 96px);
+    font-size: clamp(38px, 5vw, 76px);
     font-weight: var(--w-head);
     line-height: var(--lh-display);
     letter-spacing: var(--ls-display);
-    max-width: var(--measure-head);
+    text-wrap: balance;
   }
 
-  /* Кадр во всю ширину экрана: на мобилке — вертикальный портрет */
-  .vhero__shot {
-    grid-area: shot;
-    aspect-ratio: 4 / 5;
-  }
-
-  .vhero__lead {
-    max-width: var(--measure-lead);
-    margin-bottom: var(--s-6);
-  }
-
-  .vhero__actions {
+  .vhero__pitch {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
+    flex-direction: column;
+    align-items: flex-start;
     gap: var(--s-5);
-    margin-bottom: var(--s-7);
   }
 
-  .vhero__tel {
-    font-weight: var(--w-medium);
-    text-decoration: none;
-    white-space: nowrap;
-  }
+  .vhero__lead { max-width: var(--measure-lead); }
 
-  @media (hover: hover) {
-    .vhero__tel:hover { text-decoration: underline; }
-  }
-
-  /* ============ ПК: сплит «текст / фото в край» ============ */
-  @media (min-width: 1024px) {
-    .vhero {
-      grid-template-areas:
-        'head shot'
-        'rest shot';
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      grid-template-rows: auto 1fr;
-      min-height: 100svh;
+  /* ============ ПК: имя к левому краю, лид к правому ============
+     Колонки по содержимому и space-between: блоки прижимаются к полям
+     экрана. С двумя равными 1fr правый блок начинался ровно в середине
+     и читался как «поставлен по центру», а не по правому краю. */
+  @media (min-width: 900px) {
+    .vhero__bottom {
+      grid-template-columns: auto minmax(0, 46ch);
+      justify-content: space-between;
+      gap: var(--s-8);
     }
 
-    .vhero__head {
-      padding-top: var(--section-gap-tight);
-      padding-right: var(--s-7);
-    }
-
-    .vhero__rest {
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      padding-right: var(--s-7);
-      padding-bottom: var(--section-gap-tight);
-    }
-
-    .vhero__shot {
-      aspect-ratio: auto;
-      height: 100%;
-      min-height: 100svh;
-    }
+    .vhero__pitch { padding-bottom: var(--s-2); }
   }
 </style>

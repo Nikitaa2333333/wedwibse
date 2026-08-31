@@ -70,6 +70,8 @@ const saveData = JSON.stringify({
           <nav class="crumbs t-caption">
             <a href="/">Главная</a>
             <span aria-hidden="true">/</span>
+            <a href="/moskva/podryadchiki/">Специалисты</a>
+            <span aria-hidden="true">/</span>
             <a href="/moskva/podryadchiki/vedushchie/">Ведущие</a>
             <span aria-hidden="true">/</span>
             <span>{s.name}</span>
@@ -220,7 +222,7 @@ const saveData = JSON.stringify({
   .crumbs a { text-decoration: none; }
 
   @media (hover: hover) {
-    .crumbs a:hover { text-decoration: underline; }
+    .crumbs a:hover { color: var(--accent); }
   }
 
   /* ============ ГЕРОЙ: плашка + карусель встык ============

@@ -10,7 +10,7 @@ const { active } = Astro.props;
 const items = [
   { key: 'feed', href: '/', label: 'Главная' },
   { key: 'venues', href: '/moskva/ploshchadki/', label: 'Площадки' },
-  { key: 'vendors', href: '/moskva/podryadchiki/vedushchie/', label: 'Специалисты' },
+  { key: 'vendors', href: '/moskva/podryadchiki/', label: 'Специалисты' },
   { key: 'saved', href: '/izbrannoe/', label: 'Избранное' },
   { key: 'chat', href: '#', label: 'Чат' },
 ] as const;
@@ -43,10 +43,17 @@ const items = [
     padding: 5px;
     border-radius: var(--radius-pill);
     max-width: calc(100vw - var(--s-5) * 2);
+    /* База — непрозрачная капсула. Стекло ниже, и только там, где оно
+       по карману: backdrop-filter пересчитывается каждый кадр скролла. */
     background: var(--surface);
     border: 1px solid color-mix(in srgb, var(--ink) 8%, transparent);
     box-shadow: var(--shadow-float);
   }
+
+  /* Стекла тут нет намеренно. Док висит поверх страницы всё время, и
+     backdrop-filter на нём пересчитывается каждый кадр скролла — на
+     длинной главной с коллажом это заметно тормозит. Стеклянными
+     оставлены только панели, которые всплывают по клику (ScopePicker). */
 
   .dock__item {
     display: inline-flex;
@@ -79,7 +86,7 @@ const items = [
     padding: 0 4px;
     border: 1px solid currentColor;
     border-radius: var(--radius-pill);
-    font-size: 10px;
+    font-size: var(--fs-caption);
     font-weight: var(--w-medium);
     line-height: 1;
   }
@@ -99,12 +106,12 @@ const items = [
 
     .dock__item {
       padding: 9px 9px;
-      font-size: 12px;
+      font-size: var(--fs-small);
     }
   }
 
   @media (max-width: 380px) {
-    .dock__item { padding: 9px 7px; font-size: 11px; }
+    .dock__item { padding: 9px 7px; font-size: var(--fs-caption); }
   }
 </style>
 

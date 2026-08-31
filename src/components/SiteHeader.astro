@@ -15,7 +15,7 @@ const { phone, phoneHref } = Astro.props;
   <div class="head__inner container container--wide">
     <nav class="head__nav t-small" aria-label="Разделы каталога">
       <a href="/moskva/ploshchadki/">Площадки</a>
-      <a href="/moskva/podryadchiki/vedushchie/">Специалисты</a>
+      <a href="/moskva/podryadchiki/">Специалисты</a>
       <a href="/blog/">Блог</a>
       <a href="/">О сервисе</a>
     </nav>
@@ -34,12 +34,14 @@ const { phone, phoneHref } = Astro.props;
 </header>
 
 <style>
+  /* Верхняя шапка скрыта на время дизайн-фазы: навигация живёт в герое
+     и нижнем доке. Разметка оставлена — вернуть можно снятием display: none. */
   .head {
+    display: none;
     position: sticky;
     top: 0;
     z-index: var(--z-nav);
     background: var(--bg);
-    border-bottom: 1px solid var(--hairline);
   }
 
   .head__inner {
@@ -87,9 +89,11 @@ const { phone, phoneHref } = Astro.props;
 
   .head__account svg { width: 17px; height: 17px; }
 
+  /* Ховер в навигации — цветом, не подчёркиванием: подчёркивание
+     оставлено только контекстным ссылкам внутри текста статьи. */
   @media (hover: hover) {
     .head__nav a:hover,
-    .head__phone:hover { text-decoration: underline; }
+    .head__phone:hover { color: var(--accent); }
   }
 
   @media (min-width: 768px) {
