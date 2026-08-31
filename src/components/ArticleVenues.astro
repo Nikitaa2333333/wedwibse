@@ -1,0 +1,137 @@
+---
+// БЛОК «ПЛОЩАДКИ ИЗ ЭТОЙ СТАТЬИ» — главный SEO-узел блога.
+// Ставится под текстом статьи и отдаёт вес конкретным карточкам каталога.
+// У конкурента (wedwed.ru) на этом месте висят подрядчики — ведущие,
+// фотографы, декор, — а площадки из блога карточками не получают ничего:
+// текст ссылается только на подборки-фильтры. Это наш перевес, см. SEO-BLOG.md.
+//
+// Модуль переиспользуемый: те же карточки лягут на посадочную подборки
+// («похожие площадки») и на карточку площадки — компонент про конкретную
+// страницу ничего не знает, принимает список и подписи.
+import PhotoRail from './PhotoRail.astro';
+import type { FeedVenue } from '../data/feed';
+import type { Collection } from '../data/articles';
+
+interface Props {
+  title: string;
+  venues: FeedVenue[];
+  /** подборки-фильтры: те же анкоры, что стоят в тексте статьи */
+  collections?: Collection[];
+  collectionsTitle?: string;
+}
+
+const {
+  title,
+  venues,
+  collections = [],
+  collectionsTitle = 'Смотреть подборками',
+} = Astro.props;
+
+// Три карточки — ряд читается одним взглядом и не спорит с текстом статьи.
+const items = venues.slice(0, 3);
+---
+
+<section class="avenues section section--tight" aria-labelledby="avenues-title">
+  <div class="container">
+    <h2 class="avenues__title t-h2" id="avenues-title">{title}</h2>
+
+    <div class="avenues__grid" data-reveal-group>
+      {items.map((venue) => {
+        const href = `/moskva/ploshchadki/${venue.slug}/`;
+        return (
+          <article class="vmini">
+            <PhotoRail
+              photos={venue.media}
+              alt={venue.name}
+              href={href}
+              sizes="(min-width: 900px) 33vw, (min-width: 640px) 50vw, 100vw"
+              widths={[360, 560, 800]}
+            >
+              <div class="vmini__tags">
+                <span class="photo-tag">{venue.avgCheck}</span>
+                <span class="photo-tag">{venue.type}</span>
+              </div>
+            </PhotoRail>
+
+            <div class="vmini__body">
+              <h3 class="vmini__name">
+                <a href={href}>{venue.name}</a>
+              </h3>
+              <p class="vmini__meta t-small">{venue.city} · {venue.capacity}</p>
+            </div>
+          </article>
+        );
+      })}
+    </div>
+
+    {collections.length > 0 && (
+      <div class="avenues__collections">
+        <p class="avenues__collections-title t-small">{collectionsTitle}</p>
+        <div class="avenues__pills">
+          {collections.map((c) => (
+            <a class="pill pill--sm" href={c.href}>{c.label}</a>
+          ))}
+        </div>
+      </div>
+    )}
+  </div>
+</section>
+
+<style>
+  .avenues__title {
+    max-width: var(--measure-head);
+    margin-bottom: var(--s-6);
+  }
+
+  .avenues__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s-6) clamp(8px, 1vw, 16px);
+  }
+
+  @media (min-width: 900px) {
+    .avenues__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+
+  .vmini {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+    min-width: 0;
+  }
+
+  /* Кадр карточки — тот же формат, что в ленте каталога */
+  .vmini :global(.prail) { aspect-ratio: 4 / 5; }
+
+  .vmini__tags {
+    position: absolute;
+    bottom: var(--s-3);
+    left: var(--s-3);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+    pointer-events: none;
+  }
+
+  .vmini__name {
+    font-size: var(--fs-h3);
+    font-weight: var(--w-regular);
+    line-height: 1.15;
+  }
+
+  .vmini__name a { text-decoration: none; }
+
+  .vmini__meta { margin-top: -2px; }
+
+  /* Подборки: те же анкоры, что и в тексте, — но собранные в один ряд.
+     Пилюли, а не список: это действие «перейти в каталог», не перечисление. */
+  .avenues__collections { margin-top: var(--s-7); }
+
+  .avenues__collections-title { margin-bottom: var(--s-3); }
+
+  .avenues__pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+  }
+</style>

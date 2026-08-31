@@ -1,0 +1,232 @@
+---
+// СТРАНИЦА СТАТЬИ. URL зафиксирован: /blog/<рубрика>/<slug>/
+// Ровно та же логика, что у карточки площадки: шаблон не знает про
+// конкретный текст, всё берётся из src/data/articles.ts.
+//
+// Порядок блоков — не редакторский, а SEO-шный: текст с контекстными
+// ссылками на подборки → карточки конкретных площадок → соседние статьи.
+// Каждый блок отдаёт вес дальше по цепочке блог → подборка → карточка.
+import { Image } from 'astro:assets';
+import Layout from '../../../layouts/Layout.astro';
+import SiteHeader from '../../../components/SiteHeader.astro';
+import BottomDock from '../../../components/BottomDock.astro';
+import ArticleVenues from '../../../components/ArticleVenues.astro';
+import ArticleCard from '../../../components/ArticleCard.astro';
+import { resolveImage } from '../../../lib/images';
+import { FEED, type FeedVenue } from '../../../data/feed';
+import { ARTICLES, RUBRICS, articleUrl, inlineHtml, type Article } from '../../../data/articles';
+
+export function getStaticPaths() {
+  return ARTICLES.map((article) => ({
+    params: { rubric: article.rubricSlug, slug: article.slug },
+    props: { article },
+  }));
+}
+
+interface Props {
+  article: Article;
+}
+
+const { article } = Astro.props;
+const rubric = RUBRICS.find((r) => r.slug === article.rubricSlug)!;
+
+// Площадки статьи — из той же ленты каталога, что и раздел «Площадки»:
+// отдельного пула фотографий у блога нет и не будет.
+const venueByName = new Map(
+  FEED.filter((item): item is FeedVenue => item.kind === 'venue').map((v) => [v.name, v])
+);
+const venues = article.venues
+  .map((name) => venueByName.get(name))
+  .filter((v): v is FeedVenue => Boolean(v));
+
+const related = ARTICLES.filter((a) => a.slug !== article.slug).slice(0, 3);
+
+const dateLabel = (iso: string) =>
+  new Date(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+---
+
+<Layout title={article.seo.title} description={article.seo.description} ogImage={article.cover.src}>
+  <SiteHeader />
+
+  <main>
+    <article class="post">
+      <header class="post__head section section--tight">
+        <div class="container">
+          <nav class="post__crumbs t-caption" aria-label="Хлебные крошки">
+            <a href="/blog/">Блог</a>
+            <span aria-hidden="true">/</span>
+            <a href={`/blog/${rubric.slug}/`}>{rubric.title}</a>
+          </nav>
+
+          <h1 class="post__title">{article.title}</h1>
+          <p class="post__lead t-lead">{article.lead}</p>
+
+          <p class="post__date t-caption">
+            <time datetime={article.published}>{dateLabel(article.published)}</time>
+            {article.updated && <> · обновлено <time datetime={article.updated}>{dateLabel(article.updated)}</time></>}
+          </p>
+        </div>
+      </header>
+
+      <div class="post__cover container container--wide">
+        <div class="media">
+          <Image
+            src={resolveImage(article.cover.src)}
+            alt={article.cover.alt}
+            widths={[640, 1000, 1600]}
+            sizes="100vw"
+            loading="eager"
+            fetchpriority="high"
+          />
+        </div>
+      </div>
+
+      <div class="post__body section">
+        <div class="container">
+          {article.body.map((block) => {
+            if (block.kind === 'h2') return <h2 class="post__h2">{block.text}</h2>;
+
+            if (block.kind === 'p')
+              return <p class="post__p" set:html={inlineHtml(block.text)} />;
+
+            if (block.kind === 'list')
+              return (
+                <ul class="list post__list">
+                  {block.items.map((item) => (
+                    <li set:html={inlineHtml(item)} />
+                  ))}
+                </ul>
+              );
+
+            return (
+              <figure class="post__figure media">
+                <Image
+                  src={resolveImage(block.src)}
+                  alt={block.alt}
+                  widths={[560, 900, 1400]}
+                  sizes="(min-width: 1200px) 1000px, 100vw"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </figure>
+            );
+          })}
+        </div>
+      </div>
+
+      <ArticleVenues
+        title="Площадки из этой статьи"
+        venues={venues}
+        collections={article.collections}
+      />
+
+      <section class="related section" aria-labelledby="related-title">
+        <div class="container">
+          <h2 class="t-h2 related__title" id="related-title">Читайте дальше</h2>
+          <div class="related__grid" data-reveal-group>
+            {related.map((item) => <ArticleCard article={item} />)}
+          </div>
+        </div>
+      </section>
+    </article>
+  </main>
+
+  <BottomDock />
+</Layout>
+
+<style>
+  /* ============ ШАПКА СТАТЬИ ============ */
+  .post__crumbs {
+    display: flex;
+    gap: var(--s-2);
+    margin-bottom: var(--s-5);
+  }
+
+  .post__crumbs a { color: inherit; }
+
+  .post__title {
+    font-size: var(--fs-h1);
+    font-weight: var(--w-light);
+    line-height: var(--lh-display);
+    letter-spacing: var(--ls-display);
+    /* мера заголовка — только крупному h1, подзаголовки укладываются сами */
+    max-width: var(--measure-head);
+  }
+
+  .post__lead {
+    margin-top: var(--s-5);
+    max-width: var(--measure-lead);
+  }
+
+  .post__date { margin-top: var(--s-5); }
+
+  .post__cover .media { aspect-ratio: 16 / 9; }
+
+  .post__cover .media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* ============ ТЕЛО ============
+     Одна узкая колонка: мера на самих текстовых элементах, не на контейнере
+     (ch считается от кегля элемента). */
+  .post__h2 {
+    font-size: var(--fs-h2);
+    font-weight: var(--w-light);
+    line-height: var(--lh-heading);
+    max-width: var(--measure-head);
+    margin-top: var(--s-8);
+    margin-bottom: var(--s-4);
+  }
+
+  .post__h2:first-child { margin-top: 0; }
+
+  .post__p {
+    max-width: var(--measure-text);
+    line-height: var(--lh-body);
+  }
+
+  .post__p + .post__p { margin-top: var(--s-4); }
+
+  /* Контекстная ссылка на подборку — подчёркнута: в наборном тексте это
+     единственный способ показать ссылку (цветом и весом выделять нельзя) */
+  .post__p :global(a),
+  .post__list :global(a) {
+    color: inherit;
+    text-underline-offset: 3px;
+  }
+
+  .post__list { margin-top: var(--s-4); }
+
+  .post__figure {
+    margin-top: var(--s-7);
+    aspect-ratio: 3 / 2;
+    max-width: 1000px;
+  }
+
+  .post__figure img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .post__figure + .post__h2 { margin-top: var(--s-8); }
+
+  /* ============ СОСЕДНИЕ СТАТЬИ ============ */
+  .related__title {
+    max-width: var(--measure-head);
+    margin-bottom: var(--s-6);
+  }
+
+  .related__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s-6) clamp(8px, 1vw, 16px);
+    padding-bottom: calc(var(--safe-b) + 120px);
+  }
+
+  @media (min-width: 900px) {
+    .related__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+</style>

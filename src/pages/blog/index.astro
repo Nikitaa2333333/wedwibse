@@ -1,0 +1,84 @@
+---
+// ХАБ БЛОГА /blog/ — витрина и распределитель веса по рубрикам.
+// Всё статикой в HTML: список статей не рисуется клиентским JS.
+import Layout from '../../layouts/Layout.astro';
+import SiteHeader from '../../components/SiteHeader.astro';
+import BottomDock from '../../components/BottomDock.astro';
+import ArticleCard from '../../components/ArticleCard.astro';
+import { ARTICLES, RUBRICS } from '../../data/articles';
+
+const [feature, ...rest] = ARTICLES;
+---
+
+<Layout
+  title="Блог о свадьбах — площадки, подготовка, тайминг · WED Secrets"
+  description="Разборы о выборе свадебной площадки в Москве и Подмосковье: вместимость, бюджет, тайминг дня. С подборками площадок каталога."
+>
+  <SiteHeader />
+
+  <main>
+    <header class="hub__head section section--tight">
+      <div class="container">
+        <h1 class="hub__title">Блог</h1>
+        <p class="hub__lead t-lead">
+          Разборы для тех, кто выбирает площадку: сколько метров нужно на сотню гостей,
+          что спросить на просмотре и как собрать тайминг дня.
+        </p>
+
+        <nav class="hub__rubrics" aria-label="Рубрики блога">
+          {RUBRICS.map((r) => (
+            <a class="pill pill--sm" href={`/blog/${r.slug}/`}>{r.title}</a>
+          ))}
+        </nav>
+      </div>
+    </header>
+
+    <section class="hub__list section section--flush-top" aria-label="Все статьи">
+      <div class="container">
+        <div class="hub__feature" data-reveal>
+          <ArticleCard article={feature} feature />
+        </div>
+
+        <div class="hub__grid" data-reveal-group>
+          {rest.map((article) => <ArticleCard article={article} />)}
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <BottomDock />
+</Layout>
+
+<style>
+  .hub__title {
+    font-size: var(--fs-h1);
+    font-weight: var(--w-light);
+    line-height: var(--lh-display);
+    letter-spacing: var(--ls-display);
+  }
+
+  .hub__lead {
+    margin-top: var(--s-5);
+    max-width: var(--measure-lead);
+  }
+
+  .hub__rubrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+    margin-top: var(--s-6);
+  }
+
+  .hub__feature { margin-bottom: var(--s-8); }
+
+  .hub__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s-7) clamp(8px, 1vw, 16px);
+    padding-bottom: calc(var(--safe-b) + 120px);
+  }
+
+  @media (min-width: 900px) {
+    .hub__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+</style>

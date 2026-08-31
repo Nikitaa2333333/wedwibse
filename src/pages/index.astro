@@ -2,6 +2,7 @@
 import { Image } from 'astro:assets';
 import Layout from '../layouts/Layout.astro';
 import BottomDock from '../components/BottomDock.astro';
+import PhotoRail from '../components/PhotoRail.astro';
 
 // Галерея: колонки фотографий, каждая едет со своей скоростью.
 // Кадры не наезжают друг на друга; крайние колонки срезаются краем экрана.
@@ -50,7 +51,12 @@ const perks = [
     kind: 'photo',
     name: 'Площадки',
     tag: 'Выберите площадку под&nbsp;свой формат',
-    imgs: ['/rl-hero-pt-5.webp', '/rl-hero-pt-6.webp', '/rl-hero-pt-7.webp', '/rl-hero-pt-8.webp'],
+    imgs: [
+      '/venues/river-loft/hero-pt-5.webp',
+      '/venues/river-loft/hero-pt-6.webp',
+      '/venues/river-loft/hero-pt-7.webp',
+      '/venues/river-loft/hero-pt-8.webp',
+    ],
     alt: 'Зал площадки Ривер Лофт',
     href: '/moskva/ploshchadki/',
   },
@@ -69,28 +75,23 @@ const perks = [
     <!-- ГЕРОЙ: шапка (бренд / меню / метка) + крупный заголовок с лидом
          сразу под ней — без пустого экрана, плашки идут следующим блоком. -->
     <section class="hero container--wide">
+      <!-- Шапка главной: только логотип по центру и вход в кабинет.
+           Разделы живут в BottomDock — дублировать их сверху не нужно. -->
       <header class="hero__bar">
-        <a class="hero__brand" href="/">WED Secrets</a>
+        <a class="hero__brand" href="/" aria-label="WED Secrets — на главную">
+          <img class="hero__logo" src="/logo.svg" alt="WED Secrets" width="132" height="24" />
+        </a>
 
-        <nav class="hero__nav t-small" aria-label="Разделы">
-          <a href="/moskva/ploshchadki/">Площадки</a>
-          <a href="#">Специалисты</a>
-          <a href="#">О сервисе</a>
-        </nav>
-
-        <div class="hero__meta">
-          <span class="hero__place t-small">Москва · Подмосковье</span>
-          <a class="hero__account" href="#" aria-label="Аккаунт">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
-              <circle cx="12" cy="8" r="3.6" />
-              <path d="M4.5 20c1.6-3.6 5-5.4 7.5-5.4s5.9 1.8 7.5 5.4" stroke-linecap="round" />
-            </svg>
-          </a>
-        </div>
+        <a class="hero__account" href="#" aria-label="Личный кабинет">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+            <circle cx="12" cy="8" r="3.6" />
+            <path d="M4.5 20c1.6-3.6 5-5.4 7.5-5.4s5.9 1.8 7.5 5.4" stroke-linecap="round" />
+          </svg>
+        </a>
       </header>
 
       <div class="hero__intro">
-        <h1 class="hero__title">Всё для вашей свадьбы</h1>
+        <h1 class="hero__title">Всё для вашей свадьбы в пару кликов</h1>
 
         <a class="hero__hint" href="/izbrannoe/">
           <span class="perk__heart-wrap">
@@ -102,7 +103,10 @@ const perks = [
             </svg>
             <span class="perk__badge" aria-hidden="true">1</span>
           </span>
-          <span class="hero__hint-text t-small">Сохраняйте в избранное — закажете и напишете в один клик</span>
+          <span class="hero__hint-text t-small">
+            Сохраняйте в избранное и обращайтесь ко всем сразу — так вы найдёте лучшее
+            предложение для своей свадьбы
+          </span>
         </a>
       </div>
     </section>
@@ -111,12 +115,12 @@ const perks = [
     <section class="perks container--wide">
       <div class="perks__grid" data-reveal-group>
         <a class="perk perk--photo" href={perks[0].href}>
-          <span class="perk__photo-track">
-            {perks[0].imgs.concat(perks[0].imgs).map((src, i) => (
-              <img src={src} alt={perks[0].alt} loading={i === 0 ? 'eager' : 'lazy'} decoding="async" aria-hidden={i >= perks[0].imgs.length} />
-            ))}
-          </span>
-          <span class="veil" aria-hidden="true"></span>
+          <PhotoRail
+            photos={perks[0].imgs}
+            alt={perks[0].alt}
+            sizes="(min-width: 1024px) 50vw, 100vw"
+            widths={[560, 900, 1400]}
+          />
           <span class="perk__index" aria-hidden="true">(01)</span>
           <span class="perk__overlay">
             <span class="perk__name">{perks[0].name}</span>
@@ -236,50 +240,33 @@ const perks = [
     padding-block: var(--s-5) var(--section-gap-tight);
   }
 
+  /* Три колонки: логотип стоит ровно по центру экрана независимо от того,
+     что справа (кабинет), — крайние колонки одинаковой ширины. */
   .hero__bar {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
     gap: var(--s-4);
     padding-block: var(--s-4);
   }
 
   .hero__brand {
-    font-weight: var(--w-medium);
+    grid-column: 2;
+    display: inline-flex;
     text-decoration: none;
     color: inherit;
-    white-space: nowrap;
   }
 
-  /* Меню в шапке — только на широком экране: на мобилке те же разделы
-     уже есть в BottomDock, дублировать в тесной шапке незачем */
-  .hero__nav {
-    display: none;
-    gap: var(--s-5);
-    font-weight: var(--w-medium);
-  }
-
-  .hero__nav a { text-decoration: none; color: inherit; }
-  .hero__nav a:hover { text-decoration: underline; }
-
-  .hero__meta {
-    display: flex;
-    align-items: center;
-    gap: var(--s-4);
-  }
-
-  .hero__place {
-    display: none;
-    white-space: nowrap;
-    font-weight: var(--w-medium);
-  }
-
-  @media (min-width: 768px) {
-    .hero__nav { display: flex; }
-    .hero__place { display: block; }
+  /* Логотип нарисован белым — на светлой шапке гасим его в чёрный */
+  .hero__logo {
+    height: clamp(20px, 2vw, 26px);
+    width: auto;
+    filter: brightness(0);
   }
 
   .hero__account {
+    grid-column: 3;
+    justify-self: end;
     flex-shrink: 0;
     width: 40px;
     height: 40px;
@@ -305,9 +292,12 @@ const perks = [
     }
   }
 
-  /* Крупный заголовок — сразу виден, без прокрутки пустого экрана */
+  /* Крупный заголовок — сразу виден, без прокрутки пустого экрана.
+     Набран акцентом: в палитре ровно один цвет, и первое, что он красит, —
+     главное обещание страницы (реф. «the late checkout»). */
   .hero__title {
     flex-shrink: 0;
+    color: var(--accent);
     font-size: clamp(32px, 4vw, 56px);
     font-weight: var(--w-medium);
     line-height: 0.9;
@@ -386,29 +376,19 @@ const perks = [
     letter-spacing: -0.015em;
   }
 
-  /* Фото-плашка: кадр в край, подпись поверх на градиенте.
-     Кадры едут непрерывной плавной лентой (как в колесе специалистов) —
-     без кросс-фейда, поэтому нет засвета на стыке двух кадров. */
+  /* Фото-плашка: тот же слайдер, что в каталоге (PhotoRail) — кадры
+     листаются при наведении и свайпом, с точками-индикаторами.
+     Медленной автопрокрутки нет: движение только по действию пользователя. */
   .perk--photo { padding: 0; overflow: hidden; }
 
-  .perk__photo-track {
+  .perk--photo :global(.prail-wrap) {
     position: absolute;
     inset: 0;
-    display: flex;
-    flex-direction: column;
-    animation: perk-photo-scroll 28s linear infinite;
   }
 
-  .perk__photo-track img {
-    flex: none;
-    width: 100%;
+  .perk--photo :global(.prail) {
+    aspect-ratio: auto;
     height: 100%;
-    object-fit: cover;
-  }
-
-  @keyframes perk-photo-scroll {
-    from { transform: translateY(0); }
-    to { transform: translateY(-50%); }
   }
 
   .perk__overlay {

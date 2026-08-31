@@ -1,0 +1,112 @@
+---
+// СТРАНИЦА РУБРИКИ /blog/<рубрика>/ — промежуточный узел между хабом
+// и статьёй. Нужен и людям (навигация), и роботу (плоская структура:
+// от главной до любой статьи три клика).
+import Layout from '../../../layouts/Layout.astro';
+import SiteHeader from '../../../components/SiteHeader.astro';
+import BottomDock from '../../../components/BottomDock.astro';
+import ArticleCard from '../../../components/ArticleCard.astro';
+import { RUBRICS, articlesOfRubric, type Rubric } from '../../../data/articles';
+
+export function getStaticPaths() {
+  return RUBRICS.map((rubric) => ({
+    params: { rubric: rubric.slug },
+    props: { rubric },
+  }));
+}
+
+interface Props {
+  rubric: Rubric;
+}
+
+const { rubric } = Astro.props;
+const articles = articlesOfRubric(rubric.slug);
+---
+
+<Layout title={`${rubric.title} — блог WED Secrets`} description={rubric.note}>
+  <SiteHeader />
+
+  <main>
+    <header class="rub__head section section--tight">
+      <div class="container">
+        <nav class="rub__crumbs t-caption" aria-label="Хлебные крошки">
+          <a href="/blog/">Блог</a>
+          <span aria-hidden="true">/</span>
+          <span>{rubric.title}</span>
+        </nav>
+
+        <h1 class="rub__title">{rubric.title}</h1>
+        <p class="rub__lead t-lead">{rubric.note}</p>
+
+        <nav class="rub__switch" aria-label="Рубрики блога">
+          {RUBRICS.map((r) => (
+            <a
+              class="pill pill--sm"
+              href={`/blog/${r.slug}/`}
+              aria-current={r.slug === rubric.slug ? 'page' : undefined}
+            >
+              {r.title}
+            </a>
+          ))}
+        </nav>
+      </div>
+    </header>
+
+    <section class="section section--flush-top" aria-label={`Статьи: ${rubric.title}`}>
+      <div class="container">
+        <div class="rub__grid" data-reveal-group>
+          {articles.map((article) => <ArticleCard article={article} />)}
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <BottomDock />
+</Layout>
+
+<style>
+  .rub__crumbs {
+    display: flex;
+    gap: var(--s-2);
+    margin-bottom: var(--s-5);
+  }
+
+  .rub__crumbs a { color: inherit; }
+
+  .rub__title {
+    font-size: var(--fs-h1);
+    font-weight: var(--w-light);
+    line-height: var(--lh-display);
+    letter-spacing: var(--ls-display);
+    max-width: var(--measure-head);
+  }
+
+  .rub__lead {
+    margin-top: var(--s-5);
+    max-width: var(--measure-lead);
+  }
+
+  .rub__switch {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+    margin-top: var(--s-6);
+  }
+
+  /* Текущая рубрика — залитая пилюля: активное состояние, а не «жирнее» */
+  .rub__switch a[aria-current='page'] {
+    background: var(--fg);
+    color: var(--bg);
+  }
+
+  .rub__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s-7) clamp(8px, 1vw, 16px);
+    padding-bottom: calc(var(--safe-b) + 120px);
+  }
+
+  @media (min-width: 900px) {
+    .rub__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+</style>

@@ -40,6 +40,7 @@ export interface FeedAd {
 export type FeedItem = FeedVenue | FeedAd;
 
 const RL = '/venues/river-loft';
+const FD = '/venues/forest-dew';
 
 const venues: FeedVenue[] = [
   {
@@ -55,6 +56,21 @@ const venues: FeedVenue[] = [
     rating: 4.9,
     reviews: 37,
     media: [`${RL}/gal/g8.webp`, `${RL}/gal/g2.webp`, `${RL}/gal/g5.webp`, `${RL}/welcome/w1.webp`],
+  },
+  {
+    // Рейтинг и число отзывов — с карточки площадки в Яндекс.Картах.
+    kind: 'venue',
+    slug: 'forest-dew',
+    name: 'Лесная Роса',
+    city: 'Подольск',
+    type: 'Оранжерея',
+    capacityMax: 70,
+    capacity: 'до 70 гостей',
+    checkFrom: 9000,
+    avgCheck: 'от 9 000 ₽',
+    rating: 5,
+    reviews: 277,
+    media: [`${FD}/gal/g1.webp`, `${FD}/s2-hall.webp`, `${FD}/gal/g6.webp`, `${FD}/gal/g3.webp`],
   },
   {
     kind: 'venue',

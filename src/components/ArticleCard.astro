@@ -1,0 +1,84 @@
+---
+// Карточка статьи: хаб блога, рубрика и блок «Читайте по теме» на карточке
+// площадки — одна и та же плитка. Фото + рубрика + заголовок, без линий
+// и рамок: карточку отбивает кадр, а не бордер.
+import { Image } from 'astro:assets';
+import { resolveImage } from '../lib/images';
+import { articleUrl, rubricBySlug, type Article } from '../data/articles';
+
+interface Props {
+  article: Article;
+  /** крупная плитка: первая карточка хаба */
+  feature?: boolean;
+}
+
+const { article, feature = false } = Astro.props;
+const href = articleUrl(article);
+const rubric = rubricBySlug(article.rubricSlug);
+---
+
+<article class:list={['acard', { 'acard--feature': feature }]}>
+  <a class="acard__media media" href={href} tabindex="-1" aria-hidden="true">
+    <Image
+      src={resolveImage(article.cover.src)}
+      alt=""
+      widths={feature ? [560, 900, 1400] : [360, 560, 800]}
+      sizes={feature
+        ? '(min-width: 900px) 66vw, 100vw'
+        : '(min-width: 900px) 33vw, (min-width: 640px) 50vw, 100vw'}
+      loading="lazy"
+      decoding="async"
+    />
+  </a>
+
+  <div class="acard__body">
+    {rubric && <p class="acard__rubric t-caption">{rubric.title}</p>}
+    <h3 class="acard__title">
+      <a href={href}>{article.title}</a>
+    </h3>
+    <p class="acard__lead t-small">{article.lead}</p>
+  </div>
+</article>
+
+<style>
+  .acard {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+    min-width: 0;
+  }
+
+  .acard__media {
+    display: block;
+    aspect-ratio: 4 / 3;
+    background: var(--surface-dim);
+  }
+
+  .acard--feature .acard__media { aspect-ratio: 16 / 9; }
+
+  .acard__rubric {
+    font-weight: var(--w-medium);
+    margin-bottom: var(--s-2);
+  }
+
+  .acard__title {
+    font-size: var(--fs-h3);
+    font-weight: var(--w-regular);
+    line-height: 1.15;
+    max-width: 34ch;
+  }
+
+  .acard--feature .acard__title {
+    font-size: var(--fs-h2);
+    font-weight: var(--w-light);
+    max-width: var(--measure-head);
+  }
+
+  .acard__title a { text-decoration: none; }
+
+  /* Лид карточки — своя мера внутри модуля, токен страницы сюда не тянем */
+  .acard__lead {
+    margin-top: var(--s-3);
+    max-width: 46ch;
+  }
+</style>
