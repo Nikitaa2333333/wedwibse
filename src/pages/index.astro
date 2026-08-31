@@ -242,16 +242,18 @@ const perks = [
 
   /* Три колонки: логотип стоит ровно по центру экрана независимо от того,
      что справа (кабинет), — крайние колонки одинаковой ширины. */
+  /* Логотип слева, аккаунт справа — крайние колонки, середина пустая
+     и распирает их по краям контейнера. */
   .hero__bar {
     display: grid;
-    grid-template-columns: 1fr auto 1fr;
+    grid-template-columns: auto 1fr auto;
     align-items: center;
     gap: var(--s-4);
     padding-block: var(--s-4);
   }
 
   .hero__brand {
-    grid-column: 2;
+    grid-column: 1;
     display: inline-flex;
     text-decoration: none;
     color: inherit;
