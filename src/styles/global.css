@@ -1,0 +1,453 @@
+/* ============================================================
+   WED SECRETS — дизайн-система
+   Onest · швейцарская типографика · крупные фото · плавный моушн
+   ВСЁ управляется токенами. В компонентах чисел нет.
+   ============================================================ */
+
+:root {
+  /* ============ ЦВЕТ ============
+     Семантические пары --bg/--fg позволяют инвертировать любую
+     секцию одним классом (.theme-dark), не трогая компоненты. */
+  --paper: #ffffff;        /* бумага */
+  --ink: #111111;          /* чернила: весь текст на светлом */
+  --black: #0a0a0a;        /* глубокий чёрный: тёмные секции, кнопки */
+  --white: #ffffff;        /* текст на тёмном */
+  --line: #dcdcdc;         /* hairline на светлом */
+  --line-dark: #3a3a3a;    /* hairline на тёмном */
+
+  --bg: var(--paper);      /* текущий фон секции */
+  --fg: var(--ink);        /* текущий цвет текста */
+  --hairline: var(--line); /* текущая линия */
+
+  /* ============ ТИПОГРАФИКА ============
+     Onest. Заголовки плотные (700) — чёрный гротеск на нежном фоне.
+     Тонкое начертание только у гигантских цифр. Капс запрещён.
+     Резиновые размеры: clamp(мобила, резина, десктоп ~1280). */
+  --font-sans: 'Inter', 'Helvetica Neue', Helvetica, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --fs-display: clamp(52px, 9vw, 112px);  /* главный экранный заголовок */
+  --fs-h1: clamp(40px, 6vw, 72px);        /* заголовок секции крупный */
+  --fs-h2: clamp(26px, 3vw, 36px);        /* заголовок секции */
+  --fs-h3: clamp(19px, 1.8vw, 22px);      /* подзаголовок */
+  --fs-lead: clamp(17px, 1.6vw, 21px);    /* лид */
+  --fs-body: 17px;                        /* набор */
+  --fs-small: 14px;                       /* подписи, метки */
+  --fs-caption: 13px;                     /* сноски, колофон */
+
+  --w-thin: 200;     /* гигантские цифры-факты */
+  --w-light: 300;    /* второстепенные крупные строки */
+  --w-regular: 400;  /* набор */
+  --w-medium: 500;   /* служебное: кнопки, навигация, подписи плашек */
+  --w-semi: 600;     /* названия в плашках мозаики */
+  --w-bold: 700;     /* главные заголовки — плотный чёрный гротеск (реф. Exploring Minds) */
+
+  --lh-display: 1.04;
+  --lh-heading: 1.12;
+  --lh-body: 1.55;
+
+  --ls-base: -0.025em;   /* межбуквенное для всего текста */
+  --ls-display: -0.025em;
+
+  /* ============ МЕРА СТРОКИ (в ch, на сам текстовый элемент) ============ */
+  --measure-lead: 52ch;
+  --measure-text: 66ch;
+  --measure-head: 26ch;
+  --measure-prose: 72ch;   /* длинный ответ/описание в одну колонку */
+
+  /* ============ МАРКЕР СПИСКА ============
+     Один маркер на весь проект. Размер/отступ крутятся здесь,
+     в компонентах ни точек, ни list-style. */
+  --bullet-size: 5px;      /* сторона квадратика-маркера */
+  --bullet-indent: 20px;   /* отступ текста пункта от маркера */
+  --list-gap: 12px;        /* между пунктами (меньше, чем между абзацами) */
+
+  /* ============ СЕТКА СТРАНИЦЫ ============
+     --page-max    ширина контента (реальный вьюпорт пользователя ~1280)
+     --gutter      боковые поля до края экрана
+     --section-gap ПОЛНЫЙ вертикальный разрыв секции (не удваивать!) */
+  --page-max: 1200px;
+  --page-max-wide: 1440px;               /* для фото-полос почти в край */
+  --gutter: clamp(20px, 4vw, 48px);
+  --section-gap: clamp(56px, 9vw, 120px);
+  --section-gap-tight: clamp(32px, 5vw, 64px);
+
+  /* Колонка фильтров каталога подрядчиков (широкий экран): в потоке
+     страницы, листается вместе с карточками — внутреннего скролла нет
+     (реф. Ozon). Ширина — чтобы подпись пункта помещалась в одну строку. */
+  --sidebar-w: clamp(240px, 19vw, 280px);
+
+  /* Высота одной сцены скролл-блока (ПК): кадр справа закреплён на 100svh,
+     разница между этой ручкой и экраном — путь, который фото «висит».
+     Меньше 110svh — кадр почти не замирает, больше 200svh — много пустоты. */
+  --scene-span: 170svh;
+
+  /* ============ ШАГИ ОТСТУПОВ (внутри блоков) ============ */
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 64px;
+
+  /* ============ СКРУГЛЕНИЯ ============
+     Меняются в одном месте: захотели мягче — крутим тут. */
+  --radius-media: 0px;     /* фото и видео (сайт-режим, полосы во всю ширину) */
+  --radius-card: 0px;      /* карточки, плашки (сайт-режим) */
+  --radius-ui: 0px;        /* поля ввода и мелкий UI */
+  --radius-pill: 999px;    /* кнопки-пилюли */
+  --radius-tile: 0px;      /* плитки и карточки: скругления ЗАПРЕЩЕНЫ (кроме пилюль и кружков) */
+
+  /* ============ ПОВЕРХНОСТИ И НАКЛАДКИ ============
+     ЧБ-мир: белый, чёрный, фотография. Единственный цвет — свадебная
+     пудра --accent: плашки-акценты (герой визитки, CTA), текст на ней
+     остаётся чернильным. Крутить оттенок — только здесь. */
+  --accent: #f2d4cb;        /* пудровая плашка: тёплый свадебный акцент */
+  --surface: #ffffff;       /* белые плашки и капсулы */
+  --surface-dim: #f0eeea;   /* подложка под фото до загрузки */
+  --veil: linear-gradient(180deg, transparent, rgb(0 0 0 / 0.72)); /* затемнение под подписи на фото */
+  --shadow-float: 0 12px 40px -16px rgb(0 0 0 / 0.25); /* парящая капсула (нижнее меню и т.п.) */
+  --safe-b: env(safe-area-inset-bottom, 0px);
+
+  /* ============ МОУШН ============
+     Вся анимация сайта говорит на одном языке этих токенов.
+     Никаких ease-in-out по умолчанию и никаких 0.2s linear. */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);      /* expo-out: основной */
+  --ease-inout: cubic-bezier(0.65, 0, 0.35, 1);   /* для перекладок блоков */
+  --dur-fast: 0.35s;   /* ховеры, мелкий UI */
+  --dur-base: 0.8s;    /* появления элементов */
+  --dur-slow: 1.4s;    /* крупные экранные перекладки */
+  --reveal-shift: 40px;    /* сдвиг элемента до появления */
+  --reveal-stagger: 90ms;  /* шаг каскада между соседями */
+
+  /* ============ СЛОИ ============ */
+  --z-nav: 50;
+  --z-overlay: 100;
+
+  /* Высота липкой шапки каталога — SiteHeader сам обновляет это значение
+     через ResizeObserver. Нужно любому sticky-элементу под шапкой
+     (например переключателю категорий), чтобы встать вплотную под ней
+     без ручного подбора отступа. Здесь — запасное значение до первого JS-тика. */
+  --header-h: 64px;
+}
+
+/* ============ MOBILE-FIRST МОУШН-БЮДЖЕТ ============
+   Телефон — главная сцена: анимация короче, сдвиги меньше,
+   ничего тяжелее transform/opacity. Токены сами приглушают
+   моушн на узком экране — компоненты не трогаем.
+   Вау-эффекты десктопа заворачивать в:
+   @media (min-width: 1024px) and (pointer: fine) { ... } */
+@media (max-width: 768px) {
+  :root {
+    --dur-base: 0.55s;
+    --dur-slow: 0.9s;
+    --reveal-shift: 22px;
+    --reveal-stagger: 60ms;
+  }
+}
+
+/* ============ RESET ============ */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  overflow-x: hidden; /* ничего не вылезает за экран по горизонтали */
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  font-weight: var(--w-regular);
+  line-height: var(--lh-body);
+  letter-spacing: var(--ls-base);
+  color: var(--fg);
+  background: var(--bg);
+}
+
+h1, h2, h3, h4 {
+  font-weight: var(--w-light); /* тонкие изящные заголовки (Inter Light) */
+  line-height: var(--lh-heading);
+}
+
+img, video { max-width: 100%; display: block; border-radius: var(--radius-media); }
+
+a { color: var(--fg); }
+
+button { font-family: var(--font-sans); }
+
+/* Предохранитель: внутри набора ничего не жирнится и не наклоняется */
+p b, p strong, p em, p i,
+li > b, li > strong, li > em, li > i,
+dd b, dd strong, td b, td strong {
+  font-weight: inherit !important;
+  color: inherit !important;
+  font-style: normal;
+}
+
+/* ============ ТЁМНАЯ СЕКЦИЯ: один класс — вся инверсия ============ */
+.theme-dark {
+  --bg: var(--black);
+  --fg: var(--white);
+  --hairline: var(--line-dark);
+  background: var(--bg);
+  color: var(--fg);
+}
+
+/* ============ АКЦЕНТНАЯ СЕКЦИЯ: пудровая плашка ============
+   Тот же механизм, что theme-dark: --bg/--fg, компоненты не красим. */
+.theme-accent {
+  --bg: var(--accent);
+  --fg: var(--ink);
+  background: var(--bg);
+  color: var(--fg);
+}
+
+/* ============ КАРКАС ============ */
+.container {
+  width: 100%;
+  max-width: var(--page-max);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+.container--wide { max-width: var(--page-max-wide); }
+
+.section { padding-block: var(--section-gap); }
+.section--tight { padding-block: var(--section-gap-tight); }
+.section--flush-top { padding-top: 0; }
+
+/* ============ ТИПОГРАФИЧЕСКИЕ РОЛИ ============ */
+.t-display {
+  font-size: var(--fs-display);
+  font-weight: var(--w-light);
+  line-height: var(--lh-display);
+  letter-spacing: var(--ls-display);
+  max-width: var(--measure-head);
+}
+
+.t-h1 {
+  font-size: var(--fs-h1);
+  font-weight: var(--w-light);
+  line-height: var(--lh-display);
+  letter-spacing: var(--ls-display);
+  max-width: var(--measure-head);
+}
+
+.t-h2 {
+  font-size: var(--fs-h2);
+  font-weight: var(--w-semi);
+  max-width: var(--measure-head);
+}
+
+/* Гигантская цифра-факт (реф. «350») — единственное тонкое */
+.t-num {
+  font-size: clamp(72px, 14vw, 160px);
+  font-weight: var(--w-light);
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+}
+
+.t-lead {
+  font-size: var(--fs-lead);
+  max-width: var(--measure-lead);
+}
+
+.t-small { font-size: var(--fs-small); }
+.t-caption { font-size: var(--fs-caption); }
+
+/* ============ ФИРМЕННЫЙ МАРКЕР ФРАЗЫ ============
+   Единственный разрешённый способ выделить фразу: подложка цвета
+   выделения, без скруглений. Ни жирности, ни цветного текста. */
+::selection { background: var(--fg); color: var(--bg); }
+
+mark {
+  background: var(--fg);
+  color: var(--bg);
+  padding: 0.06em 0.22em;
+  border-radius: 0;
+}
+
+/* ============ СПИСОК ============
+   Только чистые перечисления. Если у пункта есть свой опознавательный
+   знак (заголовок, цифра) — маркер не ставим, линий между пунктами нет. */
+.list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--list-gap);
+  max-width: var(--measure-text);
+}
+
+.list > li {
+  position: relative;
+  padding-left: var(--bullet-indent);
+}
+
+.list > li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: calc(var(--lh-body) * 0.5em - var(--bullet-size) / 2);
+  width: var(--bullet-size);
+  height: var(--bullet-size);
+  background: currentColor;
+}
+
+/* ============ СТРОКИ-ОПРЕДЕЛЕНИЯ ============
+   «Метка — значение» через всю ширину: характеристики площадки,
+   прайс, доп. услуги. Линии здесь структурные (строки таблицы),
+   поэтому разрешены. */
+.rows {
+  display: grid;
+  border-top: 1px solid var(--hairline);
+}
+
+.rows__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+  padding-block: var(--s-4);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.rows__label {
+  font-size: var(--fs-small);
+  font-weight: var(--w-medium);
+}
+
+.rows__value { font-size: var(--fs-body); }
+
+@media (min-width: 768px) {
+  .rows__row {
+    grid-template-columns: minmax(0, 15ch) minmax(0, 1fr);
+    gap: var(--s-5);
+    align-items: baseline;
+  }
+}
+
+/* ============ ПИЛЮЛЯ ============ */
+.pill {
+  display: inline-block;
+  padding: 12px 28px;
+  font-size: var(--fs-small);
+  font-weight: var(--w-medium);
+  color: var(--fg);
+  background: transparent;
+  border: 1px solid var(--fg);
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out),
+              color var(--dur-fast) var(--ease-out);
+}
+
+@media (hover: hover) {
+  .pill:hover {
+    background: var(--fg);
+    color: var(--bg);
+  }
+}
+
+/* тач: мгновенный отклик нажатия вместо ховера */
+.pill:active {
+  background: var(--fg);
+  color: var(--bg);
+}
+
+.pill--lg { padding: 16px 40px; font-size: var(--fs-body); }
+.pill--sm { padding: 8px 16px; font-size: var(--fs-caption); }
+
+/* Круглая кнопка-иконка (аккаунт, назад) — та же пилюля, только квадратная */
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg);
+  background: transparent;
+  border: 1px solid var(--fg);
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out),
+              color var(--dur-fast) var(--ease-out);
+}
+
+.icon-btn svg { width: 18px; height: 18px; }
+
+@media (hover: hover) {
+  .icon-btn:hover { background: var(--fg); color: var(--bg); }
+}
+
+/* ============ REVEAL: появление при скролле ============
+   Разметка: data-reveal на элементе; data-reveal-group на родителе —
+   дети появляются каскадом с шагом --reveal-stagger.
+   Класс .is-inview ставит скрипт из Layout. */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(var(--reveal-shift));
+  transition: opacity var(--dur-base) var(--ease-out),
+              transform var(--dur-base) var(--ease-out);
+  transition-delay: calc(var(--reveal-index, 0) * var(--reveal-stagger));
+}
+
+[data-reveal].is-inview {
+  opacity: 1;
+  transform: none;
+}
+
+/* ============ ФОТО-ПРИМИТИВЫ ============ */
+.media {
+  overflow: hidden;
+  border-radius: var(--radius-media);
+}
+
+.media > img,
+.media > video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--dur-slow) var(--ease-out);
+}
+
+/* мягкий зум фотографии по ховеру — только там, где ховер существует */
+@media (hover: hover) {
+  a:hover > .media > img,
+  .media--zoom:hover > img { transform: scale(1.04); }
+}
+
+/* Затемнение нижней части фото под подписи — один на весь проект.
+   Родителю нужен position: relative. */
+.veil {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 62%;
+  background: var(--veil);
+  pointer-events: none;
+}
+
+/* Метка на фото (цена, стиль): пилюльная форма, но не кнопка.
+   Кладётся поверх .veil, поэтому всегда белая. */
+.photo-tag {
+  display: inline-block;
+  padding: 5px 12px;
+  font-size: var(--fs-caption);
+  font-weight: var(--w-medium);
+  color: var(--white);
+  border: 1px solid var(--white);
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+
+/* ============ ДОСТУПНОСТЬ ============ */
+:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  [data-reveal] { opacity: 1; transform: none; }
+}

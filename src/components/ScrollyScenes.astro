@@ -1,0 +1,154 @@
+---
+// СЦЕНЫ — главный модуль карточки подрядчика.
+// ПК: справа кадр во весь экран, он «висит» неподвижно, пока слева
+// листается текст сцены; на границе сцен кадр сменяется следующим.
+// Мобилка: та же последовательность обычным потоком — кадр, затем текст.
+// Сделано без JS: sticky + грид-строки. Одно изображение на сцену,
+// дублей в разметке нет — мобильный трафик не удваивается.
+import { Image } from 'astro:assets';
+import type { VenueScene } from '../data/venues';
+import { resolveImage } from '../lib/images';
+
+interface Props {
+  kicker: string;
+  title: string;
+  scenes: VenueScene[];
+}
+
+const { kicker, title, scenes } = Astro.props;
+---
+
+<section class="scenes section" id="o-ploshchadke">
+  <div class="container container--wide">
+    <header class="scenes__head">
+      <p class="scenes__kicker t-caption">{kicker}</p>
+      <h2 class="scenes__title">{title}</h2>
+    </header>
+
+    <div class="scenes__list">
+      {
+        scenes.map((scene, i) => (
+          <article class="scene" style={`--row:${i + 1}`}>
+            <figure class="scene__shot media">
+              <Image
+                src={resolveImage(scene.image)}
+                alt={scene.alt}
+                widths={[480, 800, 1200, 1600]}
+                sizes="(min-width: 1024px) 55vw, 100vw"
+                loading={i === 0 ? 'eager' : 'lazy'}
+                decoding="async"
+              />
+            </figure>
+
+            <div class="scene__text" data-reveal>
+              <p class="scene__num t-caption">{scene.num}</p>
+              <h3 class="scene__name">{scene.title}</h3>
+
+              {scene.body.map((p) => (
+                <p class="scene__p">{p}</p>
+              ))}
+
+              {scene.facts && (
+                <dl class="rows scene__facts">
+                  {scene.facts.map((fact) => (
+                    <div class="rows__row">
+                      <dt class="rows__label">{fact.label}</dt>
+                      <dd class="rows__value">{fact.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
+            </div>
+          </article>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  /* Сцены — полноширинный модуль: потолка ширины нет, поля даёт
+     только сам контейнер, и кадр их гасит, уходя в край экрана. */
+  .scenes :global(.container) { max-width: none; }
+
+  .scenes__head { margin-bottom: var(--section-gap-tight); }
+
+  .scenes__kicker {
+    font-weight: var(--w-medium);
+    margin-bottom: var(--s-3);
+  }
+
+  .scenes__title {
+    font-size: var(--fs-h1);
+    font-weight: var(--w-light);
+    line-height: var(--lh-display);
+    letter-spacing: var(--ls-display);
+    max-width: var(--measure-head);
+  }
+
+  /* ============ МОБИЛКА: кадр, потом текст ============ */
+  .scene + .scene { margin-top: var(--section-gap); }
+
+  .scene__shot {
+    aspect-ratio: 4 / 5;
+    /* кадр в край экрана: гасим боковые поля контейнера */
+    margin-inline: calc(var(--gutter) * -1);
+    margin-bottom: var(--s-6);
+  }
+
+  .scene__num {
+    font-weight: var(--w-medium);
+    margin-bottom: var(--s-3);
+  }
+
+  .scene__name {
+    font-size: clamp(24px, 3vw, 34px);
+    font-weight: var(--w-light);
+    line-height: var(--lh-heading);
+    letter-spacing: var(--ls-display);
+    margin-bottom: var(--s-5);
+  }
+
+  /* колонка тянется вместе с экраном — меру строки держит сам абзац */
+  .scene__p { max-width: var(--measure-text); }
+
+  .scene__p + .scene__p { margin-top: var(--s-4); }
+
+  .scene__facts { margin-top: var(--s-6); }
+
+  /* ============ ПК: закреплённый кадр справа ============ */
+  @media (min-width: 1024px) {
+    .scenes__list {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      column-gap: var(--s-8);
+    }
+
+    /* сцена растворяется, её половины становятся ячейками общей сетки */
+    .scene { display: contents; }
+
+    .scene__text {
+      grid-column: 1;
+      grid-row: var(--row);
+      min-height: var(--scene-span);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding-block: var(--s-8);
+    }
+
+    .scene__shot {
+      grid-column: 2;
+      grid-row: var(--row);
+      position: sticky;
+      top: 0;
+      align-self: start;
+      height: 100svh;
+      aspect-ratio: auto;
+      margin-block: 0;
+      margin-left: 0;
+      /* правым краем кадр выходит в край экрана */
+      margin-right: calc(var(--gutter) * -1);
+    }
+  }
+</style>

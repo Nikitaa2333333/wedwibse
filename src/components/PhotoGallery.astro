@@ -1,0 +1,78 @@
+---
+// Галерея площадки. Переиспользуемый модуль: тот же список кадров
+// ляжет в карточку подрядчика и в подборку на посадочной.
+import { Image } from 'astro:assets';
+import type { Venue } from '../data/venues';
+import { resolveImage } from '../lib/images';
+
+interface Props {
+  kicker: string;
+  title: string;
+  items: Venue['gallery'];
+}
+
+const { kicker, title, items } = Astro.props;
+---
+
+<section class="gal section" id="foto">
+  <div class="container container--wide">
+    <header class="gal__head">
+      <p class="gal__kicker t-caption">{kicker}</p>
+      <h2 class="gal__title">{title}</h2>
+    </header>
+
+    <div class="gal__grid">
+      {
+        items.map((item) => (
+          <figure class:list={['gal__cell', 'media', item.wide && 'gal__cell--wide']}>
+            <Image
+              src={resolveImage(item.src)}
+              alt={item.alt}
+              widths={item.wide ? [640, 1000, 1600] : [360, 560, 800]}
+              sizes={item.wide ? '100vw' : '(min-width: 900px) 33vw, 50vw'}
+              loading="lazy"
+              decoding="async"
+            />
+          </figure>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  .gal__head { margin-bottom: var(--section-gap-tight); }
+
+  .gal__kicker {
+    font-weight: var(--w-medium);
+    margin-bottom: var(--s-3);
+  }
+
+  .gal__title {
+    font-size: var(--fs-h1);
+    font-weight: var(--w-light);
+    line-height: var(--lh-display);
+    letter-spacing: var(--ls-display);
+    max-width: var(--measure-head);
+  }
+
+  /* Кадры идут в край страницы: гасим боковые поля контейнера */
+  .gal__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s-3);
+    margin-inline: calc(var(--gutter) * -1);
+  }
+
+  .gal__cell { aspect-ratio: 3 / 4; }
+
+  .gal__cell--wide {
+    grid-column: 1 / -1;
+    aspect-ratio: 16 / 9;
+  }
+
+  @media (min-width: 900px) {
+    .gal__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .gal__cell--wide { aspect-ratio: 21 / 9; }
+  }
+</style>

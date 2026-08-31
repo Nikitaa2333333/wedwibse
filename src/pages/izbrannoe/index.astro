@@ -1,0 +1,551 @@
+---
+// ИЗБРАННОЕ — раздел «Корзина» из ТЗ (wedwibse-app-scope): копит выбранные
+// площадки и подрядчиков, даёт сравнить их между собой.
+// Персональный экран без бэкенда — источник данных localStorage
+// (см. src/lib/favorites.ts), поэтому вся разметка ниже — пустой каркас,
+// который наполняет клиентский скрипт. SEO это не касается: раздел
+// открывается из BottomDock, а не приходит из поиска.
+import Layout from '../../layouts/Layout.astro';
+import BottomDock from '../../components/BottomDock.astro';
+---
+
+<Layout title="Избранное — WED Secrets" description="Площадки и подрядчики, которые вы сохранили — сравните их между собой.">
+  <Fragment slot="head">
+    <meta name="robots" content="noindex" />
+  </Fragment>
+
+  <header class="bar">
+    <div class="bar__row">
+      <a class="icon-btn" href="/" aria-label="На главную">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+          <path d="M14.5 5.5 8 12l6.5 6.5" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </a>
+      <h1 class="bar__title">Избранное</h1>
+      <a class="icon-btn" href="#" aria-label="Аккаунт">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+          <circle cx="12" cy="8" r="3.6" />
+          <path d="M4.5 20c1.6-3.6 5-5.4 7.5-5.4s5.9 1.8 7.5 5.4" stroke-linecap="round" />
+        </svg>
+      </a>
+    </div>
+
+    <div class="bar__tabs" data-tabs role="tablist" aria-label="Категории избранного"></div>
+    <button class="pill pill--sm bar__compare" type="button" data-compare-toggle hidden>Сравнить</button>
+  </header>
+
+  <main class="wrap">
+    <p class="empty t-small" data-empty>
+      Пока пусто. Добавляйте площадки и подрядчиков сердечком на карточке — они появятся здесь,
+      и их можно будет сравнить между собой.
+    </p>
+
+    <div class="grid" data-grid hidden></div>
+
+    <div class="cmp" data-compare hidden></div>
+  </main>
+
+  <div class="compare-bar" data-compare-bar hidden>
+    <span class="t-small" data-compare-count>Выбрано: 0</span>
+    <button class="pill pill--sm" type="button" data-compare-show disabled>Сравнить</button>
+    <button class="icon-btn compare-bar__cancel" type="button" data-compare-cancel aria-label="Отменить сравнение">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+        <path d="M6 6l12 12M18 6 6 18" stroke-linecap="round" />
+      </svg>
+    </button>
+  </div>
+
+  <BottomDock active="saved" />
+</Layout>
+
+<style is:global>
+  /* ============ ШАПКА ============ */
+  .bar {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-nav);
+    padding: var(--s-3) var(--gutter);
+    background: var(--surface);
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  .bar__row {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    max-width: var(--page-max);
+    margin-inline: auto;
+  }
+
+  .bar__title {
+    flex: 1;
+    font-size: var(--fs-h3);
+    font-weight: var(--w-light);
+  }
+
+  .bar__tabs {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-top: var(--s-3);
+    max-width: var(--page-max);
+    margin-inline: auto;
+  }
+
+  .bar__tabs::-webkit-scrollbar { display: none; }
+  .bar__tabs .pill { white-space: nowrap; }
+  .bar__tabs .pill.is-active { background: var(--fg); color: var(--bg); }
+
+  .bar__compare {
+    display: block;
+    margin: var(--s-3) auto 0;
+    max-width: var(--page-max);
+  }
+
+  .bar__compare[hidden] { display: none; }
+
+  /* ============ ПУСТОЕ СОСТОЯНИЕ ============ */
+  .empty {
+    max-width: var(--measure-text);
+    padding: var(--s-7) var(--gutter);
+  }
+
+  .empty[hidden] { display: none; }
+
+  /* ============ СЕТКА КАРТОЧЕК ============ */
+  .wrap {
+    max-width: none;
+    padding: var(--s-4) clamp(8px, 1vw, 16px) calc(var(--safe-b) + 160px);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--s-6) clamp(8px, 1vw, 12px);
+  }
+
+  .grid[hidden] { display: none; }
+
+  @media (min-width: 640px) {
+    .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  @media (min-width: 1024px) {
+    .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+
+  /* ============ КАРТОЧКА ИЗБРАННОГО ============ */
+  .fcard {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+    min-width: 0;
+  }
+
+  .fcard__media {
+    position: relative;
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    background: var(--surface-dim);
+  }
+
+  .fcard__link { display: block; width: 100%; height: 100%; }
+
+  .fcard__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .fcard__remove {
+    position: absolute;
+    top: var(--s-3);
+    right: var(--s-3);
+    z-index: 1;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1.5px solid var(--white);
+    border-radius: 50%;
+    background: rgb(0 0 0 / 0.25);
+    color: var(--white);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    filter: drop-shadow(0 1px 8px rgb(0 0 0 / 0.45));
+    transition: transform var(--dur-fast) var(--ease-out);
+  }
+
+  .fcard__remove:active { transform: scale(0.85); }
+
+  .fcard__check {
+    position: absolute;
+    top: var(--s-3);
+    left: var(--s-3);
+    z-index: 1;
+    display: none;
+  }
+
+  .grid.is-compare .fcard__check { display: block; }
+  .grid.is-compare .fcard__remove { display: none; }
+
+  .fcard__check input {
+    position: absolute;
+    inset: 0;
+    width: 28px;
+    height: 28px;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .fcard__check-mark {
+    display: flex;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1.5px solid var(--white);
+    background: rgb(0 0 0 / 0.25);
+    filter: drop-shadow(0 1px 8px rgb(0 0 0 / 0.45));
+  }
+
+  .fcard__check input:checked + .fcard__check-mark {
+    background: var(--white);
+    border-color: var(--white);
+  }
+
+  .fcard__check-mark::after {
+    content: '';
+    margin: auto;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--ink);
+    opacity: 0;
+  }
+
+  .fcard__check input:checked + .fcard__check-mark::after { opacity: 1; }
+
+  .fcard__top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--s-3);
+  }
+
+  .fcard__name {
+    font-size: var(--fs-h3);
+    font-weight: var(--w-regular);
+    line-height: 1.15;
+  }
+
+  .fcard__rate {
+    font-size: var(--fs-small);
+    font-weight: var(--w-medium);
+    flex-shrink: 0;
+  }
+
+  .fcard__meta { margin-top: 2px; }
+
+  /* ============ ПЛАВАЮЩАЯ ПАНЕЛЬ СРАВНЕНИЯ ============ */
+  .compare-bar {
+    position: fixed;
+    left: 50%;
+    bottom: calc(var(--safe-b) + var(--s-5) + 64px);
+    transform: translateX(-50%);
+    z-index: var(--z-nav);
+    display: flex;
+    align-items: center;
+    gap: var(--s-4);
+    padding: var(--s-2) var(--s-2) var(--s-2) var(--s-4);
+    border-radius: var(--radius-pill);
+    background: var(--ink);
+    color: var(--white);
+    box-shadow: var(--shadow-float);
+    max-width: calc(100vw - var(--s-5) * 2);
+  }
+
+  .compare-bar[hidden] { display: none; }
+
+  .compare-bar .pill {
+    border-color: var(--white);
+    color: var(--white);
+    white-space: nowrap;
+  }
+
+  @media (hover: hover) {
+    .compare-bar .pill:hover { background: var(--white); color: var(--ink); }
+  }
+
+  .compare-bar .pill:disabled {
+    pointer-events: none;
+    border-color: var(--line-dark);
+    color: var(--line-dark);
+  }
+
+  .compare-bar__cancel {
+    border-color: var(--white);
+    color: var(--white);
+  }
+
+  @media (hover: hover) {
+    .compare-bar__cancel:hover { background: var(--white); color: var(--ink); }
+  }
+
+  /* ============ ТАБЛИЦА СРАВНЕНИЯ ============ */
+  .cmp {
+    padding: var(--s-4) clamp(8px, 1vw, 16px) calc(var(--safe-b) + 160px);
+  }
+
+  .cmp[hidden] { display: none; }
+
+  .cmp__back { margin: 0 0 var(--s-5); }
+
+  .cmp__scroll {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .cmp__scroll::-webkit-scrollbar { display: none; }
+
+  .cmp__table {
+    display: grid;
+    grid-template-columns: minmax(110px, 140px) repeat(var(--cols), minmax(160px, 1fr));
+    border-top: 1px solid var(--hairline);
+    min-width: 100%;
+    width: max-content;
+  }
+
+  .cmp__row { display: contents; }
+
+  .cmp__label,
+  .cmp__cell {
+    padding: var(--s-4);
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  .cmp__label {
+    position: sticky;
+    left: 0;
+    font-size: var(--fs-small);
+    font-weight: var(--w-medium);
+    background: var(--bg);
+  }
+
+  .cmp__cell { min-width: 0; }
+  .cmp__cell a { text-decoration: none; }
+
+  .cmp__img {
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+  }
+</style>
+
+<script>
+  import { getFavorites, removeFavorite, CHANGE_EVENT, STORAGE_KEY, type FavoriteItem } from '../../lib/favorites';
+
+  const emptyEl = document.querySelector<HTMLElement>('[data-empty]');
+  const gridEl = document.querySelector<HTMLElement>('[data-grid]');
+  const tabsEl = document.querySelector<HTMLElement>('[data-tabs]');
+  const compareToggleBtn = document.querySelector<HTMLButtonElement>('[data-compare-toggle]');
+  const compareBar = document.querySelector<HTMLElement>('[data-compare-bar]');
+  const compareCountEl = document.querySelector<HTMLElement>('[data-compare-count]');
+  const compareShowBtn = document.querySelector<HTMLButtonElement>('[data-compare-show]');
+  const compareCancelBtn = document.querySelector<HTMLButtonElement>('[data-compare-cancel]');
+  const compareEl = document.querySelector<HTMLElement>('[data-compare]');
+
+  let items: FavoriteItem[] = [];
+  let activeTab = 'all';
+  let compareMode = false;
+  const selected = new Set<string>();
+
+  function escapeHtml(s: string): string {
+    return s.replace(/[&<>"']/g, (c) => (
+      { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string
+    ));
+  }
+
+  function currentItems(): FavoriteItem[] {
+    return activeTab === 'all' ? items : items.filter((i) => i.cat === activeTab);
+  }
+
+  function updateCompareToggleVisibility() {
+    if (!compareToggleBtn) return;
+    const eligible = activeTab !== 'all' && currentItems().length >= 2;
+    compareToggleBtn.hidden = !eligible || compareMode;
+  }
+
+  function updateCompareBar() {
+    if (compareCountEl) compareCountEl.textContent = `Выбрано: ${selected.size}`;
+    if (compareShowBtn) compareShowBtn.disabled = selected.size < 2;
+  }
+
+  function exitCompareMode() {
+    compareMode = false;
+    selected.clear();
+    gridEl?.classList.remove('is-compare');
+    gridEl?.querySelectorAll<HTMLInputElement>('[data-compare-check]').forEach((i) => { i.checked = false; });
+    compareBar?.setAttribute('hidden', '');
+    updateCompareToggleVisibility();
+  }
+
+  function renderTabs() {
+    if (!tabsEl) return;
+    const cats = Array.from(new Set(items.map((i) => i.cat)));
+    const catLabel = (c: string) => items.find((i) => i.cat === c)?.catLabel ?? c;
+    const tabs = [
+      { key: 'all', label: 'Все', count: items.length },
+      ...cats.map((c) => ({ key: c, label: catLabel(c), count: items.filter((i) => i.cat === c).length })),
+    ];
+
+    tabsEl.innerHTML = tabs
+      .map((t) => `<button class="pill pill--sm${t.key === activeTab ? ' is-active' : ''}" type="button" role="tab" aria-selected="${t.key === activeTab}" data-tab="${escapeHtml(t.key)}">${escapeHtml(t.label)} (${t.count})</button>`)
+      .join('');
+
+    tabsEl.querySelectorAll<HTMLButtonElement>('[data-tab]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        activeTab = btn.dataset.tab!;
+        exitCompareMode();
+        renderTabs();
+        renderGrid();
+        showGrid();
+      });
+    });
+  }
+
+  function renderGrid() {
+    if (!gridEl) return;
+    const list = currentItems();
+
+    gridEl.innerHTML = list
+      .map((it) => `
+        <article class="fcard" data-id="${escapeHtml(it.id)}">
+          <div class="fcard__media">
+            <a class="fcard__link" href="${escapeHtml(it.href)}">
+              <img src="${escapeHtml(it.img)}" alt="${escapeHtml(it.name)}" loading="lazy" decoding="async" />
+            </a>
+            <span class="veil" aria-hidden="true"></span>
+            <label class="fcard__check">
+              <input type="checkbox" data-compare-check value="${escapeHtml(it.id)}" aria-label="Добавить «${escapeHtml(it.name)}» к сравнению" />
+              <span class="fcard__check-mark" aria-hidden="true"></span>
+            </label>
+            <button class="fcard__remove" type="button" data-remove="${escapeHtml(it.id)}" aria-label="Убрать «${escapeHtml(it.name)}» из избранного">&times;</button>
+          </div>
+          <div class="fcard__body">
+            <div class="fcard__top">
+              <h2 class="fcard__name">${escapeHtml(it.name)}</h2>
+              <span class="fcard__rate">★ ${it.rating.toFixed(1)}</span>
+            </div>
+            <p class="fcard__meta t-caption">${escapeHtml(it.meta)} · ${escapeHtml(it.price)}</p>
+          </div>
+        </article>
+      `)
+      .join('');
+
+    gridEl.querySelectorAll<HTMLButtonElement>('[data-remove]').forEach((btn) => {
+      btn.addEventListener('click', () => removeFavorite(btn.dataset.remove!));
+    });
+
+    gridEl.querySelectorAll<HTMLInputElement>('[data-compare-check]').forEach((input) => {
+      input.addEventListener('change', () => {
+        if (input.checked) selected.add(input.value);
+        else selected.delete(input.value);
+        updateCompareBar();
+      });
+    });
+
+    gridEl.classList.toggle('is-compare', compareMode);
+    updateCompareToggleVisibility();
+  }
+
+  function renderCompare() {
+    if (!compareEl) return;
+    const chosen = items.filter((i) => selected.has(i.id));
+
+    const rows: { label: string; render: (i: FavoriteItem) => string }[] = [
+      { label: 'Фото', render: (i) => `<img class="cmp__img" src="${escapeHtml(i.img)}" alt="${escapeHtml(i.name)}" loading="lazy" decoding="async" />` },
+      { label: 'Название', render: (i) => `<a href="${escapeHtml(i.href)}">${escapeHtml(i.name)}</a>` },
+      { label: 'Рейтинг', render: (i) => `★ ${i.rating.toFixed(1)}` },
+      { label: 'Цена', render: (i) => escapeHtml(i.price) },
+      { label: 'Детали', render: (i) => escapeHtml(i.meta) },
+    ];
+
+    compareEl.innerHTML = `
+      <button class="pill pill--sm cmp__back" type="button" data-compare-back>← К списку</button>
+      <div class="cmp__scroll">
+        <div class="cmp__table" style="--cols:${chosen.length}">
+          ${rows
+            .map((row) => `
+              <div class="cmp__row">
+                <div class="cmp__label">${row.label}</div>
+                ${chosen.map((i) => `<div class="cmp__cell">${row.render(i)}</div>`).join('')}
+              </div>
+            `)
+            .join('')}
+        </div>
+      </div>
+    `;
+
+    compareEl.querySelector<HTMLButtonElement>('[data-compare-back]')?.addEventListener('click', showGrid);
+
+    compareEl.hidden = false;
+    if (gridEl) gridEl.hidden = true;
+    tabsEl?.setAttribute('hidden', '');
+    compareBar?.setAttribute('hidden', '');
+  }
+
+  function showGrid() {
+    if (compareEl) compareEl.hidden = true;
+    if (gridEl) gridEl.hidden = false;
+    tabsEl?.removeAttribute('hidden');
+    exitCompareMode();
+  }
+
+  function render() {
+    items = getFavorites();
+    const empty = items.length === 0;
+
+    emptyEl?.toggleAttribute('hidden', !empty);
+    if (gridEl) gridEl.hidden = empty;
+    if (compareEl) compareEl.hidden = true;
+    tabsEl?.toggleAttribute('hidden', empty);
+    compareMode = false;
+    selected.clear();
+    compareBar?.setAttribute('hidden', '');
+
+    if (empty) {
+      if (tabsEl) tabsEl.innerHTML = '';
+      compareToggleBtn && (compareToggleBtn.hidden = true);
+      return;
+    }
+
+    const cats = new Set(items.map((i) => i.cat));
+    if (activeTab !== 'all' && !cats.has(activeTab)) activeTab = 'all';
+
+    renderTabs();
+    renderGrid();
+  }
+
+  compareToggleBtn?.addEventListener('click', () => {
+    compareMode = true;
+    selected.clear();
+    gridEl?.classList.add('is-compare');
+    compareToggleBtn.hidden = true;
+    compareBar?.removeAttribute('hidden');
+    updateCompareBar();
+  });
+
+  compareCancelBtn?.addEventListener('click', exitCompareMode);
+  compareShowBtn?.addEventListener('click', renderCompare);
+
+  window.addEventListener(CHANGE_EVENT, render);
+  window.addEventListener('storage', (e) => { if (e.key === STORAGE_KEY) render(); });
+
+  render();
+</script>

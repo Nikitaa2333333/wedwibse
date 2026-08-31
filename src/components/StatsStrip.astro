@@ -1,0 +1,51 @@
+---
+// Полоса цифр-фактов. Единственное место, где живёт тонкое гигантское
+// начертание (--w-thin через .t-num).
+import type { Venue } from '../data/venues';
+
+interface Props {
+  items: Venue['stats'];
+}
+
+const { items } = Astro.props;
+---
+
+<section class="stats section section--tight">
+  <div class="container container--wide">
+    <div class="stats__grid" data-reveal-group>
+      {
+        items.map((item) => (
+          <div class="stat">
+            <span class="stat__value t-num">{item.value}</span>
+            <span class="stat__label t-small">{item.label}</span>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  .stats__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s-6) var(--s-5);
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+  }
+
+  .stat__value {
+    font-size: clamp(46px, 8vw, 92px);
+    letter-spacing: var(--ls-display);
+  }
+
+  .stat__label { font-weight: var(--w-medium); }
+
+  @media (min-width: 900px) {
+    .stats__grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  }
+</style>

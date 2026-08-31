@@ -1,0 +1,66 @@
+---
+// «Что важно знать» — ограничения площадки. Инверсия секции одним
+// классом .theme-dark. У пункта есть свой заголовок, поэтому маркеры
+// не ставим, линий между пунктами нет.
+import type { Venue } from '../data/venues';
+
+interface Props {
+  kicker: string;
+  title: string;
+  rules: Venue['rules'];
+}
+
+const { kicker, title, rules } = Astro.props;
+---
+
+<section class="rules section theme-dark" id="pravila">
+  <div class="container">
+    <header class="rules__head">
+      <p class="rules__kicker t-caption">{kicker}</p>
+      <h2 class="rules__title">{title}</h2>
+    </header>
+
+    <div class="rules__grid" data-reveal-group>
+      {
+        rules.map((rule) => (
+          <article class="rule">
+            <h3 class="rule__name">{rule.title}</h3>
+            <p class="rule__text">{rule.text}</p>
+          </article>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  .rules__head { margin-bottom: var(--section-gap-tight); }
+
+  .rules__kicker {
+    font-weight: var(--w-medium);
+    margin-bottom: var(--s-3);
+  }
+
+  .rules__title {
+    font-size: var(--fs-h1);
+    font-weight: var(--w-light);
+    line-height: var(--lh-display);
+    letter-spacing: var(--ls-display);
+    max-width: var(--measure-head);
+  }
+
+  .rules__grid {
+    display: grid;
+    gap: var(--s-7) var(--s-8);
+  }
+
+  .rule__name {
+    font-size: var(--fs-h3);
+    font-weight: var(--w-light);
+    margin-bottom: var(--s-3);
+  }
+
+  @media (min-width: 900px) {
+    .rules__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+</style>

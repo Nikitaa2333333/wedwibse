@@ -1,17 +1,601 @@
 ---
+import { Image } from 'astro:assets';
+import Layout from '../layouts/Layout.astro';
+import BottomDock from '../components/BottomDock.astro';
 
+// Галерея: колонки фотографий, каждая едет со своей скоростью.
+// Кадры не наезжают друг на друга; крайние колонки срезаются краем экрана.
+// ratio — пропорция кадра, off — стартовый сдвиг колонки вниз (vh).
+import { collectGalShots, collectWelcomeShots } from '../lib/imageSize';
+
+// Настоящие фото Ривер Лофт. Пропорции читаются из самих файлов —
+// вёрстка подстраивается под кадр, а не кадр под вёрстку.
+const pool = [...collectGalShots(), ...collectWelcomeShots()];
+
+// w — доля ширины колонки. Широкие колонки просят горизонтальные кадры,
+// узкие — вертикальные: так каждый снимок попадает в свою форму.
+const columnDefs = [
+  { w: 0.85, speed: 1.0, off: 0 },
+  { w: 1.5, speed: 1.5, off: 14 },
+  { w: 0.8, speed: 0.7, off: 5 },
+  { w: 1.35, speed: 1.3, off: 20 },
+];
+
+const PER_COLUMN = 5;
+const left = [...pool];
+
+// Для каждой ячейки берём кадр, чья пропорция ближе к «аппетиту» колонки:
+// широкой нужен горизонтальный (ratio ~1.4), узкой — вертикальный (~0.7).
+const columns = columnDefs.map((col) => {
+  const want = col.w >= 1.1 ? 1.4 : 0.72;
+  const shots = [];
+
+  for (let i = 0; i < PER_COLUMN && left.length; i++) {
+    let best = 0;
+    for (let j = 1; j < left.length; j++) {
+      if (Math.abs(left[j].ratio - want) < Math.abs(left[best].ratio - want)) best = j;
+    }
+    shots.push(left.splice(best, 1)[0]);
+  }
+
+  return { ...col, shots };
+});
+
+const galTemplate = columnDefs.map((c) => `${c.w}fr`).join(' ');
+
+// ПРЕИМУЩЕСТВА: крупные плашки в два столбца с минимальным стыком —
+// сразу на главном экране показываем, что умеет сервис.
+const perks = [
+  {
+    kind: 'photo',
+    name: 'Площадки',
+    tag: 'Выберите площадку под&nbsp;свой формат',
+    imgs: ['/rl-hero-pt-5.webp', '/rl-hero-pt-6.webp', '/rl-hero-pt-7.webp', '/rl-hero-pt-8.webp'],
+    alt: 'Зал площадки Ривер Лофт',
+    href: '/moskva/ploshchadki/',
+  },
+  {
+    kind: 'dark',
+    name: 'Специалисты',
+    tag: '30+ направлений',
+    words: ['Ведущие', 'Хореографы', 'Диджеи', 'Фотографы', 'Декораторы'],
+    href: '#',
+  },
+];
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+<Layout title="Свадебные Секреты — лучшие площадки и специалисты">
+  <div class="page">
+    <!-- ГЕРОЙ: шапка (бренд / меню / метка) + крупный заголовок с лидом
+         сразу под ней — без пустого экрана, плашки идут следующим блоком. -->
+    <section class="hero container--wide">
+      <header class="hero__bar">
+        <a class="hero__brand" href="/">WED Secrets</a>
+
+        <nav class="hero__nav t-small" aria-label="Разделы">
+          <a href="/moskva/ploshchadki/">Площадки</a>
+          <a href="#">Специалисты</a>
+          <a href="#">О сервисе</a>
+        </nav>
+
+        <div class="hero__meta">
+          <span class="hero__place t-small">Москва · Подмосковье</span>
+          <a class="hero__account" href="#" aria-label="Аккаунт">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+              <circle cx="12" cy="8" r="3.6" />
+              <path d="M4.5 20c1.6-3.6 5-5.4 7.5-5.4s5.9 1.8 7.5 5.4" stroke-linecap="round" />
+            </svg>
+          </a>
+        </div>
+      </header>
+
+      <div class="hero__intro">
+        <h1 class="hero__title">Всё для вашей свадьбы</h1>
+
+        <a class="hero__hint" href="/izbrannoe/">
+          <span class="perk__heart-wrap">
+            <svg class="perk__heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+              <path
+                d="M12 20.2s-7.2-4.4-9.7-8.6C.7 8 2 4.3 5.4 3.5c2.4-.6 4.6.5 6.6 3.2 2-2.7 4.2-3.8 6.6-3.2 3.4.8 4.7 4.5 3.1 8.1-2.5 4.2-9.7 8.6-9.7 8.6Z"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <span class="perk__badge" aria-hidden="true">1</span>
+          </span>
+          <span class="hero__hint-text t-small">Сохраняйте в избранное — закажете и напишете в один клик</span>
+        </a>
+      </div>
+    </section>
+
+    <!-- ПРЕИМУЩЕСТВА: крупные плашки, минимальный стык -->
+    <section class="perks container--wide">
+      <div class="perks__grid" data-reveal-group>
+        <a class="perk perk--photo" href={perks[0].href}>
+          <span class="perk__photo-track">
+            {perks[0].imgs.concat(perks[0].imgs).map((src, i) => (
+              <img src={src} alt={perks[0].alt} loading={i === 0 ? 'eager' : 'lazy'} decoding="async" aria-hidden={i >= perks[0].imgs.length} />
+            ))}
+          </span>
+          <span class="veil" aria-hidden="true"></span>
+          <span class="perk__index" aria-hidden="true">(01)</span>
+          <span class="perk__overlay">
+            <span class="perk__name">{perks[0].name}</span>
+            <span class="perk__tag" set:html={perks[0].tag} />
+          </span>
+        </a>
+
+        <a class="perk perk--dark" href={perks[1].href}>
+          <div class="perk__body">
+            <span class="perk__top">
+              <span class="perk__tag">{perks[1].tag}</span>
+              <span class="perk__arrow">↗</span>
+            </span>
+            <span class="perk__name">{perks[1].name}</span>
+          </div>
+
+          <span class="perk__list" aria-hidden="true">
+            <span class="perk__list-track">
+              {perks[1].words.concat(perks[1].words).map((word) => (
+                <span class="perk__word">{word}</span>
+              ))}
+            </span>
+          </span>
+
+          <span class="perk__index" aria-hidden="true">(02)</span>
+        </a>
+      </div>
+    </section>
+
+    <!-- КОЛЛАЖ: фотографии внахлёст, каждая своей скоростью — «эффект праздника» -->
+    <section class="scatter">
+
+      <div class="gal" style={`--tpl:${galTemplate};`}>
+        {columns.map((col) => (
+          <div class="gal__col" style={`--off:${col.off};`} data-speed={col.speed}>
+            {col.shots.map((s) => (
+              <figure class="shot" style={`--ratio:${s.w} / ${s.h};`}>
+                <a class="shot__link" href="/moskva/ploshchadki/river-loft/" aria-label="Ривер Лофт — страница площадки">
+                  <Image
+                    src={s.image}
+                    widths={[440, 760, 1100]}
+                    sizes="(min-width: 1024px) 32vw, 46vw"
+                    alt="Свадьба в Ривер Лофт"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </a>
+              </figure>
+            ))}
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <BottomDock active="feed" />
+  </div>
+</Layout>
+
+<script>
+  // ============ ХОРЕОГРАФИЯ ЗАГРУЗКИ ============
+  // 1. Строки заголовка выезжают из масок.
+  // 2. Следом «раскрываются» фотографии: clip-path снизу вверх
+  //    + одновременный отъезд масштаба (кадр будто оживает).
+  // 3. Всё, что ниже первого экрана, раскрывается при подходе скролла.
+  import gsap from 'gsap';
+  import ScrollTrigger from 'gsap/ScrollTrigger';
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    // ============ ГАЛЕРЕЯ: колонки едут с разной скоростью ============
+    // Стартовый сдвиг колонки берём из --off, дальше сдвигаем по скроллу.
+    const vh = () => window.innerHeight / 100;
+
+    gsap.utils.toArray<HTMLElement>('.gal__col').forEach((col) => {
+      const speed = parseFloat(col.dataset.speed || '1');
+      const off = parseFloat(getComputedStyle(col).getPropertyValue('--off')) || 0;
+
+      gsap.fromTo(
+        col,
+        { y: () => off * vh() },
+        {
+          y: () => off * vh() + (1 - speed) * 34 * vh(),
+          ease: 'none',
+          scrollTrigger: {
+            trigger: '.scatter',
+            start: 'top bottom',
+            end: 'bottom top',
+            scrub: 0.6,
+            invalidateOnRefresh: true,
+          },
+        }
+      );
+    });
+  }
+</script>
+
+<style>
+  .page {
+    background: var(--bg);
+    min-height: 100svh;
+    padding-bottom: calc(var(--safe-b) + 96px); /* воздух под плавающие пилюли */
+  }
+
+  /* Главная живёт шире обычного контента: почти в край экрана */
+  .container--wide {
+    width: 100%;
+    max-width: none;
+    margin-inline: auto;
+    padding-inline: clamp(10px, 1.5vw, 24px);
+  }
+
+  /* ============ ГЕРОЙ: шапка + заголовок, без пустого экрана ============ */
+  .hero {
+    background: var(--bg);
+    color: var(--ink);
+    padding-block: var(--s-5) var(--section-gap-tight);
+  }
+
+  .hero__bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--s-4);
+    padding-block: var(--s-4);
+  }
+
+  .hero__brand {
+    font-weight: var(--w-medium);
+    text-decoration: none;
+    color: inherit;
+    white-space: nowrap;
+  }
+
+  /* Меню в шапке — только на широком экране: на мобилке те же разделы
+     уже есть в BottomDock, дублировать в тесной шапке незачем */
+  .hero__nav {
+    display: none;
+    gap: var(--s-5);
+    font-weight: var(--w-medium);
+  }
+
+  .hero__nav a { text-decoration: none; color: inherit; }
+  .hero__nav a:hover { text-decoration: underline; }
+
+  .hero__meta {
+    display: flex;
+    align-items: center;
+    gap: var(--s-4);
+  }
+
+  .hero__place {
+    display: none;
+    white-space: nowrap;
+    font-weight: var(--w-medium);
+  }
+
+  @media (min-width: 768px) {
+    .hero__nav { display: flex; }
+    .hero__place { display: block; }
+  }
+
+  .hero__account {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1.5px solid currentColor;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: inherit;
+  }
+
+  .hero__account svg { width: 18px; height: 18px; }
+
+  .hero__intro { padding-top: var(--s-3); }
+
+  /* На широком экране лид встаёт рядом с заголовком, справа, одним блоком */
+  @media (min-width: 768px) {
+    .hero__intro {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: var(--s-6);
+    }
+  }
+
+  /* Крупный заголовок — сразу виден, без прокрутки пустого экрана */
+  .hero__title {
+    flex-shrink: 0;
+    font-size: clamp(32px, 4vw, 56px);
+    font-weight: var(--w-medium);
+    line-height: 0.9;
+    letter-spacing: -0.03em;
+    max-width: var(--measure-head);
+  }
+
+  /* Подсказка про избранное: сердце из перка (та же мини-демо-анимация)
+     + короткая строка — единственная подсказка, что делать на сайте */
+  .hero__hint {
+    display: flex;
+    align-items: center;
+    gap: var(--s-4);
+    margin-top: var(--s-5);
+    flex-shrink: 0;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .hero__hint-text { font-weight: var(--w-medium); }
+
+  @media (min-width: 768px) {
+    .hero__hint { margin-top: 0; }
+    .hero__hint-text { max-width: 26ch; }
+  }
+
+  /* ============ ПРЕИМУЩЕСТВА: крупные плашки, минимальный стык ============ */
+  .perks {
+    background: var(--bg);
+    padding: 0;
+    max-width: none;
+  }
+
+  .perks__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2px;                 /* минимальный стык между плашками */
+    background: var(--surface-dim);
+  }
+
+  .perk {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    aspect-ratio: 3 / 4;
+    padding: var(--s-5);
+    background: var(--surface);
+    color: var(--ink);
+    text-decoration: none;
+    overflow: hidden;
+  }
+
+  .perk__top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--s-3);
+  }
+
+  .perk__tag {
+    font-size: var(--fs-caption);
+    font-weight: var(--w-medium);
+    line-height: 1.3;
+  }
+
+  .perk__arrow {
+    font-size: var(--fs-body);
+    line-height: 1;
+  }
+
+  .perk__name {
+    font-size: clamp(28px, 4vw, 44px);
+    font-weight: var(--w-light);
+    line-height: 1.05;
+    letter-spacing: -0.015em;
+  }
+
+  /* Фото-плашка: кадр в край, подпись поверх на градиенте.
+     Кадры едут непрерывной плавной лентой (как в колесе специалистов) —
+     без кросс-фейда, поэтому нет засвета на стыке двух кадров. */
+  .perk--photo { padding: 0; overflow: hidden; }
+
+  .perk__photo-track {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    animation: perk-photo-scroll 28s linear infinite;
+  }
+
+  .perk__photo-track img {
+    flex: none;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  @keyframes perk-photo-scroll {
+    from { transform: translateY(0); }
+    to { transform: translateY(-50%); }
+  }
+
+  .perk__overlay {
+    position: relative;
+    margin-top: auto;
+    padding: var(--s-5);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    color: var(--white);
+  }
+
+  /* Тёмная плашка: слева статичный текст, справа — колесо категорий
+     во всю высоту карточки (там как раз оставалось пустое место). */
+  .perk--dark {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: stretch;
+    background: var(--black);
+    color: var(--white);
+  }
+
+  .perk__body {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-width: 0;
+    grid-column: 1;
+  }
+
+  /* Колесо категорий — крутится непрерывно, крупно, обрезается краями
+     самой карточки. Маска глушит верх/низ: в фокусе только середина,
+     к краям слова уходят в прозрачность — как у «колеса» с активной точкой. */
+  .perk__list {
+    position: relative;
+    grid-column: 2;
+    overflow: hidden;
+    text-align: right;
+    mask-image: linear-gradient(to bottom, transparent 0%, black 38%, black 62%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 38%, black 62%, transparent 100%);
+  }
+
+  .perk__list-track {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    animation: perk-scroll 14s linear infinite;
+  }
+
+  .perk__word {
+    height: 1.15em;
+    display: flex;
+    align-items: center;
+    font-size: clamp(30px, 4.5vw, 54px);
+    font-weight: var(--w-light);
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+  }
+
+  @keyframes perk-scroll {
+    from { transform: translateY(0); }
+    to { transform: translateY(-50%); }
+  }
+
+  /* Номер плашки — как «(01)» в углу карточки, чисто декоративная деталь */
+  .perk__index {
+    position: absolute;
+    right: var(--s-5);
+    bottom: var(--s-5);
+    font-size: var(--fs-caption);
+    font-weight: var(--w-medium);
+    color: var(--white);
+  }
+
+  .perk--dark .perk__index { color: inherit; }
+
+  .perk__heart-wrap {
+    position: relative;
+    display: inline-flex;
+  }
+
+  .perk__heart {
+    width: clamp(32px, 4vw, 48px);
+    height: clamp(32px, 4vw, 48px);
+    transform-origin: center;
+    animation: perk-heart-tap 4s ease-in-out infinite, perk-heart-fill 4s steps(1, end) infinite;
+  }
+
+  /* Мини-демо «сохранили в избранное»: сердце жмётся и заливается,
+     следом всплывает счётчик — короткий цикл, крутится по кругу. */
+  @keyframes perk-heart-tap {
+    0%, 16% { transform: scale(1); }
+    20% { transform: scale(1.3); }
+    24%, 88% { transform: scale(1); }
+    100% { transform: scale(1); }
+  }
+
+  @keyframes perk-heart-fill {
+    0%, 19% { fill: none; }
+    20%, 88% { fill: currentColor; }
+    89%, 100% { fill: none; }
+  }
+
+  .perk__badge {
+    position: absolute;
+    top: -6px;
+    right: -10px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: var(--w-medium);
+    animation: perk-badge-pop 4s ease-out infinite;
+  }
+
+  @keyframes perk-badge-pop {
+    0%, 22% { transform: scale(0); opacity: 0; }
+    28% { transform: scale(1.2); opacity: 1; }
+    34%, 82% { transform: scale(1); opacity: 1; }
+    90%, 100% { transform: scale(0); opacity: 0; }
+  }
+
+  @media (hover: hover) {
+    .perk { transition: transform var(--dur-fast) var(--ease-out); }
+    .perk__arrow { transition: transform var(--dur-fast) var(--ease-out); }
+    .perk:hover .perk__arrow { transform: translate(3px, -3px); }
+  }
+
+  /* ============ КОЛЛАЖ «ПРАЗДНИК» ============ */
+  .scatter {
+    position: relative;
+    z-index: 1;
+    background: var(--bg);
+    padding-top: var(--s-6);
+    padding-bottom: var(--section-gap);
+  }
+
+  /* Колонки фотографий: шире экрана, поэтому крайние срезаются краем */
+  .gal {
+    display: grid;
+    grid-template-columns: var(--tpl); /* колонки разной ширины */
+    gap: 10px;
+    width: 100%;
+  }
+
+  .gal__col {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transform: translateY(calc(var(--off) * 1vh));
+  }
+
+  .shot {
+    display: block;
+    aspect-ratio: var(--ratio); /* пропорция берётся из самого файла */
+    overflow: hidden;
+    background: var(--surface-dim);
+  }
+
+  .shot__link {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .shot img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 0;
+  }
+
+  /* ============ ПК ============ */
+  @media (min-width: 1024px) {
+    .perk { padding: var(--s-6); }
+    .perk--photo .perk__overlay { padding: var(--s-6); }
+
+    /* Плашки не растут по ширине колонки — высота ограничена, чтобы
+       обе помещались на экран без прокрутки */
+    .perk {
+      aspect-ratio: auto;
+      height: clamp(480px, 68vh, 700px);
+    }
+  }
+</style>

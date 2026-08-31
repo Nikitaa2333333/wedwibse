@@ -1,0 +1,184 @@
+---
+// ЗАГЛУШКА для категорий специалистов, у которых ещё нет карточек
+// (паттерн карточек и сетки — vedushchie/index.astro). Как только для
+// категории появляются фильтры в FILTERS_BY_CATEGORY (data/specialists.ts),
+// страница сама показывает постоянную колонку фильтров/шторку — раньше
+// они лежали в данных, но нигде не были видны, теперь видны сразу.
+import Layout from '../../../../layouts/Layout.astro';
+import SiteHeader from '../../../../components/SiteHeader.astro';
+import BottomDock from '../../../../components/BottomDock.astro';
+import CategoryNav from '../../../../components/CategoryNav.astro';
+import FilterSidebar from '../../../../components/FilterSidebar.astro';
+import { SPECIALIST_CATEGORIES, FILTERS_BY_CATEGORY } from '../../../../data/specialists';
+
+export function getStaticPaths() {
+  return SPECIALIST_CATEGORIES.filter((c) => c.slug !== 'vedushchie').map((c) => ({
+    params: { category: c.slug },
+    props: { category: c },
+  }));
+}
+
+const { category } = Astro.props;
+const filters = FILTERS_BY_CATEGORY[category.slug];
+---
+
+<Layout
+  title={`${category.label} на свадьбу в Москве и области — WED Secrets`}
+  description={`Каталог специалистов «${category.label}» — скоро на WED Secrets.`}
+>
+  <SiteHeader />
+  <CategoryNav categories={SPECIALIST_CATEGORIES} activeSlug={category.slug} />
+
+  <header class="page-head">
+    <h1 class="t-h1">{category.label}</h1>
+    {filters && (
+      <button class="pill pill--sm page-head__filters" type="button" data-sidebar-open>
+        Фильтры <span class="pill__caret" aria-hidden="true">▾</span>
+      </button>
+    )}
+  </header>
+
+  {filters ? (
+    <div class="layout">
+      <aside class="sidebar" data-sidebar>
+        <button class="sidebar__close icon-btn" type="button" data-sidebar-close aria-label="Закрыть фильтры">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <path d="M6 6l12 12M18 6 6 18" stroke-linecap="round" />
+          </svg>
+        </button>
+        <div class="sidebar__panel">
+          <FilterSidebar groups={filters} />
+        </div>
+      </aside>
+      <div class="sidebar__backdrop" data-sidebar-backdrop></div>
+
+      <main class="wrap">
+        <p class="soon t-lead">Каталог «{category.label}» скоро появится здесь — а фильтры уже готовы.</p>
+      </main>
+    </div>
+  ) : (
+    <p class="soon t-lead">Каталог «{category.label}» скоро появится здесь.</p>
+  )}
+
+  <BottomDock active="vendors" />
+</Layout>
+
+<style>
+  .page-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--s-4);
+    padding: var(--s-6) var(--gutter) var(--s-5);
+  }
+
+  .pill__caret { font-size: 9px; }
+
+  /* Кнопка «Фильтры» нужна только там, где фильтр живёт в шторке */
+  @media (min-width: 1024px) {
+    .page-head__filters { display: none; }
+  }
+
+  .layout {
+    padding-bottom: calc(var(--safe-b) + 120px);
+  }
+
+  .wrap {
+    padding: 0 var(--gutter) calc(var(--section-gap) + var(--safe-b) + 80px);
+  }
+
+  .soon {
+    padding: 0 var(--gutter) calc(var(--section-gap) + var(--safe-b) + 80px);
+  }
+
+  .layout .soon { padding: 0; }
+
+  /* ============ ФИЛЬТРЫ: ШТОРКА (узкий экран) ============ */
+  .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: var(--z-overlay);
+    width: min(88vw, 380px);
+    background: var(--surface);
+    transform: translateX(-100%);
+    transition: transform var(--dur-base) var(--ease-out);
+  }
+
+  .sidebar.is-open { transform: none; }
+
+  .sidebar__close {
+    position: absolute;
+    top: var(--s-4);
+    right: var(--s-4);
+    z-index: 1;
+  }
+
+  .sidebar__panel {
+    height: 100%;
+    overflow-y: auto;
+    scrollbar-width: none;
+    padding: var(--s-6) var(--s-5) var(--s-5);
+  }
+
+  .sidebar__panel::-webkit-scrollbar { display: none; }
+
+  .sidebar__backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: calc(var(--z-overlay) - 1);
+    background: rgb(0 0 0 / 0.4);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--dur-base) var(--ease-out);
+  }
+
+  .sidebar.is-open ~ .sidebar__backdrop { opacity: 1; pointer-events: auto; }
+
+  /* ============ ФИЛЬТРЫ: ПОСТОЯННАЯ КОЛОНКА (широкий экран) ============ */
+  @media (min-width: 1024px) {
+    .sidebar__close,
+    .sidebar__backdrop { display: none; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+      align-items: start;
+    }
+
+    .sidebar {
+      position: static;
+      inset: auto;
+      width: 100%;
+      height: auto;
+      background: none;
+      transform: none;
+      transition: none;
+      z-index: auto;
+    }
+
+    .sidebar__panel {
+      height: auto;
+      overflow: visible;
+      padding: 0 var(--s-4) 0 var(--gutter);
+    }
+  }
+</style>
+
+<script>
+  // Шторка фильтров на узком экране — на широком колонка открыта чистым CSS.
+  // Карточек ещё нет, поэтому «Сбросить» просто снимает отметки.
+  const sidebar = document.querySelector<HTMLElement>('[data-sidebar]');
+  const openBtn = document.querySelector<HTMLButtonElement>('[data-sidebar-open]');
+  const closeBtn = document.querySelector<HTMLButtonElement>('[data-sidebar-close]');
+  const backdrop = document.querySelector<HTMLElement>('[data-sidebar-backdrop]');
+  const resetBtn = document.querySelector<HTMLButtonElement>('[data-filters-reset]');
+  const inputs = Array.from(document.querySelectorAll<HTMLInputElement>('[data-filter-key]'));
+
+  openBtn?.addEventListener('click', () => sidebar?.classList.add('is-open'));
+  closeBtn?.addEventListener('click', () => sidebar?.classList.remove('is-open'));
+  backdrop?.addEventListener('click', () => sidebar?.classList.remove('is-open'));
+
+  resetBtn?.addEventListener('click', () => {
+    inputs.forEach((input) => { input.checked = false; });
+  });
+</script>

@@ -1,0 +1,145 @@
+---
+// ГАЛЕРЕЯ КАРТОЧКИ — единый принцип для любого каталога (площадки,
+// специалисты, дальше — любая новая категория подрядчиков): фото листаются
+// свайпом на тач (scroll-snap) и сами автолистаются при наведении мышью
+// (тач не трогаем — там уже свайп), точки-индикаторы кружками сверху слева
+// (справа — место под сердечко «в избранное», снизу — под пилюли-теги).
+// Один источник правды: меняем логику/тайминг листания здесь, а не в
+// каждой странице каталога отдельно.
+//
+// Компонент отвечает только за сам просмотр фото — цену/тип/сердечко
+// кладёт вызывающая страница через слот, поверх .veil.
+import { Image } from 'astro:assets';
+import { resolveImage } from '../lib/images';
+
+interface Props {
+  photos: string[];
+  alt: string;
+  /** есть — кадры оборачиваются в ссылку (площадки); нет — просто фото (специалисты) */
+  href?: string;
+  sizes: string;
+  widths?: number[];
+}
+
+const { photos, alt, href, sizes, widths = [360, 560, 800, 1100] } = Astro.props;
+---
+
+<div class="prail-wrap" data-prail-host>
+  <div class="prail" data-rail>
+    {photos.map((src, n) => {
+      const frameAlt = photos.length > 1 ? `${alt} — фото ${n + 1}` : alt;
+      const image = (
+        <Image src={resolveImage(src)} alt={frameAlt} widths={widths} sizes={sizes} loading="lazy" decoding="async" />
+      );
+      return href ? (
+        <a class="prail__item" href={href} aria-label={alt}>
+          {image}
+        </a>
+      ) : (
+        <div class="prail__item">{image}</div>
+      );
+    })}
+  </div>
+
+  <div class="veil" aria-hidden="true"></div>
+
+  {photos.length > 1 && (
+    <div class="prail__dots">
+      {photos.map(() => (
+        <span class="prail__dot"></span>
+      ))}
+    </div>
+  )}
+
+  <slot />
+</div>
+
+<style>
+  .prail-wrap {
+    position: relative;
+  }
+
+  .prail {
+    display: flex;
+    aspect-ratio: 4 / 5;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    background: var(--surface-dim);
+  }
+
+  .prail::-webkit-scrollbar { display: none; }
+
+  .prail__item {
+    flex: 0 0 100%;
+    height: 100%;
+    scroll-snap-align: center;
+  }
+
+  .prail__item :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* Точки-индикаторы: сверху слева, кружками — свободное место на кадре */
+  .prail__dots {
+    position: absolute;
+    top: var(--s-3);
+    left: var(--s-3);
+    display: flex;
+    gap: 5px;
+  }
+
+  .prail__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--white);
+    opacity: 0.4;
+    transition: opacity var(--dur-fast) var(--ease-out);
+  }
+
+  .prail__dot.is-on { opacity: 1; }
+</style>
+
+<script>
+  // Точки синхронизируются со скроллом всегда (мобильный свайп); автолистание
+  // по наведению — только там, где есть настоящий ховер (мышь, не тач).
+  const hoverCapable = window.matchMedia('(hover: hover)').matches;
+
+  document.querySelectorAll<HTMLElement>('[data-prail-host]').forEach((host) => {
+    const rail = host.querySelector<HTMLElement>('[data-rail]');
+    const dots = Array.from(host.querySelectorAll<HTMLElement>('.prail__dot'));
+    if (!rail) return;
+
+    const frames = rail.children.length;
+
+    const sync = () => {
+      const i = Math.round(rail.scrollLeft / rail.clientWidth);
+      dots.forEach((d, n) => d.classList.toggle('is-on', n === i));
+    };
+    rail.addEventListener('scroll', sync, { passive: true });
+    sync();
+
+    if (!hoverCapable || frames < 2) return;
+
+    let timer: ReturnType<typeof setInterval> | null = null;
+
+    const advance = (instant = false) => {
+      const next = (Math.round(rail.scrollLeft / rail.clientWidth) + 1) % frames;
+      rail.scrollTo({ left: next * rail.clientWidth, behavior: instant ? 'auto' : 'smooth' });
+    };
+
+    host.addEventListener('pointerenter', (e) => {
+      if (e.pointerType !== 'mouse' || timer) return;
+      advance(true); // первый кадр — мгновенно, сразу видно, что галерея живая
+      timer = setInterval(() => advance(), 1800); // дальше — плавным перелистыванием
+    });
+
+    host.addEventListener('pointerleave', (e) => {
+      if (e.pointerType !== 'mouse') return;
+      if (timer) { clearInterval(timer); timer = null; }
+    });
+  });
+</script>

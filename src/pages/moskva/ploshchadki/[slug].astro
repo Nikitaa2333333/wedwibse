@@ -1,0 +1,61 @@
+---
+// ШАБЛОН КАРТОЧКИ ПОДРЯДЧИКА (площадки).
+// URL зафиксирован SEO-фундаментом: /moskva/ploshchadki/nazvanie/
+// Страница ничего не знает про конкретную площадку — только про тип Venue,
+// поэтому новая площадка = новый объект в src/data/venues.ts.
+import Layout from '../../../layouts/Layout.astro';
+import SiteHeader from '../../../components/SiteHeader.astro';
+import VenueHero from '../../../components/VenueHero.astro';
+import StatsStrip from '../../../components/StatsStrip.astro';
+import ScrollyScenes from '../../../components/ScrollyScenes.astro';
+import VenueTerms from '../../../components/VenueTerms.astro';
+import VenueRules from '../../../components/VenueRules.astro';
+import PhotoGallery from '../../../components/PhotoGallery.astro';
+import FaqBlock from '../../../components/FaqBlock.astro';
+import VenueContacts from '../../../components/VenueContacts.astro';
+import BottomDock from '../../../components/BottomDock.astro';
+import { VENUES, type Venue } from '../../../data/venues';
+
+export function getStaticPaths() {
+  return VENUES.map((venue) => ({
+    params: { slug: venue.slug },
+    props: { venue },
+  }));
+}
+
+interface Props {
+  venue: Venue;
+}
+
+const { venue } = Astro.props;
+---
+
+<Layout title={venue.seo.title} description={venue.seo.description} ogImage={venue.seo.ogImage}>
+  <SiteHeader phone={venue.contacts.phone} phoneHref={venue.contacts.phoneHref} />
+
+  <main>
+    <VenueHero venue={venue} />
+
+    <StatsStrip items={venue.stats} />
+
+    <ScrollyScenes kicker="Сцены" title="Как устроена площадка" scenes={venue.scenes} />
+
+    <VenueTerms
+      kicker="Условия"
+      title="Сколько стоит и как забронировать"
+      terms={venue.terms}
+      included={venue.included}
+      extras={venue.extras}
+    />
+
+    <VenueRules kicker="Ограничения" title="Что важно знать заранее" rules={venue.rules} />
+
+    <PhotoGallery kicker="Галерея" title="Зал и мероприятия" items={venue.gallery} />
+
+    <FaqBlock kicker="Вопросы" title="Что спрашивают чаще всего" items={venue.faq} />
+
+    <VenueContacts venue={venue} />
+  </main>
+
+  <BottomDock active="venues" />
+</Layout>

@@ -1,0 +1,530 @@
+---
+// КАТАЛОГ ПЛОЩАДОК (раздел 2 основного меню).
+// Тот же паттерн, что у «Специалистов» (podryadchiki/vedushchie): постоянная
+// колонка фильтров слева на широком экране, мозаика карточек справа —
+// нормальная (1 колонка), wide и duo (2 колонки), hero (во всю ширину,
+// «растянутая» витринная карточка). Внутри карточки кадры листаются
+// свайпом (scroll-snap) — мобильный способ смотреть несколько фото,
+// duo показывает два кадра сразу без свайпа.
+import { Image } from 'astro:assets';
+import Layout from '../../../layouts/Layout.astro';
+import SiteHeader from '../../../components/SiteHeader.astro';
+import BottomDock from '../../../components/BottomDock.astro';
+import FilterSidebar from '../../../components/FilterSidebar.astro';
+import PhotoRail from '../../../components/PhotoRail.astro';
+import { FEED, VENUE_FILTERS } from '../../../data/feed';
+import { resolveImage } from '../../../lib/images';
+
+// Бакеты для диапазонных фильтров — считаются на сборке (см. тот же приём
+// в podryadchiki/vedushchie/index.astro).
+function capacityBucket(max: number): string {
+  if (max <= 80) return '0-80';
+  if (max <= 120) return '80-120';
+  return '120+';
+}
+
+function checkBucket(from: number): string {
+  if (from < 5000) return '0-5';
+  if (from < 7000) return '5-7';
+  if (from < 9000) return '7-9';
+  return '9+';
+}
+
+// ============ МОЗАИКА БЕЗ ДЫР ============
+// hero — во всю ширину (первая карточка, витрина); wide и duo — на две
+// колонки (см. алгоритм подробно в podryadchiki/vedushchie/index.astro).
+// Индекс считаем только по площадкам — рекламная карточка в мозаику
+// вариантов не участвует и в фильтрации тоже (всегда видна).
+type CardVariant = '' | 'vcard--wide' | 'vcard--duo' | 'vcard--hero';
+function variant(i: number): CardVariant {
+  if (i === 0) return 'vcard--hero';
+  if (i % 5 === 2) return 'vcard--wide';
+  if (i % 5 === 4) return 'vcard--duo';
+  return '';
+}
+
+let venueIndex = 0;
+const venueCount = FEED.filter((item) => item.kind === 'venue').length;
+---
+
+<Layout
+  title="Свадебные площадки Москвы и Подмосковья — WED Secrets"
+  description="Каталог свадебных площадок: залы, лофты, усадьбы и террасы Москвы и Московской области с рейтингом, отзывами и ценами."
+>
+  <SiteHeader />
+
+  <header class="page-head">
+    <div class="page-head__text">
+      <h1 class="t-h1">Площадки</h1>
+      <p class="page-head__count" data-results-count>{venueCount} найдено</p>
+    </div>
+    <button class="pill pill--sm page-head__filters" type="button" data-sidebar-open>
+      Фильтры <span class="pill__caret" aria-hidden="true">▾</span>
+    </button>
+  </header>
+
+  <div class="layout">
+    <!-- ФИЛЬТРЫ: постоянная колонка на широком экране; на узком — шторка -->
+    <aside class="sidebar" data-sidebar>
+      <button class="sidebar__close icon-btn" type="button" data-sidebar-close aria-label="Закрыть фильтры">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+          <path d="M6 6l12 12M18 6 6 18" stroke-linecap="round" />
+        </svg>
+      </button>
+      <div class="sidebar__panel">
+        <FilterSidebar groups={VENUE_FILTERS} />
+      </div>
+    </aside>
+    <div class="sidebar__backdrop" data-sidebar-backdrop></div>
+
+    <!-- СЕТКА: мозаика без дыр, фото — главное -->
+    <main class="wrap">
+      <div class="vgrid" data-reveal-group>
+        {FEED.map((item) => {
+          if (item.kind === 'ad') {
+            return (
+              <article class="vcard vcard--ad theme-dark">
+                <div class="vcard__ad">
+                  <p class="t-caption vcard__ad-tag">Реклама</p>
+                  <h2 class="vcard__ad-title">{item.title}</h2>
+                  <p class="t-small">{item.note}</p>
+                  <a class="pill" href={item.href}>Разместить площадку</a>
+                </div>
+              </article>
+            );
+          }
+
+          const cardVariant = variant(venueIndex);
+          venueIndex += 1;
+          const filters = {
+            type: item.type,
+            city: item.city,
+            capacity: capacityBucket(item.capacityMax),
+            avgCheck: checkBucket(item.checkFrom),
+          };
+
+          const sizes =
+            cardVariant === 'vcard--hero'
+              ? '100vw'
+              : cardVariant === 'vcard--wide' || cardVariant === 'vcard--duo'
+                ? '(min-width: 1440px) 50vw, (min-width: 640px) 66vw, 100vw'
+                : '(min-width: 1440px) 25vw, (min-width: 640px) 33vw, 50vw';
+
+          const saveData = JSON.stringify({
+            id: `venue:${item.name}`,
+            cat: 'venue',
+            catLabel: 'Площадки',
+            name: item.name,
+            meta: `${item.type} · ${item.city}`,
+            price: item.avgCheck,
+            rating: item.rating,
+            img: item.media[0],
+            href: `/moskva/ploshchadki/${item.slug}/`,
+          });
+
+          return (
+            <article class={`vcard${cardVariant ? ` ${cardVariant}` : ''}`} data-card data-filters={JSON.stringify(filters)}>
+              {cardVariant === 'vcard--duo' ? (
+                <div class="vcard__media">
+                  <div class="vcard__strip">
+                    {item.media.slice(0, 2).map((src, n) => (
+                      <div class="vcard__frame media">
+                        <Image
+                          src={resolveImage(src)}
+                          alt={`${item.name} — фото ${n + 1}`}
+                          widths={[360, 560, 800]}
+                          sizes={sizes}
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  <div class="veil" aria-hidden="true"></div>
+
+                  <div class="vcard__tags">
+                    <span class="photo-tag">{item.avgCheck}</span>
+                    <span class="photo-tag">{item.type}</span>
+                  </div>
+
+                  <button class="save" type="button" data-save={saveData} aria-pressed="false" aria-label="В избранное">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                      <path d="M12 20.2S3.8 15.3 3.8 9.6A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 8.2 2c0 5.7-8.2 10.6-8.2 10.6z" stroke-linejoin="round" />
+                    </svg>
+                  </button>
+                </div>
+              ) : (
+                <PhotoRail
+                  photos={item.media}
+                  alt={item.name}
+                  href={`/moskva/ploshchadki/${item.slug}/`}
+                  sizes={sizes}
+                  widths={cardVariant === 'vcard--hero' ? [640, 1000, 1600, 2000] : [360, 560, 800, 1100]}
+                >
+                  <div class="vcard__tags">
+                    <span class="photo-tag">{item.avgCheck}</span>
+                    <span class="photo-tag">{item.type}</span>
+                  </div>
+
+                  <button class="save" type="button" data-save={saveData} aria-pressed="false" aria-label="В избранное">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                      <path d="M12 20.2S3.8 15.3 3.8 9.6A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 8.2 2c0 5.7-8.2 10.6-8.2 10.6z" stroke-linejoin="round" />
+                    </svg>
+                  </button>
+                </PhotoRail>
+              )}
+
+              <div class="vcard__body">
+                <div class="vcard__top">
+                  <h2 class="vcard__name">
+                    <a href={`/moskva/ploshchadki/${item.slug}/`}>{item.name}</a>
+                  </h2>
+                  <span class="vcard__rate" aria-label={`Рейтинг ${item.rating}`}>★ {item.rating.toFixed(1)}</span>
+                </div>
+                <p class="vcard__meta t-small">{item.city} · {item.capacity} · {item.reviews}&nbsp;отзывов</p>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+
+      <p class="empty t-small" data-results-empty hidden>
+        По заданным фильтрам площадок не нашлось — попробуйте снять часть условий.
+      </p>
+    </main>
+  </div>
+
+  <BottomDock active="venues" />
+</Layout>
+
+<style>
+  /* ============ ЗАГОЛОВОК СТРАНИЦЫ ============ */
+  .page-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--s-4);
+    padding: var(--s-6) var(--gutter) var(--s-5);
+  }
+
+  .page-head__text {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: var(--s-3);
+  }
+
+  /* Счётчик — рядом с заголовком, крупно: сразу видно объём каталога */
+  .page-head__count {
+    font-size: var(--fs-h3);
+    font-weight: var(--w-medium);
+  }
+
+  .pill__caret { font-size: 9px; }
+
+  /* Кнопка «Фильтры» нужна только там, где фильтр живёт в шторке */
+  @media (min-width: 1024px) {
+    .page-head__filters { display: none; }
+  }
+
+  /* ============ КАРКАС ============ */
+  .layout {
+    padding-bottom: calc(var(--safe-b) + 120px);
+  }
+
+  /* ============ СЕТКА-МОЗАИКА ============ */
+  .wrap {
+    max-width: none;
+    padding: 0 clamp(8px, 1vw, 16px) 0;
+  }
+
+  .vgrid {
+    display: grid;
+    grid-auto-flow: dense;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s-6) clamp(8px, 1vw, 12px);
+  }
+
+  @media (min-width: 640px) {
+    .vgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+
+  @media (min-width: 1440px) {
+    .vgrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  }
+
+  .vcard--duo,
+  .vcard--wide { grid-column: span 2; }
+
+  .vcard--hero { grid-column: 1 / -1; }
+
+  /* Большой кадр на две колонки держит высоту ряда 4:5 у соседей.
+     Витринная карточка во всю ширину — широкий баннерный кадр.
+     :global — сама галерея живёт в PhotoRail, тут только переопределяем. */
+  .vcard--wide :global(.prail) { aspect-ratio: 13 / 8; }
+  .vcard--hero :global(.prail) { aspect-ratio: 21 / 9; }
+
+  .empty { padding: var(--s-7) clamp(4px, 0.6vw, 8px); }
+  .empty[hidden] { display: none; }
+
+  [data-card].is-hidden { display: none; }
+
+  /* ============ КАРТОЧКА ============ */
+  .vcard {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+    min-width: 0;
+  }
+
+  .vcard__media { position: relative; }
+
+  /* Дуо-карточка: два кадра 4:5 видны сразу, без свайпа */
+  .vcard__strip {
+    display: flex;
+    gap: clamp(8px, 1vw, 12px);
+  }
+
+  .vcard__frame {
+    flex: 1 1 0;
+    aspect-ratio: 4 / 5;
+    background: var(--surface-dim);
+  }
+
+  .vcard__frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* Метки на фото: цена + тип, поверх затемнения */
+  .vcard__tags {
+    position: absolute;
+    bottom: var(--s-3);
+    left: var(--s-3);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+    pointer-events: none;
+  }
+
+  /* ============ ПОДПИСЬ ПОД ФОТО ============ */
+  .vcard__top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--s-3);
+  }
+
+  .vcard__name {
+    font-size: var(--fs-h3);
+    font-weight: var(--w-regular);
+    line-height: 1.15;
+  }
+
+  .vcard__name a { text-decoration: none; }
+
+  .vcard__rate {
+    font-size: var(--fs-small);
+    font-weight: var(--w-medium);
+    flex-shrink: 0;
+  }
+
+  .vcard__meta { margin-top: -4px; }
+
+  /* Сердце на фото: без подложек и обводок, тень отделяет от кадра */
+  .save {
+    position: absolute;
+    top: var(--s-3);
+    right: var(--s-3);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--white);
+    cursor: pointer;
+    filter: drop-shadow(0 1px 8px rgb(0 0 0 / 0.45));
+    transition: transform var(--dur-fast) var(--ease-out);
+  }
+
+  .save svg { width: 24px; height: 24px; }
+  .save:active { transform: scale(0.85); }
+  .save[aria-pressed='true'] svg { fill: var(--white); }
+
+  /* ============ РЕКЛАМНАЯ КАРТОЧКА: во всю ширину ============ */
+  .vcard--ad {
+    grid-column: 1 / -1;
+    border-radius: var(--radius-tile);
+    overflow: hidden;
+  }
+
+  .vcard__ad {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: var(--s-3);
+    padding: var(--s-5);
+    min-height: 220px;
+  }
+
+  .vcard__ad-tag { opacity: 0.7; }
+
+  .vcard__ad-title {
+    font-size: var(--fs-h2);
+    font-weight: var(--w-light);
+    line-height: 1.08;
+  }
+
+  .vcard__ad .pill { align-self: flex-start; margin-top: var(--s-2); }
+
+  /* ============ ФИЛЬТРЫ: ШТОРКА (узкий экран) ============ */
+  .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: var(--z-overlay);
+    width: min(88vw, 380px);
+    background: var(--surface);
+    transform: translateX(-100%);
+    transition: transform var(--dur-base) var(--ease-out);
+  }
+
+  .sidebar.is-open { transform: none; }
+
+  .sidebar__close {
+    position: absolute;
+    top: var(--s-4);
+    right: var(--s-4);
+    z-index: 1;
+  }
+
+  .sidebar__panel {
+    height: 100%;
+    overflow-y: auto;
+    scrollbar-width: none;
+    padding: var(--s-6) var(--s-5) var(--s-5);
+  }
+
+  .sidebar__panel::-webkit-scrollbar { display: none; }
+
+  .sidebar__backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: calc(var(--z-overlay) - 1);
+    background: rgb(0 0 0 / 0.4);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--dur-base) var(--ease-out);
+  }
+
+  .sidebar.is-open ~ .sidebar__backdrop { opacity: 1; pointer-events: auto; }
+
+  /* ============ ФИЛЬТРЫ: ПОСТОЯННАЯ КОЛОНКА (широкий экран) ============ */
+  @media (min-width: 1024px) {
+    .sidebar__close,
+    .sidebar__backdrop { display: none; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+      align-items: start;
+    }
+
+    .sidebar {
+      position: static;
+      inset: auto;
+      width: 100%;
+      height: auto;
+      background: none;
+      transform: none;
+      transition: none;
+      z-index: auto;
+    }
+
+    .sidebar__panel {
+      height: auto;
+      overflow: visible;
+      padding: 0 var(--s-4) 0 var(--gutter);
+    }
+  }
+</style>
+
+<script>
+  import { toggleFavorite, isFavorited, type FavoriteItem } from '../../../lib/favorites';
+
+  // ============ ШТОРКА ФИЛЬТРОВ (узкий экран) + ФИЛЬТРАЦИЯ ============
+  // Все карточки уже в разметке (SEO не страдает) — скрипт только прячет/
+  // показывает по совпадению с выбранными пунктами. Внутри группы — ИЛИ,
+  // между группами — И. Рекламная карточка вне data-card — фильтры её не трогают.
+  const sidebar = document.querySelector<HTMLElement>('[data-sidebar]');
+  const openBtn = document.querySelector<HTMLButtonElement>('[data-sidebar-open]');
+  const closeBtn = document.querySelector<HTMLButtonElement>('[data-sidebar-close]');
+  const backdrop = document.querySelector<HTMLElement>('[data-sidebar-backdrop]');
+  const resetBtn = document.querySelector<HTMLButtonElement>('[data-filters-reset]');
+  const cards = Array.from(document.querySelectorAll<HTMLElement>('[data-card]'));
+  const countEl = document.querySelector<HTMLElement>('[data-results-count]');
+  const emptyEl = document.querySelector<HTMLElement>('[data-results-empty]');
+  const inputs = Array.from(document.querySelectorAll<HTMLInputElement>('[data-filter-key]'));
+
+  const openSidebar = () => sidebar?.classList.add('is-open');
+  const closeSidebar = () => sidebar?.classList.remove('is-open');
+
+  openBtn?.addEventListener('click', openSidebar);
+  closeBtn?.addEventListener('click', closeSidebar);
+  backdrop?.addEventListener('click', closeSidebar);
+
+  function selections(): Record<string, string[]> {
+    const map: Record<string, string[]> = {};
+    inputs.forEach((input) => {
+      if (!input.checked) return;
+      const key = input.dataset.filterKey!;
+      (map[key] ??= []).push(input.value);
+    });
+    return map;
+  }
+
+  function applyFilters() {
+    const sel = selections();
+    const activeKeys = Object.keys(sel);
+    let visible = 0;
+
+    cards.forEach((card) => {
+      const data = JSON.parse(card.dataset.filters || '{}') as Record<string, string | string[]>;
+      const match = activeKeys.every((key) => {
+        const wanted = sel[key];
+        const value = data[key];
+        if (Array.isArray(value)) return value.some((v) => wanted.includes(v));
+        return wanted.includes(value);
+      });
+      card.classList.toggle('is-hidden', !match);
+      if (match) visible += 1;
+    });
+
+    if (countEl) countEl.textContent = `${visible} найдено`;
+    if (emptyEl) emptyEl.hidden = visible !== 0;
+  }
+
+  inputs.forEach((input) => input.addEventListener('change', applyFilters));
+
+  resetBtn?.addEventListener('click', () => {
+    inputs.forEach((input) => { input.checked = false; });
+    applyFilters();
+  });
+
+  // Точки-индикаторы и автолистание по наведению — внутри PhotoRail.astro,
+  // общее для всех страниц каталога (площадки, специалисты).
+
+  // Избранное: сохраняется в общее хранилище, читается разделом «Избранное»
+  document.querySelectorAll<HTMLButtonElement>('[data-save]').forEach((btn) => {
+    const item = JSON.parse(btn.dataset.save!) as FavoriteItem;
+    btn.setAttribute('aria-pressed', String(isFavorited(item.id)));
+    btn.addEventListener('click', () => {
+      btn.setAttribute('aria-pressed', String(toggleFavorite(item)));
+    });
+  });
+</script>

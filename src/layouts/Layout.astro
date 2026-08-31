@@ -1,0 +1,98 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+  /** абсолютный или корневой путь к обложке для соцсетей */
+  ogImage?: string;
+}
+
+const {
+  title,
+  description = 'WED Secrets — свадебный онлайн-сервис',
+  ogImage,
+} = Astro.props;
+
+const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://wedwed.ru');
+---
+
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="canonical" href={canonical.href} />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="ru_RU" />
+    <meta property="og:site_name" content="WED Secrets" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical.href} />
+    {ogImage && <meta property="og:image" content={new URL(ogImage, canonical).href} />}
+    <meta name="twitter:card" content="summary_large_image" />
+    <title>{title}</title>
+    <slot name="head" />
+    <script is:inline>
+      // Стартовые состояния анимации применяются только при живом JS —
+      // без него контент виден сразу (защита от «пустой страницы»).
+      document.documentElement.classList.add('js');
+    </script>
+  </head>
+  <body>
+    <slot />
+
+    <script>
+      // ============ МОУШН-ФУНДАМЕНТ ============
+      // 1) Lenis — плавный инерционный скролл (нативный scroll остаётся,
+      //    поэтому CSS scroll-driven анимации продолжают работать).
+      // 2) Reveal — появление блоков: data-reveal на элементе,
+      //    data-reveal-group на родителе для каскада детей.
+      import Lenis from 'lenis';
+
+      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      if (!reduced) {
+        const lenis = new Lenis({ lerp: 0.1 });
+        const raf = (time: number) => {
+          lenis.raf(time);
+          requestAnimationFrame(raf);
+        };
+        requestAnimationFrame(raf);
+      }
+
+      // каскад: детям группы проставляем data-reveal и индекс задержки
+      document.querySelectorAll('[data-reveal-group]').forEach((group) => {
+        Array.from(group.children).forEach((child, i) => {
+          child.setAttribute('data-reveal', '');
+          (child as HTMLElement).style.setProperty('--reveal-index', String(i));
+        });
+      });
+
+      if (reduced) {
+        document.querySelectorAll('[data-reveal]').forEach((el) => el.classList.add('is-inview'));
+      } else {
+        const io = new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              if (entry.isIntersecting) {
+                entry.target.classList.add('is-inview');
+                io.unobserve(entry.target);
+              }
+            }
+          },
+          { rootMargin: '0px 0px -12% 0px' }
+        );
+        document.querySelectorAll('[data-reveal]').forEach((el) => io.observe(el));
+      }
+    </script>
+  </body>
+</html>

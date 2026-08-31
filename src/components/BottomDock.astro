@@ -1,0 +1,126 @@
+---
+// Единое нижнее меню сайта: одно и то же на главной и на страницах площадок.
+// Только типографика — никаких иконок: язык сайта строится на шрифте.
+interface Props {
+  active?: 'feed' | 'venues' | 'vendors' | 'saved' | 'chat';
+}
+
+const { active } = Astro.props;
+
+const items = [
+  { key: 'feed', href: '/', label: 'Главная' },
+  { key: 'venues', href: '/moskva/ploshchadki/', label: 'Площадки' },
+  { key: 'vendors', href: '/moskva/podryadchiki/vedushchie/', label: 'Специалисты' },
+  { key: 'saved', href: '/izbrannoe/', label: 'Избранное' },
+  { key: 'chat', href: '#', label: 'Чат' },
+] as const;
+---
+
+<nav class="dock" aria-label="Основная навигация">
+  {items.map((it) => (
+    <a
+      class:list={['dock__item', { 'is-active': it.key === active }]}
+      href={it.href}
+      aria-current={it.key === active ? 'page' : undefined}
+    >
+      {it.label}
+      {it.key === 'saved' && (
+        <span class="dock__badge" data-fav-badge aria-hidden="true" hidden>0</span>
+      )}
+    </a>
+  ))}
+</nav>
+
+<style>
+  .dock {
+    position: fixed;
+    bottom: calc(var(--safe-b) + var(--s-5));
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: var(--z-nav);
+    display: flex;
+    align-items: center;
+    padding: 5px;
+    border-radius: var(--radius-pill);
+    max-width: calc(100vw - var(--s-5) * 2);
+    background: var(--surface);
+    border: 1px solid color-mix(in srgb, var(--ink) 8%, transparent);
+    box-shadow: var(--shadow-float);
+  }
+
+  .dock__item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px clamp(14px, 2vw, 22px);
+    font-size: var(--fs-small);
+    font-weight: var(--w-regular);
+    color: var(--ink);
+    text-decoration: none;
+    border-radius: var(--radius-pill);
+    white-space: nowrap;
+    transition: background var(--dur-fast) var(--ease-out),
+                color var(--dur-fast) var(--ease-out);
+  }
+
+  .dock__item.is-active {
+    background: var(--ink);
+    color: var(--surface);
+  }
+
+  /* Счётчик избранного: обводка текущим цветом — читается и в активном,
+     и в обычном состоянии пилюли без отдельной палитры */
+  .dock__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 17px;
+    height: 17px;
+    padding: 0 4px;
+    border: 1px solid currentColor;
+    border-radius: var(--radius-pill);
+    font-size: 10px;
+    font-weight: var(--w-medium);
+    line-height: 1;
+  }
+
+  .dock__badge[hidden] { display: none; }
+
+  @media (hover: hover) {
+    .dock__item:not(.is-active):hover { background: color-mix(in srgb, var(--ink) 6%, transparent); }
+  }
+
+  /* На узком экране все пять разделов обязаны поместиться в строку */
+  @media (max-width: 640px) {
+    .dock {
+      padding: 4px;
+      max-width: calc(100vw - var(--s-4));
+    }
+
+    .dock__item {
+      padding: 9px 9px;
+      font-size: 12px;
+    }
+  }
+
+  @media (max-width: 380px) {
+    .dock__item { padding: 9px 7px; font-size: 11px; }
+  }
+</style>
+
+<script>
+  import { getFavorites, CHANGE_EVENT, STORAGE_KEY } from '../lib/favorites';
+
+  const badge = document.querySelector<HTMLElement>('[data-fav-badge]');
+
+  function updateBadge() {
+    if (!badge) return;
+    const count = getFavorites().length;
+    badge.textContent = String(count);
+    badge.hidden = count === 0;
+  }
+
+  updateBadge();
+  window.addEventListener(CHANGE_EVENT, updateBadge);
+  window.addEventListener('storage', (e) => { if (e.key === STORAGE_KEY) updateBadge(); });
+</script>

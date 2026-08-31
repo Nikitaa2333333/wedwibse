@@ -1,0 +1,69 @@
+---
+// Вопросы и ответы — статикой в HTML, без JS-аккордеонов:
+// это главный SEO-корм посадочной страницы.
+import type { Venue } from '../data/venues';
+
+interface Props {
+  kicker: string;
+  title: string;
+  items: Venue['faq'];
+}
+
+const { kicker, title, items } = Astro.props;
+---
+
+<section class="faq section" id="voprosy">
+  <div class="container">
+    <header class="faq__head">
+      <p class="faq__kicker t-caption">{kicker}</p>
+      <h2 class="faq__title">{title}</h2>
+    </header>
+
+    <div class="faq__grid">
+      {
+        items.map((item) => (
+          <article class="qa" data-reveal>
+            <h3 class="qa__q">{item.q}</h3>
+            {item.a.map((p) => (
+              <p class="qa__a">{p}</p>
+            ))}
+          </article>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  .faq__head { margin-bottom: var(--section-gap-tight); }
+
+  .faq__kicker {
+    font-weight: var(--w-medium);
+    margin-bottom: var(--s-3);
+  }
+
+  .faq__title {
+    font-size: var(--fs-h1);
+    font-weight: var(--w-light);
+    line-height: var(--lh-display);
+    letter-spacing: var(--ls-display);
+    max-width: var(--measure-head);
+  }
+
+  .faq__grid {
+    display: grid;
+    gap: var(--s-7) var(--s-8);
+  }
+
+  .qa__q {
+    font-size: var(--fs-h3);
+    font-weight: var(--w-light);
+    margin-bottom: var(--s-4);
+  }
+
+  .qa__a + .qa__a { margin-top: var(--s-4); }
+
+  @media (min-width: 900px) {
+    .faq__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+</style>

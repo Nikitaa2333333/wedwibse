@@ -1,0 +1,523 @@
+---
+// СТРАНИЦА-ВИЗИТКА СПЕЦИАЛИСТА — третий заход (реф. Cineteca Milano):
+// крупная фото-карусель + контрастная инфо-плашка с ценой и заявкой.
+// Прототип только на одном специалисте (Антон Волков): quote/reels/reviewsList
+// пока заполнены не у всех 12 — как только формат утверждён, распространяем
+// на остальных и снимаем фильтр в getStaticPaths.
+import { Image } from 'astro:assets';
+import Layout from '../../../../layouts/Layout.astro';
+import SiteHeader from '../../../../components/SiteHeader.astro';
+import BottomDock from '../../../../components/BottomDock.astro';
+import PhotoRail from '../../../../components/PhotoRail.astro';
+import { VEDUSHCHIE, VEDUSHCHIE_FILTERS } from '../../../../data/specialists';
+import { resolveImage } from '../../../../lib/images';
+
+export function getStaticPaths() {
+  return VEDUSHCHIE.filter((s) => s.slug === 'anton-volkov').map((s) => ({
+    params: { slug: s.slug },
+    props: { s },
+  }));
+}
+
+const { s } = Astro.props;
+
+function labelsFor(groupKey: string, values: string[]): string[] {
+  const group = VEDUSHCHIE_FILTERS.find((g) => g.key === groupKey)!;
+  const map = new Map(group.options.map((o) => [o.value, o.label]));
+  return values.map((v) => map.get(v) ?? v);
+}
+
+const priceFmt = new Intl.NumberFormat('ru-RU');
+const styleLabels = labelsFor('style', s.styles);
+const bioParagraphs = s.bio.split('\n\n');
+const firstName = s.name.split(' ')[0];
+
+// Инициалы автора отзыва — для кружка-аватара, пока нет реального фото
+function initials(author: string): string {
+  return author
+    .split(/\s+и\s+|\s+/)
+    .filter((w) => /^[А-ЯЁA-Z]/.test(w))
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join('');
+}
+
+const saveData = JSON.stringify({
+  id: `vedushchie:${s.slug}`,
+  cat: 'vedushchie',
+  catLabel: 'Ведущие',
+  name: s.name,
+  meta: styleLabels[0] || s.tagline,
+  price: `от ${priceFmt.format(s.priceFrom)} ₽`,
+  rating: s.rating,
+  img: s.photos[0],
+  href: `/moskva/podryadchiki/vedushchie/${s.slug}/`,
+});
+---
+
+<Layout
+  title={`${s.name} — ведущий на свадьбу в Москве и области — WED Secrets`}
+  description={s.tagline}
+>
+  <SiteHeader />
+
+  <div class="profile">
+    <!-- ГЕРОЙ: инфо-плашка + крупная фото-карусель встык (реф. Cineteca).
+         Крошки живут внутри плашки: герой занимает весь экран под шапкой. -->
+    <section class="phero">
+      <div class="phero__card theme-accent">
+        <div class="phero__top">
+          <nav class="crumbs t-caption">
+            <a href="/">Главная</a>
+            <span aria-hidden="true">/</span>
+            <a href="/moskva/podryadchiki/vedushchie/">Ведущие</a>
+            <span aria-hidden="true">/</span>
+            <span>{s.name}</span>
+          </nav>
+
+          <h1 class="phero__name">{s.name}</h1>
+          <p class="t-lead phero__tagline">{s.tagline}</p>
+          <a class="pill pill--sm phero__rate" href="#otzyvy">★ {s.rating.toFixed(1)} · {s.reviews}&nbsp;отзывов</a>
+        </div>
+
+        <div class="phero__deal">
+          <p class="phero__price">от {priceFmt.format(s.priceFrom)}&nbsp;₽</p>
+          <p class="t-caption phero__price-note">за 6&nbsp;часов работы · {s.experienceYears}&nbsp;лет опыта{s.hasOwnDJ ? ' · свой диджей' : ''}</p>
+          <a class="pill pill--lg" href="#zayavka">Оставить заявку</a>
+        </div>
+      </div>
+
+      <div class="phero__media">
+        <PhotoRail
+          photos={s.photos}
+          alt={s.name}
+          sizes="(min-width: 1024px) 50vw, 100vw"
+          widths={[480, 800, 1200]}
+        >
+          <button class="save" type="button" data-save={saveData} aria-pressed="false" aria-label="В избранное">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+              <path d="M12 20.2S3.8 15.3 3.8 9.6A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 8.2 2c0 5.7-8.2 10.6-8.2 10.6z" stroke-linejoin="round" />
+            </svg>
+          </button>
+        </PhotoRail>
+      </div>
+    </section>
+
+    <!-- О ВЕДУЩЕМ -->
+    <section class="pabout">
+      <h2 class="t-h2">О ведущем</h2>
+      {bioParagraphs.map((p) => <p class="pabout__text">{p}</p>)}
+    </section>
+
+    <!-- ГАЛЕРЕЯ: компактная ровная сетка, без растянутых кадров -->
+    <section class="pgallery">
+      <h2 class="t-h2">Фотографии</h2>
+      <div class="pgallery__grid" data-reveal-group>
+        {s.photos.map((src, n) => (
+          <figure class="pgallery__cell media" data-reveal>
+            <Image
+              src={resolveImage(src)}
+              alt={`${s.name} — фото ${n + 1}`}
+              widths={[360, 560]}
+              sizes="(min-width: 900px) 33vw, 50vw"
+              loading="lazy"
+              decoding="async"
+            />
+          </figure>
+        ))}
+      </div>
+    </section>
+
+    <!-- ВИДЕО: вертикальные reels каруселью (пока постеры-заглушки) -->
+    {s.reels && (
+      <section class="preels">
+        <h2 class="t-h2">Видео</h2>
+        <div class="preels__rail" data-reveal-group>
+          {s.reels.map((reel, n) => (
+            <figure class="preels__item media" data-reveal>
+              {reel.video ? (
+                <video src={reel.video} playsinline muted loop preload="none"></video>
+              ) : (
+                <Image
+                  src={resolveImage(reel.poster)}
+                  alt={`${s.name} — видео ${n + 1}`}
+                  widths={[240, 360, 480]}
+                  sizes="(min-width: 1024px) 220px, 48vw"
+                  loading="lazy"
+                  decoding="async"
+                />
+              )}
+              <div class="veil" aria-hidden="true"></div>
+              <span class="preels__play" aria-hidden="true">▶</span>
+              {!reel.video && <span class="preels__label t-caption">Скоро — видео</span>}
+            </figure>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <!-- ПРЕДЛОЖЕНИЕ ОТ ВЕДУЩЕГО: формулирует сам специалист, подаём цитатой -->
+    {s.quote && (
+      <section class="pquote">
+        <p class="t-caption pquote__kicker">Предложение от {firstName === 'Антон' ? 'Антона' : s.name}</p>
+        <blockquote class="pquote__body">
+          <p class="pquote__text">{s.quote}</p>
+          <footer class="pquote__author t-small">{s.name} · ведущий</footer>
+        </blockquote>
+      </section>
+    )}
+
+    <!-- ОТЗЫВЫ: вертикально, один в ряд, с автором и датой -->
+    {s.reviewsList && (
+      <section class="previews" id="otzyvy">
+        <h2 class="t-h2">Отзывы</h2>
+        <div class="previews__list" data-reveal-group>
+          {s.reviewsList.map((r) => (
+            <article class="preview" data-reveal>
+              <header class="preview__head">
+                {r.photo ? (
+                  <span class="preview__avatar media">
+                    <Image src={resolveImage(r.photo)} alt={r.author} widths={[96]} sizes="48px" loading="lazy" decoding="async" />
+                  </span>
+                ) : (
+                  <span class="preview__avatar preview__avatar--initials" aria-hidden="true">{initials(r.author)}</span>
+                )}
+                <div class="preview__who">
+                  <p class="preview__author">{r.author}</p>
+                  <p class="preview__date t-caption">{r.date}</p>
+                </div>
+                <p class="preview__rate" aria-label={`Оценка ${r.rating} из 5`}>{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</p>
+              </header>
+              <p class="preview__text">«{r.text}»</p>
+            </article>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <!-- ЗАЯВКА -->
+    <section class="pcta theme-accent" id="zayavka">
+      <h2 class="t-h2">Забронировать {s.name} на свою свадьбу</h2>
+      <p class="t-small pcta__note">Оставьте заявку — менеджер свяжется и уточнит дату и детали.</p>
+      <a class="pill pill--lg" href="#">Оставить заявку</a>
+    </section>
+  </div>
+
+  <BottomDock active="vendors" />
+</Layout>
+
+<style>
+  .profile {
+    padding-bottom: calc(var(--safe-b) + 120px);
+  }
+
+  .crumbs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+  }
+
+  .crumbs a { text-decoration: none; }
+
+  @media (hover: hover) {
+    .crumbs a:hover { text-decoration: underline; }
+  }
+
+  /* ============ ГЕРОЙ: плашка + карусель встык ============
+     Мобилка: фото сверху во всю ширину, плашка под ним.
+     ПК: сплит-полоса в край экрана — плашка слева, карусель справа. */
+  .phero {
+    display: grid;
+    grid-template-areas: 'media' 'card';
+    margin-bottom: var(--section-gap-tight);
+  }
+
+  .phero__media { grid-area: media; }
+
+  /* Якорная композиция: имя с теглайном тяготеют к верху плашки,
+     цена с кнопкой — к низу, середина дышит (space-between). */
+  .phero__card {
+    grid-area: card;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--s-6);
+    padding: var(--s-6) var(--gutter);
+  }
+
+  .phero__top {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--s-4);
+  }
+
+  /* Имя — главный объект экрана, но без гигантизма: блок держим низким */
+  .phero__name {
+    font-size: clamp(40px, 5.5vw, 64px);
+    font-weight: var(--w-light);
+    line-height: var(--lh-display);
+    letter-spacing: var(--ls-display);
+    max-width: var(--measure-head);
+  }
+
+  .phero__tagline { max-width: var(--measure-lead); }
+
+  .phero__rate { text-decoration: none; }
+
+  .phero__deal {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--s-2);
+  }
+
+  /* Цена — крупно, второй якорь плашки */
+  .phero__price {
+    font-size: var(--fs-h2);
+    font-weight: var(--w-medium);
+    line-height: var(--lh-heading);
+    letter-spacing: var(--ls-display);
+  }
+
+  .phero__deal .pill { margin-top: var(--s-3); }
+
+  /* Сердечко «в избранное» — поверх кадра карусели, через слот PhotoRail */
+  .save {
+    position: absolute;
+    top: var(--s-3);
+    right: var(--s-3);
+    z-index: 1;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--white);
+    cursor: pointer;
+    filter: drop-shadow(0 1px 8px rgb(0 0 0 / 0.45));
+    transition: transform var(--dur-fast) var(--ease-out);
+  }
+
+  .save svg { width: 24px; height: 24px; }
+  .save:active { transform: scale(0.85); }
+  .save[aria-pressed='true'] svg { fill: var(--white); }
+
+  @media (min-width: 1024px) {
+    .phero {
+      grid-template-areas: 'card media';
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      align-items: stretch;
+      /* Высоту задаёт контент карточки — герой остаётся компактной
+         горизонтальной полосой и целиком влезает в экран с запасом. */
+    }
+
+    .phero__card {
+      padding: var(--s-6) var(--s-7) var(--s-6) var(--gutter);
+    }
+
+    /* Кадр НЕ диктует высоту блока: колонка фото — просто холст,
+       карусель растянута абсолютом по высоте карточки */
+    .phero__media { position: relative; }
+
+    .phero__media :global(.prail-wrap) {
+      position: absolute;
+      inset: 0;
+    }
+
+    .phero__media :global(.prail) {
+      aspect-ratio: auto;
+      height: 100%;
+    }
+
+    /* Горизонтальный кроп портрета: держим верх кадра — не режем голову */
+    .phero__media :global(.prail__item img) { object-position: center top; }
+  }
+
+  /* ============ О ВЕДУЩЕМ ============ */
+  .pabout {
+    padding: 0 var(--gutter) var(--section-gap-tight);
+  }
+
+  .pabout__text {
+    max-width: var(--measure-text);
+    margin-top: var(--s-4);
+  }
+
+  /* ============ ГАЛЕРЕЯ ============ */
+  .pgallery {
+    padding: 0 var(--gutter) var(--section-gap-tight);
+  }
+
+  .pgallery__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s-3);
+    margin-top: var(--s-5);
+  }
+
+  .pgallery__cell { aspect-ratio: 3 / 4; }
+
+  @media (min-width: 900px) {
+    .pgallery__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+
+  /* ============ ВИДЕО-REELS ============
+     Вертикальные 9:16 карточки, листаются вбок (scroll-snap),
+     как карусели карточек каталога. */
+  .preels {
+    padding: 0 0 var(--section-gap-tight) var(--gutter);
+  }
+
+  .preels__rail {
+    display: flex;
+    gap: var(--s-3);
+    margin-top: var(--s-5);
+    padding-right: var(--gutter);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .preels__rail::-webkit-scrollbar { display: none; }
+
+  .preels__item {
+    position: relative;
+    flex: 0 0 clamp(180px, 48vw, 240px);
+    aspect-ratio: 9 / 16;
+    scroll-snap-align: start;
+    background: var(--surface-dim);
+  }
+
+  .preels__play {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 1.5px solid var(--white);
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+
+  .preels__label {
+    position: absolute;
+    bottom: var(--s-3);
+    left: var(--s-3);
+    color: var(--white);
+  }
+
+  /* ============ ПРЕДЛОЖЕНИЕ-ЦИТАТА ============ */
+  .pquote {
+    padding: 0 var(--gutter) var(--section-gap-tight);
+  }
+
+  .pquote__kicker { font-weight: var(--w-medium); }
+
+  .pquote__body { margin-top: var(--s-4); }
+
+  .pquote__text {
+    font-size: var(--fs-h2);
+    font-weight: var(--w-light);
+    line-height: var(--lh-heading);
+    letter-spacing: var(--ls-display);
+    max-width: var(--measure-lead);
+  }
+
+  .pquote__author {
+    margin-top: var(--s-4);
+    font-weight: var(--w-medium);
+  }
+
+  /* ============ ОТЗЫВЫ: вертикальный список ============ */
+  .previews {
+    padding: 0 var(--gutter) var(--section-gap-tight);
+  }
+
+  .previews__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+    margin-top: var(--s-5);
+  }
+
+  .preview {
+    max-width: var(--measure-prose);
+    padding: var(--s-5);
+    background: var(--surface-dim);
+  }
+
+  .preview__head {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+  }
+
+  .preview__avatar {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    overflow: hidden;
+  }
+
+  /* Пока нет реального фото автора — кружок с инициалами */
+  .preview__avatar--initials {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    font-size: var(--fs-small);
+    font-weight: var(--w-medium);
+  }
+
+  .preview__who { flex: 1; min-width: 0; }
+
+  .preview__author { font-weight: var(--w-medium); }
+
+  .preview__rate {
+    font-size: var(--fs-small);
+    letter-spacing: 2px;
+    flex-shrink: 0;
+  }
+
+  .preview__text {
+    margin-top: var(--s-4);
+    max-width: var(--measure-text);
+  }
+
+  /* ============ ЗАЯВКА ============ */
+  .pcta {
+    padding: var(--section-gap) var(--gutter);
+  }
+
+  .pcta h2 { max-width: var(--measure-head); }
+
+  .pcta__note {
+    margin-top: var(--s-3);
+    max-width: var(--measure-lead);
+  }
+
+  .pcta .pill { margin-top: var(--s-5); }
+</style>
+
+<script>
+  import { toggleFavorite, isFavorited, type FavoriteItem } from '../../../../lib/favorites';
+
+  document.querySelectorAll<HTMLButtonElement>('[data-save]').forEach((btn) => {
+    const item = JSON.parse(btn.dataset.save!) as FavoriteItem;
+    btn.setAttribute('aria-pressed', String(isFavorited(item.id)));
+    btn.addEventListener('click', () => {
+      btn.setAttribute('aria-pressed', String(toggleFavorite(item)));
+    });
+  });
+</script>

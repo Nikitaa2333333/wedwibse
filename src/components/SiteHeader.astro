@@ -1,0 +1,109 @@
+---
+// Липкая шапка каталога. Логотип не утверждён — его тут пока нет:
+// слева разделы, справа телефон и кружок аккаунта (как на главной).
+// Телефон опционален: на страницах каталога его нет, только на карточке
+// площадки. Единственная линия — граница шапки, она структурная.
+interface Props {
+  phone?: string;
+  phoneHref?: string;
+}
+
+const { phone, phoneHref } = Astro.props;
+---
+
+<header class="head" data-site-header>
+  <div class="head__inner container container--wide">
+    <nav class="head__nav t-small" aria-label="Разделы каталога">
+      <a href="/moskva/ploshchadki/">Площадки</a>
+      <a href="/moskva/podryadchiki/vedushchie/">Специалисты</a>
+      <a href="/">О сервисе</a>
+    </nav>
+
+    <div class="head__side">
+      {phone && <a class="head__phone t-small" href={phoneHref}>{phone}</a>}
+
+      <a class="head__account" href="#" aria-label="Аккаунт">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+          <circle cx="12" cy="8" r="3.6"></circle>
+          <path d="M4.5 20c1.6-3.6 5-5.4 7.5-5.4s5.9 1.8 7.5 5.4" stroke-linecap="round"></path>
+        </svg>
+      </a>
+    </div>
+  </div>
+</header>
+
+<style>
+  .head {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-nav);
+    background: var(--bg);
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  .head__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-5);
+    padding-block: var(--s-3);
+  }
+
+  .head__nav {
+    display: flex;
+    gap: var(--s-5);
+  }
+
+  .head__side {
+    display: flex;
+    align-items: center;
+    gap: var(--s-5);
+  }
+
+  .head__nav a,
+  .head__phone {
+    color: var(--fg);
+    font-weight: var(--w-medium);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  /* на телефоне из шапки остаются только «Площадки» и кружок */
+  .head__nav a:not(:first-child),
+  .head__phone { display: none; }
+
+  .head__account {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1.5px solid currentColor;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: inherit;
+    flex: none;
+  }
+
+  .head__account svg { width: 17px; height: 17px; }
+
+  @media (hover: hover) {
+    .head__nav a:hover,
+    .head__phone:hover { text-decoration: underline; }
+  }
+
+  @media (min-width: 768px) {
+    .head__nav a:not(:first-child),
+    .head__phone { display: inline; }
+  }
+</style>
+
+<script>
+  // Публикует реальную высоту шапки в --header-h: липкий переключатель
+  // категорий (CategoryNav) встаёт вплотную под ней без ручного отступа.
+  const header = document.querySelector<HTMLElement>('[data-site-header]');
+  const setHeaderHeight = () => {
+    if (header) document.documentElement.style.setProperty('--header-h', `${header.offsetHeight}px`);
+  };
+  setHeaderHeight();
+  window.addEventListener('resize', setHeaderHeight);
+</script>

@@ -1,0 +1,162 @@
+---
+// Первый экран карточки: слева типографика и характеристики,
+// справа крупный кадр в край экрана (реф. Momentum).
+// Мобилка: заголовок → фото → лид → строки характеристик.
+import { Image } from 'astro:assets';
+import type { Venue } from '../data/venues';
+import { resolveImage } from '../lib/images';
+
+interface Props {
+  venue: Venue;
+}
+
+const { venue } = Astro.props;
+---
+
+<section class="vhero">
+  <div class="vhero__head">
+    <nav class="crumbs t-caption" aria-label="Хлебные крошки">
+      <a href="/">Главная</a>
+      <span aria-hidden="true">/</span>
+      <a href={`/${venue.citySlug}/${venue.categorySlug}/`}>{venue.category}</a>
+      <span aria-hidden="true">/</span>
+      <span>{venue.name}</span>
+    </nav>
+
+    <p class="vhero__kicker t-caption">{venue.kicker}</p>
+    <h1 class="vhero__title">{venue.title}</h1>
+  </div>
+
+  <figure class="vhero__shot media">
+    <Image
+      src={resolveImage(venue.hero.image)}
+      alt={venue.hero.alt}
+      widths={[480, 800, 1200, 1600]}
+      sizes="(min-width: 1024px) 50vw, 100vw"
+      fetchpriority="high"
+    />
+  </figure>
+
+  <div class="vhero__rest">
+    <p class="vhero__lead t-lead" data-reveal>{venue.lead}</p>
+
+    <div class="vhero__actions" data-reveal>
+      <a class="pill pill--lg" href="#zayavka">Забронировать дату</a>
+      <a class="vhero__tel" href={venue.contacts.phoneHref}>{venue.contacts.phone}</a>
+    </div>
+
+    <dl class="rows vhero__meta">
+      {
+        venue.meta.map((row) => (
+          <div class="rows__row">
+            <dt class="rows__label">{row.label}</dt>
+            <dd class="rows__value">{row.value}</dd>
+          </div>
+        ))
+      }
+    </dl>
+  </div>
+</section>
+
+<style>
+  .vhero {
+    display: grid;
+    grid-template-areas: 'head' 'shot' 'rest';
+  }
+
+  .vhero__head {
+    grid-area: head;
+    padding: var(--section-gap-tight) var(--gutter) var(--s-6);
+  }
+
+  .vhero__rest {
+    grid-area: rest;
+    padding: var(--s-6) var(--gutter) var(--section-gap);
+  }
+
+  .crumbs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+    margin-bottom: var(--s-6);
+  }
+
+  .crumbs a { text-decoration: none; }
+
+  @media (hover: hover) {
+    .crumbs a:hover { text-decoration: underline; }
+  }
+
+  .vhero__kicker {
+    font-weight: var(--w-medium);
+    margin-bottom: var(--s-3);
+  }
+
+  .vhero__title {
+    font-size: clamp(46px, 9vw, 96px);
+    font-weight: var(--w-light);
+    line-height: var(--lh-display);
+    letter-spacing: var(--ls-display);
+    max-width: var(--measure-head);
+  }
+
+  /* Кадр во всю ширину экрана: на мобилке — вертикальный портрет */
+  .vhero__shot {
+    grid-area: shot;
+    aspect-ratio: 4 / 5;
+  }
+
+  .vhero__lead {
+    max-width: var(--measure-lead);
+    margin-bottom: var(--s-6);
+  }
+
+  .vhero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-5);
+    margin-bottom: var(--s-7);
+  }
+
+  .vhero__tel {
+    font-weight: var(--w-medium);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  @media (hover: hover) {
+    .vhero__tel:hover { text-decoration: underline; }
+  }
+
+  /* ============ ПК: сплит «текст / фото в край» ============ */
+  @media (min-width: 1024px) {
+    .vhero {
+      grid-template-areas:
+        'head shot'
+        'rest shot';
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      grid-template-rows: auto 1fr;
+      min-height: 100svh;
+    }
+
+    .vhero__head {
+      padding-top: var(--section-gap-tight);
+      padding-right: var(--s-7);
+    }
+
+    .vhero__rest {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding-right: var(--s-7);
+      padding-bottom: var(--section-gap-tight);
+    }
+
+    .vhero__shot {
+      aspect-ratio: auto;
+      height: 100%;
+      min-height: 100svh;
+    }
+  }
+</style>

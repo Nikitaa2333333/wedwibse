@@ -1,0 +1,111 @@
+---
+// Условия площадки: деньги, бронирование, что входит в стоимость,
+// что считается отдельно. Всё «метка — значение» идёт строками (.rows),
+// чистые перечисления — маркированным списком (.list).
+import type { Venue } from '../data/venues';
+
+interface Props {
+  kicker: string;
+  title: string;
+  terms: Venue['terms'];
+  included: Venue['included'];
+  extras: Venue['extras'];
+}
+
+const { kicker, title, terms, included, extras } = Astro.props;
+---
+
+<section class="terms section" id="usloviya">
+  <div class="container">
+    <header class="terms__head">
+      <p class="terms__kicker t-caption">{kicker}</p>
+      <h2 class="terms__title">{title}</h2>
+    </header>
+
+    <div class="terms__grid">
+      {
+        terms.map((group) => (
+          <div class="group" data-reveal>
+            <h3 class="group__name">{group.title}</h3>
+            <dl class="rows">
+              {group.rows.map((row) => (
+                <div class="rows__row">
+                  <dt class="rows__label">{row.label}</dt>
+                  <dd class="rows__value">{row.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        ))
+      }
+
+      {
+        included.map((group) => (
+          <div class="group" data-reveal>
+            <h3 class="group__name">{group.title}</h3>
+            {group.note && <p class="group__note t-small">{group.note}</p>}
+            <ul class="list">
+              {group.items.map((item) => (
+                <li>{item}</li>
+              ))}
+            </ul>
+          </div>
+        ))
+      }
+
+      {
+        extras.map((group) => (
+          <div class="group" data-reveal>
+            <h3 class="group__name">{group.title}</h3>
+            {group.note && <p class="group__note t-small">{group.note}</p>}
+            <dl class="rows">
+              {group.rows.map((row) => (
+                <div class="rows__row">
+                  <dt class="rows__label">{row.label}</dt>
+                  <dd class="rows__value">{row.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  .terms__head { margin-bottom: var(--section-gap-tight); }
+
+  .terms__kicker {
+    font-weight: var(--w-medium);
+    margin-bottom: var(--s-3);
+  }
+
+  .terms__title {
+    font-size: var(--fs-h1);
+    font-weight: var(--w-light);
+    line-height: var(--lh-display);
+    letter-spacing: var(--ls-display);
+    max-width: var(--measure-head);
+  }
+
+  .terms__grid {
+    display: grid;
+    gap: var(--section-gap-tight) var(--s-8);
+  }
+
+  .group__name {
+    font-size: var(--fs-h3);
+    font-weight: var(--w-light);
+    margin-bottom: var(--s-4);
+  }
+
+  .group__note { margin-bottom: var(--s-4); }
+
+  /* внутри колонки ширину задаёт сама колонка — меру не дублируем */
+  .group .list { max-width: none; }
+
+  @media (min-width: 900px) {
+    .terms__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+</style>

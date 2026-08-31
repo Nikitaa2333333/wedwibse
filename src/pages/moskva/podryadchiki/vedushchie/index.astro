@@ -1,0 +1,529 @@
+---
+// КАТАЛОГ ПОДРЯДЧИКОВ: ВЕДУЩИЕ (первая из 19 категорий раздела «Специалисты»).
+// Паттерн для остальных категорий: свой FilterGroup[] + свой массив карточек
+// в data/specialists.ts, разметка страницы не меняется.
+//
+// Фильтр: на широком экране — постоянная компактная колонка слева
+// (без подложек и кнопок, скроллбар спрятан). На узком экране — шторка
+// поверх контента, открывается кнопкой «Фильтры».
+import { Image } from 'astro:assets';
+import Layout from '../../../../layouts/Layout.astro';
+import SiteHeader from '../../../../components/SiteHeader.astro';
+import BottomDock from '../../../../components/BottomDock.astro';
+import FilterSidebar from '../../../../components/FilterSidebar.astro';
+import CategoryNav from '../../../../components/CategoryNav.astro';
+import PhotoRail from '../../../../components/PhotoRail.astro';
+import { VEDUSHCHIE, VEDUSHCHIE_FILTERS, SPECIALIST_CATEGORIES } from '../../../../data/specialists';
+import { resolveImage } from '../../../../lib/images';
+
+// Бакеты для диапазонных фильтров — считаются на сборке, в разметку идёт
+// уже готовое значение бакета, JS на клиенте сравнивает строки.
+function priceBucket(from: number): string {
+  if (from < 60000) return '0-60';
+  if (from < 100000) return '60-100';
+  if (from < 150000) return '100-150';
+  if (from < 200000) return '150-200';
+  return '200+';
+}
+
+function experienceBucket(years: number): string {
+  if (years < 5) return '0-5';
+  if (years <= 10) return '5-10';
+  if (years > 15) return '15+';
+  return ''; // 10–15 лет вне заданных вариантов фильтра — карточка не попадёт в этот фильтр
+}
+
+// ============ «УМНАЯ» МОЗАИКА БЕЗ ДЫР — алгоритм ============
+// Три типа карточек, все ряды остаются в линию:
+//   normal — один кадр 4:5 в одну колонку;
+//   wide   — ОДИН большой кадр на две колонки, аспект 13:8: при span 2
+//            с зазором его высота = высоте соседнего 4:5 ((2w+g)/1.625 ≈
+//            1.25w) — размер-акцент без разрыва ряда;
+//   duo    — два кадра 4:5 рядом на две колонки (несколько фото видно
+//            сразу, референс WedWed) — высота сходится по построению.
+// Правила, из-за которых дыр не бывает:
+// 1. Никаких row-span: вытянутая по вертикали карточка пробивает соседний
+//    ряд и оставляет дыру сбоку. Динамика — только шириной.
+// 2. grid-auto-flow: dense — если span-2 не влезает в конец ряда, слот
+//    занимает следующая обычная карточка.
+// 3. Каденция: wide — i % 6 === 1, duo — i % 6 === 4. На 12 карточках при
+//    4 колонках это ровно 4 полных ряда (16 юнитов), при 2 и 3 колонках
+//    dense укладывает без дыр (проверено перебором).
+type CardVariant = '' | 'scard--wide' | 'scard--duo';
+function variant(i: number): CardVariant {
+  if (i % 6 === 1) return 'scard--wide';
+  if (i % 6 === 4) return 'scard--duo';
+  return '';
+}
+
+const styleLabels = new Map(
+  VEDUSHCHIE_FILTERS.find((g) => g.key === 'style')!.options.map((o) => [o.value, o.label])
+);
+
+const cards = VEDUSHCHIE.map((s, i) => ({
+  s,
+  variant: variant(i),
+  styleTag: styleLabels.get(s.styles[0]) ?? '',
+  filters: {
+    gender: s.gender,
+    price: priceBucket(s.priceFrom),
+    city: s.cities,
+    style: s.styles,
+    age: s.age,
+    experience: experienceBucket(s.experienceYears),
+    ownDJ: s.hasOwnDJ ? 'yes' : 'no',
+    formats: s.formats,
+    languages: s.languages,
+    ceremonyMaster: s.ceremonyMaster ? 'yes' : 'no',
+    equipment: s.hasEquipment ? 'yes' : 'no',
+  },
+}));
+
+const priceFmt = new Intl.NumberFormat('ru-RU');
+---
+
+<Layout
+  title="Ведущие на свадьбу в Москве и области — WED Secrets"
+  description="Каталог ведущих на свадьбу: стиль, опыт, цена за 6 часов работы, форматы и выезд. Фильтр по параметрам, которые вам действительно важны."
+>
+  <SiteHeader />
+  <CategoryNav categories={SPECIALIST_CATEGORIES} activeSlug="vedushchie" />
+
+  <!-- Заголовок страницы — крупный, в контенте («крупно чётко»),
+       а не зажатый в служебной полоске шапки -->
+  <header class="page-head">
+    <div class="page-head__text">
+      <h1 class="t-h1">Ведущие</h1>
+      <p class="page-head__count" data-results-count>{cards.length} найдено</p>
+    </div>
+    <button class="pill pill--sm page-head__filters" type="button" data-sidebar-open>
+      Фильтры <span class="pill__caret" aria-hidden="true">▾</span>
+    </button>
+  </header>
+
+  <div class="layout">
+    <!-- ФИЛЬТРЫ: постоянная колонка на широком экране; на узком — шторка -->
+    <aside class="sidebar" data-sidebar>
+      <button class="sidebar__close icon-btn" type="button" data-sidebar-close aria-label="Закрыть фильтры">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+          <path d="M6 6l12 12M18 6 6 18" stroke-linecap="round" />
+        </svg>
+      </button>
+      <div class="sidebar__panel">
+        <FilterSidebar groups={VEDUSHCHIE_FILTERS} />
+      </div>
+    </aside>
+    <div class="sidebar__backdrop" data-sidebar-backdrop></div>
+
+    <!-- СЕТКА: мозаика без дыр, фото — главное -->
+    <main class="wrap">
+      <div class="vgrid" data-reveal-group>
+        {cards.map(({ s, variant, styleTag, filters }) => {
+          const sizes =
+            variant === 'scard--wide' || variant === 'scard--duo'
+              ? '(min-width: 1440px) 50vw, (min-width: 640px) 66vw, 100vw'
+              : '(min-width: 1440px) 25vw, (min-width: 640px) 33vw, 50vw';
+
+          const saveData = JSON.stringify({
+            id: `vedushchie:${s.slug}`,
+            cat: 'vedushchie',
+            catLabel: 'Ведущие',
+            name: s.name,
+            meta: styleTag || s.tagline,
+            price: `от ${priceFmt.format(s.priceFrom)} ₽`,
+            rating: s.rating,
+            img: s.photos[0],
+            href: `/moskva/podryadchiki/vedushchie/${s.slug}/`,
+          });
+
+          return (
+          <article class={`scard${variant ? ` ${variant}` : ''}`} data-card data-filters={JSON.stringify(filters)}>
+            {variant === 'scard--duo' ? (
+              <div class="scard__media">
+                <div class="scard__strip">
+                  {s.photos.map((src, n) => (
+                    <div class="scard__frame media">
+                      <Image
+                        src={resolveImage(src)}
+                        alt={`${s.name} — фото ${n + 1}`}
+                        widths={[360, 560, 800]}
+                        sizes={sizes}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <div class="veil" aria-hidden="true"></div>
+                <div class="scard__tags">
+                  <span class="photo-tag">от {priceFmt.format(s.priceFrom)} ₽</span>
+                  {styleTag && <span class="photo-tag">{styleTag}</span>}
+                </div>
+
+                <button class="save" type="button" data-save={saveData} aria-pressed="false" aria-label="В избранное">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                    <path d="M12 20.2S3.8 15.3 3.8 9.6A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 8.2 2c0 5.7-8.2 10.6-8.2 10.6z" stroke-linejoin="round" />
+                  </svg>
+                </button>
+              </div>
+            ) : (
+              <PhotoRail
+                photos={s.photos}
+                alt={s.name}
+                href={`/moskva/podryadchiki/vedushchie/${s.slug}/`}
+                sizes={sizes}
+                widths={[360, 560, 800, 1100]}
+              >
+                <div class="scard__tags">
+                  <span class="photo-tag">от {priceFmt.format(s.priceFrom)} ₽</span>
+                  {styleTag && <span class="photo-tag">{styleTag}</span>}
+                </div>
+
+                <button class="save" type="button" data-save={saveData} aria-pressed="false" aria-label="В избранное">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                    <path d="M12 20.2S3.8 15.3 3.8 9.6A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 8.2 2c0 5.7-8.2 10.6-8.2 10.6z" stroke-linejoin="round" />
+                  </svg>
+                </button>
+              </PhotoRail>
+            )}
+
+            <div class="scard__body">
+              <div class="scard__top">
+                <h2 class="scard__name">
+                  <a href={`/moskva/podryadchiki/vedushchie/${s.slug}/`}>{s.name}</a>
+                </h2>
+                <span class="scard__rate" aria-label={`Рейтинг ${s.rating}`}>★ {s.rating.toFixed(1)}</span>
+              </div>
+              <p class="scard__tagline t-small">{s.tagline}</p>
+            </div>
+          </article>
+          );
+        })}
+      </div>
+
+      <p class="empty t-small" data-results-empty hidden>
+        По заданным фильтрам никого не нашлось — попробуйте снять часть условий.
+      </p>
+    </main>
+  </div>
+
+  <BottomDock active="vendors" />
+</Layout>
+
+<style>
+  /* ============ ЗАГОЛОВОК СТРАНИЦЫ ============ */
+  .page-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--s-4);
+    padding: var(--s-6) var(--gutter) var(--s-5);
+  }
+
+  .page-head__text {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: var(--s-3);
+  }
+
+  /* Счётчик — рядом с заголовком, крупно: сразу видно объём каталога */
+  .page-head__count {
+    font-size: var(--fs-h3);
+    font-weight: var(--w-medium);
+  }
+
+  .pill__caret { font-size: 9px; }
+
+  /* Кнопка «Фильтры» нужна только там, где фильтр живёт в шторке */
+  @media (min-width: 1024px) {
+    .page-head__filters { display: none; }
+  }
+
+  /* ============ КАРКАС ============ */
+  .layout {
+    padding-bottom: calc(var(--safe-b) + 120px);
+  }
+
+  /* ============ СЕТКА-МОЗАИКА ============ */
+  .wrap {
+    max-width: none;
+    padding: 0 clamp(8px, 1vw, 16px) 0;
+  }
+
+  .vgrid {
+    display: grid;
+    grid-auto-flow: dense;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s-6) clamp(8px, 1vw, 12px);
+  }
+
+  @media (min-width: 640px) {
+    .vgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+
+  @media (min-width: 1440px) {
+    .vgrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  }
+
+  .scard--duo,
+  .scard--wide { grid-column: span 2; }
+
+  /* Большой кадр на две колонки: 13:8 держит высоту ряда 4:5 (см. алгоритм).
+     :global — сама галерея живёт в PhotoRail, тут только переопределяем. */
+  .scard--wide :global(.prail) { aspect-ratio: 13 / 8; }
+
+  .empty { padding: var(--s-7) clamp(4px, 0.6vw, 8px); }
+  .empty[hidden] { display: none; }
+
+  [data-card].is-hidden { display: none; }
+
+  /* ============ КАРТОЧКА ============ */
+  .scard {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+    min-width: 0;
+  }
+
+  .scard__media { position: relative; }
+
+  .scard__frame {
+    position: relative;
+    aspect-ratio: 4 / 5;
+    background: var(--surface-dim);
+  }
+
+  .scard__frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* Дуо-карточка: два кадра 4:5 видны сразу; если фото больше —
+     полоса листается вбок (scroll-snap), как в карточках площадок */
+  .scard__strip {
+    display: flex;
+    gap: clamp(8px, 1vw, 12px); /* тот же зазор, что у колонок сетки */
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .scard__strip::-webkit-scrollbar { display: none; }
+
+  .scard__strip .scard__frame {
+    flex: 0 0 calc(50% - clamp(8px, 1vw, 12px) / 2);
+    scroll-snap-align: start;
+  }
+
+  /* Метки на фото: цена + фирменный стиль, поверх затемнения */
+  .scard__tags {
+    position: absolute;
+    bottom: var(--s-3);
+    left: var(--s-3);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+    pointer-events: none;
+  }
+
+  /* ============ ПОДПИСЬ: только имя, рейтинг, одна строка ============ */
+  .scard__top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--s-3);
+  }
+
+  .scard__name {
+    font-size: var(--fs-h3);
+    font-weight: var(--w-regular);
+    line-height: 1.15;
+  }
+
+  .scard__name a { text-decoration: none; }
+
+  .scard__rate {
+    font-size: var(--fs-small);
+    font-weight: var(--w-medium);
+    flex-shrink: 0;
+  }
+
+  .scard__tagline { margin-top: -4px; }
+
+  /* Сердце на фото: без подложек и обводок, тень отделяет от кадра */
+  .save {
+    position: absolute;
+    top: var(--s-3);
+    right: var(--s-3);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--white);
+    cursor: pointer;
+    filter: drop-shadow(0 1px 8px rgb(0 0 0 / 0.45));
+    transition: transform var(--dur-fast) var(--ease-out);
+  }
+
+  .save svg { width: 24px; height: 24px; }
+  .save:active { transform: scale(0.85); }
+  .save[aria-pressed='true'] svg { fill: var(--white); }
+
+  /* ============ ФИЛЬТРЫ: ШТОРКА (узкий экран) ============ */
+  .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: var(--z-overlay);
+    width: min(88vw, 380px);
+    background: var(--surface);
+    transform: translateX(-100%);
+    transition: transform var(--dur-base) var(--ease-out);
+  }
+
+  .sidebar.is-open { transform: none; }
+
+  .sidebar__close {
+    position: absolute;
+    top: var(--s-4);
+    right: var(--s-4);
+    z-index: 1;
+  }
+
+  /* В шторке контент выше экрана — листается внутри, но без видимой
+     полосы прокрутки (на десктопе внутреннего скролла нет вообще) */
+  .sidebar__panel {
+    height: 100%;
+    overflow-y: auto;
+    scrollbar-width: none;
+    padding: var(--s-6) var(--s-5) var(--s-5);
+  }
+
+  .sidebar__panel::-webkit-scrollbar { display: none; }
+
+  .sidebar__backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: calc(var(--z-overlay) - 1);
+    background: rgb(0 0 0 / 0.4);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--dur-base) var(--ease-out);
+  }
+
+  .sidebar.is-open ~ .sidebar__backdrop { opacity: 1; pointer-events: auto; }
+
+  /* ============ ФИЛЬТРЫ: ПОСТОЯННАЯ КОЛОНКА (широкий экран) ============
+     Тихая колонка слева в потоке страницы: без подложек, рамок, кнопок
+     и — главное — без своего скролла: листается вместе с карточками,
+     поэтому никаким системным скроллбарам взяться неоткуда (реф. Ozon). */
+  @media (min-width: 1024px) {
+    .bar__filters,
+    .sidebar__close,
+    .sidebar__backdrop { display: none; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+      align-items: start;
+    }
+
+    .sidebar {
+      position: static;
+      inset: auto;
+      width: 100%;
+      height: auto;
+      background: none;
+      transform: none;
+      transition: none;
+      z-index: auto;
+    }
+
+    /* верхний отступ не нужен: воздух даёт page-head, и «Фильтры»
+       встают на одну линию с верхом первого ряда карточек */
+    .sidebar__panel {
+      height: auto;
+      overflow: visible;
+      padding: 0 var(--s-4) 0 var(--gutter);
+    }
+  }
+</style>
+
+<script>
+  import { toggleFavorite, isFavorited, type FavoriteItem } from '../../../../lib/favorites';
+
+  // ============ ШТОРКА ФИЛЬТРОВ (узкий экран) + ФИЛЬТРАЦИЯ ============
+  // На широком экране рейл раскрывается чистым CSS (:hover/:focus-within),
+  // JS для него не нужен. Все карточки уже в разметке (SEO не страдает) —
+  // скрипт только прячет/показывает по совпадению с выбранными пунктами.
+  // Внутри группы — ИЛИ, между группами — И.
+  const sidebar = document.querySelector<HTMLElement>('[data-sidebar]');
+  const openBtn = document.querySelector<HTMLButtonElement>('[data-sidebar-open]');
+  const closeBtn = document.querySelector<HTMLButtonElement>('[data-sidebar-close]');
+  const backdrop = document.querySelector<HTMLElement>('[data-sidebar-backdrop]');
+  const resetBtn = document.querySelector<HTMLButtonElement>('[data-filters-reset]');
+  const cards = Array.from(document.querySelectorAll<HTMLElement>('[data-card]'));
+  const countEl = document.querySelector<HTMLElement>('[data-results-count]');
+  const emptyEl = document.querySelector<HTMLElement>('[data-results-empty]');
+  const inputs = Array.from(document.querySelectorAll<HTMLInputElement>('[data-filter-key]'));
+
+  const openSidebar = () => sidebar?.classList.add('is-open');
+  const closeSidebar = () => sidebar?.classList.remove('is-open');
+
+  openBtn?.addEventListener('click', openSidebar);
+  closeBtn?.addEventListener('click', closeSidebar);
+  backdrop?.addEventListener('click', closeSidebar);
+
+  function selections(): Record<string, string[]> {
+    const map: Record<string, string[]> = {};
+    inputs.forEach((input) => {
+      if (!input.checked) return;
+      const key = input.dataset.filterKey!;
+      (map[key] ??= []).push(input.value);
+    });
+    return map;
+  }
+
+  function applyFilters() {
+    const sel = selections();
+    const activeKeys = Object.keys(sel);
+    let visible = 0;
+
+    cards.forEach((card) => {
+      const data = JSON.parse(card.dataset.filters || '{}') as Record<string, string | string[]>;
+      const match = activeKeys.every((key) => {
+        const wanted = sel[key];
+        const value = data[key];
+        if (Array.isArray(value)) return value.some((v) => wanted.includes(v));
+        return wanted.includes(value);
+      });
+      card.classList.toggle('is-hidden', !match);
+      if (match) visible += 1;
+    });
+
+    if (countEl) countEl.textContent = `${visible} найдено`;
+    if (emptyEl) emptyEl.hidden = visible !== 0;
+  }
+
+  inputs.forEach((input) => input.addEventListener('change', applyFilters));
+
+  resetBtn?.addEventListener('click', () => {
+    inputs.forEach((input) => { input.checked = false; });
+    applyFilters();
+  });
+
+  // Избранное: сохраняется в общее хранилище, читается разделом «Избранное»
+  document.querySelectorAll<HTMLButtonElement>('[data-save]').forEach((btn) => {
+    const item = JSON.parse(btn.dataset.save!) as FavoriteItem;
+    btn.setAttribute('aria-pressed', String(isFavorited(item.id)));
+    btn.addEventListener('click', () => {
+      btn.setAttribute('aria-pressed', String(toggleFavorite(item)));
+    });
+  });
+</script>

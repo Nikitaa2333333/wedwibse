@@ -1,0 +1,71 @@
+---
+// Переключатель категорий специалистов: прилипающая под шапкой строка
+// пилюль, скроллится вбок. Живёт под SiteHeader — top берёт готовую
+// высоту шапки из --header-h (SiteHeader сам её публикует).
+import type { SpecialistCategory } from '../data/specialists';
+
+interface Props {
+  categories: SpecialistCategory[];
+  activeSlug: string;
+  basePath?: string;
+}
+
+const { categories, activeSlug, basePath = '/moskva/podryadchiki/' } = Astro.props;
+---
+
+<nav class="cat-nav" aria-label="Категории специалистов">
+  <div class="cat-nav__scroll">
+    {categories.map((c) => (
+      <a
+        href={`${basePath}${c.slug}/`}
+        class={`cat-nav__pill${c.slug === activeSlug ? ' is-active' : ''}`}
+        aria-current={c.slug === activeSlug ? 'page' : undefined}
+      >
+        {c.label}
+      </a>
+    ))}
+  </div>
+</nav>
+
+<style>
+  .cat-nav {
+    position: sticky;
+    top: var(--header-h);
+    z-index: calc(var(--z-nav) - 1);
+    background: var(--bg);
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  .cat-nav__scroll {
+    display: flex;
+    gap: var(--s-3);
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: var(--s-3) var(--gutter);
+  }
+
+  .cat-nav__scroll::-webkit-scrollbar { display: none; }
+
+  .cat-nav__pill {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    padding: 10px 20px;
+    font-size: var(--fs-caption);
+    font-weight: var(--w-medium);
+    color: var(--fg);
+    background: transparent;
+    border: 1px solid var(--fg);
+    border-radius: var(--radius-pill);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background var(--dur-fast) var(--ease-out),
+                color var(--dur-fast) var(--ease-out);
+  }
+
+  .cat-nav__pill.is-active { background: var(--fg); color: var(--bg); }
+
+  @media (hover: hover) {
+    .cat-nav__pill:hover { background: var(--fg); color: var(--bg); }
+  }
+</style>
