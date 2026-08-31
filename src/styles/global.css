@@ -20,10 +20,11 @@
   --hairline: var(--line); /* текущая линия */
 
   /* ============ ТИПОГРАФИКА ============
-     Onest. Заголовки плотные (700) — чёрный гротеск на нежном фоне.
-     Тонкое начертание только у гигантских цифр. Капс запрещён.
+     Onest. Вес всего сайта — четырьмя ручками ниже, в компонентах своих
+     чисел нет. Тонких начертаний в проекте не осталось: набор плотный,
+     иерархия строится ступенькой между ручками. Капс запрещён.
      Резиновые размеры: clamp(мобила, резина, десктоп ~1280). */
-  --font-sans: 'Inter', 'Helvetica Neue', Helvetica, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: 'Onest', 'Helvetica Neue', Helvetica, -apple-system, 'Segoe UI', Roboto, sans-serif;
 
   --fs-display: clamp(52px, 9vw, 112px);  /* главный экранный заголовок */
   --fs-h1: clamp(40px, 6vw, 72px);        /* заголовок секции крупный */
@@ -34,12 +35,21 @@
   --fs-small: 14px;                       /* подписи, метки */
   --fs-caption: 13px;                     /* сноски, колофон */
 
-  --w-thin: 200;     /* гигантские цифры-факты */
-  --w-light: 300;    /* второстепенные крупные строки */
-  --w-regular: 400;  /* набор */
-  --w-medium: 500;   /* служебное: кнопки, навигация, подписи плашек */
-  --w-semi: 600;     /* названия в плашках мозаики */
-  --w-bold: 700;     /* главные заголовки — плотный чёрный гротеск (реф. Exploring Minds) */
+  /* ============ ВЕС: ТРИ РУЧКИ НА ВЕСЬ САЙТ ============
+     Плотность сайта задаётся только этими строками, у компонентов своих
+     чисел нет. Крутить всегда все три вместе, сохраняя ступеньку между
+     ними (корпус < служебное < заголовок < h1), иначе иерархия схлопнется.
+     Рабочий диапазон 300–700. */
+  --w-body: 500;     /* весь наборный текст, подписи, метки */
+  --w-medium: 600;   /* служебное: кнопки, навигация, подписи плашек */
+  --w-head: 600;     /* заголовки секций, названия карточек, вопросы FAQ */
+  --w-head-lg: 700;  /* только h1 и display: крупное держит больше веса */
+
+  --w-thin: 200;     /* зарезервировано: сверхтонкое сейчас не используется */
+  --w-light: 300;    /* зарезервировано */
+  --w-regular: 400;  /* зарезервировано: корпус теперь --w-body */
+  --w-semi: 600;
+  --w-bold: 700;
 
   --lh-display: 1.04;
   --lh-heading: 1.12;
@@ -159,7 +169,7 @@ html {
 body {
   font-family: var(--font-sans);
   font-size: var(--fs-body);
-  font-weight: var(--w-regular);
+  font-weight: var(--w-body);
   line-height: var(--lh-body);
   letter-spacing: var(--ls-base);
   color: var(--fg);
@@ -167,7 +177,7 @@ body {
 }
 
 h1, h2, h3, h4 {
-  font-weight: var(--w-light); /* тонкие изящные заголовки (Inter Light) */
+  font-weight: var(--w-head); /* вес заголовков — только из токена */
   line-height: var(--lh-heading);
 }
 
@@ -224,7 +234,7 @@ dd b, dd strong, td b, td strong {
 /* ============ ТИПОГРАФИЧЕСКИЕ РОЛИ ============ */
 .t-display {
   font-size: var(--fs-display);
-  font-weight: var(--w-light);
+  font-weight: var(--w-head-lg);
   line-height: var(--lh-display);
   letter-spacing: var(--ls-display);
   max-width: var(--measure-head);
@@ -232,7 +242,7 @@ dd b, dd strong, td b, td strong {
 
 .t-h1 {
   font-size: var(--fs-h1);
-  font-weight: var(--w-light);
+  font-weight: var(--w-head-lg);
   line-height: var(--lh-display);
   letter-spacing: var(--ls-display);
   max-width: var(--measure-head);
@@ -240,14 +250,14 @@ dd b, dd strong, td b, td strong {
 
 .t-h2 {
   font-size: var(--fs-h2);
-  font-weight: var(--w-semi);
+  font-weight: var(--w-head);
   max-width: var(--measure-head);
 }
 
-/* Гигантская цифра-факт (реф. «350») — единственное тонкое */
+/* Гигантская цифра-факт (реф. «350») */
 .t-num {
   font-size: clamp(72px, 14vw, 160px);
-  font-weight: var(--w-light);
+  font-weight: var(--w-head-lg);
   line-height: 0.95;
   letter-spacing: -0.02em;
 }

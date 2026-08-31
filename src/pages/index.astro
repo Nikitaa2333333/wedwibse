@@ -79,7 +79,7 @@ const perks = [
            Разделы живут в BottomDock — дублировать их сверху не нужно. -->
       <header class="hero__bar">
         <a class="hero__brand" href="/" aria-label="WED Secrets — на главную">
-          <img class="hero__logo" src="/logo.svg" alt="WED Secrets" width="132" height="24" />
+          <span class="hero__logo" aria-hidden="true"></span>
         </a>
 
         <a class="hero__account" href="#" aria-label="Личный кабинет">
@@ -257,11 +257,19 @@ const perks = [
     color: inherit;
   }
 
-  /* Логотип нарисован белым — на светлой шапке гасим его в чёрный */
+  /* Логотип-леттеринг «Wed secrets». Цвет берём не из файла, а маской:
+     форма из SVG, заливка — из токена, поэтому знак сам подхватывает
+     палитру секции. Прежний каллиграфический знак лежит рядом
+     (public/logo-script.svg) — вернуть можно одной строкой.
+     Высота ниже прежней: у гротеска буквы занимают почти весь кадр,
+     а у каллиграфии половину высоты съедали поля. */
   .hero__logo {
-    height: clamp(20px, 2vw, 26px);
-    width: auto;
-    filter: brightness(0);
+    display: block;
+    height: clamp(15px, 1.8vw, 22px);
+    aspect-ratio: 1614 / 210;   /* пропорции самого файла logo.svg */
+    background: var(--accent);
+    -webkit-mask: url('/logo.svg') no-repeat center / contain;
+    mask: url('/logo.svg') no-repeat center / contain;
   }
 
   .hero__account {
@@ -299,7 +307,7 @@ const perks = [
     flex-shrink: 0;
     color: var(--accent);
     font-size: clamp(32px, 4vw, 56px);
-    font-weight: var(--w-medium);
+    font-weight: var(--w-head-lg);
     line-height: 0.9;
     letter-spacing: -0.03em;
     max-width: var(--measure-head);
@@ -371,7 +379,7 @@ const perks = [
 
   .perk__name {
     font-size: clamp(28px, 4vw, 44px);
-    font-weight: var(--w-light);
+    font-weight: var(--w-head);
     line-height: 1.05;
     letter-spacing: -0.015em;
   }
@@ -443,7 +451,7 @@ const perks = [
     display: flex;
     align-items: center;
     font-size: clamp(30px, 4.5vw, 54px);
-    font-weight: var(--w-light);
+    font-weight: var(--w-head);
     letter-spacing: -0.02em;
     white-space: nowrap;
   }
