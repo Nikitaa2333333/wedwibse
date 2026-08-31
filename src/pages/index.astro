@@ -340,8 +340,10 @@ const latest = ARTICLES.slice(0, 3);
      Цветом не красится: на первом экране акцент несёт логотип, и второй
      оранжевый узел рядом с ним отбирает у него внимание. */
   .hero__title {
-    flex-shrink: 0;
-    font-size: clamp(32px, 4vw, 56px);
+    /* сжиматься обязаны оба: с flex-shrink: 0 у заголовка и подсказки
+       их сумма на 1280 не влезала в строку и подсказку выносило за экран */
+    min-width: 0;
+    font-size: clamp(30px, 3.4vw, 48px);
     font-weight: var(--w-head-lg);
     line-height: 0.9;
     letter-spacing: -0.03em;
@@ -355,7 +357,7 @@ const latest = ARTICLES.slice(0, 3);
     align-items: center;
     gap: var(--s-4);
     margin-top: var(--s-5);
-    flex-shrink: 0;
+    min-width: 0;
     text-decoration: none;
     color: inherit;
   }
@@ -398,6 +400,13 @@ const latest = ARTICLES.slice(0, 3);
     overflow: hidden;
   }
 
+  /* На широком экране 3/4 давали плашку выше самого экрана (на 1280 —
+     837px при видимой высоте ~720): пара плашек не читалась целиком.
+     Квадрат влезает вместе с хвостом героя. */
+  @media (min-width: 1024px) {
+    .perk { aspect-ratio: 1 / 1; }
+  }
+
   .perk__top {
     display: flex;
     justify-content: space-between;
@@ -419,7 +428,7 @@ const latest = ARTICLES.slice(0, 3);
   /* Имя плашки — витринный кегль: плашка занимает полэкрана, и заголовок
      считается от её ширины, а не от страницы. Ниже 5vw читается мелко. */
   .perk__name {
-    font-size: clamp(30px, 5vw, 64px);
+    font-size: clamp(26px, 3.6vw, 46px);
     font-weight: var(--w-head);
     line-height: 1.05;
     letter-spacing: -0.015em;
@@ -524,7 +533,7 @@ const latest = ARTICLES.slice(0, 3);
     height: 1.15em;
     display: flex;
     align-items: center;
-    font-size: clamp(30px, 4.5vw, 54px);
+    font-size: clamp(24px, 3vw, 40px);
     font-weight: var(--w-head);
     letter-spacing: -0.02em;
     white-space: nowrap;
