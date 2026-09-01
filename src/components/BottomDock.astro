@@ -10,7 +10,10 @@ const { active } = Astro.props;
 const items = [
   { key: 'feed', href: '/', label: 'Главная' },
   { key: 'venues', href: '/moskva/ploshchadki/', label: 'Площадки' },
-  { key: 'vendors', href: '/moskva/podryadchiki/', label: 'Специалисты' },
+  // Раздел «Специалисты» ведёт сразу в каталог первого направления:
+  // хаба с плитками направлений больше нет, направления переключаются
+  // двухуровневой полосой CategoryNav внутри самого каталога.
+  { key: 'vendors', href: '/moskva/podryadchiki/vedushchie/', label: 'Специалисты' },
   { key: 'saved', href: '/izbrannoe/', label: 'Избранное' },
   { key: 'chat', href: '#', label: 'Чат' },
 ] as const;
