@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<style>*{box-sizing:border-box}html{color-scheme:light dark}body{margin:0}img{max-width:100%}</style>
+<title>Контент-план блога — WED Secrets</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap">
+<style>
+  :root {
+    --paper: #ffffff;
+    --surface: #f7f5f2;
+    --line: #e4dfd8;
+    --ink: #1a1613;
+    --accent: #e8592a;
+    --accent-soft: #f6d6c9;
+    --neutral-bar: #d8d2c9;
+
+    --w-body: 400;
+    --w-medium: 500;
+    --w-head: 600;
+    --w-head-lg: 700;
+
+    --page-max: 1080px;
+    --gutter: clamp(20px, 5vw, 56px);
+    --section-gap: clamp(48px, 7vw, 88px);
+
+    --measure-text: 68ch;
+    --measure-lead: 58ch;
+    --measure-head: 26ch;
+
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #14100d;
+      --surface: #1f1a16;
+      --line: #302923;
+      --ink: #ffffff;
+      --accent: #ff7448;
+      --accent-soft: #4a2618;
+      --neutral-bar: #3a332c;
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper: #14100d;
+    --surface: #1f1a16;
+    --line: #302923;
+    --ink: #ffffff;
+    --accent: #ff7448;
+    --accent-soft: #4a2618;
+    --neutral-bar: #3a332c;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Onest', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-weight: var(--w-body);
+    font-size: 17px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: var(--page-max);
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+  }
+
+  h1, h2, h3 { margin: 0; text-wrap: balance; }
+  h1 {
+    font-size: clamp(34px, 6vw, 56px);
+    font-weight: var(--w-head-lg);
+    line-height: 1.04;
+    letter-spacing: -0.02em;
+    max-width: var(--measure-head);
+  }
+  h2 {
+    font-size: clamp(24px, 3.4vw, 34px);
+    font-weight: var(--w-head);
+    line-height: 1.12;
+    letter-spacing: -0.015em;
+    max-width: var(--measure-head);
+  }
+  h3 {
+    font-size: 19px;
+    font-weight: var(--w-head);
+    line-height: 1.25;
+  }
+  p { margin: 0; max-width: var(--measure-text); }
+  .lead { font-size: clamp(19px, 2.2vw, 23px); line-height: 1.4; max-width: var(--measure-lead); }
+
+  mark {
+    background: var(--accent-soft);
+    color: inherit;
+    padding: 0 .12em;
+  }
+
+  /* ---------- шапка ---------- */
+  header.top {
+    padding-block: clamp(44px, 8vw, 96px) clamp(32px, 5vw, 56px);
+    border-bottom: 1px solid var(--line);
+  }
+  .top-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 28px;
+    margin-top: 28px;
+    font-size: 15px;
+    font-weight: var(--w-medium);
+  }
+  .top-meta span { display: flex; gap: 7px; align-items: baseline; }
+  .top-meta i { font-style: normal; color: var(--accent); }
+  .top p.lead { margin-top: 22px; }
+
+  /* ---------- секции ---------- */
+  section { padding-block: var(--section-gap); border-bottom: 1px solid var(--line); }
+  section > .wrap > * + * { margin-top: 24px; }
+  section p + .chart, section h2 + .chart { margin-top: 32px; }
+
+  /* ---------- плитки чисел ---------- */
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 2px;
+    background: var(--line);
+    border: 1px solid var(--line);
+  }
+  .tile { background: var(--paper); padding: 22px 20px 20px; }
+  .tile b {
+    display: block;
+    font-size: clamp(30px, 4.6vw, 42px);
+    font-weight: var(--w-head-lg);
+    letter-spacing: -0.03em;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .tile span { display: block; margin-top: 10px; font-size: 15px; line-height: 1.35; }
+  .tile.hot b { color: var(--accent); }
+
+  /* ---------- горизонтальные бары ---------- */
+  .chart { display: flex; flex-direction: column; gap: 11px; }
+  .row {
+    display: grid;
+    grid-template-columns: minmax(120px, 210px) 1fr auto;
+    align-items: center;
+    gap: 14px;
+  }
+  .row .name { font-size: 16px; line-height: 1.25; }
+  .row .name em {
+    display: block;
+    font-style: normal;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+    margin-top: 2px;
+  }
+  .track { position: relative; height: 22px; }
+  .bar {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 0 4px 4px 0;
+    min-width: 2px;
+  }
+  .bar.mute { background: var(--neutral-bar); }
+  .val {
+    font-variant-numeric: tabular-nums;
+    font-weight: var(--w-medium);
+    font-size: 16px;
+    min-width: 68px;
+    text-align: right;
+  }
+  .chart-note { font-size: 15px; margin-top: 20px; }
+
+  /* ---------- сезонность ---------- */
+  .season {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 26px 22px;
+    margin-top: 32px;
+  }
+  .spark h3 { font-size: 16px; font-weight: var(--w-medium); }
+  .spark svg { display: block; width: 100%; height: 84px; margin-top: 10px; overflow: visible; }
+  .spark-scale {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    margin-top: 6px;
+  }
+  .spark-peak { font-size: 14px; margin-top: 8px; }
+
+  /* ---------- находки ---------- */
+  .finds {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 2px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    margin-top: 32px;
+  }
+  .find { background: var(--paper); padding: 24px 22px; }
+  .find h3 + p { margin-top: 12px; }
+  .find p { font-size: 16px; }
+  .find .num {
+    font-variant-numeric: tabular-nums;
+    font-weight: var(--w-head-lg);
+    font-size: 28px;
+    letter-spacing: -0.02em;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  /* ---------- таблица решений ---------- */
+  .tablewrap { overflow-x: auto; margin-top: 32px; }
+  table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 16px; }
+  th, td { text-align: left; padding: 13px 16px 13px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: var(--w-head); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; padding-right: 0; }
+  tbody tr:last-child td { border-bottom: 0; }
+
+  /* ---------- план работ ---------- */
+  .chip {
+    display: inline-block;
+    font-size: 14px;
+    font-weight: var(--w-medium);
+    padding: 3px 10px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .chip.now { border-color: var(--accent); color: var(--accent); }
+  .todo-group + .todo-group { margin-top: 40px; }
+  .todo-group h3 { margin-bottom: 16px; }
+
+  footer { padding-block: clamp(40px, 6vw, 72px); }
+  footer p { font-size: 15px; }
+  footer p + p { margin-top: 10px; }
+
+  @media (max-width: 620px) {
+    .row { grid-template-columns: 1fr auto; }
+    .row .track { grid-column: 1 / -1; order: 3; }
+  }
+
+  .crumbs { font-size: 15px; margin-bottom: 18px; }
+  .crumbs a { color: var(--accent); text-decoration: none; }
+  .crumbs a:hover { text-decoration: underline; }
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 2px; background: var(--line); border: 1px solid var(--line); margin-top: 32px; }
+  .step { background: var(--paper); padding: 22px 20px; }
+  .step b { display: block; font-size: 30px; font-weight: var(--w-head-lg); color: var(--accent); line-height: 1; margin-bottom: 12px; font-variant-numeric: tabular-nums; }
+  .step h3 + p { margin-top: 10px; }
+  .step p { font-size: 15px; }
+  .topic { border-top: 1px solid var(--line); padding-top: 22px; margin-top: 26px; }
+  .topic h3 + .keys { margin-top: 8px; }
+  .keys { font-size: 15px; font-variant-numeric: tabular-nums; color: var(--accent); }
+  .keys + p { margin-top: 12px; }
+  footer a { color: var(--accent); }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <p class="crumbs"><a href="/analytics/">Спрос на свадебные площадки</a> · Контент-план</p>
+    <h1>Контент-план блога</h1>
+    <p class="lead">37 материалов на данных Вордстата: как выбираются темы, что пишем в каждой волне и чего не пишем вовсе.</p>
+    <div class="top-meta">
+      <span><i>Основа</i> ядро из 10 177 фраз</span>
+      <span><i>Регионы</i> Москва + МО</span>
+      <span><i>Задача блога</i> вести трафик в каталог</span>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <h2>Как рождается тема</h2>
+    <p>Четыре шага, каждый на данных. Последний работает как отсев: если статье некуда ссылаться, тема не берётся — такой текст не работает на каталог.</p>
+    <div class="steps">
+      <div class="step"><b>1</b><h3>Фраза из ядра</h3><p>Темы растут из кластеров «информационные», «вместимость», «цена» и «тип площадки». Спрос на подрядчиков идёт в раздел «Специалисты», а не в блог.</p></div>
+      <div class="step"><b>2</b><h3>Интент</h3><p>Что человек хочет: выбрать место, посчитать бюджет, посмотреть как бывает, разобраться в порядке действий. Интент определяет формат сильнее, чем тема.</p></div>
+      <div class="step"><b>3</b><h3>Развилка</h3><p>Подборка каталога или статья. Главная ошибка — писать текст там, где должна быть посадочная.</p></div>
+      <div class="step"><b>4</b><h3>Получатели ссылок</h3><p>До написания назначаем 5–8 подборок, на которые статья сошлётся точными анкорами, и 3–6 площадок в блок под текстом.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Подборка или статья</h2>
+    <p>Если по фразе уже есть подборка, статья на неё не пишется — они начнут конкурировать между собой. Статья берёт соседний, более широкий запрос и ссылается на подборку анкором.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Признак запроса</th><th>Куда</th><th>Пример</th><th class="num">Показов</th></tr></thead>
+        <tbody>
+          <tr><td>Ищет объект и готов выбирать</td><td>подборка</td><td>банкетный зал для свадьбы</td><td class="num">2 026</td></tr>
+          <tr><td>Ищет ответ, объект — следствие</td><td>статья</td><td>где отметить свадьбу</td><td class="num">1 761</td></tr>
+          <tr><td>Содержит фильтр: тип, число, район</td><td>подборка</td><td>свадьба на 30 человек</td><td class="num">730</td></tr>
+          <tr><td>Содержит вопрос или оценку</td><td>статья</td><td>сколько стоит свадьба</td><td class="num">5 683</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Пять типов статей</h2>
+    <p>По убыванию коммерческой отдачи. Пятый тип держим меньшинством — не больше трети пула.</p>
+    <div class="finds">
+      <div class="find"><h3>Деньги</h3><p>«Сколько стоит», «недорого», «под ключ». Сильнейший интент после прямого поиска площадки. Обязательны вилки и цифры — без них текст бесполезен.</p></div>
+      <div class="find"><h3>Выбор формата</h3><p>«Где отметить», «что выбрать». Человек ещё не решил, чего хочет. Каждый описанный формат — ссылка на свою подборку, поэтому такие тексты раздают больше всего веса.</p></div>
+      <div class="find"><h3>Ошибки</h3><p>«О чём спросить площадку до брони». Читает тот, кто уже выбирает: ссылки внутри выглядят естественно.</p></div>
+      <div class="find"><h3>Параметр как тема</h3><p>«Свадьба на 30 гостей», «камерная свадьба». Один-в-один ложится на ось подборок: статья разворачивает то, что фильтр показывает списком.</p></div>
+      <div class="find"><h3>Насмотренность</h3><p>Стили, идеи, галереи. Денег не носит, но собирает трафик и держит людей до стадии выбора.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Волна 1 — до запуска</h2>
+    <p>Пять текстов, закрывающих самый частотный коммерческий спрос. Для каждого расписано, о чём писать по блокам.</p>
+
+    <article class="topic">
+      <h3>Где отметить свадьбу в Москве: 12 форматов площадок</h3>
+      <p class="keys">где отметить свадьбу 1 761 · место для свадьбы 1 311 · где провести свадьбу 755</p>
+      <p>По формату на блок: банкетный зал, ресторан, лофт, усадьба, загородный клуб, шатёр, теплоход, веранда, коттедж, оранжерея, крыша, природа. В каждом — кому подходит, вместимость, вилка цены, сезонность и минус, о котором обычно не говорят. Блок заканчивается ссылкой на свою подборку.</p>
+    </article>
+
+    <article class="topic">
+      <h3>Сколько стоит свадьба в Москве: смета по статьям</h3>
+      <p class="keys">сколько стоит свадьба 5 683 · стоимость свадьбы 1 490 · в москве 527</p>
+      <p>Смета на 30, 50 и 100 гостей тремя колонками. Доля площадки в бюджете, что входит в депозит, пробковый сбор, аренда против «всё включено», где реально экономят и чем это оборачивается.</p>
+    </article>
+
+    <article class="topic">
+      <h3>Банкетный зал для свадьбы: как выбрать и на чём не экономить</h3>
+      <p class="keys">банкетный зал для свадьбы 2 026 · банкетные залы для свадьбы 2 026</p>
+      <p>Метраж на гостя, посадка против фуршета, кухня и её ограничения, звук и соседи, парковка, что смотреть на просмотре и какие вопросы задать до подписания.</p>
+    </article>
+
+    <article class="topic">
+      <h3>Ресторан для свадьбы: 5 ошибок при выборе</h3>
+      <p class="keys">рестораны для свадьбы 4 591 · рестораны для свадьбы в москве 1 246</p>
+      <p>Минимальный депозит, свой алкоголь, банкетное меню и дегустация, отдельный зал против общего, гарантированное время окончания, шумные соседи по залу.</p>
+    </article>
+
+    <article class="topic">
+      <h3>Выездная регистрация: как устроена и сколько стоит</h3>
+      <p class="keys">выездная регистрация 5 286 · регистрация брака 2 333 · сколько стоит 457</p>
+      <p>Официальная и символическая, что нужно юридически, кто такой регистратор, длительность, план Б на дождь, где проводят и сколько это стоит.</p>
+    </article>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Волна 2 — первый месяц</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Тема</th><th>Целевые запросы</th><th>Ведёт на</th></tr></thead>
+        <tbody>
+          <tr><td>Загородная свадьба в Подмосковье</td><td>свадьба в подмосковье 2 750 · загородная свадьба 1 193</td><td>Подмосковье, загородные клубы</td></tr>
+          <tr><td>Свадьба недорого: где сэкономить без ущерба</td><td>свадьба недорого 3 146 · в москве недорого 741</td><td>недорого, до 30 гостей</td></tr>
+          <tr><td>Свадьба под ключ: что входит и сколько стоит</td><td>свадьба под ключ 2 183 · москва 602</td><td>под ключ, организаторы</td></tr>
+          <tr><td>Камерная свадьба на 20–30 гостей</td><td>камерная свадьба 2 843 · на 30 человек 1 865</td><td>вместимость 20 и 30</td></tr>
+          <tr><td>Свадьба на природе: лес, берег, сад</td><td>на природе 941 · в лесу 458 · в саду 205</td><td>природа, у воды</td></tr>
+          <tr><td>Свадьба на 50 гостей: бюджет и площадки</td><td>на 50 человек 1 444 · сколько стоит 127</td><td>вместимость 50</td></tr>
+          <tr><td>Свадьба для двоих: где расписаться и отметить</td><td>для двоих 444 · вдвоём 111</td><td>для двоих, камерные</td></tr>
+          <tr><td>Свадьба на теплоходе по Москве-реке</td><td>на теплоходе 639 · в москве 296</td><td>теплоходы</td></tr>
+          <tr><td>Усадьба или особняк: что выбрать</td><td>усадьба 590 · особняк 103</td><td>усадьбы</td></tr>
+          <tr><td>Свадьба в шатре: что учесть, кроме красоты</td><td>шатер для свадьбы 739</td><td>шатры, загородные клубы</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Волна 3 — второй и третий месяц</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Тема</th><th>Целевые запросы</th><th>Ведёт на</th></tr></thead>
+        <tbody>
+          <tr><td>15 стилей свадьбы и площадка под каждый</td><td>стили свадьбы 7 428</td><td>все типы</td></tr>
+          <tr><td>Свадьба в стиле рустик</td><td>рустик 502 · рустика 217</td><td>загородные, шатры</td></tr>
+          <tr><td>Свадьба в стиле бохо и гринери</td><td>гринери 237 · бохо 134</td><td>природа, оранжереи</td></tr>
+          <tr><td>Рассадка гостей: схемы и план</td><td>рассадка гостей 1 642 · план рассадки 438</td><td>—</td></tr>
+          <tr><td>Свадебные традиции: что оставить</td><td>традиции 2 200 · свадебные традиции 1 279</td><td>—</td></tr>
+          <tr><td>Свадьба в сентябре: плюсы, риски, даты</td><td>свадьба в сентябре 740</td><td>сезонные подборки</td></tr>
+          <tr><td>Лофт для свадьбы: кому подходит</td><td>лофт для свадьбы 366 · в москве 124</td><td>лофты</td></tr>
+          <tr><td>Коттедж для свадьбы с проживанием</td><td>коттедж 366 · с проживанием 60</td><td>коттеджи</td></tr>
+          <tr><td>Свадьба на 100 гостей: что меняется</td><td>на 100 человек 276</td><td>вместимость 120+</td></tr>
+          <tr><td>Веранда и летняя площадка</td><td>веранда для свадьбы 333</td><td>веранды, террасы</td></tr>
+          <tr><td>Свадьба зимой: площадки и логистика</td><td>свадьба зимой 95 · зимние площадки 23</td><td>залы, с проживанием</td></tr>
+          <tr><td>Как выбрать организатора свадьбы</td><td>свадебное агентство 2 382 · организатор 608</td><td>организаторы</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Волна 4 — витрины, а не статьи</h2>
+    <p>Четыре категории с огромным спросом и почти нулевым намерением нанять. Людям здесь нужны галереи работ с указанием площадки и подрядчика, а не текст и прайс.</p>
+    <div class="chart">
+      <div class="row"><div class="name">Букеты и оформление цветами<em>намерение нанять — 3%</em></div><div class="track"><div class="bar" style="width:100%"></div></div><div class="val">121 379</div></div>
+      <div class="row"><div class="name">Свадебные торты<em>намерение нанять — 6%</em></div><div class="track"><div class="bar" style="width:36.4%"></div></div><div class="val">44 224</div></div>
+      <div class="row"><div class="name">Декор и фотозоны<em>намерение нанять — 4%</em></div><div class="track"><div class="bar" style="width:12.6%"></div></div><div class="val">15 347</div></div>
+      <div class="row"><div class="name">Причёски и макияж<em>намерение нанять — 0%</em></div><div class="track"><div class="bar" style="width:10.6%"></div></div><div class="val">12 880</div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Анатомия статьи</h2>
+    <p>Одинаковый каркас для всех текстов. Числа обязательны везде, где речь о деньгах, метраже или сроках: текст без конкретики не отличается от сотни таких же.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Элемент</th><th>Требование</th></tr></thead>
+        <tbody>
+          <tr><td>Заголовок</td><td>Целевой запрос в живой формулировке. Не «Свадебная площадка: гид», а «Где отметить свадьбу в Москве»</td></tr>
+          <tr><td>Лид</td><td>Два-три предложения, отвечают на запрос сразу. Пять секунд на то, чтобы читатель понял, что попал по адресу</td></tr>
+          <tr><td>Тело</td><td>6–10 тысяч знаков, разбито подзаголовками. Каждый подзаголовок — отдельный подзапрос из ядра, а не украшение</td></tr>
+          <tr><td>Ссылки</td><td>5–8 контекстных на подборки, точными анкорами, распределены по тексту. Анкор — то, как подборку называют люди</td></tr>
+          <tr><td>Блок площадок</td><td>3–6 карточек каталога под текстом. Наш перевес: у конкурента карточка из блога не получает ничего</td></tr>
+          <tr><td>Соседние статьи</td><td>2–3 материала той же рубрики</td></tr>
+          <tr><td>Даты</td><td>Публикация и обновление. Раз в полгода правим цифры, список площадок и дату</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Календарь публикаций</h2>
+    <p>Пик спроса — январь и август, дно — декабрь. Тексту нужно время, чтобы проиндексироваться и набрать возраст, поэтому публикуемся до пика, а не в него.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Период</th><th>Что публикуем</th></tr></thead>
+        <tbody>
+          <tr><td>Октябрь–ноябрь</td><td>Волны 1 и 2 целиком — к январскому пику успевают проиндексироваться</td></tr>
+          <tr><td>Декабрь</td><td>Ничего нового: дно спроса. Обновляем опубликованное, доводим каталог</td></tr>
+          <tr><td>Январь–февраль</td><td>Волна 3 на пике трафика, плюс переобновление волны 1</td></tr>
+          <tr><td>Март–апрель</td><td>Витрины и подготовка сезонных текстов</td></tr>
+          <tr><td>Май</td><td>Летние форматы: веранда, шатёр, природа, теплоход</td></tr>
+          <tr><td>Июль–август</td><td>Второй пик: тексты про бюджет и «сколько стоит»</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>О чём не писать</h2>
+    <p>Проверено по ядру: спроса нет, а страницы придётся поддерживать.</p>
+    <div class="finds">
+      <div class="find"><h3>Вместимость 40, 60, 80</h3><p>182, 21 и 5 показов. Сетка живёт только на 10, 20, 30, 50 и 100 гостях.</p></div>
+      <div class="find"><h3>Гео по шоссе и рекам</h3><p>Клязьма, Истра, Дмитровка — ноль. Новая Рига — 8. Пишем про Москву, Подмосковье и города области.</p></div>
+      <div class="find"><h3>Сценарии и конкурсы</h3><p>3 235 показов у «сценария свадьбы», но это запрос ведущих, а не пары, выбирающей площадку. Чужая аудитория.</p></div>
+      <div class="find"><h3>Свой алкоголь и пробковый сбор</h3><p>Ноль показов как отдельная тема. Внутри статьи про ресторан упомянуть стоит, отдельный текст — нет.</p></div>
+      <div class="find"><h3>Годовщины</h3><p>«15 лет какая свадьба» — жирный пласт в ассоциациях, к продукту отношения не имеет.</p></div>
+      <div class="find"><h3>Платья, кольца, образы</h3><p>Соседняя ниша с товарным интентом. Заходить туда без товара бессмысленно.</p></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>Темы и частоты выведены из ядра, собранного через Wordstat API: 12 840 фраз, 10 177 после чистки, регионы Москва и область.</p>
+    <p>Частоты приведены по широкому соответствию. Перед публикацией финальные заголовки проверяются в кавычках вручную — операторов точного вхождения в API нет.</p>
+    <p><a href="/analytics/">Вернуться к разбору спроса</a></p>
+  </div>
+</footer>
+</body>
+</html>
