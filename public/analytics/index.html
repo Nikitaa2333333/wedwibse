@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<style>*{box-sizing:border-box}html{color-scheme:light dark}body{margin:0}img{max-width:100%}</style>
+<title>Спрос на свадебные площадки</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap">
+<style>
+  :root {
+    --paper: #ffffff;
+    --surface: #f7f5f2;
+    --line: #e4dfd8;
+    --ink: #1a1613;
+    --accent: #e8592a;
+    --accent-soft: #f6d6c9;
+    --neutral-bar: #d8d2c9;
+
+    --w-body: 400;
+    --w-medium: 500;
+    --w-head: 600;
+    --w-head-lg: 700;
+
+    --page-max: 1080px;
+    --gutter: clamp(20px, 5vw, 56px);
+    --section-gap: clamp(48px, 7vw, 88px);
+
+    --measure-text: 68ch;
+    --measure-lead: 58ch;
+    --measure-head: 26ch;
+
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #14100d;
+      --surface: #1f1a16;
+      --line: #302923;
+      --ink: #ffffff;
+      --accent: #ff7448;
+      --accent-soft: #4a2618;
+      --neutral-bar: #3a332c;
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper: #14100d;
+    --surface: #1f1a16;
+    --line: #302923;
+    --ink: #ffffff;
+    --accent: #ff7448;
+    --accent-soft: #4a2618;
+    --neutral-bar: #3a332c;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Onest', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-weight: var(--w-body);
+    font-size: 17px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: var(--page-max);
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+  }
+
+  h1, h2, h3 { margin: 0; text-wrap: balance; }
+  h1 {
+    font-size: clamp(34px, 6vw, 56px);
+    font-weight: var(--w-head-lg);
+    line-height: 1.04;
+    letter-spacing: -0.02em;
+    max-width: var(--measure-head);
+  }
+  h2 {
+    font-size: clamp(24px, 3.4vw, 34px);
+    font-weight: var(--w-head);
+    line-height: 1.12;
+    letter-spacing: -0.015em;
+    max-width: var(--measure-head);
+  }
+  h3 {
+    font-size: 19px;
+    font-weight: var(--w-head);
+    line-height: 1.25;
+  }
+  p { margin: 0; max-width: var(--measure-text); }
+  .lead { font-size: clamp(19px, 2.2vw, 23px); line-height: 1.4; max-width: var(--measure-lead); }
+
+  mark {
+    background: var(--accent-soft);
+    color: inherit;
+    padding: 0 .12em;
+  }
+
+  /* ---------- шапка ---------- */
+  header.top {
+    padding-block: clamp(44px, 8vw, 96px) clamp(32px, 5vw, 56px);
+    border-bottom: 1px solid var(--line);
+  }
+  .top-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 28px;
+    margin-top: 28px;
+    font-size: 15px;
+    font-weight: var(--w-medium);
+  }
+  .top-meta span { display: flex; gap: 7px; align-items: baseline; }
+  .top-meta i { font-style: normal; color: var(--accent); }
+  .top p.lead { margin-top: 22px; }
+
+  /* ---------- секции ---------- */
+  section { padding-block: var(--section-gap); border-bottom: 1px solid var(--line); }
+  section > .wrap > * + * { margin-top: 24px; }
+  section p + .chart, section h2 + .chart { margin-top: 32px; }
+
+  /* ---------- плитки чисел ---------- */
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 2px;
+    background: var(--line);
+    border: 1px solid var(--line);
+  }
+  .tile { background: var(--paper); padding: 22px 20px 20px; }
+  .tile b {
+    display: block;
+    font-size: clamp(30px, 4.6vw, 42px);
+    font-weight: var(--w-head-lg);
+    letter-spacing: -0.03em;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .tile span { display: block; margin-top: 10px; font-size: 15px; line-height: 1.35; }
+  .tile.hot b { color: var(--accent); }
+
+  /* ---------- горизонтальные бары ---------- */
+  .chart { display: flex; flex-direction: column; gap: 11px; }
+  .row {
+    display: grid;
+    grid-template-columns: minmax(120px, 210px) 1fr auto;
+    align-items: center;
+    gap: 14px;
+  }
+  .row .name { font-size: 16px; line-height: 1.25; }
+  .row .name em {
+    display: block;
+    font-style: normal;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+    margin-top: 2px;
+  }
+  .track { position: relative; height: 22px; }
+  .bar {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 0 4px 4px 0;
+    min-width: 2px;
+  }
+  .bar.mute { background: var(--neutral-bar); }
+  .val {
+    font-variant-numeric: tabular-nums;
+    font-weight: var(--w-medium);
+    font-size: 16px;
+    min-width: 68px;
+    text-align: right;
+  }
+  .chart-note { font-size: 15px; margin-top: 20px; }
+
+  /* ---------- сезонность ---------- */
+  .season {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 26px 22px;
+    margin-top: 32px;
+  }
+  .spark h3 { font-size: 16px; font-weight: var(--w-medium); }
+  .spark svg { display: block; width: 100%; height: 84px; margin-top: 10px; overflow: visible; }
+  .spark-scale {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    margin-top: 6px;
+  }
+  .spark-peak { font-size: 14px; margin-top: 8px; }
+
+  /* ---------- находки ---------- */
+  .finds {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 2px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    margin-top: 32px;
+  }
+  .find { background: var(--paper); padding: 24px 22px; }
+  .find h3 + p { margin-top: 12px; }
+  .find p { font-size: 16px; }
+  .find .num {
+    font-variant-numeric: tabular-nums;
+    font-weight: var(--w-head-lg);
+    font-size: 28px;
+    letter-spacing: -0.02em;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  /* ---------- таблица решений ---------- */
+  .tablewrap { overflow-x: auto; margin-top: 32px; }
+  table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 16px; }
+  th, td { text-align: left; padding: 13px 16px 13px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: var(--w-head); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; padding-right: 0; }
+  tbody tr:last-child td { border-bottom: 0; }
+
+  /* ---------- план работ ---------- */
+  .chip {
+    display: inline-block;
+    font-size: 14px;
+    font-weight: var(--w-medium);
+    padding: 3px 10px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .chip.now { border-color: var(--accent); color: var(--accent); }
+  .todo-group + .todo-group { margin-top: 40px; }
+  .todo-group h3 { margin-bottom: 16px; }
+
+  footer { padding-block: clamp(40px, 6vw, 72px); }
+  footer p { font-size: 15px; }
+  footer p + p { margin-top: 10px; }
+
+  @media (max-width: 620px) {
+    .row { grid-template-columns: 1fr auto; }
+    .row .track { grid-column: 1 / -1; order: 3; }
+  }
+</style>
+
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <h1>Спрос на свадебные площадки</h1>
+    <p class="lead">Семантическое ядро WED Secrets: что и какими словами ищут в Москве и области, когда выбирают место для свадьбы.</p>
+    <div class="top-meta">
+      <span><i>Снято</i> 1 сентября 2026</span>
+      <span><i>Источник</i> Wordstat API</span>
+      <span><i>Регионы</i> Москва + МО</span>
+      <span><i>Метод</i> широкое соответствие, показов в месяц</span>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <div class="tiles">
+      <div class="tile"><b>173</b><span>затравки ушло в API</span></div>
+      <div class="tile"><b>12 840</b><span>фраз вернулось</span></div>
+      <div class="tile"><b>10 177</b><span>осталось после чистки</span></div>
+      <div class="tile hot"><b>41 027</b><span>показов у формулировки «банкетный зал»</span></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Мы называем это площадкой. Люди — нет</h2>
+    <p>Наш термин девятый по популярности. В интерфейсе он останется, но <mark>в H1 и title посадочных идут «банкетный зал» и «ресторан для свадьбы»</mark> — там на порядок больше спроса.</p>
+    <div class="chart">
+      <div class="row"><div class="name">банкетный зал</div><div class="track"><div class="bar" style="width:100%"></div></div><div class="val">41 027</div></div>
+      <div class="row"><div class="name">ресторан для свадьбы</div><div class="track"><div class="bar" style="width:33.3%"></div></div><div class="val">13 673</div></div>
+      <div class="row"><div class="name">площадки для свадьбы</div><div class="track"><div class="bar" style="width:14%"></div></div><div class="val">5 760</div></div>
+      <div class="row"><div class="name">свадебные площадки</div><div class="track"><div class="bar" style="width:11.3%"></div></div><div class="val">4 648</div></div>
+      <div class="row"><div class="name">место для свадьбы</div><div class="track"><div class="bar" style="width:3.2%"></div></div><div class="val">1 311</div></div>
+      <div class="row"><div class="name">свадебный зал</div><div class="track"><div class="bar" style="width:2.9%"></div></div><div class="val">1 178</div></div>
+    </div>
+    <p class="chart-note">«Банкетный зал» шире свадьбы — тянет корпоративы и дни рождения. Это цена входа в самую частотную формулировку рынка.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Из чего состоит ядро</h2>
+    <p>Семь кластеров, 10 177 фраз. Подрядчики обгоняют площадки по объёму спроса вдвое с лишним — раздел «Специалисты» это не довесок к каталогу.</p>
+    <div class="chart">
+      <div class="row"><div class="name">Подрядчики</div><div class="track"><div class="bar" style="width:100%"></div></div><div class="val">225 732</div></div>
+      <div class="row"><div class="name">Тип площадки</div><div class="track"><div class="bar" style="width:30.6%"></div></div><div class="val">69 150</div></div>
+      <div class="row"><div class="name">Информационные</div><div class="track"><div class="bar" style="width:26.8%"></div></div><div class="val">60 399</div></div>
+      <div class="row"><div class="name">Цена и условия</div><div class="track"><div class="bar" style="width:13.7%"></div></div><div class="val">30 920</div></div>
+      <div class="row"><div class="name">Общий спрос</div><div class="track"><div class="bar" style="width:11.6%"></div></div><div class="val">26 109</div></div>
+      <div class="row"><div class="name">География</div><div class="track"><div class="bar" style="width:5.4%"></div></div><div class="val">12 129</div></div>
+      <div class="row"><div class="name">Вместимость</div><div class="track"><div class="bar" style="width:4.9%"></div></div><div class="val">11 091</div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Типы площадок — очередь на посадочные</h2>
+    <p>Порядок запуска подборок читается прямо отсюда. Лофт — модный, но не массовый: он в пятьдесят семь раз меньше банкетного зала, и дизайн-язык сайта тут ни при чём.</p>
+    <div class="chart">
+      <div class="row"><div class="name">Банкетный зал</div><div class="track"><div class="bar" style="width:100%"></div></div><div class="val">41 027</div></div>
+      <div class="row"><div class="name">Ресторан</div><div class="track"><div class="bar" style="width:33.3%"></div></div><div class="val">13 673</div></div>
+      <div class="row"><div class="name">Природа, лес, у воды</div><div class="track"><div class="bar" style="width:8.8%"></div></div><div class="val">3 631</div></div>
+      <div class="row"><div class="name">Загородный клуб</div><div class="track"><div class="bar" style="width:8.5%"></div></div><div class="val">3 476</div></div>
+      <div class="row"><div class="name">Теплоход, яхта</div><div class="track"><div class="bar" style="width:5.8%"></div></div><div class="val">2 360</div></div>
+      <div class="row"><div class="name">Усадьба, особняк</div><div class="track"><div class="bar" style="width:3.6%"></div></div><div class="val">1 481</div></div>
+      <div class="row"><div class="name">Коттедж</div><div class="track"><div class="bar" style="width:3.2%"></div></div><div class="val">1 327</div></div>
+      <div class="row"><div class="name">Шатёр</div><div class="track"><div class="bar" style="width:3%"></div></div><div class="val">1 228</div></div>
+      <div class="row"><div class="name">Лофт</div><div class="track"><div class="bar" style="width:1.7%"></div></div><div class="val">712</div></div>
+      <div class="row"><div class="name">Веранда</div><div class="track"><div class="bar" style="width:1.6%"></div></div><div class="val">639</div></div>
+      <div class="row"><div class="name">Отель, база отдыха</div><div class="track"><div class="bar" style="width:.9%"></div></div><div class="val">379</div></div>
+      <div class="row"><div class="name">Оранжерея</div><div class="track"><div class="bar" style="width:.6%"></div></div><div class="val">220</div></div>
+      <div class="row"><div class="name">Крыша</div><div class="track"><div class="bar" style="width:.4%"></div></div><div class="val">167</div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Вместимость: половина сетки мертва</h2>
+    <p>Люди мыслят круглыми числами. Подборки на 40, 60 и 80 гостей делать не нужно — спроса там нет, а страницы придётся поддерживать.</p>
+    <div class="chart">
+      <div class="row"><div class="name">камерная свадьба</div><div class="track"><div class="bar" style="width:100%"></div></div><div class="val">2 843</div></div>
+      <div class="row"><div class="name">на 30 человек</div><div class="track"><div class="bar" style="width:65.6%"></div></div><div class="val">1 865</div></div>
+      <div class="row"><div class="name">на 50 человек</div><div class="track"><div class="bar" style="width:50.8%"></div></div><div class="val">1 444</div></div>
+      <div class="row"><div class="name">на 20 человек</div><div class="track"><div class="bar" style="width:43.7%"></div></div><div class="val">1 243</div></div>
+      <div class="row"><div class="name">для двоих</div><div class="track"><div class="bar" style="width:36%"></div></div><div class="val">1 023</div></div>
+      <div class="row"><div class="name">на 10 человек</div><div class="track"><div class="bar" style="width:15.3%"></div></div><div class="val">436</div></div>
+      <div class="row"><div class="name">на 100 человек</div><div class="track"><div class="bar" style="width:9.7%"></div></div><div class="val">276</div></div>
+      <div class="row"><div class="name">на 40 человек</div><div class="track"><div class="bar mute" style="width:6.4%"></div></div><div class="val">182</div></div>
+      <div class="row"><div class="name">на 60 человек</div><div class="track"><div class="bar mute" style="width:.7%"></div></div><div class="val">21</div></div>
+      <div class="row"><div class="name">на 80 человек</div><div class="track"><div class="bar mute" style="width:.2%"></div></div><div class="val">5</div></div>
+    </div>
+    <p class="chart-note">Серым — оси без спроса. «Камерная» и «для двоих» — не числа, а форматы: им нужны свои страницы со своим текстом, а не фильтр по вместимости.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>География: города, а не шоссе</h2>
+    <p>Гипотеза про Клязьму, Истру и Новую Ригу не подтвердилась — это язык риелторов, а не молодожёнов. <mark>Гео-ось строится на городах области.</mark></p>
+    <div class="chart">
+      <div class="row"><div class="name">Москва</div><div class="track"><div class="bar" style="width:100%"></div></div><div class="val">18 357</div></div>
+      <div class="row"><div class="name">Подмосковье</div><div class="track"><div class="bar" style="width:50%"></div></div><div class="val">9 178</div></div>
+      <div class="row"><div class="name">Красногорск</div><div class="track"><div class="bar" style="width:.72%"></div></div><div class="val">133</div></div>
+      <div class="row"><div class="name">Мытищи</div><div class="track"><div class="bar" style="width:.58%"></div></div><div class="val">107</div></div>
+      <div class="row"><div class="name">Одинцово</div><div class="track"><div class="bar" style="width:.55%"></div></div><div class="val">102</div></div>
+      <div class="row"><div class="name">Рублёвка</div><div class="track"><div class="bar mute" style="width:.33%"></div></div><div class="val">61</div></div>
+      <div class="row"><div class="name">Химки</div><div class="track"><div class="bar" style="width:.3%"></div></div><div class="val">55</div></div>
+      <div class="row"><div class="name">Сергиев Посад</div><div class="track"><div class="bar" style="width:.25%"></div></div><div class="val">46</div></div>
+      <div class="row"><div class="name">Звенигород</div><div class="track"><div class="bar" style="width:.15%"></div></div><div class="val">27</div></div>
+      <div class="row"><div class="name">Новая Рига</div><div class="track"><div class="bar mute" style="width:.04%"></div></div><div class="val">8</div></div>
+      <div class="row"><div class="name">Истра, Клязьма, Дмитровка</div><div class="track"><div class="bar mute" style="width:0"></div></div><div class="val">0</div></div>
+    </div>
+    <p class="chart-note">Из 61 показа «Рублёвки» большая часть — запросы про сериал, а не про свадьбу.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Специалисты: объём и деньги — разные вещи</h2>
+    <p>Отдельный сбор, 6 781 фраза. Алым — запросы с явным намерением нанять: цена, заказ, услуги, отзывы, выбор. Рядом — весь объём категории, и разрыв между этими числами решает, что делать с категорией.</p>
+    <div class="chart">
+      <div class="row"><div class="name">Организатор, агентство<em>из 38 106 · 26%</em></div><div class="track"><div class="bar" style="width:100%"></div></div><div class="val">10 008</div></div>
+      <div class="row"><div class="name">Флористика<em>из 121 379 · 3%</em></div><div class="track"><div class="bar" style="width:37.5%"></div></div><div class="val">3 755</div></div>
+      <div class="row"><div class="name">Транспорт<em>из 16 316 · 16%</em></div><div class="track"><div class="bar" style="width:26.4%"></div></div><div class="val">2 646</div></div>
+      <div class="row"><div class="name">Торт и десерты<em>из 44 224 · 6%</em></div><div class="track"><div class="bar" style="width:24.5%"></div></div><div class="val">2 447</div></div>
+      <div class="row"><div class="name">Выездная регистрация<em>из 22 155 · 7%</em></div><div class="track"><div class="bar" style="width:15.8%"></div></div><div class="val">1 579</div></div>
+      <div class="row"><div class="name">Фотограф<em>из 23 729 · 5%</em></div><div class="track"><div class="bar" style="width:11.1%"></div></div><div class="val">1 109</div></div>
+      <div class="row"><div class="name">Ведущий<em>из 15 600 · 4%</em></div><div class="track"><div class="bar" style="width:6.5%"></div></div><div class="val">654</div></div>
+      <div class="row"><div class="name">Декор и оформление<em>из 15 347 · 4%</em></div><div class="track"><div class="bar" style="width:5.7%"></div></div><div class="val">573</div></div>
+      <div class="row"><div class="name">Шоу и артисты<em>из 1 391 · 13%</em></div><div class="track"><div class="bar" style="width:1.8%"></div></div><div class="val">182</div></div>
+      <div class="row"><div class="name">Кейтеринг и бар<em>из 4 314 · 3%</em></div><div class="track"><div class="bar" style="width:1.3%"></div></div><div class="val">128</div></div>
+      <div class="row"><div class="name">Музыка<em>из 8 344 · 1%</em></div><div class="track"><div class="bar mute" style="width:.9%"></div></div><div class="val">95</div></div>
+      <div class="row"><div class="name">Видеограф<em>из 1 256 · 4%</em></div><div class="track"><div class="bar mute" style="width:.5%"></div></div><div class="val">47</div></div>
+      <div class="row"><div class="name">Стиль и красота<em>из 12 880 · 0%</em></div><div class="track"><div class="bar mute" style="width:.3%"></div></div><div class="val">28</div></div>
+    </div>
+    <p class="chart-note">Организатор — самая денежная категория с четырёхкратным отрывом: сюда же ложится «свадьба под ключ» 2 183, то есть запрос на пакет целиком.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Кого продавать, а кого показывать</h2>
+    <p>Разрыв между объёмом и намерением — это не погрешность, а разные типы категорий, и они требуют разных страниц.</p>
+    <div class="finds">
+      <div class="find">
+        <h3>Биржа: карточки, цены, заявка</h3>
+        <p>Организатор, транспорт, выездная регистрация, ведущий, фотограф. Здесь ищут исполнителя и сравнивают: <mark>нужны карточки с прайсом и формой</mark>.</p>
+      </div>
+      <div class="find">
+        <h3>Витрина: галереи вместо прайса</h3>
+        <p>Флористика, торты, декор, стилисты. 121 379 показов у флористики при 3% намерения — «букет невесты» 27 382 смотрят, а не заказывают. Этим нужны подборки работ в блоге.</p>
+      </div>
+      <div class="find">
+        <h3>Не выделять в категорию</h3>
+        <p>Видеограф в девятнадцать раз меньше фотографа — это фильтр «снимает видео» внутри фотографов. Музыка почти вся про треки: живых исполнителей ищут 486 раз в месяц.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Когда публиковаться</h2>
+    <p>Помесячная динамика за 2023–2026, индекс к среднему по году. Два пика — январь и август, дно — декабрь. Значит основной пул статей выходит в октябре–ноябре, чтобы к январю тексты успели проиндексироваться.</p>
+    <div class="season">
+      <div class="spark">
+        <h3>свадебные площадки</h3>
+        <svg viewBox="0 0 240 84" preserveAspectRatio="none" role="img" aria-label="Пик в январе 126 процентов, дно в декабре 59 процентов">
+          <line x1="0" y1="45.6" x2="240" y2="45.6" stroke="var(--line)" stroke-width="1"/>
+          <polyline points="0,25.1 21.8,34.4 43.6,41.5 65.5,54.9 87.3,49.3 109.1,44.4 130.9,38.1 152.7,36.0 174.5,38.1 196.4,41.5 218.2,47.1 240,71.1" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+          <circle cx="0" cy="25.1" r="4" fill="var(--accent)"/>
+          <circle cx="240" cy="71.1" r="4" fill="var(--neutral-bar)"/>
+        </svg>
+        <div class="spark-scale"><span>янв</span><span>дек</span></div>
+        <p class="spark-peak">пик 126% · дно 59%</p>
+      </div>
+      <div class="spark">
+        <h3>банкетный зал для свадьбы</h3>
+        <svg viewBox="0 0 240 84" preserveAspectRatio="none" role="img" aria-label="Пик в январе 133 процента, дно в декабре 63 процента">
+          <line x1="0" y1="45.6" x2="240" y2="45.6" stroke="var(--line)" stroke-width="1"/>
+          <polyline points="0,20.2 21.8,35.7 43.6,33.6 65.5,52.5 87.3,51.1 109.1,51.1 130.9,43.4 152.7,28.6 174.5,34.3 196.4,46.9 218.2,51.8 240,68.6" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+          <circle cx="0" cy="20.2" r="4" fill="var(--accent)"/>
+          <circle cx="240" cy="68.6" r="4" fill="var(--neutral-bar)"/>
+        </svg>
+        <div class="spark-scale"><span>янв</span><span>дек</span></div>
+        <p class="spark-peak">пик 133% · дно 63%</p>
+      </div>
+      <div class="spark">
+        <h3>свадьба в подмосковье</h3>
+        <svg viewBox="0 0 240 84" preserveAspectRatio="none" role="img" aria-label="Пик в январе 137 процентов, дно в декабре 65 процентов">
+          <line x1="0" y1="45.6" x2="240" y2="45.6" stroke="var(--line)" stroke-width="1"/>
+          <polyline points="0,17.5 21.8,38.5 43.6,42.0 65.5,51.8 87.3,51.8 109.1,48.3 130.9,41.3 152.7,21.7 174.5,39.2 196.4,46.2 218.2,53.9 240,67.9" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+          <circle cx="0" cy="17.5" r="4" fill="var(--accent)"/>
+          <circle cx="240" cy="67.9" r="4" fill="var(--neutral-bar)"/>
+        </svg>
+        <div class="spark-scale"><span>янв</span><span>дек</span></div>
+        <p class="spark-peak">пик 137% · дно 65%</p>
+      </div>
+      <div class="spark">
+        <h3>выездная регистрация</h3>
+        <svg viewBox="0 0 240 84" preserveAspectRatio="none" role="img" aria-label="Пик в июле 126 процентов, дно в декабре 58 процентов">
+          <line x1="0" y1="45.6" x2="240" y2="45.6" stroke="var(--line)" stroke-width="1"/>
+          <polyline points="0,30.8 21.8,42.0 43.6,39.9 65.5,46.2 87.3,37.1 109.1,33.6 130.9,25.2 152.7,28.7 174.5,49.0 196.4,56.7 218.2,58.8 240,72.8" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+          <circle cx="130.9" cy="25.2" r="4" fill="var(--accent)"/>
+          <circle cx="240" cy="72.8" r="4" fill="var(--neutral-bar)"/>
+        </svg>
+        <div class="spark-scale"><span>янв</span><span>дек</span></div>
+        <p class="spark-peak">пик 126% в июле · дно 58%</p>
+      </div>
+      <div class="spark">
+        <h3>сколько стоит свадьба</h3>
+        <svg viewBox="0 0 240 84" preserveAspectRatio="none" role="img" aria-label="Пик в июле 131 процент, дно в декабре 72 процента">
+          <line x1="0" y1="45.6" x2="240" y2="45.6" stroke="var(--line)" stroke-width="1"/>
+          <polyline points="0,36.4 21.8,46.9 43.6,51.8 65.5,54.6 87.3,48.6 109.1,34.6 130.9,21.3 152.7,22.0 174.5,42.3 196.4,47.6 218.2,47.6 240,62.3" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+          <circle cx="130.9" cy="21.3" r="4" fill="var(--accent)"/>
+          <circle cx="240" cy="62.3" r="4" fill="var(--neutral-bar)"/>
+        </svg>
+        <div class="spark-scale"><span>янв</span><span>дек</span></div>
+        <p class="spark-peak">пик 131% в июле · дно 72%</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Три находки вне таблиц</h2>
+    <div class="finds">
+      <div class="find">
+        <h3>Выездная регистрация</h3>
+        <span class="num">~10 000</span>
+        <p>Показов в месяц по всему кластеру — сопоставимо со всем спросом на площадки. Интент двойной: ищут и регистратора, и место. Нужна своя посадочная и фильтр в карточке.</p>
+      </div>
+      <div class="find">
+        <h3>Площадки ищут по имени</h3>
+        <span class="num">221</span>
+        <p>Столько у запроса «дивный лес площадка для свадьбы». Шаблон устойчивый: имя плюс «площадка для свадьбы», часто с городом. Отсюда формула title карточки — название, тип, город.</p>
+      </div>
+      <div class="find">
+        <h3>Приглашения — спрос на инструмент</h3>
+        <span class="num">2 743</span>
+        <p>«Создать приглашение на свадьбу», «сайт приглашение». Это не тема статьи, а конструктор внутри сервиса: точка захвата контакта до того, как выбрана площадка.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Что из этого следует</h2>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>Решение</th><th>Основание</th><th class="num">Показов</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>H1 подборок переписать на «банкетный зал» и «ресторан для свадьбы»</td><td>Наш термин девятый по частотности</td><td class="num">41 027</td></tr>
+          <tr><td>Посадочная и фильтр под выездную регистрацию</td><td>Отдельный кластер, а не строчка в фильтре</td><td class="num">10 000</td></tr>
+          <tr><td>Гео-ось: Москва, Подмосковье, восемь городов области</td><td>Шоссе и реки дают ноль</td><td class="num">27 535</td></tr>
+          <tr><td>Сетка вместимости 10 / 20 / 30 / 50 / 100 плюс камерная и для двоих</td><td>40, 60 и 80 гостей не ищут</td><td class="num">8 509</td></tr>
+          <tr><td>Ось «свой алкоголь и пробковый сбор» не делать</td><td>Спроса нет вообще</td><td class="num">0</td></tr>
+          <tr><td>Пул статей публиковать в октябре–ноябре</td><td>Пик спроса — январь, дно — декабрь</td><td class="num">137%</td></tr>
+          <tr><td>Title карточки: название, тип, город</td><td>Брендовый спрос по именам площадок</td><td class="num">1 400</td></tr>
+          <tr><td>Раздел «Специалисты» начинать с организаторов</td><td>Вчетверо больше намерения нанять, чем у следующей категории</td><td class="num">10 008</td></tr>
+          <tr><td>Флористам, кондитерам и стилистам — галереи, а не прайс</td><td>Огромный объём при 0–3% намерения нанять</td><td class="num">3%</td></tr>
+          <tr><td>Видеографа сделать фильтром внутри фотографов</td><td>Спрос в девятнадцать раз меньше</td><td class="num">1 256</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Что осталось</h2>
+    <p>Ограничение API — 100 запросов в час на аккаунт, один запрос равен одной затравке. Рабочих ключей два, потолок 190 в час, поэтому сбор идёт очередями и упирается во время, а не в деньги: Wordstat в составе Search API бесплатен.</p>
+
+    <div class="todo-group">
+      <h3>Досбор данных</h3>
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th>Что снимаем</th><th>Зачем</th><th class="num">Запросов</th><th>Статус</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Расширение ядра его же фразами</td><td>Длинный хвост под статьи: 347 затравок из самого ядра</td><td class="num">347</td><td><span class="chip now">в работе</span></td></tr>
+            <tr><td>Смежные поводы</td><td>Корпоратив, юбилей, день рождения, выпускной: те же площадки, второй каталог без новых объектов</td><td class="num">60</td><td><span class="chip">в очереди</span></td></tr>
+            <tr><td>Бренды реальных площадок</td><td>Рейтинг узнаваемости — кого заводить в каталог первыми</td><td class="num">100</td><td><span class="chip">в очереди</span></td></tr>
+            <tr><td>Ценовые пороги и формат сервиса</td><td>«Свадьба за 300 тысяч», «свадебный портал», бренды конкурентов</td><td class="num">40</td><td><span class="chip">в очереди</span></td></tr>
+            <tr><td>Сторона подрядчиков</td><td>«Как привлечь клиентов на свадьбу» — спрос тех, кто нам платит</td><td class="num">30</td><td><span class="chip">в очереди</span></td></tr>
+            <tr><td>Москва и область раздельно</td><td>В городе ищут ресторан и лофт, за городом — усадьбу: разные посадочные</td><td class="num">40</td><td><span class="chip">в очереди</span></td></tr>
+            <tr><td>Телефон против десктопа</td><td>Проверка mobile-first цифрами, а не убеждением</td><td class="num">40</td><td><span class="chip">в очереди</span></td></tr>
+            <tr><td>Метод regions с affinityIndex</td><td>Где спрос горячее среднего — под какие города МО делать страницы</td><td class="num">20</td><td><span class="chip">в очереди</span></td></tr>
+            <tr><td>Сезонность по типам площадок</td><td>Шатёр к маю, банкетный зал к зиме — расписание подборок на главной</td><td class="num">15</td><td><span class="chip">в очереди</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="todo-group">
+      <h3>Проверка руками</h3>
+      <p>API отдаёт только широкое соответствие: операторов точного вхождения в нём нет. Перед тем как ставить формулировку в заголовок, <mark>15 финальных H1 проверяются в кавычках в веб-Вордстате</mark>. Разрыв бывает кратный, и это единственная работа, которую нельзя автоматизировать.</p>
+    </div>
+
+    <div class="todo-group">
+      <h3>Работа по итогам</h3>
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th>Задача</th><th>Что даёт</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Настоящие URL подборок вместо временного фильтра в адресе</td><td>Оси и их очередь уже известны из ядра</td></tr>
+            <tr><td>Посадочная и фильтр под выездную регистрацию</td><td>Кластер на 22 155 показов, сейчас не покрыт ничем</td></tr>
+            <tr><td>Формула заголовка карточки: название, тип, город</td><td>Брендовый спрос по именам площадок</td></tr>
+            <tr><td>Каталог должен читать параметры фильтра из ссылки</td><td>Сейчас ссылка из статьи открывает полный список</td></tr>
+            <tr><td>Первые пять статей из пула в двадцать</td><td>Закрывают самый частотный коммерческий спрос</td></tr>
+            <tr><td>Раздел «Специалисты»: биржа отдельно, витрина отдельно</td><td>Категории требуют разных страниц — см. разбор выше</td></tr>
+            <tr><td>Конструктор приглашения-сайта</td><td>2 743 показа на инструмент; захват контакта до выбора площадки</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>Данные сняты через Wordstat API в составе Yandex Cloud Search API: 173 затравки в двух наборах (площадки и специалисты), методы topRequests и dynamics, регионы 213 и 1. Ограничение API — 100 запросов в час на аккаунт, поэтому сбор идёт очередями.</p>
+    <p>Третий набор — расширение ядра его же частотными фразами, 347 затравок — сейчас в работе. Порядок величин он не изменит, но добавит хвост длинных запросов под статьи.</p>
+    <p>Частоты приведены по широкому соответствию — операторов точного вхождения в API нет, поэтому реальная частота отдельной формулировки ниже. Для приоритизации этого достаточно, для финальных заголовков цифры перепроверяются вручную.</p>
+    <p>Полный разбор с таблицами по каждому кластеру — SEMANTICS.md в репозитории, сырое ядро — scripts/wordstat-out/core-msk-clean.csv, 6 821 фраза.</p>
+  </div>
+</footer>
+</body>
+</html>

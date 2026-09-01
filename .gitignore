@@ -17,6 +17,9 @@ pnpm-debug.log*
 .env
 .env.production
 
+# кэш справочника регионов Wordstat (~200 КБ, тянется одним вызовом)
+scripts/wordstat-out/regions-tree.json
+
 # macOS-specific files
 .DS_Store
 
