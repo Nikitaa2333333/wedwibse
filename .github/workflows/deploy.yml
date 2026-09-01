@@ -1,0 +1,52 @@
+name: Deploy to VPS (wed-secrets.ru)
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-vps
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build
+        env:
+          SITE_URL: https://wed-secrets.ru
+          # SITE_BASE не задаём: на своём домене сайт живёт в корне.
+          # SITE_INDEXABLE тоже не задаём — дизайн-фаза, сайт закрыт
+          # от поисковиков (см. SEO.md, раздел 5). Перед запуском: true.
+        run: npx astro build
+
+      - name: Prepare SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "${{ secrets.DEPLOY_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+
+      - name: Rsync dist to server
+        # --delete: удалённые страницы исчезают и на сервере,
+        # иначе каталог копит мусор от прошлых сборок.
+        run: |
+          rsync -az --delete --exclude '.write-test' \
+            -e "ssh -i ~/.ssh/id_ed25519" \
+            dist/ "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_PATH }}/"
+
+      - name: Smoke check
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' http://${{ secrets.DEPLOY_HOST }}/)
+          echo "Главная отдала $code"
+          test "$code" = "200"
