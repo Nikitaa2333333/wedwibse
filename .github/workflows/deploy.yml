@@ -45,8 +45,11 @@ jobs:
             -e "ssh -i ~/.ssh/id_ed25519" \
             dist/ "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_PATH }}/"
 
+      # Проверять по IP бессмысленно: nginx разбирает запросы по server_name,
+      # и на голый адрес отвечает дефолтный сервер, а не наш сайт. Стучимся
+      # доменом и идём за редиректом на https, иначе ловим 301 вместо 200.
       - name: Smoke check
         run: |
-          code=$(curl -s -o /dev/null -w '%{http_code}' http://${{ secrets.DEPLOY_HOST }}/)
+          code=$(curl -sL -o /dev/null -w '%{http_code}' https://wed-secrets.ru/)
           echo "Главная отдала $code"
           test "$code" = "200"
