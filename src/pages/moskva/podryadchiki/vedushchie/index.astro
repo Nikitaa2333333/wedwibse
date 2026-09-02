@@ -3,20 +3,22 @@
 // Паттерн для остальных категорий: свой FilterGroup[] + свой массив карточек
 // в data/specialists.ts, разметка страницы не меняется.
 //
-// Фильтр: на широком экране — постоянная компактная колонка слева
-// (без подложек и кнопок, скроллбар спрятан). На узком экране — шторка
-// поверх контента, открывается кнопкой «Фильтры».
+// Фильтр: полоса чипов над каталогом (FilterBar: иконка «все фильтры»,
+// сортировка, быстрые группы и популярные пункты) и шторка снизу
+// (FilterSheet) — одна механика на всех экранах, реф. Яндекс Путешествия.
 import { Image } from 'astro:assets';
 import Layout from '../../../../layouts/Layout.astro';
 import SiteHeader from '../../../../components/SiteHeader.astro';
 import BottomDock from '../../../../components/BottomDock.astro';
-import FilterSidebar from '../../../../components/FilterSidebar.astro';
+import FilterBar from '../../../../components/FilterBar.astro';
+import FilterSheet from '../../../../components/FilterSheet.astro';
 import CategoryNav from '../../../../components/CategoryNav.astro';
 import ScopePicker from '../../../../components/ScopePicker.astro';
 import PhotoRail from '../../../../components/PhotoRail.astro';
 import Icon from '../../../../components/Icon.astro';
 import { VEDUSHCHIE, VEDUSHCHIE_FILTERS, SPECIALIST_CATEGORIES } from '../../../../data/specialists';
 import { resolveImage } from '../../../../lib/images';
+import { countOptions } from '../../../../lib/filter-counts';
 
 // Бакеты для диапазонных фильтров — считаются на сборке, в разметку идёт
 // уже готовое значение бакета, JS на клиенте сравнивает строки.
@@ -79,7 +81,10 @@ const cards = VEDUSHCHIE.map((s, i) => ({
     ceremonyMaster: s.ceremonyMaster ? 'yes' : 'no',
     equipment: s.hasEquipment ? 'yes' : 'no',
   },
+  sortKey: { price: s.priceFrom, rating: s.rating },
 }));
+
+const counts = countOptions(VEDUSHCHIE_FILTERS, cards.map((c) => c.filters));
 
 const priceFmt = new Intl.NumberFormat('ru-RU');
 ---
@@ -98,28 +103,16 @@ const priceFmt = new Intl.NumberFormat('ru-RU');
     active="vedushchie"
     count={`${cards.length} найдено`}
     cityGroup={VEDUSHCHIE_FILTERS.find((g) => g.key === 'city')}
-  >
-    <button slot="actions" class="pill pill--sm page-head__filters" type="button" data-sidebar-open>
-      Фильтры <span class="pill__caret" aria-hidden="true">▾</span>
-    </button>
-  </ScopePicker>
+  />
+
+  <!-- ФИЛЬТРЫ: полоса чипов над каталогом; вся настройка — в шторке снизу -->
+  <FilterBar groups={VEDUSHCHIE_FILTERS} counts={counts} />
 
   <div class="layout">
-    <!-- ФИЛЬТРЫ: постоянная колонка на широком экране; на узком — шторка -->
-    <aside class="sidebar" data-sidebar>
-      <button class="sidebar__close icon-btn" type="button" data-sidebar-close aria-label="Закрыть фильтры">
-        <Icon name="close" />
-      </button>
-      <div class="sidebar__panel">
-        <FilterSidebar groups={VEDUSHCHIE_FILTERS} />
-      </div>
-    </aside>
-    <div class="sidebar__backdrop" data-sidebar-backdrop></div>
-
     <!-- СЕТКА: мозаика без дыр, фото — главное -->
     <main class="wrap">
-      <div class="vgrid" data-reveal-group>
-        {cards.map(({ s, variant, styleTag, filters }) => {
+      <div class="vgrid" data-reveal-group data-sort-grid>
+        {cards.map(({ s, variant, styleTag, filters, sortKey }) => {
           const sizes =
             variant === 'scard--wide' || variant === 'scard--duo'
               ? '(min-width: 1440px) 50vw, (min-width: 640px) 66vw, 100vw'
@@ -138,7 +131,12 @@ const priceFmt = new Intl.NumberFormat('ru-RU');
           });
 
           return (
-          <article class={`scard${variant ? ` ${variant}` : ''}`} data-card data-filters={JSON.stringify(filters)}>
+          <article
+            class={`scard${variant ? ` ${variant}` : ''}`}
+            data-card
+            data-filters={JSON.stringify(filters)}
+            data-sort={JSON.stringify(sortKey)}
+          >
             {variant === 'scard--duo' ? (
               <div class="scard__media">
                 <div class="scard__strip">
@@ -209,20 +207,12 @@ const priceFmt = new Intl.NumberFormat('ru-RU');
     </main>
   </div>
 
+  <FilterSheet groups={VEDUSHCHIE_FILTERS} counts={counts} noun={['ведущий', 'ведущих', 'ведущих']} />
+
   <BottomDock active="vendors" />
 </Layout>
 
 <style>
-  /* ============ ЗАГОЛОВОК СТРАНИЦЫ ============ */
-  /* Шапка раздела живёт в ScopePicker; кнопка «Фильтры» уходит туда слотом
-     и потому стилизуется отсюда. */
-  .pill__caret { font-size: 9px; }
-
-  /* Кнопка «Фильтры» нужна только там, где фильтр живёт в шторке */
-  @media (min-width: 1024px) {
-    .page-head__filters { display: none; }
-  }
-
   /* ============ КАРКАС ============ */
   .layout {
     padding-bottom: calc(var(--safe-b) + 120px);
@@ -387,149 +377,13 @@ const priceFmt = new Intl.NumberFormat('ru-RU');
   .save:active { transform: scale(0.85); }
   /* Сердце Solar: контур — «не в избранном», заливка — «сохранено» */
   .save[aria-pressed='true'] :global(svg > *) { fill: currentColor; }
-
-  /* ============ ФИЛЬТРЫ: ШТОРКА (узкий экран) ============ */
-  .sidebar {
-    position: fixed;
-    inset: 0 auto 0 0;
-    z-index: var(--z-overlay);
-    width: min(88vw, 380px);
-    background: var(--surface);
-    transform: translateX(-100%);
-    transition: transform var(--dur-base) var(--ease-out);
-  }
-
-  .sidebar.is-open { transform: none; }
-
-  .sidebar__close {
-    position: absolute;
-    top: var(--s-4);
-    right: var(--s-4);
-    z-index: 1;
-  }
-
-  /* В шторке контент выше экрана — листается внутри, но без видимой
-     полосы прокрутки (на десктопе внутреннего скролла нет вообще) */
-  .sidebar__panel {
-    height: 100%;
-    overflow-y: auto;
-    scrollbar-width: none;
-    padding: var(--s-6) var(--s-5) var(--s-5);
-  }
-
-  .sidebar__panel::-webkit-scrollbar { display: none; }
-
-  .sidebar__backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: calc(var(--z-overlay) - 1);
-    background: rgb(0 0 0 / 0.4);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity var(--dur-base) var(--ease-out);
-  }
-
-  .sidebar.is-open ~ .sidebar__backdrop { opacity: 1; pointer-events: auto; }
-
-  /* ============ ФИЛЬТРЫ: ПОСТОЯННАЯ КОЛОНКА (широкий экран) ============
-     Тихая колонка слева в потоке страницы: без подложек, рамок, кнопок
-     и — главное — без своего скролла: листается вместе с карточками,
-     поэтому никаким системным скроллбарам взяться неоткуда (реф. Ozon). */
-  @media (min-width: 1024px) {
-    .bar__filters,
-    .sidebar__close,
-    .sidebar__backdrop { display: none; }
-
-    .layout {
-      display: grid;
-      grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
-      align-items: start;
-    }
-
-    .sidebar {
-      position: static;
-      inset: auto;
-      width: 100%;
-      height: auto;
-      background: none;
-      transform: none;
-      transition: none;
-      z-index: auto;
-    }
-
-    /* верхний отступ не нужен: воздух даёт page-head, и «Фильтры»
-       встают на одну линию с верхом первого ряда карточек */
-    .sidebar__panel {
-      height: auto;
-      overflow: visible;
-      padding: 0 var(--s-4) 0 var(--gutter);
-    }
-  }
 </style>
 
 <script>
   import { toggleFavorite, isFavorited, type FavoriteItem } from '../../../../lib/favorites';
 
-  // ============ ШТОРКА ФИЛЬТРОВ (узкий экран) + ФИЛЬТРАЦИЯ ============
-  // На широком экране рейл раскрывается чистым CSS (:hover/:focus-within),
-  // JS для него не нужен. Все карточки уже в разметке (SEO не страдает) —
-  // скрипт только прячет/показывает по совпадению с выбранными пунктами.
-  // Внутри группы — ИЛИ, между группами — И.
-  const sidebar = document.querySelector<HTMLElement>('[data-sidebar]');
-  const openBtn = document.querySelector<HTMLButtonElement>('[data-sidebar-open]');
-  const closeBtn = document.querySelector<HTMLButtonElement>('[data-sidebar-close]');
-  const backdrop = document.querySelector<HTMLElement>('[data-sidebar-backdrop]');
-  const resetBtn = document.querySelector<HTMLButtonElement>('[data-filters-reset]');
-  const cards = Array.from(document.querySelectorAll<HTMLElement>('[data-card]'));
-  const countEl = document.querySelector<HTMLElement>('[data-results-count]');
-  const emptyEl = document.querySelector<HTMLElement>('[data-results-empty]');
-  const inputs = Array.from(document.querySelectorAll<HTMLInputElement>('[data-filter-key]'));
-
-  const openSidebar = () => sidebar?.classList.add('is-open');
-  const closeSidebar = () => sidebar?.classList.remove('is-open');
-
-  openBtn?.addEventListener('click', openSidebar);
-  closeBtn?.addEventListener('click', closeSidebar);
-  backdrop?.addEventListener('click', closeSidebar);
-
-  function selections(): Record<string, string[]> {
-    const map: Record<string, string[]> = {};
-    inputs.forEach((input) => {
-      if (!input.checked) return;
-      const key = input.dataset.filterKey!;
-      (map[key] ??= []).push(input.value);
-    });
-    return map;
-  }
-
-  function applyFilters() {
-    const sel = selections();
-    const activeKeys = Object.keys(sel);
-    let visible = 0;
-
-    cards.forEach((card) => {
-      const data = JSON.parse(card.dataset.filters || '{}') as Record<string, string | string[]>;
-      const match = activeKeys.every((key) => {
-        const wanted = sel[key];
-        const value = data[key];
-        if (Array.isArray(value)) return value.some((v) => wanted.includes(v));
-        return wanted.includes(value);
-      });
-      card.classList.toggle('is-hidden', !match);
-      if (match) visible += 1;
-    });
-
-    if (countEl) countEl.textContent = `${visible} найдено`;
-    if (emptyEl) emptyEl.hidden = visible !== 0;
-  }
-
-  inputs.forEach((input) => input.addEventListener('change', applyFilters));
-
-  resetBtn?.addEventListener('click', () => {
-    inputs.forEach((input) => { input.checked = false; });
-    applyFilters();
-  });
-
+  // Фильтрация и шторка — внутри FilterSheet.astro, сортировка — в
+  // FilterBar.astro. Здесь только избранное.
   // Избранное: сохраняется в общее хранилище, читается разделом «Избранное»
   document.querySelectorAll<HTMLButtonElement>('[data-save]').forEach((btn) => {
     const item = JSON.parse(btn.dataset.save!) as FavoriteItem;

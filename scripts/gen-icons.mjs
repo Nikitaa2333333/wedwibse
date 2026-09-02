@@ -30,6 +30,8 @@ const MAP = {
   caretDown: 'alt-arrow-down-bold',
   arrowLeft: 'alt-arrow-left-bold',
   close: 'close-bold',
+  // слайдеры-«тюнинг»: кнопка, открывающая шторку фильтров каталога
+  tune: 'tuning-2-bold',
 };
 
 const data = require(`@iconify-json/${SET}/icons.json`);

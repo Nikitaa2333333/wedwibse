@@ -1,0 +1,362 @@
+---
+// ШТОРКА ФИЛЬТРОВ (реф. Яндекс Путешествия): поднимается снизу экрана,
+// одна на все каталоги. Внутри: «Популярные фильтры» (сборная из пунктов
+// с popular), затем каждая группа своим блоком чипов. Внизу липкая панель:
+// строка «Нашли N …» и две кнопки — «Сбросить» и «Применить».
+//
+// Фильтры применяются к карточкам сразу при клике (как раньше в колонке):
+// «Применить» только закрывает шторку, а строка «Нашли N» живёт как
+// предпросмотр результата. Все карточки уже в разметке — скрипт только
+// прячет/показывает по совпадению. Внутри группы — ИЛИ, между группами — И.
+//
+// Состояние одно — настоящие чекбоксы в группах ([data-filter-key]).
+// «Популярные» в шторке и чипы полосы FilterBar — прокси-кнопки
+// [data-chip-proxy] с data-chip-key/-value (два атрибута, а не одна строка:
+// в значениях бывают пробелы — «Банкетный зал»), они переключают эти
+// чекбоксы и подсвечиваются от них.
+// Одиночный выбор (type: 'single') тоже чекбоксы — так пункт можно снять
+// повторным нажатием; «один в группе» держит скрипт по data-filter-single.
+import type { FilterGroup } from '../data/specialists';
+import type { FilterCounts } from '../lib/filter-counts';
+import Icon from './Icon.astro';
+
+interface Props {
+  groups: FilterGroup[];
+  counts?: FilterCounts;
+  /** формы слова для «Нашли 12 площадок»: [одна, две, пять] */
+  noun?: [string, string, string];
+}
+
+const { groups, counts = {}, noun = ['предложение', 'предложения', 'предложений'] } = Astro.props;
+
+const popular = groups.flatMap((g) =>
+  g.options
+    .filter((o) => o.popular)
+    .map((o) => ({
+      key: g.key,
+      value: o.value,
+      label: typeof o.popular === 'string' ? o.popular : o.label,
+      count: counts[g.key]?.[o.value],
+    }))
+);
+---
+
+<div class="sheet" data-sheet data-noun={JSON.stringify(noun)}>
+  <div class="sheet__backdrop" data-sheet-close></div>
+
+  <section class="sheet__panel" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+    <header class="sheet__head">
+      <h2 class="sheet__title" id="sheet-title">Фильтры</h2>
+      <button class="icon-btn sheet__close" type="button" data-sheet-close aria-label="Закрыть фильтры">
+        <Icon name="close" />
+      </button>
+    </header>
+
+    <div class="sheet__body" data-sheet-body data-lenis-prevent>
+      {popular.length > 0 && (
+        <section class="sheet__group">
+          <h3 class="sheet__label">Популярные фильтры</h3>
+          <div class="sheet__chips">
+            {popular.map((p) => (
+              <button class="chip" type="button" data-chip-proxy data-chip-key={p.key} data-chip-value={p.value} aria-pressed="false">
+                {p.label}
+                {p.count !== undefined && <span class="chip__count">{p.count}</span>}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {groups.map((group) => (
+        <section class="sheet__group" data-sheet-group={group.key}>
+          <h3 class="sheet__label">{group.label}</h3>
+          <div class="sheet__chips">
+            {group.options.map((opt) => (
+              <label class="chip-opt">
+                <input
+                  class="chip-opt__input"
+                  type="checkbox"
+                  name={group.key}
+                  value={opt.value}
+                  data-filter-key={group.key}
+                  data-filter-single={group.type === 'single' ? '' : undefined}
+                />
+                <span class="chip">
+                  {opt.label}
+                  {counts[group.key]?.[opt.value] !== undefined && (
+                    <span class="chip__count">{counts[group.key][opt.value]}</span>
+                  )}
+                </span>
+              </label>
+            ))}
+          </div>
+        </section>
+      ))}
+    </div>
+
+    <footer class="sheet__foot">
+      <p class="sheet__found t-small" data-sheet-found></p>
+      <div class="sheet__actions">
+        <button class="pill sheet__btn" type="button" data-filters-reset>Сбросить</button>
+        <button class="pill is-active sheet__btn" type="button" data-sheet-close>Применить</button>
+      </div>
+    </footer>
+  </section>
+</div>
+
+<style>
+  /* ============ ОБЁРТКА И ПОДЛОЖКА ============
+     Закрытая шторка невидима и не ловит клики (visibility), при открытии
+     подложка проявляется, панель выезжает снизу. Только transform/opacity —
+     моушн-бюджет телефона. */
+  .sheet {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-overlay);
+    visibility: hidden;
+    transition: visibility 0s linear var(--dur-base);
+  }
+
+  .sheet.is-open {
+    visibility: visible;
+    transition-delay: 0s;
+  }
+
+  .sheet__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgb(0 0 0 / 0.4);
+    opacity: 0;
+    transition: opacity var(--dur-base) var(--ease-out);
+  }
+
+  .sheet.is-open .sheet__backdrop { opacity: 1; }
+
+  /* ============ ПАНЕЛЬ ============
+     На телефоне — во всю ширину, от планшета — колонка --sheet-max-w
+     по центру. Высота — по содержимому, но не выше 92svh: сверху остаётся
+     полоска страницы, по которой видно, что это шторка, а не новый экран. */
+  .sheet__panel {
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    width: min(100%, var(--sheet-max-w));
+    max-height: 92svh;
+    display: flex;
+    flex-direction: column;
+    background: var(--paper);
+    border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
+    box-shadow: var(--shadow-float);
+    transform: translate(-50%, 100%);
+    transition: transform var(--dur-base) var(--ease-out);
+  }
+
+  .sheet.is-open .sheet__panel { transform: translate(-50%, 0); }
+
+  .sheet__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-4);
+    padding: var(--s-5) var(--s-5) var(--s-4);
+  }
+
+  .sheet__title {
+    font-size: var(--fs-h2);
+    font-weight: var(--w-head);
+    line-height: var(--lh-heading);
+  }
+
+  /* Тело листается внутри панели, скроллбар спрятан */
+  .sheet__body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+    display: grid;
+    gap: var(--s-6);
+    padding: var(--s-2) var(--s-5) var(--s-6);
+  }
+
+  .sheet__body::-webkit-scrollbar { display: none; }
+
+  /* Заголовок группы — кеглем корпуса, весом заголовка; над чипами воздух */
+  .sheet__label {
+    font-size: var(--fs-body);
+    font-weight: var(--w-head);
+    margin-bottom: var(--s-3);
+  }
+
+  .sheet__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+  }
+
+  /* ============ ЛИПКАЯ ПАНЕЛЬ ДЕЙСТВИЙ ============
+     Линия сверху — структурная (граница панели), как у липкой шапки.
+     Снизу — запас под системную полосу телефона. */
+  .sheet__foot {
+    flex: none;
+    display: grid;
+    gap: var(--s-3);
+    padding: var(--s-4) var(--s-5) calc(var(--s-4) + var(--safe-b));
+    border-top: 1px solid var(--hairline);
+    background: var(--paper);
+  }
+
+  .sheet__found {
+    text-align: center;
+    min-height: 1.55em;
+  }
+
+  .sheet__actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s-3);
+  }
+
+  .sheet__btn {
+    width: 100%;
+    text-align: center;
+    padding-inline: var(--s-4);
+  }
+
+  /* Тач: нажатие на пилюлю — мгновенный отклик, но чернильная «Применить»
+     от нажатия не должна «гаснуть» */
+  .sheet__btn.is-active:active { background: var(--fg); color: var(--bg); }
+</style>
+
+<script>
+  // ============ ШТОРКА: ОТКРЫТЬ / ЗАКРЫТЬ ============
+  const sheet = document.querySelector<HTMLElement>('[data-sheet]');
+
+  if (sheet) {
+    const body = sheet.querySelector<HTMLElement>('[data-sheet-body]')!;
+    const foundEl = sheet.querySelector<HTMLElement>('[data-sheet-found]')!;
+    const noun = JSON.parse(sheet.dataset.noun || '[]') as [string, string, string];
+
+    const inputs = Array.from(document.querySelectorAll<HTMLInputElement>('[data-filter-key]'));
+    const proxies = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-chip-proxy]'));
+    const quickChips = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-quick-group]'));
+    const badge = document.querySelector<HTMLElement>('[data-filters-badge]');
+    const cards = Array.from(document.querySelectorAll<HTMLElement>('[data-card]'));
+    const countEl = document.querySelector<HTMLElement>('[data-results-count]');
+    const emptyEl = document.querySelector<HTMLElement>('[data-results-empty]');
+
+    let lastFocus: HTMLElement | null = null;
+
+    function setOpen(open: boolean, groupKey?: string) {
+      sheet!.classList.toggle('is-open', open);
+      // Страница под шторкой не листается (Lenis выключен, хватает overflow;
+      // когда включат — на теле стоит data-lenis-prevent).
+      document.documentElement.style.overflow = open ? 'hidden' : '';
+
+      if (open) {
+        lastFocus = document.activeElement as HTMLElement;
+        const target = groupKey ? body.querySelector<HTMLElement>(`[data-sheet-group="${groupKey}"]`) : null;
+        body.scrollTo({ top: target ? target.offsetTop - body.offsetTop : 0 });
+        sheet!.querySelector<HTMLButtonElement>('[data-sheet-close]')?.focus({ preventScroll: true });
+      } else {
+        lastFocus?.focus({ preventScroll: true });
+      }
+    }
+
+    document.querySelectorAll<HTMLButtonElement>('[data-sheet-open]').forEach((btn) =>
+      btn.addEventListener('click', () => setOpen(true, btn.dataset.sheetOpen || undefined))
+    );
+
+    sheet.querySelectorAll<HTMLElement>('[data-sheet-close]').forEach((el) =>
+      el.addEventListener('click', () => setOpen(false))
+    );
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && sheet!.classList.contains('is-open')) setOpen(false);
+    });
+
+    // ============ ФИЛЬТРАЦИЯ ============
+    function selections(): Record<string, string[]> {
+      const map: Record<string, string[]> = {};
+      inputs.forEach((input) => {
+        if (!input.checked) return;
+        (map[input.dataset.filterKey!] ??= []).push(input.value);
+      });
+      return map;
+    }
+
+    function plural(n: number): string {
+      const m10 = n % 10;
+      const m100 = n % 100;
+      if (m10 === 1 && m100 !== 11) return noun[0];
+      if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return noun[1];
+      return noun[2];
+    }
+
+    function syncChips(sel: Record<string, string[]>) {
+      proxies.forEach((p) => {
+        const { chipKey: key, chipValue: value } = p.dataset;
+        p.setAttribute('aria-pressed', String(sel[key!]?.includes(value!) ?? false));
+      });
+      quickChips.forEach((c) => c.classList.toggle('is-active', Boolean(sel[c.dataset.quickGroup!])));
+      if (badge) {
+        const n = Object.values(sel).reduce((sum, v) => sum + v.length, 0);
+        badge.textContent = String(n);
+        badge.hidden = n === 0;
+      }
+    }
+
+    function applyFilters() {
+      const sel = selections();
+      const activeKeys = Object.keys(sel);
+      let visible = 0;
+
+      cards.forEach((card) => {
+        const data = JSON.parse(card.dataset.filters || '{}') as Record<string, string | string[]>;
+        const match = activeKeys.every((key) => {
+          const wanted = sel[key];
+          const value = data[key];
+          if (Array.isArray(value)) return value.some((v) => wanted.includes(v));
+          return wanted.includes(value);
+        });
+        card.classList.toggle('is-hidden', !match);
+        if (match) visible += 1;
+      });
+
+      if (countEl) countEl.textContent = `${visible} найдено`;
+      if (emptyEl) emptyEl.hidden = visible !== 0;
+      if (cards.length) foundEl.textContent = visible ? `Нашли ${visible} ${plural(visible)}` : 'Ничего не нашли';
+      syncChips(sel);
+    }
+
+    inputs.forEach((input) =>
+      input.addEventListener('change', () => {
+        // Группа «один вариант»: включили пункт — соседи гаснут
+        if (input.checked && input.dataset.filterSingle !== undefined) {
+          inputs.forEach((i) => {
+            if (i !== input && i.name === input.name) i.checked = false;
+          });
+        }
+        applyFilters();
+      })
+    );
+
+    // Прокси-чипы (популярные в шторке и в полосе) переключают настоящий чекбокс
+    proxies.forEach((p) =>
+      p.addEventListener('click', () => {
+        const { chipKey: key, chipValue: value } = p.dataset;
+        const input = inputs.find((i) => i.dataset.filterKey === key && i.value === value);
+        if (!input) return;
+        input.checked = !input.checked;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      })
+    );
+
+    sheet.querySelector<HTMLButtonElement>('[data-filters-reset]')?.addEventListener('click', () => {
+      inputs.forEach((input) => { input.checked = false; });
+      applyFilters();
+    });
+
+    applyFilters();
+  }
+</script>

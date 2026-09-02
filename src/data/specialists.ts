@@ -8,6 +8,10 @@
 export interface FilterOption {
   value: string;
   label: string;
+  /** Пункт попадает в блок «Популярные фильтры» шторки и в полосу быстрых
+      чипов над каталогом. Строка — своя подпись для чипа: у пунктов
+      «Да/Нет» вне группы нужна фраза («Свой диджей», не «Да»). */
+  popular?: boolean | string;
 }
 
 export interface FilterGroup {
@@ -16,6 +20,9 @@ export interface FilterGroup {
   /** single — один вариант (radio), multi — можно несколько (checkbox) */
   type: 'single' | 'multi';
   options: FilterOption[];
+  /** Группа получает свой чип с кареткой в полосе над каталогом
+      («Цена ▾»): клик открывает шторку, прокрученную к этой группе. */
+  quick?: boolean;
 }
 
 export interface Specialist {
@@ -169,6 +176,7 @@ export const VEDUSHCHIE_FILTERS: FilterGroup[] = [
     key: 'price',
     label: 'Цена за 6 часов работы',
     type: 'single',
+    quick: true,
     options: [
       { value: '0-60', label: 'до 60 тыс. ₽' },
       { value: '60-100', label: '60–100 тыс. ₽' },
@@ -199,14 +207,15 @@ export const VEDUSHCHIE_FILTERS: FilterGroup[] = [
     key: 'style',
     label: 'Стиль ведения',
     type: 'multi',
+    quick: true,
     options: [
       { value: 'classic', label: 'Классический' },
       { value: 'modern', label: 'Современный' },
       { value: 'interactive', label: 'Интерактивный' },
-      { value: 'humor', label: 'Юмористический' },
+      { value: 'humor', label: 'Юмористический', popular: true },
       { value: 'intelligent', label: 'Интеллигентный' },
       { value: 'show', label: 'С элементами шоу' },
-      { value: 'no-vulgar', label: 'Без пошлости' },
+      { value: 'no-vulgar', label: 'Без пошлости', popular: true },
       { value: 'bilingual', label: 'На двух языках' },
     ],
   },
@@ -236,7 +245,7 @@ export const VEDUSHCHIE_FILTERS: FilterGroup[] = [
     label: 'Есть свой диджей',
     type: 'single',
     options: [
-      { value: 'yes', label: 'Да' },
+      { value: 'yes', label: 'Да', popular: 'Свой диджей' },
       { value: 'no', label: 'Нет' },
     ],
   },
@@ -269,7 +278,7 @@ export const VEDUSHCHIE_FILTERS: FilterGroup[] = [
     label: 'Ведёт выездную церемонию',
     type: 'single',
     options: [
-      { value: 'yes', label: 'Да' },
+      { value: 'yes', label: 'Да', popular: 'Выездная церемония' },
       { value: 'no', label: 'Нет' },
     ],
   },
@@ -278,7 +287,7 @@ export const VEDUSHCHIE_FILTERS: FilterGroup[] = [
     label: 'Своё оборудование и микрофоны',
     type: 'single',
     options: [
-      { value: 'yes', label: 'Да' },
+      { value: 'yes', label: 'Да', popular: 'Своё оборудование' },
       { value: 'no', label: 'Нет' },
     ],
   },

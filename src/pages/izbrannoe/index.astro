@@ -5,6 +5,12 @@
 // (см. src/lib/favorites.ts), поэтому вся разметка ниже — пустой каркас,
 // который наполняет клиентский скрипт. SEO это не касается: раздел
 // открывается из BottomDock, а не приходит из поиска.
+//
+// Два уровня, как «Доски» в Pinterest:
+//   1. папки по направлениям (площадки, ведущие, …) — обложка-коллаж из трёх
+//      последних кадров, название, счётчик и давность;
+//   2. внутри папки — сетка карточек и режим сравнения.
+// Уровень задаётся хэшем `#<cat>`, поэтому системный «назад» возвращает к папкам.
 import Layout from '../../layouts/Layout.astro';
 import BottomDock from '../../components/BottomDock.astro';
 import Icon from '../../components/Icon.astro';
@@ -17,16 +23,15 @@ import Icon from '../../components/Icon.astro';
 
   <header class="bar">
     <div class="bar__row">
-      <a class="icon-btn" href="/" aria-label="На главную">
+      <a class="icon-btn" href="/" data-back aria-label="На главную">
         <Icon name="arrowLeft" />
       </a>
-      <h1 class="bar__title">Избранное</h1>
+      <h1 class="bar__title" data-title>Избранное</h1>
       <a class="icon-btn" href="#" aria-label="Аккаунт">
         <Icon name="account" />
       </a>
     </div>
 
-    <div class="bar__tabs" data-tabs role="tablist" aria-label="Категории избранного"></div>
     <button class="pill pill--sm bar__compare" type="button" data-compare-toggle hidden>Сравнить</button>
   </header>
 
@@ -35,6 +40,8 @@ import Icon from '../../components/Icon.astro';
       Пока пусто. Добавляйте площадки и подрядчиков сердечком на карточке — они появятся здесь,
       и их можно будет сравнить между собой.
     </p>
+
+    <div class="boards" data-boards hidden></div>
 
     <div class="grid" data-grid hidden></div>
 
@@ -77,21 +84,6 @@ import Icon from '../../components/Icon.astro';
     font-weight: var(--w-head);
   }
 
-  .bar__tabs {
-    display: flex;
-    align-items: center;
-    gap: var(--s-2);
-    overflow-x: auto;
-    scrollbar-width: none;
-    padding-top: var(--s-3);
-    max-width: var(--page-max);
-    margin-inline: auto;
-  }
-
-  .bar__tabs::-webkit-scrollbar { display: none; }
-  .bar__tabs .pill { white-space: nowrap; }
-  .bar__tabs .pill.is-active { background: var(--fg); color: var(--bg); }
-
   .bar__compare {
     display: block;
     margin: var(--s-3) auto 0;
@@ -108,11 +100,81 @@ import Icon from '../../components/Icon.astro';
 
   .empty[hidden] { display: none; }
 
-  /* ============ СЕТКА КАРТОЧЕК ============ */
+  /* ============ ПАПКИ (доски) ============ */
   .wrap {
     max-width: none;
     padding: var(--s-4) clamp(8px, 1vw, 16px) calc(var(--safe-b) + 160px);
   }
+
+  .boards {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s-6) var(--s-4);
+  }
+
+  .boards[hidden] { display: none; }
+
+  @media (min-width: 640px) {
+    .boards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+
+  @media (min-width: 1024px) {
+    .boards { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  }
+
+  .board {
+    display: block;
+    min-width: 0;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  /* Обложка: слева крупный кадр 2/3, справа колонка из двух мелких.
+     Пустые ячейки — подложка фото, как у Pinterest. */
+  .board__cover {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 2px;
+    aspect-ratio: 3 / 2;
+    overflow: hidden;
+    border-radius: var(--radius-media);
+  }
+
+  .board__tile {
+    background: var(--surface-dim);
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .board__tile--main { grid-row: 1 / 3; }
+
+  .board__tile img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 0;
+    transition: transform var(--dur-fast) var(--ease-out);
+  }
+
+  @media (hover: hover) {
+    .board:hover .board__tile img { transform: scale(1.04); }
+  }
+
+  .board__name {
+    margin-top: var(--s-3);
+    font-size: var(--fs-h3);
+    font-weight: var(--w-head);
+    line-height: 1.15;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .board__meta { margin-top: 2px; }
+
+  /* ============ СЕТКА КАРТОЧЕК ============ */
 
   .grid {
     display: grid;
@@ -346,7 +408,9 @@ import Icon from '../../components/Icon.astro';
 
   const emptyEl = document.querySelector<HTMLElement>('[data-empty]');
   const gridEl = document.querySelector<HTMLElement>('[data-grid]');
-  const tabsEl = document.querySelector<HTMLElement>('[data-tabs]');
+  const boardsEl = document.querySelector<HTMLElement>('[data-boards]');
+  const titleEl = document.querySelector<HTMLElement>('[data-title]');
+  const backEl = document.querySelector<HTMLAnchorElement>('[data-back]');
   const compareToggleBtn = document.querySelector<HTMLButtonElement>('[data-compare-toggle]');
   const compareBar = document.querySelector<HTMLElement>('[data-compare-bar]');
   const compareCountEl = document.querySelector<HTMLElement>('[data-compare-count]');
@@ -355,7 +419,8 @@ import Icon from '../../components/Icon.astro';
   const compareEl = document.querySelector<HTMLElement>('[data-compare]');
 
   let items: FavoriteItem[] = [];
-  let activeTab = 'all';
+  /** открытая папка (cat) или null — уровень папок; читается из location.hash */
+  let activeCat: string | null = null;
   let compareMode = false;
   const selected = new Set<string>();
 
@@ -365,14 +430,39 @@ import Icon from '../../components/Icon.astro';
     ));
   }
 
+  function catFromHash(): string | null {
+    const h = decodeURIComponent(location.hash.replace(/^#/, ''));
+    return h || null;
+  }
+
   function currentItems(): FavoriteItem[] {
-    return activeTab === 'all' ? items : items.filter((i) => i.cat === activeTab);
+    return activeCat ? items.filter((i) => i.cat === activeCat) : [];
   }
 
   function updateCompareToggleVisibility() {
     if (!compareToggleBtn) return;
-    const eligible = activeTab !== 'all' && currentItems().length >= 2;
+    const eligible = !!activeCat && currentItems().length >= 2;
     compareToggleBtn.hidden = !eligible || compareMode;
+  }
+
+  /** «1 карточка / 2 карточки / 5 карточек» */
+  function plural(n: number, one: string, few: string, many: string): string {
+    const m10 = n % 10;
+    const m100 = n % 100;
+    if (m10 === 1 && m100 !== 11) return one;
+    if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
+    return many;
+  }
+
+  /** давность последнего добавления в папку: «сегодня», «3 дн.», «2 нед.», «1 мес.» */
+  function ago(ts: number | undefined): string {
+    if (!ts) return '';
+    const days = Math.floor((Date.now() - ts) / 86_400_000);
+    if (days < 1) return 'сегодня';
+    if (days < 7) return `${days} дн.`;
+    if (days < 30) return `${Math.floor(days / 7)} нед.`;
+    if (days < 365) return `${Math.floor(days / 30)} мес.`;
+    return `${Math.floor(days / 365)} г.`;
   }
 
   function updateCompareBar() {
@@ -389,28 +479,45 @@ import Icon from '../../components/Icon.astro';
     updateCompareToggleVisibility();
   }
 
-  function renderTabs() {
-    if (!tabsEl) return;
+  /** Уровень папок: одна доска на направление, обложка — три последних кадра */
+  function renderBoards() {
+    if (!boardsEl) return;
     const cats = Array.from(new Set(items.map((i) => i.cat)));
-    const catLabel = (c: string) => items.find((i) => i.cat === c)?.catLabel ?? c;
-    const tabs = [
-      { key: 'all', label: 'Все', count: items.length },
-      ...cats.map((c) => ({ key: c, label: catLabel(c), count: items.filter((i) => i.cat === c).length })),
-    ];
 
-    tabsEl.innerHTML = tabs
-      .map((t) => `<button class="pill pill--sm${t.key === activeTab ? ' is-active' : ''}" type="button" role="tab" aria-selected="${t.key === activeTab}" data-tab="${escapeHtml(t.key)}">${escapeHtml(t.label)} (${t.count})</button>`)
+    boardsEl.innerHTML = cats
+      .map((cat) => {
+        const list = items.filter((i) => i.cat === cat);
+        const label = list[0]?.catLabel ?? cat;
+        const recent = [...list].reverse();
+        const tiles = [0, 1, 2].map((n) => {
+          const it = recent[n];
+          const cls = n === 0 ? 'board__tile board__tile--main' : 'board__tile';
+          return it
+            ? `<span class="${cls}"><img src="${escapeHtml(it.img)}" alt="" loading="lazy" decoding="async" /></span>`
+            : `<span class="${cls}"></span>`;
+        }).join('');
+        const latest = Math.max(0, ...list.map((i) => i.addedAt ?? 0));
+        const when = ago(latest || undefined);
+        const count = `${list.length} ${plural(list.length, 'карточка', 'карточки', 'карточек')}`;
+
+        return `
+          <a class="board" href="#${encodeURIComponent(cat)}" data-board="${escapeHtml(cat)}">
+            <span class="board__cover" aria-hidden="true">${tiles}</span>
+            <span class="board__name">${escapeHtml(label)}</span>
+            <span class="board__meta t-caption">${count}${when ? ` · ${when}` : ''}</span>
+          </a>
+        `;
+      })
       .join('');
+  }
 
-    tabsEl.querySelectorAll<HTMLButtonElement>('[data-tab]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        activeTab = btn.dataset.tab!;
-        exitCompareMode();
-        renderTabs();
-        renderGrid();
-        showGrid();
-      });
-    });
+  /** Переключение уровня: шапка, видимость блоков */
+  function applyLevel() {
+    const inFolder = !!activeCat;
+    if (titleEl) titleEl.textContent = inFolder ? (items.find((i) => i.cat === activeCat)?.catLabel ?? 'Избранное') : 'Избранное';
+    if (backEl) backEl.setAttribute('aria-label', inFolder ? 'К папкам' : 'На главную');
+    if (boardsEl) boardsEl.hidden = inFolder;
+    if (gridEl) gridEl.hidden = !inFolder;
   }
 
   function renderGrid() {
@@ -490,14 +597,12 @@ import Icon from '../../components/Icon.astro';
 
     compareEl.hidden = false;
     if (gridEl) gridEl.hidden = true;
-    tabsEl?.setAttribute('hidden', '');
     compareBar?.setAttribute('hidden', '');
   }
 
   function showGrid() {
     if (compareEl) compareEl.hidden = true;
     if (gridEl) gridEl.hidden = false;
-    tabsEl?.removeAttribute('hidden');
     exitCompareMode();
   }
 
@@ -506,25 +611,44 @@ import Icon from '../../components/Icon.astro';
     const empty = items.length === 0;
 
     emptyEl?.toggleAttribute('hidden', !empty);
-    if (gridEl) gridEl.hidden = empty;
     if (compareEl) compareEl.hidden = true;
-    tabsEl?.toggleAttribute('hidden', empty);
     compareMode = false;
     selected.clear();
     compareBar?.setAttribute('hidden', '');
 
+    // папка, которой больше нет (удалили последнюю карточку) — назад к папкам
+    activeCat = catFromHash();
+    if (activeCat && !items.some((i) => i.cat === activeCat)) {
+      activeCat = null;
+      history.replaceState(null, '', location.pathname);
+    }
+
     if (empty) {
-      if (tabsEl) tabsEl.innerHTML = '';
+      if (boardsEl) { boardsEl.innerHTML = ''; boardsEl.hidden = true; }
+      if (gridEl) gridEl.hidden = true;
+      if (titleEl) titleEl.textContent = 'Избранное';
       compareToggleBtn && (compareToggleBtn.hidden = true);
       return;
     }
 
-    const cats = new Set(items.map((i) => i.cat));
-    if (activeTab !== 'all' && !cats.has(activeTab)) activeTab = 'all';
-
-    renderTabs();
+    renderBoards();
     renderGrid();
+    applyLevel();
   }
+
+  // стрелка в шапке: внутри папки — к папкам, на уровне папок — на главную
+  backEl?.addEventListener('click', (e) => {
+    if (!activeCat) return;
+    e.preventDefault();
+    history.pushState(null, '', location.pathname);
+    render();
+    window.scrollTo({ top: 0 });
+  });
+
+  window.addEventListener('hashchange', () => {
+    render();
+    window.scrollTo({ top: 0 });
+  });
 
   compareToggleBtn?.addEventListener('click', () => {
     compareMode = true;

@@ -115,11 +115,6 @@
   --card-ratio-wide: 1 / 1;
   --card-ratio-hero: 4 / 5;
 
-  /* Колонка фильтров каталога подрядчиков (широкий экран): в потоке
-     страницы, листается вместе с карточками — внутреннего скролла нет
-     (реф. Ozon). Ширина — чтобы подпись пункта помещалась в одну строку. */
-  --sidebar-w: clamp(240px, 19vw, 280px);
-
   /* Высота одной сцены скролл-блока (ПК): кадр справа закреплён на 100svh,
      разница между этой ручкой и экраном — путь, который фото «висит».
      Меньше 110svh — кадр почти не замирает, больше 200svh — много пустоты. */
@@ -142,6 +137,12 @@
   --radius-ui: 0px;        /* поля ввода и мелкий UI */
   --radius-pill: 999px;    /* кнопки-пилюли */
   --radius-tile: 0px;      /* плитки и карточки: скругления ЗАПРЕЩЕНЫ (кроме пилюль и кружков) */
+  /* Нижняя шторка (фильтры): верхние углы по референсу приложения —
+     единственное скругление вне пилюль. Не нравится — ставим 0. */
+  --radius-sheet: 24px;
+  /* Ширина шторки на широком экране: на телефоне она во весь экран,
+     от планшета — колонка по центру, чтобы чипы не разъезжались строкой. */
+  --sheet-max-w: 640px;
 
   /* ============ ПОВЕРХНОСТИ И НАКЛАДКИ ============
      Мир из трёх материалов: кремовая бумага, тёплый чёрный, фотография.
@@ -445,6 +446,112 @@ mark {
 /* Выбранный пункт в наборе пилюль (переключатель разделов, локация) —
    та же инверсия, что у ховера: выбор читается без второго приёма. */
 .pill.is-active { background: var(--fg); color: var(--bg); }
+
+/* ============ ЧИП ============
+   Плашка выбора в фильтрах (полоса над каталогом, шторка). От .pill
+   отличается ролью: .pill — действие, .chip — состояние «включён/выключен».
+   Заливка --surface без обводки, включённый — чернильная инверсия, как у
+   .pill.is-active. Счётчик внутри тем же цветом, меньше кеглем: иерархия
+   размером, не блёклостью. Три способа «включить»: класс .is-active
+   (статика), aria-pressed (кнопка-переключатель), :checked соседнего
+   .chip-opt__input (чип-обёртка над настоящим чекбоксом). */
+.chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 44px;
+  padding: 10px 16px;
+  font: inherit;
+  font-size: var(--fs-small);
+  font-weight: var(--w-medium);
+  line-height: 1.2;
+  color: var(--fg);
+  background: var(--surface);
+  border: 0;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  text-decoration: none;
+  transition: background var(--dur-fast) var(--ease-out),
+              color var(--dur-fast) var(--ease-out);
+}
+
+.chip__count { font-size: var(--fs-caption); }
+
+/* Селекторы с .chip впереди: у Icon.astro свой scoped-размер 24px,
+   перебить его можно только большей специфичностью. */
+.chip svg.chip__caret {
+  width: 12px;
+  height: 12px;
+  flex: none;
+}
+
+.chip.is-active,
+.chip[aria-pressed='true'],
+.chip-opt__input:checked + .chip {
+  background: var(--fg);
+  color: var(--bg);
+}
+
+/* Квадратный чип под иконку (кнопка «все фильтры») */
+.chip--icon {
+  width: 44px;
+  padding: 0;
+  justify-content: center;
+}
+
+.chip.chip--icon svg { width: 20px; height: 20px; }
+
+/* Счётчик включённых фильтров у иконки — кружок на плече */
+.chip__badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--accent-fg);
+  font-size: var(--fs-micro);
+  font-weight: var(--w-medium);
+  line-height: 1;
+}
+
+.chip__badge[hidden] { display: none; }
+
+/* Чип поверх настоящего чекбокса: инпут спрятан, но доступен клавиатуре */
+.chip-opt {
+  position: relative;
+  display: inline-flex;
+}
+
+.chip-opt__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.chip-opt__input:focus-visible + .chip {
+  outline: 2px solid var(--fg);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) {
+  .chip:not(.is-active):not([aria-pressed='true']):hover { background: var(--surface-dim); }
+  .chip-opt__input:not(:checked) + .chip:hover { background: var(--surface-dim); }
+}
 
 /* Круглая кнопка-иконка (аккаунт, назад) — та же пилюля, только квадратная */
 .icon-btn {

@@ -1,0 +1,222 @@
+---
+// ПОЛОСА НАД КАТАЛОГОМ (реф. Яндекс Путешествия): один ряд чипов с
+// горизонтальным скроллом. Слева направо:
+//   1. иконка-слайдеры — открывает шторку FilterSheet целиком;
+//   2. сортировка — чип с кареткой, под ним выпадающий список;
+//   3. быстрые группы (FilterGroup.quick) — «Цена ▾»: открывают шторку,
+//      прокрученную к своей группе;
+//   4. популярные пункты (FilterOption.popular) — чипы-переключатели,
+//      это те же чекбоксы шторки, только вынесенные наружу.
+// Сама фильтрация и синхронизация состояния чипов — в FilterSheet.astro:
+// полоса только отдаёт клики. Здесь — только сортировка.
+import type { FilterGroup } from '../data/specialists';
+import type { FilterCounts } from '../lib/filter-counts';
+import Icon from './Icon.astro';
+
+interface Props {
+  groups: FilterGroup[];
+  counts?: FilterCounts;
+  /** есть ли что сортировать — у категорий-заглушек карточек нет */
+  sortable?: boolean;
+}
+
+const { groups, counts = {}, sortable = true } = Astro.props;
+
+const quick = groups.filter((g) => g.quick);
+const popular = groups.flatMap((g) =>
+  g.options
+    .filter((o) => o.popular)
+    .map((o) => ({
+      key: g.key,
+      value: o.value,
+      label: typeof o.popular === 'string' ? o.popular : o.label,
+      count: counts[g.key]?.[o.value],
+    }))
+);
+
+// ЗАГЛУШКА: порядок и набор сортировок — до серверной выдачи.
+const SORTS = [
+  { value: '', label: 'Популярные' },
+  { value: 'price-asc', label: 'Сначала дешевле' },
+  { value: 'price-desc', label: 'Сначала дороже' },
+  { value: 'rating', label: 'По рейтингу' },
+];
+---
+
+<div class="fbar" data-fbar>
+  <div class="fbar__scroll">
+    <button class="chip chip--icon" type="button" data-sheet-open aria-label="Все фильтры">
+      <Icon name="tune" />
+      <span class="chip__badge" data-filters-badge hidden>0</span>
+    </button>
+
+    {sortable && (
+      <div class="fbar__sort" data-sort>
+        <button class="chip" type="button" data-sort-toggle aria-expanded="false" aria-controls="fbar-sort">
+          <span data-sort-label>{SORTS[0].label}</span>
+          <Icon name="caretDown" class="chip__caret" />
+        </button>
+        <div class="fbar__pop" id="fbar-sort" data-sort-pop>
+          {SORTS.map((s, i) => (
+            <button class={`fbar__opt${i === 0 ? ' is-active' : ''}`} type="button" data-sort-by={s.value}>
+              {s.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    )}
+
+    {quick.map((g) => (
+      <button class="chip" type="button" data-sheet-open={g.key} data-quick-group={g.key}>
+        {g.label}
+        <Icon name="caretDown" class="chip__caret" />
+      </button>
+    ))}
+
+    {popular.map((p) => (
+      <button class="chip" type="button" data-chip-proxy data-chip-key={p.key} data-chip-value={p.value} aria-pressed="false">
+        {p.label}
+        {p.count !== undefined && <span class="chip__count">{p.count}</span>}
+      </button>
+    ))}
+  </div>
+</div>
+
+<style>
+  .fbar { position: relative; }
+
+  /* Ряд уходит за край экрана и листается пальцем; сами чипы не сжимаются */
+  .fbar__scroll {
+    display: flex;
+    gap: var(--s-2);
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 0 var(--gutter) var(--s-4);
+    /* чтобы бейдж на иконке не резался краем скролл-контейнера */
+    padding-top: var(--s-1);
+  }
+
+  .fbar__scroll::-webkit-scrollbar { display: none; }
+
+  .fbar__scroll > * { flex: none; }
+
+  /* ============ СОРТИРОВКА: выпадающий список ============
+     Тот же язык, что у панели локации в ScopePicker: непрозрачная
+     плашка с парящей тенью, появляется сдвигом вверх. */
+  .fbar__sort { position: relative; }
+
+  .fbar__pop {
+    position: absolute;
+    top: calc(100% + var(--s-2));
+    left: 0;
+    z-index: var(--z-overlay);
+    display: grid;
+    min-width: 220px;
+    padding: var(--s-2);
+    background: var(--surface);
+    box-shadow: var(--shadow-float);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-6px);
+    transition: opacity var(--dur-fast) var(--ease-out),
+                transform var(--dur-fast) var(--ease-out),
+                visibility 0s linear var(--dur-fast);
+  }
+
+  .fbar__sort.is-open .fbar__pop {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition-delay: 0s;
+  }
+
+  .fbar__opt {
+    padding: 10px 12px;
+    border: 0;
+    background: none;
+    color: var(--fg);
+    font: inherit;
+    font-size: var(--fs-small);
+    font-weight: var(--w-medium);
+    text-align: left;
+    white-space: nowrap;
+    cursor: pointer;
+    border-radius: var(--radius-pill);
+  }
+
+  .fbar__opt.is-active { background: var(--fg); color: var(--bg); }
+
+  @media (hover: hover) {
+    .fbar__opt:not(.is-active):hover { background: var(--surface-dim); }
+  }
+
+  /* Выпадающий список открыт — ряд не должен его обрезать. Скролл-контейнер
+     с overflow-x: auto режет всё, что вылезает по вертикали, поэтому на
+     время раскрытия отпускаем overflow (ряд у планшета и шире и так влезает). */
+  .fbar:has(.fbar__sort.is-open) .fbar__scroll { overflow: visible; }
+</style>
+
+<script>
+  // ============ СОРТИРОВКА ============
+  // Карточки уже в разметке; сортируем через CSS order — DOM не двигаем,
+  // порядок для поисковика остаётся исходным. Рекламная карточка (без
+  // data-sort) остаётся на своём месте в ряду.
+  // ЗАГЛУШКА: с бэкендом сортировка уходит в запрос, полоса не меняется.
+  const sort = document.querySelector<HTMLElement>('[data-sort]');
+  const grid = document.querySelector<HTMLElement>('[data-sort-grid]');
+
+  if (sort && grid) {
+    const toggle = sort.querySelector<HTMLButtonElement>('[data-sort-toggle]')!;
+    const label = sort.querySelector<HTMLElement>('[data-sort-label]')!;
+    const opts = Array.from(sort.querySelectorAll<HTMLButtonElement>('[data-sort-by]'));
+
+    const setOpen = (open: boolean) => {
+      sort.classList.toggle('is-open', open);
+      toggle.setAttribute('aria-expanded', String(open));
+    };
+
+    toggle.addEventListener('click', () => setOpen(!sort.classList.contains('is-open')));
+    document.addEventListener('click', (e) => {
+      if (!sort.contains(e.target as Node)) setOpen(false);
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') setOpen(false);
+    });
+
+    type SortKey = { price: number; rating: number };
+    const keyOf = (el: Element): SortKey | null => {
+      const raw = (el as HTMLElement).dataset.sort;
+      return raw ? (JSON.parse(raw) as SortKey) : null;
+    };
+
+    function applySort(by: string) {
+      const kids = Array.from(grid!.children) as HTMLElement[];
+      if (!by) {
+        kids.forEach((el) => el.style.removeProperty('order'));
+        return;
+      }
+      const cmp: Record<string, (a: SortKey, b: SortKey) => number> = {
+        'price-asc': (a, b) => a.price - b.price,
+        'price-desc': (a, b) => b.price - a.price,
+        rating: (a, b) => b.rating - a.rating,
+      };
+      const sorted = kids.filter(keyOf).sort((a, b) => cmp[by](keyOf(a)!, keyOf(b)!));
+      let ci = 0;
+      kids.forEach((el, i) => {
+        const target = keyOf(el) ? sorted[ci++] : el;
+        target.style.order = String(i);
+      });
+    }
+
+    opts.forEach((opt) =>
+      opt.addEventListener('click', () => {
+        opts.forEach((o) => o.classList.toggle('is-active', o === opt));
+        label.textContent = opt.textContent!.trim();
+        // Чип сортировки подсвечен, пока порядок не «Популярные»
+        toggle.classList.toggle('is-active', opt.dataset.sortBy !== '');
+        applySort(opt.dataset.sortBy ?? '');
+        setOpen(false);
+      })
+    );
+  }
+</script>

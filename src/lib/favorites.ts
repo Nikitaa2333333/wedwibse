@@ -19,6 +19,8 @@ export interface FavoriteItem {
   rating: number;
   img: string;
   href: string;
+  /** момент добавления (ms), проставляется в toggleFavorite; у старых записей может отсутствовать */
+  addedAt?: number;
 }
 
 const KEY = 'wed:favorites';
@@ -44,7 +46,7 @@ export function toggleFavorite(item: FavoriteItem): boolean {
   const i = list.findIndex((f) => f.id === item.id);
   const nowSaved = i < 0;
 
-  if (nowSaved) list.push(item);
+  if (nowSaved) list.push({ ...item, addedAt: Date.now() });
   else list.splice(i, 1);
 
   localStorage.setItem(KEY, JSON.stringify(list));

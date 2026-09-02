@@ -6,7 +6,7 @@
 //
 // Фильтр и мозаика карточек — тот же паттерн, что у «Специалистов»
 // (см. data/specialists.ts, pages/moskva/podryadchiki/vedushchie):
-// FilterGroup[] уходит в общий <FilterSidebar>, у карточки — числовые
+// FilterGroup[] уходит в общие <FilterBar>/<FilterSheet>, у карточки — числовые
 // поля для бакетов (capacityMax, checkFrom), лейблы — отдельно для показа.
 // ============================================================
 import type { FilterGroup } from './specialists';
@@ -201,7 +201,8 @@ export const VENUE_FILTERS: FilterGroup[] = [
     key: 'type',
     label: 'Тип площадки',
     type: 'multi',
-    options: toOptions(venues.map((v) => v.type)),
+    // Типов немного — все они «популярные»: идут чипами над каталогом
+    options: toOptions(venues.map((v) => v.type)).map((o) => ({ ...o, popular: true })),
   },
   {
     key: 'city',
@@ -213,6 +214,7 @@ export const VENUE_FILTERS: FilterGroup[] = [
     key: 'capacity',
     label: 'Вместимость',
     type: 'single',
+    quick: true,
     options: [
       { value: '0-80', label: 'до 80 гостей' },
       { value: '80-120', label: '80–120 гостей' },
@@ -223,6 +225,7 @@ export const VENUE_FILTERS: FilterGroup[] = [
     key: 'avgCheck',
     label: 'Средний чек',
     type: 'single',
+    quick: true,
     options: [
       { value: '0-5', label: 'до 5 000 ₽' },
       { value: '5-7', label: '5 000–7 000 ₽' },
