@@ -67,7 +67,7 @@ const latest = ARTICLES.slice(0, 3);
 
         <a class="hero__hint" href="/izbrannoe/">
           <span class="perk__heart-wrap">
-            <Icon name="heart" class="perk__heart" />
+            <Icon name="heartOutline" class="perk__heart" />
             <span class="perk__badge" aria-hidden="true">1</span>
           </span>
           <span class="hero__hint-text t-small">
@@ -454,11 +454,17 @@ const latest = ARTICLES.slice(0, 3);
     display: inline-flex;
   }
 
-  .perk__heart {
+  :global(.perk__heart) {
     width: clamp(32px, 4vw, 48px);
     height: clamp(32px, 4vw, 48px);
     transform-origin: center;
-    animation: perk-heart-tap 4s ease-in-out infinite, perk-heart-fill 4s steps(1, end) infinite;
+    animation: perk-heart-tap 4s ease-in-out infinite;
+  }
+
+  /* Заливка живёт на самом контуре: у контурного сердца Solar
+     свой fill="none", на внешнем svg его не перебить. */
+  :global(.perk__heart > *) {
+    animation: perk-heart-fill 4s steps(1, end) infinite;
   }
 
   /* Мини-демо «сохранили в избранное»: сердце жмётся и заливается,

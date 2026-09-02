@@ -365,11 +365,11 @@ const venueCount = FEED.filter((item) => item.kind === 'venue').length;
     transition: transform var(--dur-fast) var(--ease-out);
   }
 
-  .save svg { width: 24px; height: 24px; }
+  .save :global(svg) { width: 24px; height: 24px; }
   .save:active { transform: scale(0.85); }
   /* Сердце Solar: контур — «не в избранном», заливка тем же цветом —
      «сохранено». Правило бьёт по внутреннему path (у него fill="none"). */
-  .save[aria-pressed='true'] svg > * { fill: currentColor; }
+  .save[aria-pressed='true'] :global(svg > *) { fill: currentColor; }
 
   /* ============ РЕКЛАМНАЯ КАРТОЧКА: во всю ширину ============ */
   .vcard--ad {

@@ -95,14 +95,14 @@ const { groups } = Astro.props;
 
   .fgroup__head::-webkit-details-marker { display: none; }
 
-  .fgroup__caret {
+  :global(.fgroup__caret) {
     width: 14px;
     height: 14px;
     flex-shrink: 0;
     transition: transform var(--dur-fast) var(--ease-out);
   }
 
-  .fgroup[open] .fgroup__caret { transform: rotate(180deg); }
+  .fgroup[open] :global(.fgroup__caret) { transform: rotate(180deg); }
 
   .fgroup__options {
     display: flex;

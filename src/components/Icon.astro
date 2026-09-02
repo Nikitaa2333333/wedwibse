@@ -15,3 +15,17 @@ const { viewBox, body } = icons[name];
 ---
 
 <svg class={className} viewBox={viewBox} fill="currentColor" aria-hidden="true" set:html={body} />
+
+<style>
+  /* Подстраховка от «растянутого» SVG: у svg без размеров дефолт 300×150,
+     а scoped-стили страницы-хозяина внутрь компонента не достают
+     (селектор .dock__icon получает data-атрибут своего файла).
+     Поэтому базовый размер живёт здесь, а места, где нужен другой,
+     объявляют свой класс через :global(). */
+  svg {
+    display: block;
+    width: 24px;
+    height: 24px;
+    flex: none;
+  }
+</style>

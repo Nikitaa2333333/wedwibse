@@ -122,14 +122,14 @@ const ALL_LABEL = 'Москва и область';
     cursor: pointer;
   }
 
-  .scope__caret {
+  :global(.scope__caret) {
     width: 0.44em;
     height: 0.44em;
     flex: none;
     transition: transform var(--dur-fast) var(--ease-out);
   }
 
-  .scope.is-open .scope__caret { transform: rotate(180deg); }
+  .scope.is-open :global(.scope__caret) { transform: rotate(180deg); }
 
   /* Инструменты (локация + слот «Фильтры»): на телефоне своей строкой,
      от планшета — прижаты вправо к заголовку. */
@@ -150,7 +150,7 @@ const ALL_LABEL = 'Москва и область';
     gap: 6px;
   }
 
-  .scope__pin { width: 13px; height: 13px; flex: none; }
+  :global(.scope__pin) { width: 13px; height: 13px; flex: none; }
   .scope__city-caret { font-size: 9px; }
 
   /* ============ ВСПЛЫВАЮЩАЯ ПАНЕЛЬ ============ */

@@ -383,10 +383,10 @@ const priceFmt = new Intl.NumberFormat('ru-RU');
     transition: transform var(--dur-fast) var(--ease-out);
   }
 
-  .save svg { width: 24px; height: 24px; }
+  .save :global(svg) { width: 24px; height: 24px; }
   .save:active { transform: scale(0.85); }
   /* Сердце Solar: контур — «не в избранном», заливка — «сохранено» */
-  .save[aria-pressed='true'] svg > * { fill: currentColor; }
+  .save[aria-pressed='true'] :global(svg > *) { fill: currentColor; }
 
   /* ============ ФИЛЬТРЫ: ШТОРКА (узкий экран) ============ */
   .sidebar {

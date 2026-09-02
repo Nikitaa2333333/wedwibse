@@ -114,7 +114,9 @@ const items = [
                 color var(--dur-fast) var(--ease-out);
   }
 
-  .dock__icon {
+  /* :global — иконку рисует Icon.astro, scoped-селектор этого файла
+     до неё не достаёт (см. комментарий в Icon.astro). */
+  :global(.dock__icon) {
     display: block;
     width: 22px;
     height: 22px;
@@ -180,7 +182,7 @@ const items = [
       line-height: var(--lh-body);
     }
 
-    .dock__icon { display: none; }
+    :global(.dock__icon) { display: none; }
 
     .dock__label { overflow: visible; }
 

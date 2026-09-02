@@ -86,7 +86,7 @@ const { phone, phoneHref } = Astro.props;
     flex: none;
   }
 
-  .head__account svg { width: 17px; height: 17px; }
+  .head__account :global(svg) { width: 17px; height: 17px; }
 
   /* Ховер в навигации — цветом, не подчёркиванием: подчёркивание
      оставлено только контекстным ссылкам внутри текста статьи. */
