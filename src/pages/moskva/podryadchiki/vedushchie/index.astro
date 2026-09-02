@@ -190,7 +190,11 @@ const priceFmt = new Intl.NumberFormat('ru-RU');
               </PhotoRail>
             )}
 
+            <!-- Цена на телефоне живёт в подписи, на ПК — пилюлей на кадре
+                 (см. стили .scard__price): на 190-пиксельном кадре пилюли
+                 закрывали фото. -->
             <div class="scard__body">
+              <p class="scard__price">от {priceFmt.format(s.priceFrom)} ₽</p>
               <div class="scard__top">
                 <h2 class="scard__name">
                   <a href={`/moskva/podryadchiki/vedushchie/${s.slug}/`}>{s.name}</a>
@@ -268,7 +272,7 @@ const priceFmt = new Intl.NumberFormat('ru-RU');
   .scard {
     display: flex;
     flex-direction: column;
-    gap: var(--s-3);
+    gap: var(--s-2);
     min-width: 0;
   }
 
@@ -303,21 +307,34 @@ const priceFmt = new Intl.NumberFormat('ru-RU');
     scroll-snap-align: start;
   }
 
-  /* Метки на фото: цена + фирменный стиль, поверх затемнения */
+  /* Метки на фото (цена + фирменный стиль) — только от планшета. На
+     телефоне они переносились в две строки и закрывали кадр, а фото в
+     каталоге — главное; цена там уходит в подпись. */
   .scard__tags {
     position: absolute;
     bottom: var(--s-3);
     left: var(--s-3);
-    display: flex;
+    display: none;
     flex-wrap: wrap;
     gap: var(--s-2);
     pointer-events: none;
   }
 
-  /* ============ ПОДПИСЬ: только имя, рейтинг, одна строка ============
+  /* ============ ПОДПИСЬ: цена, имя с рейтингом, слоган ============
      Кадр идёт в край экрана, текст — нет: поле подписи держит
-     --catalog-pad (от планшета он ноль, поля даёт сама сетка). */
-  .scard__body { padding-inline: var(--catalog-pad); }
+     --catalog-pad (от планшета он ноль, поля даёт сама сетка).
+     Строки стоят плотно, как у маркетплейса: подпись читается одним блоком. */
+  .scard__body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-inline: var(--catalog-pad);
+  }
+
+  .scard__price {
+    font-size: var(--fs-body);
+    font-weight: var(--w-medium);
+  }
 
   .scard__top {
     display: flex;
@@ -326,21 +343,31 @@ const priceFmt = new Intl.NumberFormat('ru-RU');
     gap: var(--s-3);
   }
 
+  /* На телефоне имя в кегле корпуса: h3 в колонке 190px ломал имена
+     на две строки и раздувал подпись. */
   .scard__name {
-    font-size: var(--fs-h3);
+    font-size: var(--fs-body);
     font-weight: var(--w-head);
-    line-height: 1.15;
+    line-height: 1.2;
   }
 
   .scard__name a { text-decoration: none; }
 
   .scard__rate {
-    font-size: var(--fs-small);
+    font-size: var(--fs-caption);
     font-weight: var(--w-medium);
     flex-shrink: 0;
   }
 
-  .scard__tagline { margin-top: -4px; }
+  .scard__tagline { font-size: var(--fs-caption); }
+
+  @media (min-width: 640px) {
+    .scard__tags { display: flex; }
+    .scard__price { display: none; }
+    .scard__name { font-size: var(--fs-h3); line-height: 1.15; }
+    .scard__rate { font-size: var(--fs-small); }
+    .scard__tagline { font-size: var(--fs-small); }
+  }
 
   /* Сердце на фото: без подложек и обводок, тень отделяет от кадра */
   .save {

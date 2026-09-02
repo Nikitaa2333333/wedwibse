@@ -147,7 +147,6 @@ const venueCount = FEED.filter((item) => item.kind === 'venue').length;
 
                   <div class="vcard__tags">
                     <span class="photo-tag">{item.avgCheck}</span>
-                    <span class="photo-tag">{item.type}</span>
                   </div>
 
                   <button class="save" type="button" data-save={saveData} aria-pressed="false" aria-label="В избранное">
@@ -166,7 +165,6 @@ const venueCount = FEED.filter((item) => item.kind === 'venue').length;
                 >
                   <div class="vcard__tags">
                     <span class="photo-tag">{item.avgCheck}</span>
-                    <span class="photo-tag">{item.type}</span>
                   </div>
 
                   <button class="save" type="button" data-save={saveData} aria-pressed="false" aria-label="В избранное">
@@ -177,14 +175,19 @@ const venueCount = FEED.filter((item) => item.kind === 'venue').length;
                 </PhotoRail>
               )}
 
+              <!-- Подпись плотная, как у маркетплейса: цена, имя с рейтингом,
+                   строка «тип · город · вместимость». Число отзывов ушло —
+                   для выбора площадки оно не решает. Цена на телефоне живёт
+                   здесь, на ПК — пилюлей на кадре (см. стили .vcard__price). -->
               <div class="vcard__body">
+                <p class="vcard__price">{item.avgCheck}</p>
                 <div class="vcard__top">
                   <h2 class="vcard__name">
                     <a href={`/moskva/ploshchadki/${item.slug}/`}>{item.name}</a>
                   </h2>
                   <span class="vcard__rate" aria-label={`Рейтинг ${item.rating}`}>★ {item.rating.toFixed(1)}</span>
                 </div>
-                <p class="vcard__meta t-small">{item.city} · {item.capacity} · {item.reviews}&nbsp;отзывов</p>
+                <p class="vcard__meta t-small">{item.type} · {item.city} · {item.capacity}</p>
               </div>
             </article>
           );
@@ -260,7 +263,7 @@ const venueCount = FEED.filter((item) => item.kind === 'venue').length;
   .vcard {
     display: flex;
     flex-direction: column;
-    gap: var(--s-3);
+    gap: var(--s-2);
     min-width: 0;
   }
 
@@ -285,12 +288,14 @@ const venueCount = FEED.filter((item) => item.kind === 'venue').length;
     object-fit: cover;
   }
 
-  /* Метки на фото: цена + тип, поверх затемнения */
+  /* Метка цены на фото — только от планшета. На телефоне пилюли на
+     190-пиксельном кадре переносились в две строки и закрывали фото,
+     а фото в каталоге — главное; цена там уходит в подпись. */
   .vcard__tags {
     position: absolute;
     bottom: var(--s-3);
     left: var(--s-3);
-    display: flex;
+    display: none;
     flex-wrap: wrap;
     gap: var(--s-2);
     pointer-events: none;
@@ -298,8 +303,20 @@ const venueCount = FEED.filter((item) => item.kind === 'venue').length;
 
   /* ============ ПОДПИСЬ ПОД ФОТО ============
      Кадр идёт в край экрана, текст — нет: своё поле подписи держит
-     --catalog-pad (на планшете и шире он ноль, поля даёт сама сетка). */
-  .vcard__body { padding-inline: var(--catalog-pad); }
+     --catalog-pad (на планшете и шире он ноль, поля даёт сама сетка).
+     Строки подписи стоят плотно, как у маркетплейса: без воздуха между
+     ценой, именем и характеристиками — карточка читается одним блоком. */
+  .vcard__body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-inline: var(--catalog-pad);
+  }
+
+  .vcard__price {
+    font-size: var(--fs-body);
+    font-weight: var(--w-medium);
+  }
 
   .vcard__top {
     display: flex;
@@ -308,21 +325,31 @@ const venueCount = FEED.filter((item) => item.kind === 'venue').length;
     gap: var(--s-3);
   }
 
+  /* На телефоне имя в кегле корпуса: h3 (21px) в колонке 190px ломал
+     «Усадьба Дубровицы» на две строки и раздувал подпись. */
   .vcard__name {
-    font-size: var(--fs-h3);
+    font-size: var(--fs-body);
     font-weight: var(--w-head);
-    line-height: 1.15;
+    line-height: 1.2;
   }
 
   .vcard__name a { text-decoration: none; }
 
   .vcard__rate {
-    font-size: var(--fs-small);
+    font-size: var(--fs-caption);
     font-weight: var(--w-medium);
     flex-shrink: 0;
   }
 
-  .vcard__meta { margin-top: -4px; }
+  .vcard__meta { font-size: var(--fs-caption); }
+
+  @media (min-width: 640px) {
+    .vcard__tags { display: flex; }
+    .vcard__price { display: none; }
+    .vcard__name { font-size: var(--fs-h3); line-height: 1.15; }
+    .vcard__rate { font-size: var(--fs-small); }
+    .vcard__meta { font-size: var(--fs-small); }
+  }
 
   /* Сердце на фото: без подложек и обводок, тень отделяет от кадра */
   .save {
