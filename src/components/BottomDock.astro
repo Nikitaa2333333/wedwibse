@@ -74,8 +74,11 @@ const items = [
   .dock {
     position: fixed;
     bottom: calc(var(--safe-b) + var(--s-4));
-    left: var(--s-3);
-    right: var(--s-3);
+    /* Центрируем и задаём ширину явно (а не парой left/right): из этой
+       геометрии док умеет стягиваться в компактную капсулу при скролле. */
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - var(--s-3) * 2);
     z-index: var(--z-nav);
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -87,6 +90,20 @@ const items = [
     background: var(--surface);
     border: 1px solid color-mix(in srgb, var(--ink) 8%, transparent);
     box-shadow: var(--shadow-float);
+    /* Быстрый токен намеренно: --dur-base (0.8s) — темп появления
+       блоков, док на таком времени тянулся бы за скроллом. */
+    transition: width var(--dur-fast) var(--ease-out);
+  }
+
+  /* ============ СЖАТИЕ ПРИ СКРОЛЛЕ ============
+     Пока читают ленту, док уходит с дороги: подписи схлопываются,
+     капсула стягивается к центру — остаются пять иконок. Скролл вверх
+     или возврат к началу страницы разворачивает его обратно (класс
+     ставит скрипт внизу файла). Ширина капсулы — единственное, что
+     меняется у самого дока: у него нет соседей в потоке, пересчёт
+     раскладки не выходит за его границы. */
+  .dock.is-compact {
+    width: min(248px, calc(100% - var(--s-3) * 2));
   }
 
   /* Стекла тут нет намеренно. Док висит поверх страницы всё время, и
@@ -94,13 +111,16 @@ const items = [
      длинной главной с коллажом это заметно тормозит. Стеклянными
      оставлены только панели, которые всплывают по клику (ScopePicker). */
 
+  /* Ячейка — grid из двух строк: иконка и подпись. Строка подписи
+     задана в fr именно ради сжатия: 1fr → 0fr анимируется, в отличие
+     от height: auto → 0, и подпись уезжает без скачка. */
   .dock__item {
     position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 3px;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    justify-items: center;
+    align-content: center;
+    row-gap: 3px;
     min-width: 0;
     padding: 7px 2px 6px;
     font-size: var(--fs-micro);
@@ -111,7 +131,14 @@ const items = [
     border-radius: var(--radius-pill);
     white-space: nowrap;
     transition: background var(--dur-fast) var(--ease-out),
-                color var(--dur-fast) var(--ease-out);
+                color var(--dur-fast) var(--ease-out),
+                grid-template-rows var(--dur-fast) var(--ease-out),
+                row-gap var(--dur-fast) var(--ease-out);
+  }
+
+  .dock.is-compact .dock__item {
+    grid-template-rows: auto minmax(0, 0fr);
+    row-gap: 0;
   }
 
   /* :global — иконку рисует Icon.astro, scoped-селектор этого файла
@@ -123,12 +150,17 @@ const items = [
     flex: none;
   }
 
-  /* Подпись под иконкой: «Специалисты» в ячейке ~68px иначе не влезает */
+  /* Подпись под иконкой: «Специалисты» в ячейке ~68px иначе не влезает.
+     min-height: 0 — иначе строка 0fr не даст тексту сжаться. */
   .dock__label {
     max-width: 100%;
+    min-height: 0;
     overflow: hidden;
     text-overflow: ellipsis;
+    transition: opacity var(--dur-fast) var(--ease-out);
   }
+
+  .dock.is-compact .dock__label { opacity: 0; }
 
   .dock__item.is-active {
     background: var(--ink);
@@ -163,24 +195,31 @@ const items = [
      Иконки уходят, остаются подписи в строку — капсула по центру,
      шириной по содержимому. */
   @media (min-width: 640px) {
-    .dock {
+    /* Здесь док и так капсула по содержимому, а подписи — единственное,
+       что в нём есть: сжимать нечего, состояние is-compact гасим. */
+    .dock,
+    .dock.is-compact {
       bottom: calc(var(--safe-b) + var(--s-5));
-      left: 50%;
-      right: auto;
-      transform: translateX(-50%);
       display: flex;
       align-items: center;
+      width: auto;
       max-width: calc(100vw - var(--s-5) * 2);
     }
 
-    .dock__item {
+    .dock__item,
+    .dock.is-compact .dock__item {
       position: static;
+      display: flex;
       flex-direction: row;
+      align-items: center;
       gap: 6px;
+      row-gap: 6px;
       padding: 10px clamp(14px, 2vw, 22px);
       font-size: var(--fs-small);
       line-height: var(--lh-body);
     }
+
+    .dock.is-compact .dock__label { opacity: 1; }
 
     :global(.dock__icon) { display: none; }
 
@@ -213,4 +252,48 @@ const items = [
   updateBadge();
   window.addEventListener(CHANGE_EVENT, updateBadge);
   window.addEventListener('storage', (e) => { if (e.key === STORAGE_KEY) updateBadge(); });
+
+  // ============ СЖАТИЕ ДОКА ПРИ СКРОЛЛЕ ============
+  // Читают ленту — док стягивается в капсулу с иконками; ведут страницу
+  // вверх или вернулись к началу — разворачивается с подписями.
+  // Направление, а не «просто скролл»: иначе док схлопывался бы и при
+  // возврате наверх, когда до него как раз тянется рука.
+  const dock = document.querySelector<HTMLElement>('.dock');
+
+  if (dock) {
+    // TOP_ZONE — у начала страницы док всегда развёрнут: там он часть
+    // первого экрана. THRESHOLD гасит дрожание пальца и отскок резинки.
+    const TOP_ZONE = 40;
+    const THRESHOLD = 6;
+
+    let lastY = window.scrollY;
+    let ticking = false;
+
+    function sync() {
+      const y = window.scrollY;
+
+      if (y <= TOP_ZONE) {
+        dock!.classList.remove('is-compact');
+      } else if (y > lastY + THRESHOLD) {
+        dock!.classList.add('is-compact');
+      } else if (y < lastY - THRESHOLD) {
+        dock!.classList.remove('is-compact');
+      }
+
+      // Порог считаем от последнего учтённого положения, иначе медленный
+      // скролл никогда его не наберёт.
+      if (Math.abs(y - lastY) > THRESHOLD) lastY = y;
+      ticking = false;
+    }
+
+    window.addEventListener(
+      'scroll',
+      () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(sync);
+      },
+      { passive: true },
+    );
+  }
 </script>
