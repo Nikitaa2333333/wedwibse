@@ -115,12 +115,13 @@ function interleave(lanes: Pin[][]): Pin[] {
   return out;
 }
 
-/** Карточка статьи в потоке доски: обложка + рубрика + заголовок */
+/** Статья в потоке доски — типографическая плашка: рубрика, заголовок,
+ *  «Читать». Без обложки: фото статьи в узкой колонке сливалось с соседними
+ *  кадрами, а подпись под ним — с подписью соседней плитки. Плашка той же
+ *  пропорции, что кадр каталога, встаёт в ритм доски как текстовый пин. */
 export interface ArticleTile {
   kind: 'article';
   href: string;
-  cover: string;
-  alt: string;
   rubric: string;
   title: string;
   ratio: string;
@@ -133,25 +134,19 @@ export type Tile = ({ kind: 'photo' } & Pin) | ArticleTile;
 /** через сколько фото-плиток в поток вклинивается статья */
 const ARTICLE_EVERY = 5;
 
-// Текст карточки статьи (рубрика + заголовок в 2-3 строки) в долях ширины
-// колонки — жадной раскладке нужна полная высота плитки, иначе колонка
-// со статьями незаметно перевешивает.
-const ARTICLE_TEXT_H = 0.5;
+// Пропорция плашки статьи = кадр каталога на телефоне (--card-ratio 2:3):
+// в колонке из вертикальных кадров она читается как ещё один кадр.
+const ARTICLE_RATIO = 2 / 3;
 
 function articleTile(article: (typeof ARTICLES)[number]): ArticleTile {
-  const meta = resolveImage(article.cover.src);
-  const ratio = meta.width / meta.height;
-
   return {
     kind: 'article',
     href: articleUrl(article),
-    cover: article.cover.src,
-    alt: article.cover.alt,
     rubric: rubricBySlug(article.rubricSlug)?.title ?? 'Журнал',
     title: article.title,
-    ratio: `${ratio.toFixed(3)} / 1`,
+    ratio: '2 / 3',
     index: 0,
-    height: 1 / ratio + ARTICLE_TEXT_H,
+    height: 1 / ARTICLE_RATIO,
   };
 }
 

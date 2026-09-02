@@ -17,12 +17,11 @@
 // свайпом — тот же PhotoRail, что в карточке каталога. Пропорция кадра
 // приходит через --card-ratio: её читает .prail внутри рельса.
 //
-// Раз в несколько плиток в потоке попадается карточка статьи — блог
-// человек встречает, пока листает фотографии, а не идёт за ним отдельно.
-import { Image } from 'astro:assets';
+// Раз в несколько плиток в потоке попадается статья — типографическая
+// плашка (.theme-dark) той же пропорции, что кадры вокруг. Блог человек
+// встречает, пока листает фотографии, а не идёт за ним отдельно.
 import PhotoRail from './PhotoRail.astro';
 import { collectTiles, layoutColumns } from '../lib/gallery';
-import { resolveImage } from '../lib/images';
 
 const columns = layoutColumns(collectTiles(), 2);
 
@@ -45,24 +44,11 @@ const TILE_SIZES =
               data-h={tile.height.toFixed(3)}
             >
               {tile.kind === 'article' ? (
-                <>
-                  <a class="pin__media media" href={tile.href} tabindex="-1" aria-hidden="true">
-                    <Image
-                      src={resolveImage(tile.cover)}
-                      alt=""
-                      widths={[360, 560, 800]}
-                      sizes={TILE_SIZES}
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </a>
-
-                  <p class="cap t-caption">{tile.rubric}</p>
-
-                  <h3 class="pin__title">
-                    <a href={tile.href}>{tile.title}</a>
-                  </h3>
-                </>
+                <a class="note theme-dark" href={tile.href}>
+                  <span class="note__rubric t-caption">{tile.rubric}</span>
+                  <h3 class="note__title">{tile.title}</h3>
+                  <span class="pill pill--sm note__cta">Читать</span>
+                </a>
               ) : (
                 <>
                   <PhotoRail
@@ -134,23 +120,42 @@ const TILE_SIZES =
     text-decoration: none;
   }
 
-  /* КАРТОЧКА СТАТЬИ в потоке: тот же кадр той же ширины, но под ним
-     рубрика и заголовок — статью видно как статью, не как фото площадки.
-     Рамок и подложек нет: карточку отбивает кадр, как в ArticleCard. */
-  .pin__media {
-    display: block;
+  /* СТАТЬЯ В ПОТОКЕ — плашка-инверсия той же пропорции, что кадр рядом.
+     Рубрика сверху, заголовок в середине, пилюля «Читать» внизу — три
+     уровня одной плитки, как у текстового пина. Цвета из .theme-dark:
+     пилюля внутри сама становится белой, руками ничего не красим. */
+  .note {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: var(--s-4);
     aspect-ratio: var(--card-ratio);
-    background: var(--surface-dim);
+    padding: var(--s-4);
+    background: var(--bg);
+    color: var(--fg);
+    text-decoration: none;
   }
 
-  .pin__title {
-    padding: 0 var(--catalog-pad);
-    font-size: var(--fs-small);
+  .note__rubric { font-weight: var(--w-medium); }
+
+  /* Кегль от ширины колонки, не экрана: колонка на телефоне ~190px
+     (→ 19px, пять строк), на ПК ~300px (→ 27px) — заголовок держит плашку,
+     а не тонет в ней. Без переносов внутри слова. */
+  .note__title {
+    font-size: clamp(19px, 9cqi, 30px);
     font-weight: var(--w-head);
     line-height: var(--lh-heading);
+    letter-spacing: var(--ls-display);
+    hyphens: manual;
   }
 
-  .pin__title a { text-decoration: none; }
+  .note__cta { align-self: flex-start; }
+
+  .pin--article { container-type: inline-size; }
+
+  @media (min-width: 1024px) {
+    .note { padding: var(--s-5); }
+  }
 
   @media (min-width: 640px) {
     .board__cols { --board-cols: 3; }
