@@ -57,7 +57,7 @@ const perks = [
       </header>
 
       <div class="hero__intro">
-        <h1 class="hero__title">Всё для вашей свадьбы в пару кликов</h1>
+        <h1 class="hero__title">Всё для Вашей свадьбы</h1>
 
         <a class="hero__hint" href="/izbrannoe/">
           <span class="perk__heart-wrap">
@@ -65,8 +65,7 @@ const perks = [
             <span class="perk__badge" aria-hidden="true">1</span>
           </span>
           <span class="hero__hint-text t-small">
-            Сохраняйте в избранное и обращайтесь ко всем сразу — так вы найдёте лучшее
-            предложение для своей свадьбы
+            Листай ленту, сохраняй в избранное
           </span>
         </a>
       </div>
@@ -205,7 +204,7 @@ const perks = [
 
   .hero__account svg { width: 18px; height: 18px; }
 
-  .hero__intro { padding-top: var(--s-3); }
+  .hero__intro { padding-top: var(--s-3); text-align: center; }
 
   /* На широком экране лид встаёт рядом с заголовком, справа, одним блоком */
   @media (min-width: 768px) {
@@ -214,6 +213,7 @@ const perks = [
       align-items: flex-end;
       justify-content: space-between;
       gap: var(--s-6);
+      text-align: left;
     }
   }
 
@@ -234,6 +234,7 @@ const perks = [
     line-height: 0.9;
     letter-spacing: -0.03em;
     max-width: var(--measure-head);
+    margin-inline: auto;
   }
 
   /* Подсказка про избранное: сердце из перка (та же мини-демо-анимация)
@@ -241,6 +242,7 @@ const perks = [
   .hero__hint {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: var(--s-4);
     margin-top: var(--s-5);
     min-width: 0;
@@ -251,7 +253,8 @@ const perks = [
   .hero__hint-text { font-weight: var(--w-medium); }
 
   @media (min-width: 768px) {
-    .hero__hint { margin-top: 0; }
+    .hero__hint { margin-top: 0; justify-content: flex-start; }
+    .hero__title { margin-inline: 0; }
 
     /* Мера подсказки: ch считается от кегля элемента, поэтому при снижении
        --fs-body с 21 до 18px прежние 44ch съехали в три строки. 52ch дают
