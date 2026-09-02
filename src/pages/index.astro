@@ -4,6 +4,7 @@ import BottomDock from '../components/BottomDock.astro';
 import PhotoRail from '../components/PhotoRail.astro';
 import PhotoBoard from '../components/PhotoBoard.astro';
 import ArticleCard from '../components/ArticleCard.astro';
+import Icon from '../components/Icon.astro';
 import { ARTICLES } from '../data/articles';
 
 // ПРЕИМУЩЕСТВА: крупные плашки в два столбца с минимальным стыком —
@@ -57,10 +58,7 @@ const latest = ARTICLES.slice(0, 3);
         </a>
 
         <a class="hero__account" href="#" aria-label="Личный кабинет">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
-            <circle cx="12" cy="8" r="3.6" />
-            <path d="M4.5 20c1.6-3.6 5-5.4 7.5-5.4s5.9 1.8 7.5 5.4" stroke-linecap="round" />
-          </svg>
+          <Icon name="account" />
         </a>
       </header>
 
@@ -69,12 +67,7 @@ const latest = ARTICLES.slice(0, 3);
 
         <a class="hero__hint" href="/izbrannoe/">
           <span class="perk__heart-wrap">
-            <svg class="perk__heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-              <path
-                d="M12 20.2s-7.2-4.4-9.7-8.6C.7 8 2 4.3 5.4 3.5c2.4-.6 4.6.5 6.6 3.2 2-2.7 4.2-3.8 6.6-3.2 3.4.8 4.7 4.5 3.1 8.1-2.5 4.2-9.7 8.6-9.7 8.6Z"
-                stroke-linejoin="round"
-              />
-            </svg>
+            <Icon name="heart" class="perk__heart" />
             <span class="perk__badge" aria-hidden="true">1</span>
           </span>
           <span class="hero__hint-text t-small">

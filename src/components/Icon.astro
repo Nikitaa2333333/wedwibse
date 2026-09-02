@@ -1,0 +1,17 @@
+---
+// Единственная точка вывода иконок проекта. Набор — Solar (Bold),
+// контуры лежат в src/lib/icons.ts (генерируются scripts/gen-icons.mjs).
+// Размер и цвет иконка берёт от места, куда вставлена: currentColor
+// и размеры класса-хозяина — своих значений компонент не задаёт.
+import { icons, type IconName } from '../lib/icons';
+
+interface Props {
+  name: IconName;
+  class?: string;
+}
+
+const { name, class: className } = Astro.props;
+const { viewBox, body } = icons[name];
+---
+
+<svg class={className} viewBox={viewBox} fill="currentColor" aria-hidden="true" set:html={body} />

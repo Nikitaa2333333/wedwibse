@@ -10,6 +10,7 @@ import BottomDock from '../../../../components/BottomDock.astro';
 import CategoryNav from '../../../../components/CategoryNav.astro';
 import FilterSidebar from '../../../../components/FilterSidebar.astro';
 import ScopePicker from '../../../../components/ScopePicker.astro';
+import Icon from '../../../../components/Icon.astro';
 import { SPECIALIST_CATEGORIES, FILTERS_BY_CATEGORY } from '../../../../data/specialists';
 
 export function getStaticPaths() {
@@ -46,9 +47,7 @@ const filters = FILTERS_BY_CATEGORY[category.slug];
     <div class="layout">
       <aside class="sidebar" data-sidebar>
         <button class="sidebar__close icon-btn" type="button" data-sidebar-close aria-label="Закрыть фильтры">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
-            <path d="M6 6l12 12M18 6 6 18" stroke-linecap="round" />
-          </svg>
+          <Icon name="close" />
         </button>
         <div class="sidebar__panel">
           <FilterSidebar groups={filters} />

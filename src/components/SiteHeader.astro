@@ -3,6 +3,8 @@
 // слева разделы, справа телефон и кружок аккаунта (как на главной).
 // Телефон опционален: на страницах каталога его нет, только на карточке
 // площадки. Единственная линия — граница шапки, она структурная.
+import Icon from './Icon.astro';
+
 interface Props {
   phone?: string;
   phoneHref?: string;
@@ -24,10 +26,7 @@ const { phone, phoneHref } = Astro.props;
       {phone && <a class="head__phone t-small" href={phoneHref}>{phone}</a>}
 
       <a class="head__account" href="#" aria-label="Аккаунт">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
-          <circle cx="12" cy="8" r="3.6"></circle>
-          <path d="M4.5 20c1.6-3.6 5-5.4 7.5-5.4s5.9 1.8 7.5 5.4" stroke-linecap="round"></path>
-        </svg>
+        <Icon name="account" />
       </a>
     </div>
   </div>

@@ -7,6 +7,7 @@
 // применяются мгновенно при клике. Раскрытие групп — нативный <details>.
 // Вариант — строка с квадратной отметкой (язык маркера .list).
 import type { FilterGroup } from '../data/specialists';
+import Icon from './Icon.astro';
 
 interface Props {
   groups: FilterGroup[];
@@ -25,9 +26,7 @@ const { groups } = Astro.props;
     <details class="fgroup" open={i < 3}>
       <summary class="fgroup__head">
         <span>{group.label}</span>
-        <svg class="fgroup__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-          <path d="m7 10 5 5 5-5" stroke-linecap="round" stroke-linejoin="round" />
-        </svg>
+        <Icon name="caretDown" class="fgroup__caret" />
       </summary>
       <div class="fgroup__options">
         {group.options.map((opt) => (

@@ -1,0 +1,244 @@
+---
+// ВРЕМЕННАЯ страница выбора иконочного набора (удалить после решения).
+// Один и тот же набор смыслов в разных наборах — в реальном размере
+// таб-бара и крупно, на нашей бумаге и на чернильной заливке.
+import Layout from '../layouts/Layout.astro';
+import { iconSvg } from '../lib/icon-preview';
+
+// Слоты: те же пять смыслов, что в нижнем меню, плюс четыре из интерфейса.
+const slots = ['Главная', 'Площадки', 'Специалисты', 'Избранное', 'Чат', 'Поиск', 'Фильтры', 'Рейтинг', 'Аккаунт'];
+
+// Текущие иконки — скопированы из BottomDock как точка отсчёта.
+const current = [
+  '<g fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3.5 11.2 12 4l8.5 7.2M6 9.6V20h12V9.6" stroke-linecap="round" stroke-linejoin="round"/></g>',
+  '<g fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11Z" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.4"/></g>',
+  '<g fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="8" r="3.4"/><path d="M2.5 20c1.2-3.6 3.8-5.4 6.5-5.4s5.3 1.8 6.5 5.4M15.5 4.8a3.4 3.4 0 0 1 0 6.4M17 14.7c2.2.5 3.8 2.3 4.5 5.3" stroke-linecap="round"/></g>',
+  '<g fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 20.2S3.8 15.3 3.8 9.6A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 8.2 2c0 5.7-8.2 10.6-8.2 10.6z" stroke-linejoin="round"/></g>',
+  '<g fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 5.5h16v10H9l-5 4z" stroke-linejoin="round"/></g>',
+  '<g fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4" stroke-linecap="round"/></g>',
+  '<g fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 7h16M4 12h10M4 17h6" stroke-linecap="round"/></g>',
+  '<g fill="none" stroke="currentColor" stroke-width="1.6"><path d="m12 4 2.5 5.2 5.5.8-4 3.9 1 5.6-5-2.7-5 2.7 1-5.6-4-3.9 5.5-.8z" stroke-linejoin="round"/></g>',
+  '<g fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.5 20c1.4-3.9 4.2-5.8 7.5-5.8s5.9 1.9 7.5 5.8" stroke-linecap="round"/></g>',
+];
+
+// Кандидаты: набор + начертание. Имена — реальные ключи Iconify.
+const variants: { id: string; title: string; note: string; prefix: string; names: string[] }[] = [
+  {
+    id: 'ph-thin',
+    title: 'Phosphor Thin',
+    note: 'самый тонкий вес, ближе всего к типографике сайта',
+    prefix: 'ph',
+    names: ['house-simple-thin', 'map-pin-thin', 'users-three-thin', 'heart-thin', 'chat-circle-thin', 'magnifying-glass-thin', 'sliders-horizontal-thin', 'star-thin', 'user-thin'],
+  },
+  {
+    id: 'ph-light',
+    title: 'Phosphor Light',
+    note: 'тонко, но держит форму на 22px — рабочий кандидат',
+    prefix: 'ph',
+    names: ['house-simple-light', 'map-pin-light', 'users-three-light', 'heart-light', 'chat-circle-light', 'magnifying-glass-light', 'sliders-horizontal-light', 'star-light', 'user-light'],
+  },
+  {
+    id: 'ph-regular',
+    title: 'Phosphor Regular',
+    note: 'базовый вес набора',
+    prefix: 'ph',
+    names: ['house-simple', 'map-pin', 'users-three', 'heart', 'chat-circle', 'magnifying-glass', 'sliders-horizontal', 'star', 'user'],
+  },
+  {
+    id: 'ph-duotone',
+    title: 'Phosphor Duotone',
+    note: 'контур + полупрозрачная заливка внутри',
+    prefix: 'ph',
+    names: ['house-simple-duotone', 'map-pin-duotone', 'users-three-duotone', 'heart-duotone', 'chat-circle-duotone', 'magnifying-glass-duotone', 'sliders-horizontal-duotone', 'star-duotone', 'user-duotone'],
+  },
+  {
+    id: 'solar-linear',
+    title: 'Solar Linear',
+    note: 'обводка 1.5, крупная геометрия — самый «дорогой» из бесплатных',
+    prefix: 'solar',
+    names: ['home-2-linear', 'map-point-linear', 'users-group-rounded-linear', 'heart-linear', 'chat-round-linear', 'magnifier-linear', 'filter-linear', 'star-linear', 'user-linear'],
+  },
+  {
+    id: 'solar-broken',
+    title: 'Solar Broken',
+    note: 'та же геометрия с разрывами в контуре — характерный, но шумный',
+    prefix: 'solar',
+    names: ['home-2-broken', 'map-point-broken', 'users-group-rounded-broken', 'heart-broken', 'chat-round-broken', 'magnifier-broken', 'filter-broken', 'star-broken', 'user-broken'],
+  },
+  {
+    id: 'solar-duotone',
+    title: 'Solar Line Duotone',
+    note: 'контур + приглушённая заливка',
+    prefix: 'solar',
+    names: ['home-2-line-duotone', 'map-point-line-duotone', 'users-group-rounded-line-duotone', 'heart-line-duotone', 'chat-round-line-duotone', 'magnifier-line-duotone', 'filter-line-duotone', 'star-line-duotone', 'user-line-duotone'],
+  },
+  {
+    id: 'solar-outline',
+    title: 'Solar Outline',
+    note: 'та же форма, но контур переведён в заливку — плотнее линия',
+    prefix: 'solar',
+    names: ['home-2-outline', 'map-point-outline', 'users-group-rounded-outline', 'heart-outline', 'chat-round-outline', 'magnifier-outline', 'filter-outline', 'star-outline', 'user-outline'],
+  },
+  {
+    id: 'iconoir',
+    title: 'Iconoir',
+    note: 'спокойный и взрослый, обводка 1.5, без миловидности',
+    prefix: 'iconoir',
+    names: ['home-simple', 'map-pin', 'group', 'heart', 'chat-bubble-empty', 'search', 'filter', 'star', 'user'],
+  },
+  {
+    id: 'hugeicons',
+    title: 'Hugeicons Stroke Rounded',
+    note: 'современный, чуть более «приложенческий»',
+    prefix: 'hugeicons',
+    names: ['home-09', 'map-pinpoint-01', 'user-group', 'favourite', 'bubble-chat', 'search-01', 'filter', 'star', 'user'],
+  },
+];
+
+const rows = [
+  { id: 'current', title: 'Сейчас на сайте', note: 'самописные контуры «под Feather» — точка отсчёта', icons: current.map((body) => ({ body, viewBox: '0 0 24 24' })) },
+  ...variants.map((v) => ({
+    id: v.id,
+    title: v.title,
+    note: v.note,
+    icons: v.names.map((n) => iconSvg(v.prefix, n)),
+  })),
+];
+---
+
+<Layout title="Иконки — варианты наборов">
+  <main class="wrap">
+    <header class="head">
+      <h1 class="t-h1">Варианты иконок</h1>
+      <p class="t-lead">
+        Один и тот же набор смыслов в разных наборах. Первый ряд — то, что стоит сейчас.
+        Смотреть на два вещи: как иконка читается в 22px (реальный размер таб-бара)
+        и держит ли ряд одну оптическую плотность.
+      </p>
+    </header>
+
+    {rows.map((row) => (
+      <section class="variant">
+        <div class="variant__head">
+          <h2 class="t-h2">{row.title}</h2>
+          <p class="variant__note">{row.note}</p>
+        </div>
+
+        <div class="strip">
+          {row.icons.map((ic, i) => (
+            <figure class="cell">
+              {ic ? (
+                <svg class="cell__big" viewBox={ic.viewBox} aria-hidden="true" set:html={ic.body} />
+              ) : (
+                <span class="cell__miss">—</span>
+              )}
+              <figcaption class="cell__cap">{slots[i]}</figcaption>
+            </figure>
+          ))}
+        </div>
+
+        <!-- Живая примерка: тот же док, что внизу страниц, в реальном размере -->
+        <div class="dock">
+          {row.icons.slice(0, 5).map((ic, i) => (
+            <span class:list={['dock__item', { 'is-active': i === 0 }]}>
+              {ic && <svg class="dock__icon" viewBox={ic.viewBox} aria-hidden="true" set:html={ic.body} />}
+              <span class="dock__label">{slots[i]}</span>
+            </span>
+          ))}
+        </div>
+      </section>
+    ))}
+  </main>
+</Layout>
+
+<style>
+  .wrap {
+    max-width: var(--page-max, 1200px);
+    margin-inline: auto;
+    padding: var(--s-6) var(--gutter, var(--s-4)) 120px;
+  }
+
+  .head { margin-bottom: var(--s-6); }
+  .head .t-lead { max-width: var(--measure-lead, 60ch); }
+
+  .variant {
+    padding: var(--s-5) 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .variant__head { margin-bottom: var(--s-4); }
+
+  .variant__note {
+    margin: 4px 0 0;
+    font-size: var(--fs-small);
+    color: var(--ink);
+  }
+
+  .strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+    gap: var(--s-3);
+    margin-bottom: var(--s-4);
+  }
+
+  .cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    padding: var(--s-3) 4px;
+    border-radius: 14px;
+    background: var(--surface);
+    color: var(--ink);
+  }
+
+  .cell__big { width: 32px; height: 32px; display: block; }
+  .cell__miss { font-size: var(--fs-small); }
+
+  .cell__cap {
+    font-size: var(--fs-micro);
+    text-align: center;
+  }
+
+  /* Копия дока из BottomDock: те же размеры, чтобы примерка была честной */
+  .dock {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    max-width: 400px;
+    padding: 5px;
+    border-radius: var(--radius-pill);
+    background: var(--surface);
+    border: 1px solid color-mix(in srgb, var(--ink) 8%, transparent);
+    box-shadow: var(--shadow-float);
+  }
+
+  .dock__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-width: 0;
+    padding: 7px 2px 6px;
+    border-radius: var(--radius-pill);
+    font-size: var(--fs-micro);
+    font-weight: var(--w-medium);
+    line-height: 1;
+    color: var(--ink);
+  }
+
+  .dock__item.is-active {
+    background: var(--ink);
+    color: var(--surface);
+  }
+
+  .dock__icon { width: 22px; height: 22px; display: block; flex: none; }
+
+  .dock__label {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+</style>

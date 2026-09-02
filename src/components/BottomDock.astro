@@ -4,25 +4,27 @@
 // шрифте. На телефоне пять подписей в строку не живут (проверено: 16px
 // не влезали, 14px читались мелко и тесно) — там док становится таб-баром
 // приложения: иконка и подпись под ней, пять равных ячеек.
+import Icon from './Icon.astro';
+
 interface Props {
   active?: 'feed' | 'venues' | 'vendors' | 'saved' | 'chat';
 }
 
 const { active } = Astro.props;
 
-// icon — содержимое svg (viewBox 24, обводка currentColor 1.6).
+// icon — ключ из реестра src/lib/icons.ts (набор Solar Bold).
 const items = [
   {
     key: 'feed',
     href: '/',
     label: 'Главная',
-    icon: '<path d="M3.5 11.2 12 4l8.5 7.2M6 9.6V20h12V9.6" stroke-linecap="round" stroke-linejoin="round"/>',
+    icon: 'home',
   },
   {
     key: 'venues',
     href: '/moskva/ploshchadki/',
     label: 'Площадки',
-    icon: '<path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11Z" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.4"/>',
+    icon: 'venue',
   },
   // Раздел «Специалисты» ведёт сразу в каталог первого направления:
   // хаба с плитками направлений больше нет, направления переключаются
@@ -31,19 +33,19 @@ const items = [
     key: 'vendors',
     href: '/moskva/podryadchiki/vedushchie/',
     label: 'Специалисты',
-    icon: '<circle cx="9" cy="8" r="3.4"/><path d="M2.5 20c1.2-3.6 3.8-5.4 6.5-5.4s5.3 1.8 6.5 5.4M15.5 4.8a3.4 3.4 0 0 1 0 6.4M17 14.7c2.2.5 3.8 2.3 4.5 5.3" stroke-linecap="round"/>',
+    icon: 'vendors',
   },
   {
     key: 'saved',
     href: '/izbrannoe/',
     label: 'Избранное',
-    icon: '<path d="M12 20.2S3.8 15.3 3.8 9.6A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 8.2 2c0 5.7-8.2 10.6-8.2 10.6z" stroke-linejoin="round"/>',
+    icon: 'heart',
   },
   {
     key: 'chat',
     href: '#',
     label: 'Чат',
-    icon: '<path d="M4 5.5h16v10H9l-5 4z" stroke-linejoin="round"/>',
+    icon: 'chat',
   },
 ] as const;
 ---
@@ -55,7 +57,7 @@ const items = [
       href={it.href}
       aria-current={it.key === active ? 'page' : undefined}
     >
-      <svg class="dock__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true" set:html={it.icon} />
+      <Icon name={it.icon} class="dock__icon" />
       <span class="dock__label">{it.label}</span>
       {it.key === 'saved' && (
         <span class="dock__badge" data-fav-badge aria-hidden="true" hidden>0</span>

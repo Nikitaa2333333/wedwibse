@@ -13,6 +13,7 @@ import BottomDock from '../../../components/BottomDock.astro';
 import FilterSidebar from '../../../components/FilterSidebar.astro';
 import ScopePicker from '../../../components/ScopePicker.astro';
 import PhotoRail from '../../../components/PhotoRail.astro';
+import Icon from '../../../components/Icon.astro';
 import { FEED, VENUE_FILTERS } from '../../../data/feed';
 import { resolveImage } from '../../../lib/images';
 
@@ -69,9 +70,7 @@ const venueCount = FEED.filter((item) => item.kind === 'venue').length;
     <!-- ФИЛЬТРЫ: постоянная колонка на широком экране; на узком — шторка -->
     <aside class="sidebar" data-sidebar>
       <button class="sidebar__close icon-btn" type="button" data-sidebar-close aria-label="Закрыть фильтры">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
-          <path d="M6 6l12 12M18 6 6 18" stroke-linecap="round" />
-        </svg>
+        <Icon name="close" />
       </button>
       <div class="sidebar__panel">
         <FilterSidebar groups={VENUE_FILTERS} />
@@ -150,9 +149,7 @@ const venueCount = FEED.filter((item) => item.kind === 'venue').length;
                   </div>
 
                   <button class="save" type="button" data-save={saveData} aria-pressed="false" aria-label="В избранное">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
-                      <path d="M12 20.2S3.8 15.3 3.8 9.6A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 8.2 2c0 5.7-8.2 10.6-8.2 10.6z" stroke-linejoin="round" />
-                    </svg>
+                    <Icon name="heartOutline" />
                   </button>
                 </div>
               ) : (
@@ -168,9 +165,7 @@ const venueCount = FEED.filter((item) => item.kind === 'venue').length;
                   </div>
 
                   <button class="save" type="button" data-save={saveData} aria-pressed="false" aria-label="В избранное">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
-                      <path d="M12 20.2S3.8 15.3 3.8 9.6A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 8.2 2c0 5.7-8.2 10.6-8.2 10.6z" stroke-linejoin="round" />
-                    </svg>
+                    <Icon name="heartOutline" />
                   </button>
                 </PhotoRail>
               )}
@@ -372,7 +367,9 @@ const venueCount = FEED.filter((item) => item.kind === 'venue').length;
 
   .save svg { width: 24px; height: 24px; }
   .save:active { transform: scale(0.85); }
-  .save[aria-pressed='true'] svg { fill: var(--white); }
+  /* Сердце Solar: контур — «не в избранном», заливка тем же цветом —
+     «сохранено». Правило бьёт по внутреннему path (у него fill="none"). */
+  .save[aria-pressed='true'] svg > * { fill: currentColor; }
 
   /* ============ РЕКЛАМНАЯ КАРТОЧКА: во всю ширину ============ */
   .vcard--ad {

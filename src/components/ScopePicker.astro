@@ -10,6 +10,7 @@
 // ЗАГЛУШКА: когда появится серверная выдача, локация переедет в URL
 // (/podolsk/ploshchadki/), сама панель не изменится.
 import type { FilterGroup } from '../data/specialists';
+import Icon from './Icon.astro';
 
 interface Props {
   title: string;
@@ -52,9 +53,7 @@ const ALL_LABEL = 'Москва и область';
         aria-controls="scope-pop"
       >
         {title}
-        <svg class="scope__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-          <path d="m7 10 5 5 5-5" stroke-linecap="round" stroke-linejoin="round" />
-        </svg>
+        <Icon name="caretDown" class="scope__caret" />
       </button>
     </h1>
     {count && <p class="scope__count" data-results-count>{count}</p>}
@@ -62,12 +61,7 @@ const ALL_LABEL = 'Москва и область';
 
   <div class="scope__tools">
     <button class="pill pill--sm scope__city" type="button" data-scope-toggle aria-controls="scope-pop" aria-expanded="false">
-      <svg class="scope__pin" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-        <path
-          fill-rule="evenodd"
-          d="M12 2a7 7 0 0 0-7 7c0 4.6 5.1 10.2 6.3 11.5a.9.9 0 0 0 1.4 0C13.9 19.2 19 13.6 19 9a7 7 0 0 0-7-7Zm0 9.6A2.6 2.6 0 1 1 12 6.4a2.6 2.6 0 0 1 0 5.2Z"
-        />
-      </svg>
+      <Icon name="venue" class="scope__pin" />
       <span data-scope-city-label>{ALL_LABEL}</span>
       <span class="scope__city-caret" aria-hidden="true">▾</span>
     </button>
