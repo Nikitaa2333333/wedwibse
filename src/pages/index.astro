@@ -3,9 +3,7 @@ import Layout from '../layouts/Layout.astro';
 import BottomDock from '../components/BottomDock.astro';
 import PhotoRail from '../components/PhotoRail.astro';
 import PhotoBoard from '../components/PhotoBoard.astro';
-import ArticleCard from '../components/ArticleCard.astro';
 import Icon from '../components/Icon.astro';
-import { ARTICLES } from '../data/articles';
 
 // ПРЕИМУЩЕСТВА: крупные плашки в два столбца с минимальным стыком —
 // сразу на главном экране показываем, что умеет сервис.
@@ -39,10 +37,6 @@ const perks = [
   },
 ];
 
-// ЖУРНАЛ: три свежих статьи прямо на главной. Блог — вход воронки
-// «статья → подборка → карточка» (SEO.md), поэтому ссылки на него
-// лежат в HTML главной, а не только в шапке каталога.
-const latest = ARTICLES.slice(0, 3);
 ---
 
 <Layout title="Свадебные Секреты — лучшие площадки и специалисты">
@@ -125,20 +119,15 @@ const latest = ARTICLES.slice(0, 3);
       </div>
     </section>
 
-    <!-- ДОСКА: все кадры каталога масонри-раскладкой, часть плиток листается -->
+    <!-- ДОСКА: все кадры каталога масонри-раскладкой, часть плиток листается.
+         Статьи лежат в том же потоке (см. PhotoBoard) — отдельной секции
+         «Журнал» на главной нет: она дублировала бы то, что человек уже
+         встретил, пока листал. Внизу остаётся только вход в блог целиком. -->
     <PhotoBoard />
 
-    <!-- ЖУРНАЛ: вход в блог с главной -->
-    <section class="journal container--wide" aria-labelledby="journal-title">
-      <header class="journal__head">
-        <h2 class="journal__title" id="journal-title">Журнал</h2>
-        <a class="pill pill--sm" href="/blog/">Все статьи</a>
-      </header>
-
-      <div class="journal__grid" data-reveal-group>
-        {latest.map((article) => <ArticleCard article={article} />)}
-      </div>
-    </section>
+    <div class="journal-more container--wide">
+      <a class="pill" href="/blog/">Весь журнал</a>
+    </div>
 
     <BottomDock active="feed" />
   </div>
@@ -524,32 +513,13 @@ const latest = ARTICLES.slice(0, 3);
     .perk { aspect-ratio: 4 / 5; }
   }
 
-  /* ============ ЖУРНАЛ: три статьи + вход в блог ============ */
-  .journal { padding-bottom: var(--s-8); }
-
-  .journal__head {
+  /* ============ ВХОД В БЛОГ ============
+     Сами статьи попадаются в доске выше; тут только ссылка на журнал
+     целиком — по центру, без заголовка и без карточек. */
+  .journal-more {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--s-4);
-    margin-bottom: var(--s-6);
-  }
-
-  .journal__title {
-    font-size: var(--fs-h2);
-    font-weight: var(--w-head);
-    line-height: var(--lh-heading);
-    letter-spacing: var(--ls-display);
-  }
-
-  .journal__grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--s-7) clamp(8px, 1vw, 16px);
-  }
-
-  @media (min-width: 768px) {
-    .journal__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    justify-content: center;
+    padding-bottom: var(--s-8);
   }
 
   /* ============ ПК ============ */
