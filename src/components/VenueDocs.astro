@@ -1,0 +1,101 @@
+---
+// Документы площадки: техническое сопровождение, спецификация света и звука.
+// Плашка = прямоугольник на hairline-обводке (скругления в проекте запрещены),
+// внутри — что это за файл, зачем он нужен и кнопка-пилюля на скачивание.
+// Файлы лежат в public/docs/: PDF нужен сырой стабильный URL, оптимизацию
+// astro:assets он не проходит.
+import type { Venue } from '../data/venues';
+
+interface Props {
+  kicker: string;
+  title: string;
+  lead?: string;
+  docs: NonNullable<Venue['docs']>;
+}
+
+const { kicker, title, lead, docs } = Astro.props;
+---
+
+<section class="docs section" id="dokumenty">
+  <div class="container container--wide">
+    <header class="docs__head">
+      <p class="docs__kicker t-caption">{kicker}</p>
+      <h2 class="docs__title">{title}</h2>
+      {lead && <p class="docs__lead t-lead">{lead}</p>}
+    </header>
+
+    <div class="docs__grid" data-reveal-group>
+      {
+        docs.map((doc) => (
+          <article class="doc">
+            <p class="doc__meta t-caption">PDF · {doc.size}</p>
+            <h3 class="doc__name">{doc.title}</h3>
+            <p class="doc__note">{doc.note}</p>
+            <a class="pill doc__action" href={doc.file} download>
+              Скачать PDF
+            </a>
+          </article>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  /* по полям страницы, как сцены и вопросы */
+  .docs :global(.container) { max-width: none; }
+
+  .docs__head { margin-bottom: var(--section-gap-tight); }
+
+  .docs__kicker {
+    font-weight: var(--w-medium);
+    margin-bottom: var(--s-3);
+  }
+
+  .docs__title {
+    font-size: var(--fs-h1);
+    font-weight: var(--w-head-lg);
+    line-height: var(--lh-display);
+    letter-spacing: var(--ls-display);
+    max-width: var(--measure-head);
+  }
+
+  .docs__lead {
+    max-width: var(--measure-lead);
+    margin-top: var(--s-5);
+  }
+
+  .docs__grid {
+    display: grid;
+    gap: var(--s-6);
+  }
+
+  .doc {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--s-3);
+    padding: var(--s-7);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-tile);
+  }
+
+  .doc__meta { font-weight: var(--w-medium); }
+
+  .doc__name {
+    font-size: var(--fs-h3);
+    font-weight: var(--w-head);
+  }
+
+  .doc__note {
+    max-width: var(--measure-text);
+    /* прижимаем кнопку к низу плашки, чтобы в ряду они стояли по одной линии */
+    margin-bottom: auto;
+  }
+
+  .doc__action { margin-top: var(--s-5); }
+
+  @media (min-width: 900px) {
+    .docs__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+</style>

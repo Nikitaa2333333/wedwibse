@@ -10,6 +10,7 @@ import StatsStrip from '../../../components/StatsStrip.astro';
 import ScrollyScenes from '../../../components/ScrollyScenes.astro';
 import VenueTerms from '../../../components/VenueTerms.astro';
 import VenueRules from '../../../components/VenueRules.astro';
+import VenueDocs from '../../../components/VenueDocs.astro';
 import PhotoGallery from '../../../components/PhotoGallery.astro';
 import FaqBlock from '../../../components/FaqBlock.astro';
 import VenueContacts from '../../../components/VenueContacts.astro';
@@ -42,13 +43,24 @@ const { venue } = Astro.props;
 
     <VenueTerms
       kicker="Условия"
-      title="Сколько стоит и как забронировать"
+      title={venue.termsTitle ?? 'Сколько стоит и как забронировать'}
       terms={venue.terms}
       included={venue.included}
       extras={venue.extras}
     />
 
     <VenueRules kicker="Ограничения" title="Что важно знать заранее" rules={venue.rules} />
+
+    {
+      venue.docs && venue.docs.length > 0 && (
+        <VenueDocs
+          kicker="Документы"
+          title="Техническое сопровождение"
+          lead="Спецификации площадки одним файлом: что за оборудование стоит в зале, какой свет и звук уже есть и что подрядчикам нужно привезти с собой. Пригодится ведущему, диджею и техдиректору при подготовке."
+          docs={venue.docs}
+        />
+      )
+    }
 
     <PhotoGallery kicker="Галерея" title="Зал и мероприятия" items={venue.gallery} />
 

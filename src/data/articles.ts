@@ -76,6 +76,7 @@ export interface Article {
 }
 
 const RL = '/venues/river-loft';
+const FD = '/venues/forest-dew';
 
 // ============ ССЫЛКА НА ПОДБОРКУ ============
 // ВРЕМЕННО: подборка — это каталог с предвыбранным фильтром (?type=Лофт).

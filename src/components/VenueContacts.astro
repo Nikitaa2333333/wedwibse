@@ -25,7 +25,8 @@ const { contacts } = venue;
 
         <div class="cta__actions">
           <a class="pill pill--lg" href={contacts.phoneHref}>{contacts.phone}</a>
-          <a class="cta__mail" href={`mailto:${contacts.email}`}>{contacts.email}</a>
+          {/* почта есть не у всех площадок — у части связь идёт только по телефону и в мессенджере */}
+          {contacts.email && <a class="cta__mail" href={`mailto:${contacts.email}`}>{contacts.email}</a>}
         </div>
 
         <dl class="rows cta__rows">
