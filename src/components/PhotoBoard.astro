@@ -6,8 +6,9 @@
 //
 // Плитка с несколькими кадрами получает точки-индикаторы и листание
 // свайпом — тот же PhotoRail, что в карточке каталога, второй механики
-// листания в проекте нет. Пропорция кадра приходит из данных через
-// --card-ratio: её читает .prail внутри рельса.
+// листания в проекте нет. Пропорция кадра — настоящая, из файла, приходит
+// через --card-ratio: её читает .prail внутри рельса, кадр не кропится.
+// Широкая плитка (column-span: all) ложится поперёк всех колонок.
 import PhotoRail from './PhotoRail.astro';
 import { collectPins } from '../lib/gallery';
 
@@ -18,13 +19,17 @@ const pins = collectPins();
   <div class="board__cols" data-reveal-group>
     {
       pins.map((pin) => (
-        <article class="pin" style={`--card-ratio:${pin.ratio};`}>
+        <article class:list={['pin', pin.wide && 'pin--wide']} style={`--card-ratio:${pin.ratio};`}>
           <PhotoRail
             photos={pin.photos}
             alt={pin.alt}
             href={pin.href}
-            sizes="(min-width: 1440px) 19vw, (min-width: 1024px) 24vw, (min-width: 640px) 32vw, 48vw"
-            widths={[360, 560, 800]}
+            sizes={
+              pin.wide
+                ? '100vw'
+                : '(min-width: 1440px) 19vw, (min-width: 1024px) 24vw, (min-width: 640px) 32vw, 48vw'
+            }
+            widths={pin.wide ? [640, 1000, 1600] : [360, 560, 800]}
           />
 
           {pin.caption && (
@@ -45,12 +50,12 @@ const pins = collectPins();
   }
 
   /* --pin-gap — единственная ручка зазора доски: на телефоне волосок,
-     как стык карточек каталога, на ПК полноценный шов. */
+     как стык карточек каталога, на ПК полноценный шов. Боковых полей нет:
+     крайние плитки идут в край экрана, зазор только между кадрами. */
   .board__cols {
     --pin-gap: clamp(6px, 0.9vw, 12px);
     columns: 2;
     column-gap: var(--pin-gap);
-    padding-inline: clamp(10px, 1.5vw, 24px);
   }
 
   /* flow-root + break-inside: плитка не должна разрываться между колонками
@@ -61,6 +66,14 @@ const pins = collectPins();
     -webkit-column-break-inside: avoid;
     margin-bottom: var(--pin-gap);
   }
+
+  /* Широкая плитка ложится поперёк всех колонок и рвёт поток доски:
+     колонки до и после неё балансируются заново, ряды не сходятся.
+     Потолок высоты — чтобы кадр 3:2 на ПК не занял полтора экрана:
+     выше потолка режется по cover, это единственное место, где кроп есть. */
+  .pin--wide { column-span: all; }
+
+  .pin--wide :global(.prail) { max-height: 64svh; }
 
   /* Подпись живёт под кадром, не на нём: на фото её место занимают
      точки-индикаторы, а тут она читается как строка доски. */

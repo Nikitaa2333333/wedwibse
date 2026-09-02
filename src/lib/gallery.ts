@@ -20,8 +20,10 @@ export interface Pin {
   href: string;
   /** тонкая подпись под кадром; есть не у каждой плитки — так задаётся ритм */
   caption: string | null;
-  /** форма плитки для aspect-ratio — из шкалы высот, а не из файла */
+  /** настоящая пропорция кадра для aspect-ratio — кадр не кропится */
   ratio: string;
+  /** во всю ширину доски, поверх всех колонок — акцент раз в несколько рядов */
+  wide: boolean;
 }
 
 // Размеры плиток по кругу: одиночные кадры вперемешку с мини-галереями.
@@ -31,15 +33,16 @@ const SIZES = [1, 2, 1, 1, 3, 1, 2, 1];
 /** сколько кадров берём с одной площадки: 4 площадки × 9 ≈ 24 плитки доски */
 const PER_VENUE = 9;
 
-// ШКАЛА ВЫСОТ. Пропорцию не берём из файла напрямую: почти все исходники
-// каталога — ровно 3:2 и 2:3, и доска из них выходит полосатой (две высоты
-// через одну). Плитке назначается форма из набора — соседние по колонке
-// заведомо разной высоты, ряды не сходятся, и это и есть ритм доски.
-// Кадр внутри режется по cover, поэтому форму выбираем по «характеру»
-// оригинала: горизонтальному — из широкого набора, вертикальному — из
-// вертикального, иначе от снимка остаётся середина.
-const WIDE_SHAPES = ['4 / 3', '1 / 1', '5 / 4', '4 / 3', '1 / 1'];
-const TALL_SHAPES = ['3 / 4', '2 / 3', '4 / 5', '5 / 7', '3 / 4', '1 / 1'];
+// Пропорция — настоящая, из файла: как в Pinterest, высоту плитки диктует
+// сам кадр, ничего не режется. Всё, что не влезает в рабочий диапазон
+// (панорама в узкой колонке, вертикальная «полоска»), мягко прижимаем.
+const MIN_RATIO = 0.6;
+const MAX_RATIO = 1.6;
+
+// Каждый N-й горизонтальный кадр уходит во всю ширину доски: он ложится
+// поперёк всех колонок и ломает регулярность рядов. Горизонтальному там
+// самое место — в одной колонке он мельче всех.
+const WIDE_EVERY = 3;
 
 function buildPins(venue: (typeof VENUES)[number], lane: number): Pin[] {
   const shots = venue.gallery.slice(0, PER_VENUE);
@@ -48,6 +51,9 @@ function buildPins(venue: (typeof VENUES)[number], lane: number): Pin[] {
 
   let i = 0;
   let s = 0;
+  // счётчик горизонтальных со сдвигом по площадке — широкие кадры разных
+  // площадок не встают друг под другом
+  let landscapes = lane;
 
   while (i < shots.length) {
     const size = Math.min(SIZES[s++ % SIZES.length], shots.length - i);
@@ -55,10 +61,9 @@ function buildPins(venue: (typeof VENUES)[number], lane: number): Pin[] {
     i += size;
 
     const first = resolveImage(group[0].src);
-    // сдвиг по площадке (lane) — чтобы соседи по ряду не получали одну форму
-    const step = pins.length + lane;
-    const shapes = first.width / first.height > 1.15 ? WIDE_SHAPES : TALL_SHAPES;
-    const ratio = shapes[step % shapes.length];
+    const real = first.width / first.height;
+    const ratio = Math.min(MAX_RATIO, Math.max(MIN_RATIO, real));
+    const wide = real > 1.15 && landscapes++ % WIDE_EVERY === 0;
 
     pins.push({
       photos: group.map((g) => g.src),
@@ -67,7 +72,8 @@ function buildPins(venue: (typeof VENUES)[number], lane: number): Pin[] {
       // Подписываем только мини-галереи: подпись у каждой плитки
       // превращает доску в каталог, а тут нужен именно поток кадров.
       caption: group.length > 1 ? venue.name : null,
-      ratio,
+      ratio: `${ratio.toFixed(3)} / 1`,
+      wide,
     });
   }
 
