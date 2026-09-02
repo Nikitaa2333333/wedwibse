@@ -62,7 +62,7 @@ const counts = countOptions(VENUE_FILTERS, venues.map(filtersOf));
 
 // Кадр для снимка в избранном — уже пережатый URL, не путь из данных
 const favImg = new Map(
-  await Promise.all(venues.map(async (v) => [v.slug, await favoriteImage(v.media[0])] as const))
+  await Promise.all(venues.map(async (v) => [v.name, await favoriteImage(v.media[0])] as const))
 );
 ---
 
@@ -127,7 +127,7 @@ const favImg = new Map(
             meta: `${item.type} · ${item.city}`,
             price: item.avgCheck,
             rating: item.rating,
-            img: favImg.get(item.slug),
+            img: favImg.get(item.name),
             href: `/moskva/ploshchadki/${item.slug}/`,
           });
 
