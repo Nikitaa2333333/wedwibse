@@ -72,10 +72,14 @@ const groups = SPECIALIST_GROUPS.map((g) => {
     background: var(--bg);
   }
 
+  /* touch-action: pan-x — жест на ряду живёт только по горизонтали,
+     без косого свайпа «ряд вбок + страница вверх» (см. FilterBar). */
   .cat-nav__scroll {
     display: flex;
     gap: var(--s-3);
     overflow-x: auto;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x;
     scrollbar-width: none;
     padding: var(--s-3) var(--gutter);
   }

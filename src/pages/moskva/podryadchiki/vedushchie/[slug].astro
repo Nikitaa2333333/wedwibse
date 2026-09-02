@@ -379,6 +379,9 @@ const saveData = JSON.stringify({
     margin-top: var(--s-5);
     padding-right: var(--gutter);
     overflow-x: auto;
+    overscroll-behavior-x: contain;
+    /* жест на рельсе — только по горизонтали, без косого свайпа (см. FilterBar) */
+    touch-action: pan-x;
     scroll-snap-type: x mandatory;
     scrollbar-width: none;
   }
