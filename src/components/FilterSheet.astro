@@ -79,7 +79,7 @@ const popular = groups.flatMap((g) =>
       )}
 
       {popular.length > 0 && (
-        <section class="fsheet__group">
+        <section class="fsheet__group fsheet__group--popular">
           <h3 class="fsheet__label">Популярные фильтры</h3>
           <div class="fsheet__chips">
             {popular.map((p) => (
@@ -173,11 +173,16 @@ const popular = groups.flatMap((g) =>
   .fsheet__group--sort { display: none; }
 
   /* ============ ПК: КОЛОНКА СЛЕВА ============
-     Чипы превращаются в строки: квадратная отметка, подпись, счётчик —
-     тот же язык, что у списков .list проекта. Включённый пункт — отметка
-     залита чернилами, сам текст не красится. */
+     Чипы превращаются в строки: кружок-отметка, подпись, счётчик — тот же
+     язык, что у строк .radio-row. Включённый пункт — кружок залит
+     чернилами с белой точкой, сам текст не красится.
+     Строка — блок с отступом под кружок (кружок абсолютом слева), а не
+     flex: подпись и счётчик остаются в одном потоке, и при переносе
+     счётчик стоит сразу за последним словом, а не улетает к краю. */
   @media (min-width: 1024px) {
     .fsheet__group--sort { display: block; }
+    /* «Популярные» — приём телефонной шторки; в колонке всё и так на виду */
+    .fsheet__group--popular { display: none; }
 
     .fsheet__body { gap: var(--s-6); }
 
@@ -193,28 +198,49 @@ const popular = groups.flatMap((g) =>
     }
 
     .fsheet__chips .chip {
+      position: relative;
+      display: block;
       min-height: 0;
-      padding: 0;
-      gap: var(--s-3);
+      padding: 0 0 0 calc(16px + var(--s-3));
       background: none;
       border-radius: 0;
       white-space: normal;
       text-align: left;
       font-size: var(--fs-small);
       font-weight: var(--w-body);
+      line-height: var(--lh-body);
       color: var(--fg);
     }
 
     .fsheet__chips .chip::before {
       content: '';
+      position: absolute;
+      left: 0;
+      top: calc((1em * var(--lh-body) - 16px) / 2);
       width: 16px;
       height: 16px;
-      flex: none;
       border: 1px solid var(--fg);
+      border-radius: 50%;
       transition: background var(--dur-fast) var(--ease-out);
     }
 
-    .fsheet__chips .chip__count { font-size: var(--fs-caption); }
+    /* Белая точка внутри включённого кружка */
+    .fsheet__chips .chip::after {
+      content: '';
+      position: absolute;
+      left: 5px;
+      top: calc((1em * var(--lh-body) - 16px) / 2 + 5px);
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--bg);
+      opacity: 0;
+    }
+
+    .fsheet__chips .chip__count {
+      margin-left: var(--s-2);
+      font-size: var(--fs-caption);
+    }
 
     .fsheet__chips .chip[aria-pressed='true'],
     .fsheet__chips .chip-opt__input:checked + .chip {
@@ -224,6 +250,9 @@ const popular = groups.flatMap((g) =>
 
     .fsheet__chips .chip[aria-pressed='true']::before,
     .fsheet__chips .chip-opt__input:checked + .chip::before { background: var(--fg); }
+
+    .fsheet__chips .chip[aria-pressed='true']::after,
+    .fsheet__chips .chip-opt__input:checked + .chip::after { opacity: 1; }
 
     .fsheet__chips .chip-opt__input:focus-visible + .chip {
       outline: none;
