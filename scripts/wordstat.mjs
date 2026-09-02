@@ -111,14 +111,33 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function call(env, method, body, opts = {}, attempt = 1) {
   const acc = await pickAccount(env);
   acc.times.push(Date.now());
-  const res = await fetch(`${API_BASE}/${method}`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Api-Key ${acc.key}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ ...body, folderId: acc.folderId }),
-  });
+
+  // Сеть рвётся на длинных прогонах (ECONNRESET, таймауты) — это не ответ
+  // сервера, а исключение, и без обработки оно убивало весь прогон целиком.
+  let res;
+  try {
+    res = await fetch(`${API_BASE}/${method}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Api-Key ${acc.key}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ ...body, folderId: acc.folderId }),
+      signal: AbortSignal.timeout(60000),
+    });
+  } catch (err) {
+    const reason = err?.cause?.code ?? err?.name ?? 'ошибка сети';
+    if (attempt >= 6) {
+      if (opts.soft) {
+        console.log(`\n  ! ${method}: ${reason}, попытки кончились`);
+        return null;
+      }
+      die(`${method}: ${reason} после ${attempt} попыток`);
+    }
+    console.log(`\n  ${reason} — повтор через ${2 ** attempt} с`);
+    await sleep(Math.min(2 ** attempt * 1000, 40000));
+    return call(env, method, body, opts, attempt + 1);
+  }
 
   if (res.status === 429 || res.status >= 500) {
     if (res.status === 429) {
