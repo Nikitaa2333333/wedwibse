@@ -59,6 +59,11 @@ let venueIndex = 0;
 const venues = FEED.filter((item): item is FeedVenue => item.kind === 'venue');
 const venueCount = venues.length;
 const counts = countOptions(VENUE_FILTERS, venues.map(filtersOf));
+
+// Кадр для снимка в избранном — уже пережатый URL, не путь из данных
+const favImg = new Map(
+  await Promise.all(venues.map(async (v) => [v.slug, await favoriteImage(v.media[0])] as const))
+);
 ---
 
 <Layout
@@ -121,7 +126,7 @@ const counts = countOptions(VENUE_FILTERS, venues.map(filtersOf));
             meta: `${item.type} · ${item.city}`,
             price: item.avgCheck,
             rating: item.rating,
-            img: item.media[0],
+            img: favImg.get(item.slug),
             href: `/moskva/ploshchadki/${item.slug}/`,
           });
 

@@ -17,7 +17,7 @@ import ScopePicker from '../../../../components/ScopePicker.astro';
 import PhotoRail from '../../../../components/PhotoRail.astro';
 import Icon from '../../../../components/Icon.astro';
 import { VEDUSHCHIE, VEDUSHCHIE_FILTERS, SPECIALIST_CATEGORIES } from '../../../../data/specialists';
-import { resolveImage } from '../../../../lib/images';
+import { resolveImage, favoriteImage } from '../../../../lib/images';
 import { countOptions } from '../../../../lib/filter-counts';
 
 // Бакеты для диапазонных фильтров — считаются на сборке, в разметку идёт
@@ -87,6 +87,11 @@ const cards = VEDUSHCHIE.map((s, i) => ({
 const counts = countOptions(VEDUSHCHIE_FILTERS, cards.map((c) => c.filters));
 
 const priceFmt = new Intl.NumberFormat('ru-RU');
+
+// Кадр для снимка в избранном — уже пережатый URL, не путь из данных
+const favImg = new Map(
+  await Promise.all(VEDUSHCHIE.map(async (s) => [s.slug, await favoriteImage(s.photos[0])] as const))
+);
 ---
 
 <Layout
@@ -132,7 +137,7 @@ const priceFmt = new Intl.NumberFormat('ru-RU');
             meta: styleTag || s.tagline,
             price: `от ${priceFmt.format(s.priceFrom)} ₽`,
             rating: s.rating,
-            img: s.photos[0],
+            img: favImg.get(s.slug),
             href: `/moskva/podryadchiki/vedushchie/${s.slug}/`,
           });
 

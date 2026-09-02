@@ -21,18 +21,18 @@ import Icon from '../../components/Icon.astro';
     <meta name="robots" content="noindex" />
   </Fragment>
 
-  <header class="bar">
-    <div class="bar__row">
-      <a class="icon-btn" href="/" data-back aria-label="На главную">
-        <Icon name="arrowLeft" />
-      </a>
-      <h1 class="bar__title" data-title>Избранное</h1>
-      <a class="icon-btn" href="#" aria-label="Аккаунт">
-        <Icon name="account" />
-      </a>
+  <!-- Заголовок раздела — крупный, в контенте, как ScopePicker у каталогов:
+       h1 + счётчик рядом. Внутри папки h1 становится именем папки, а над ним
+       появляется пилюля «← Папки». -->
+  <header class="scope">
+    <a class="pill pill--sm scope__back" href="/izbrannoe/" data-back hidden>← Папки</a>
+    <div class="scope__title-row">
+      <h1 class="t-h1" data-title>Избранное</h1>
+      <p class="scope__count" data-count hidden></p>
     </div>
-
-    <button class="pill pill--sm bar__compare" type="button" data-compare-toggle hidden>Сравнить</button>
+    <div class="scope__tools">
+      <button class="pill pill--sm" type="button" data-compare-toggle hidden>Сравнить</button>
+    </div>
   </header>
 
   <main class="wrap">
@@ -60,37 +60,45 @@ import Icon from '../../components/Icon.astro';
 </Layout>
 
 <style is:global>
-  /* ============ ШАПКА ============ */
-  .bar {
-    position: sticky;
-    top: 0;
-    z-index: var(--z-nav);
-    padding: var(--s-3) var(--gutter);
-    background: var(--surface);
-    border-bottom: 1px solid var(--hairline);
+  /* ============ ШАПКА РАЗДЕЛА (как ScopePicker) ============ */
+  .scope {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--s-4);
+    padding: var(--s-6) var(--gutter) var(--s-2);
   }
 
-  .bar__row {
+  .scope__back { flex: 1 0 100%; align-self: start; width: max-content; }
+  .scope__back[hidden] { display: none; }
+
+  .scope__title-row {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: var(--s-3);
+  }
+
+  .scope__count {
+    font-size: var(--fs-h3);
+    font-weight: var(--w-medium);
+  }
+
+  .scope__count[hidden] { display: none; }
+
+  .scope__tools {
     display: flex;
     align-items: center;
     gap: var(--s-3);
-    max-width: var(--page-max);
-    margin-inline: auto;
+    flex: 1 0 100%;
   }
 
-  .bar__title {
-    flex: 1;
-    font-size: var(--fs-h3);
-    font-weight: var(--w-head);
-  }
+  .scope__tools:empty,
+  .scope__tools > [hidden] { display: none; }
 
-  .bar__compare {
-    display: block;
-    margin: var(--s-3) auto 0;
-    max-width: var(--page-max);
+  @media (min-width: 640px) {
+    .scope__tools { flex: 0 0 auto; margin-left: auto; }
   }
-
-  .bar__compare[hidden] { display: none; }
 
   /* ============ ПУСТОЕ СОСТОЯНИЕ ============ */
   .empty {
@@ -106,20 +114,22 @@ import Icon from '../../components/Icon.astro';
     padding: var(--s-4) clamp(8px, 1vw, 16px) calc(var(--safe-b) + 160px);
   }
 
+  /* На телефоне — одна колонка: обложка во всю ширину, под ней имя, счётчик
+     и кто внутри. От планшета — две, на ПК — три. */
   .boards {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--s-6) var(--s-4);
+    grid-template-columns: 1fr;
+    gap: var(--s-7) var(--s-4);
   }
 
   .boards[hidden] { display: none; }
 
   @media (min-width: 640px) {
-    .boards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .boards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
 
   @media (min-width: 1024px) {
-    .boards { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .boards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   }
 
   .board {
@@ -128,6 +138,8 @@ import Icon from '../../components/Icon.astro';
     color: inherit;
     text-decoration: none;
   }
+
+  .board > span { display: block; }
 
   /* Обложка: слева крупный кадр 2/3, справа колонка из двух мелких.
      Пустые ячейки — подложка фото, как у Pinterest. */
@@ -162,17 +174,40 @@ import Icon from '../../components/Icon.astro';
     .board:hover .board__tile img { transform: scale(1.04); }
   }
 
-  .board__name {
+  .board > .board__cover { display: grid; }
+
+  /* Подпись: имя папки и счётчик в одну строку по базовой линии,
+     ниже — кто внутри (имена последних сохранённых). */
+  .board__top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--s-3);
     margin-top: var(--s-3);
+  }
+
+  .board__name {
     font-size: var(--fs-h3);
     font-weight: var(--w-head);
     line-height: 1.15;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .board__meta { margin-top: 2px; }
+  .board__meta {
+    flex-shrink: 0;
+    font-size: var(--fs-small);
+    font-weight: var(--w-medium);
+  }
+
+  .board__who {
+    margin-top: var(--s-1);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 
   /* ============ СЕТКА КАРТОЧЕК ============ */
 
@@ -410,6 +445,7 @@ import Icon from '../../components/Icon.astro';
   const gridEl = document.querySelector<HTMLElement>('[data-grid]');
   const boardsEl = document.querySelector<HTMLElement>('[data-boards]');
   const titleEl = document.querySelector<HTMLElement>('[data-title]');
+  const countEl = document.querySelector<HTMLElement>('[data-count]');
   const backEl = document.querySelector<HTMLAnchorElement>('[data-back]');
   const compareToggleBtn = document.querySelector<HTMLButtonElement>('[data-compare-toggle]');
   const compareBar = document.querySelector<HTMLElement>('[data-compare-bar]');
@@ -499,12 +535,19 @@ import Icon from '../../components/Icon.astro';
         const latest = Math.max(0, ...list.map((i) => i.addedAt ?? 0));
         const when = ago(latest || undefined);
         const count = `${list.length} ${plural(list.length, 'карточка', 'карточки', 'карточек')}`;
+        // кто внутри: имена последних трёх, дальше «и ещё N»
+        const names = recent.slice(0, 3).map((i) => i.name);
+        const rest = list.length - names.length;
+        const who = names.join(', ') + (rest > 0 ? ` и ещё ${rest}` : '');
 
         return `
           <a class="board" href="#${encodeURIComponent(cat)}" data-board="${escapeHtml(cat)}">
             <span class="board__cover" aria-hidden="true">${tiles}</span>
-            <span class="board__name">${escapeHtml(label)}</span>
-            <span class="board__meta t-caption">${count}${when ? ` · ${when}` : ''}</span>
+            <span class="board__top">
+              <span class="board__name">${escapeHtml(label)}</span>
+              <span class="board__meta">${count}${when ? ` · ${when}` : ''}</span>
+            </span>
+            <span class="board__who t-small">${escapeHtml(who)}</span>
           </a>
         `;
       })
@@ -514,8 +557,13 @@ import Icon from '../../components/Icon.astro';
   /** Переключение уровня: шапка, видимость блоков */
   function applyLevel() {
     const inFolder = !!activeCat;
+    const n = inFolder ? currentItems().length : items.length;
     if (titleEl) titleEl.textContent = inFolder ? (items.find((i) => i.cat === activeCat)?.catLabel ?? 'Избранное') : 'Избранное';
-    if (backEl) backEl.setAttribute('aria-label', inFolder ? 'К папкам' : 'На главную');
+    if (countEl) {
+      countEl.textContent = `${n} ${plural(n, 'карточка', 'карточки', 'карточек')}`;
+      countEl.hidden = n === 0;
+    }
+    if (backEl) backEl.hidden = !inFolder;
     if (boardsEl) boardsEl.hidden = inFolder;
     if (gridEl) gridEl.hidden = !inFolder;
   }
@@ -627,6 +675,8 @@ import Icon from '../../components/Icon.astro';
       if (boardsEl) { boardsEl.innerHTML = ''; boardsEl.hidden = true; }
       if (gridEl) gridEl.hidden = true;
       if (titleEl) titleEl.textContent = 'Избранное';
+      if (countEl) countEl.hidden = true;
+      if (backEl) backEl.hidden = true;
       compareToggleBtn && (compareToggleBtn.hidden = true);
       return;
     }
@@ -636,9 +686,8 @@ import Icon from '../../components/Icon.astro';
     applyLevel();
   }
 
-  // стрелка в шапке: внутри папки — к папкам, на уровне папок — на главную
+  // «← Папки»: без перезагрузки, просто снимаем хэш
   backEl?.addEventListener('click', (e) => {
-    if (!activeCat) return;
     e.preventDefault();
     history.pushState(null, '', location.pathname);
     render();

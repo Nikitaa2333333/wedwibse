@@ -11,7 +11,7 @@ import BottomDock from '../../../../components/BottomDock.astro';
 import PhotoRail from '../../../../components/PhotoRail.astro';
 import Icon from '../../../../components/Icon.astro';
 import { VEDUSHCHIE, VEDUSHCHIE_FILTERS } from '../../../../data/specialists';
-import { resolveImage } from '../../../../lib/images';
+import { resolveImage, favoriteImage } from '../../../../lib/images';
 
 export function getStaticPaths() {
   return VEDUSHCHIE.filter((s) => s.slug === 'anton-volkov').map((s) => ({
@@ -51,7 +51,7 @@ const saveData = JSON.stringify({
   meta: styleLabels[0] || s.tagline,
   price: `от ${priceFmt.format(s.priceFrom)} ₽`,
   rating: s.rating,
-  img: s.photos[0],
+  img: await favoriteImage(s.photos[0]),
   href: `/moskva/podryadchiki/vedushchie/${s.slug}/`,
 });
 ---
