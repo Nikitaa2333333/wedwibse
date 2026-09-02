@@ -1,14 +1,15 @@
 ---
 // ЗАГОЛОВОК-ПЕРЕКЛЮЧАТЕЛЬ каталога: сам h1 раздела — кнопка, рядом чип
-// локации. Клик по любому из них раскрывает панель выбора локации —
-// компактный выпадающий список под чипом, у правого края.
+// локации. Клик по любому из них поднимает снизу шторку «Локация» со
+// списком «один из» (реф. Яндекс Путешествия: любая настройка — шторка,
+// не выпадающий список). Оболочка — реестр .sheet, открытие — lib/sheet.ts.
 //
 // Колонки «Направление» тут больше нет: переход между разделами живёт
 // в навигации, а шапка раздела отвечает только за «где я ищу».
 // Локация — пока клиентская фиксация: отмечает соответствующий пункт
 // фильтра «город» этой страницы и запоминается в localStorage.
 // ЗАГЛУШКА: когда появится серверная выдача, локация переедет в URL
-// (/podolsk/ploshchadki/), сама панель не изменится.
+// (/podolsk/ploshchadki/), сама шторка не изменится.
 import type { FilterGroup } from '../data/specialists';
 import Icon from './Icon.astro';
 
@@ -40,6 +41,7 @@ const FALLBACK_CITIES: FilterGroup = {
 
 const cities = cityGroup ?? FALLBACK_CITIES;
 const ALL_LABEL = 'Москва и область';
+const options = [{ value: '', label: ALL_LABEL }, ...cities.options];
 ---
 
 <header class="scope" data-scope>
@@ -48,9 +50,9 @@ const ALL_LABEL = 'Москва и область';
       <button
         class="scope__trigger"
         type="button"
-        data-scope-toggle
+        data-sheet-open="scope"
         aria-expanded="false"
-        aria-controls="scope-pop"
+        aria-controls="scope-sheet"
       >
         {title}
         <Icon name="caretDown" class="scope__caret" />
@@ -60,7 +62,7 @@ const ALL_LABEL = 'Москва и область';
   </div>
 
   <div class="scope__tools">
-    <button class="pill pill--sm scope__city" type="button" data-scope-toggle aria-controls="scope-pop" aria-expanded="false">
+    <button class="pill pill--sm scope__city" type="button" data-sheet-open="scope" aria-controls="scope-sheet" aria-expanded="false">
       <Icon name="venue" class="scope__pin" />
       <span data-scope-city-label>{ALL_LABEL}</span>
       <span class="scope__city-caret" aria-hidden="true">▾</span>
@@ -68,19 +70,28 @@ const ALL_LABEL = 'Москва и область';
     <slot name="actions" />
   </div>
 
-  <div class="scope__pop" id="scope-pop" data-scope-pop>
-    <section class="scope__col">
-      <h2 class="scope__label">Локация</h2>
-      <div class="scope__opts">
-        <button class="pill pill--sm is-active" type="button" data-scope-city="">{ALL_LABEL}</button>
-        {cities.options.map((o) => (
-          <button class="pill pill--sm" type="button" data-scope-city={o.value}>{o.label}</button>
-        ))}
+  <div class="sheet" id="scope-sheet" data-sheet="scope">
+    <div class="sheet__backdrop" data-sheet-close></div>
+    <section class="sheet__panel" role="dialog" aria-modal="true" aria-labelledby="scope-title">
+      <header class="sheet__head">
+        <h2 class="sheet__title" id="scope-title">Локация</h2>
+        <button class="icon-btn" type="button" data-sheet-close aria-label="Закрыть">
+          <Icon name="close" />
+        </button>
+      </header>
+      <div class="sheet__body" data-lenis-prevent>
+        <div class="radio-list">
+          {options.map((o, i) => (
+            <label class="radio-row">
+              <input class="radio-row__input" type="radio" name="scope-city" value={o.value} checked={i === 0} data-scope-city />
+              <span class="radio-row__mark" aria-hidden="true"></span>
+              <span class="radio-row__label">{o.label}</span>
+            </label>
+          ))}
+        </div>
       </div>
     </section>
   </div>
-
-  <div class="scope__backdrop" data-scope-close></div>
 </header>
 
 <style>
@@ -153,89 +164,26 @@ const ALL_LABEL = 'Москва и область';
   :global(.scope__pin) { width: 13px; height: 13px; flex: none; }
   .scope__city-caret { font-size: 9px; }
 
-  /* ============ ВСПЛЫВАЮЩАЯ ПАНЕЛЬ ============ */
-  .scope__pop {
-    position: absolute;
-    top: calc(100% - var(--s-3));
-    left: var(--gutter);
-    right: var(--gutter);
-    z-index: var(--z-overlay);
-    display: grid;
-    gap: var(--s-5);
-    max-height: min(70vh, 560px);
-    overflow-y: auto;
-    scrollbar-width: none;
-    padding: var(--s-5);
-    /* Панель плотная: стекло тут тормозило скролл, вернули непрозрачный фон. */
-    background: var(--surface);
-    box-shadow: var(--shadow-float);
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(-6px);
-    transition: opacity var(--dur-fast) var(--ease-out),
-                transform var(--dur-fast) var(--ease-out),
-                visibility 0s linear var(--dur-fast);
-  }
-
-  .scope__pop::-webkit-scrollbar { display: none; }
-
-  .scope.is-open .scope__pop {
-    opacity: 1;
-    visibility: visible;
-    transform: none;
-    transition-delay: 0s;
-  }
-
-  .scope__label {
-    font-size: var(--fs-caption);
-    font-weight: var(--w-medium);
-    margin-bottom: var(--s-3);
-  }
-
-  .scope__opts {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--s-2);
-  }
-
-  /* Затемнение только на телефоне: панель тут занимает почти весь экран */
-  .scope__backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: calc(var(--z-overlay) - 1);
-    background: rgb(0 0 0 / 0.35);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity var(--dur-fast) var(--ease-out);
-  }
-
-  .scope.is-open .scope__backdrop { opacity: 1; pointer-events: auto; }
-
-  /* От планшета панель — компактный выпадающий список у ПРАВОГО края,
-     под чипом локации, а не полоса во всю ширину: список короткий,
-     и открываться он должен там, где по нему кликнули. */
-  @media (min-width: 768px) {
-    .scope__pop {
-      left: auto;
-      right: var(--gutter);
-      width: min(320px, calc(100vw - var(--gutter) * 2));
-      padding: var(--s-5);
-    }
-
-    .scope__backdrop { display: none; }
+  /* ПК: локация выбирается в левой колонке (группа «Локация» фильтров),
+     шторка не нужна — чип прячем, заголовок становится обычным h1. */
+  @media (min-width: 1024px) {
+    .scope__city { display: none; }
+    .scope__trigger { pointer-events: none; }
+    :global(.scope__caret) { display: none; }
   }
 </style>
 
 <script>
-  // Панель одна на страницу: открывается заголовком и чипом локации,
-  // закрывается кликом вне, по подложке и по Esc.
-  const scope = document.querySelector<HTMLElement>('[data-scope]');
+  import { bindSheet } from '../lib/sheet';
 
-  if (scope) {
-    const toggles = Array.from(scope.querySelectorAll<HTMLButtonElement>('[data-scope-toggle]'));
-    const backdrop = scope.querySelector<HTMLElement>('[data-scope-close]');
+  // Шторка одна на страницу: открывается заголовком и чипом локации.
+  const scope = document.querySelector<HTMLElement>('[data-scope]');
+  const sheet = scope?.querySelector<HTMLElement>('[data-sheet="scope"]');
+
+  if (scope && sheet) {
+    const toggles = Array.from(scope.querySelectorAll<HTMLButtonElement>('[data-sheet-open="scope"]'));
     const chip = scope.querySelector<HTMLElement>('[data-scope-city-label]');
-    const cityBtns = Array.from(scope.querySelectorAll<HTMLButtonElement>('[data-scope-city]'));
+    const radios = Array.from(sheet.querySelectorAll<HTMLInputElement>('[data-scope-city]'));
     const ALL_LABEL = chip?.textContent?.trim() ?? '';
     const STORE_KEY = 'wed:scope-city';
 
@@ -244,27 +192,21 @@ const ALL_LABEL = 'Москва и область';
       toggles.forEach((t) => t.setAttribute('aria-expanded', String(open)));
     };
 
-    toggles.forEach((t) =>
-      t.addEventListener('click', () => setOpen(!scope.classList.contains('is-open')))
-    );
-
-    backdrop?.addEventListener('click', () => setOpen(false));
-
-    document.addEventListener('click', (e) => {
-      if (!scope.contains(e.target as Node)) setOpen(false);
+    const handle = bindSheet(sheet, {
+      onOpen: () => setOpen(true),
+      onClose: () => setOpen(false),
     });
 
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') setOpen(false);
-    });
+    const labelOf = (r: HTMLInputElement) =>
+      r.closest('.radio-row')!.querySelector('.radio-row__label')!.textContent!.trim();
 
-    // Выбор локации: подсветка в панели, подпись в чипе и — если у страницы
+    // Выбор локации: отметка в списке, подпись в чипе и — если у страницы
     // есть фильтр «город» — отметка соответствующего пункта. Дальше работает
-    // обычная фильтрация каталога (скрипт страницы слушает change).
+    // обычная фильтрация каталога (FilterSheet слушает change).
     function pickCity(value: string, save = true) {
-      const btn = cityBtns.find((b) => b.dataset.scopeCity === value) ?? cityBtns[0];
-      cityBtns.forEach((b) => b.classList.toggle('is-active', b === btn));
-      if (chip) chip.textContent = value ? btn.textContent!.trim() : ALL_LABEL;
+      const radio = radios.find((r) => r.value === value) ?? radios[0];
+      radios.forEach((r) => { r.checked = r === radio; });
+      if (chip) chip.textContent = value ? labelOf(radio) : ALL_LABEL;
 
       const inputs = Array.from(document.querySelectorAll<HTMLInputElement>('[data-filter-key="city"]'));
       inputs.forEach((i) => { i.checked = value !== '' && i.value === value; });
@@ -275,10 +217,11 @@ const ALL_LABEL = 'Москва и область';
       }
     }
 
-    cityBtns.forEach((b) =>
-      b.addEventListener('click', () => {
-        pickCity(b.dataset.scopeCity ?? '');
-        setOpen(false);
+    radios.forEach((r) =>
+      r.addEventListener('change', () => {
+        if (!r.checked) return;
+        pickCity(r.value);
+        handle.close();
       })
     );
 
@@ -287,7 +230,7 @@ const ALL_LABEL = 'Москва и область';
     // молча игнорируем: раздел просто открывается без фиксации.
     try {
       const saved = localStorage.getItem(STORE_KEY);
-      if (saved && cityBtns.some((b) => b.dataset.scopeCity === saved)) pickCity(saved, false);
+      if (saved && radios.some((r) => r.value === saved)) pickCity(saved, false);
     } catch {}
   }
 </script>

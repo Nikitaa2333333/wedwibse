@@ -39,15 +39,21 @@ const filters = FILTERS_BY_CATEGORY[category.slug];
 
   {filters && <FilterBar groups={filters} sortable={false} />}
 
-  <main class="wrap">
-    <p class="soon t-lead">
-      {filters
-        ? `Каталог «${category.label}» скоро появится здесь — а фильтры уже готовы.`
-        : `Каталог «${category.label}» скоро появится здесь.`}
-    </p>
-  </main>
+  <div class="layout">
+    {filters && (
+      <aside class="sidebar">
+        <FilterSheet groups={filters} />
+      </aside>
+    )}
 
-  {filters && <FilterSheet groups={filters} />}
+    <main class="wrap">
+      <p class="soon t-lead">
+        {filters
+          ? `Каталог «${category.label}» скоро появится здесь — а фильтры уже готовы.`
+          : `Каталог «${category.label}» скоро появится здесь.`}
+      </p>
+    </main>
+  </div>
 
   <BottomDock active="vendors" />
 </Layout>
@@ -55,5 +61,19 @@ const filters = FILTERS_BY_CATEGORY[category.slug];
 <style>
   .wrap {
     padding: 0 var(--gutter) calc(var(--section-gap) + var(--safe-b) + 80px);
+  }
+
+  /* ПК: колонка настроек слева, как в каталогах с карточками */
+  @media (min-width: 1024px) {
+    .layout:has(.sidebar) {
+      display: grid;
+      grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+      align-items: start;
+    }
+
+    .sidebar {
+      padding: 0 var(--s-6) 0 var(--gutter);
+      border-right: 1px solid var(--hairline);
+    }
   }
 </style>

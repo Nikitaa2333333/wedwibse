@@ -115,6 +115,11 @@
   --card-ratio-wide: 1 / 1;
   --card-ratio-hero: 4 / 5;
 
+  /* Колонка настроек каталога на ПК (шторка фильтров в режиме .sheet--dock):
+     в потоке страницы, листается вместе с карточками — внутреннего скролла
+     нет (реф. Ozon). Ширина — чтобы подпись пункта помещалась в одну строку. */
+  --sidebar-w: clamp(240px, 19vw, 280px);
+
   /* Высота одной сцены скролл-блока (ПК): кадр справа закреплён на 100svh,
      разница между этой ручкой и экраном — путь, который фото «висит».
      Меньше 110svh — кадр почти не замирает, больше 200svh — много пустоты. */
@@ -531,7 +536,8 @@ mark {
   display: inline-flex;
 }
 
-.chip-opt__input {
+.chip-opt__input,
+.radio-row__input {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -551,6 +557,217 @@ mark {
 @media (hover: hover) {
   .chip:not(.is-active):not([aria-pressed='true']):hover { background: var(--surface-dim); }
   .chip-opt__input:not(:checked) + .chip:hover { background: var(--surface-dim); }
+}
+
+/* ============ СТРОКА-ПЕРЕКЛЮЧАТЕЛЬ ============
+   Список «один из» в шторке (сортировка, локация): кружок слева, подпись
+   справа, между строками только воздух — линий нет. Выбранная строка —
+   кружок залит чернилами с белой точкой внутри. */
+.radio-list {
+  display: grid;
+  gap: var(--s-1);
+}
+
+.radio-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  min-height: 48px;
+  cursor: pointer;
+}
+
+.radio-row__mark {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border: 1px solid var(--fg);
+  border-radius: 50%;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+
+.radio-row__input:checked + .radio-row__mark { background: var(--fg); }
+
+.radio-row__input:checked + .radio-row__mark::after {
+  content: '';
+  position: absolute;
+  inset: 9px;
+  border-radius: 50%;
+  background: var(--bg);
+}
+
+.radio-row__input:focus-visible + .radio-row__mark {
+  outline: 2px solid var(--fg);
+  outline-offset: 3px;
+}
+
+.radio-row__label { font-size: var(--fs-body); }
+
+/* ============ НИЖНЯЯ ШТОРКА ============
+   Одна оболочка на все настройки каталога (фильтры, сортировка, локация);
+   открытие/закрытие — src/lib/sheet.ts. Закрытая невидима и не ловит клики
+   (visibility), при открытии подложка проявляется, панель выезжает снизу.
+   Только transform/opacity — моушн-бюджет телефона.
+   На телефоне панель во всю ширину, от планшета — колонка --sheet-max-w по
+   центру. Высота по содержимому, но не выше 92svh: сверху остаётся полоска
+   страницы, по которой видно, что это шторка, а не новый экран. */
+.sheet {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  visibility: hidden;
+  transition: visibility 0s linear var(--dur-base);
+}
+
+.sheet.is-open {
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+.sheet__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgb(0 0 0 / 0.4);
+  opacity: 0;
+  transition: opacity var(--dur-base) var(--ease-out);
+}
+
+.sheet.is-open .sheet__backdrop { opacity: 1; }
+
+.sheet__panel {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: min(100%, var(--sheet-max-w));
+  max-height: 92svh;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
+  box-shadow: var(--shadow-float);
+  transform: translate(-50%, 100%);
+  transition: transform var(--dur-base) var(--ease-out);
+}
+
+.sheet.is-open .sheet__panel { transform: translate(-50%, 0); }
+
+.sheet__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  padding: var(--s-5) var(--s-5) var(--s-4);
+}
+
+.sheet__title {
+  font-size: var(--fs-h2);
+  font-weight: var(--w-head);
+  line-height: var(--lh-heading);
+}
+
+/* Тело листается внутри панели, скроллбар спрятан; снизу — запас под
+   системную полосу телефона (у шторки с футером его даёт футер). */
+.sheet__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  padding: var(--s-2) var(--s-5) calc(var(--s-6) + var(--safe-b));
+}
+
+.sheet__body::-webkit-scrollbar { display: none; }
+
+/* Липкая панель действий: линия сверху — структурная (граница панели) */
+.sheet__foot {
+  flex: none;
+  display: grid;
+  gap: var(--s-3);
+  padding: var(--s-4) var(--s-5) calc(var(--s-4) + var(--safe-b));
+  border-top: 1px solid var(--hairline);
+  background: var(--paper);
+}
+
+.sheet__panel:has(.sheet__foot) .sheet__body { padding-bottom: var(--s-6); }
+
+/* Кнопка «Сбросить» в шапке — только у пристыкованной колонки на ПК,
+   на телефоне сброс живёт в липком футере шторки. */
+.sheet__reset {
+  display: none;
+  border: 0;
+  background: none;
+  color: var(--fg);
+  font: inherit;
+  font-size: var(--fs-caption);
+  font-weight: var(--w-medium);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* ============ ШТОРКА, ПРИСТЫКОВАННАЯ СЛЕВА (ПК) ============
+   На широком экране настройки не всплывают, а живут постоянной колонкой
+   слева от каталога (реф. Яндекс Путешествия, ПК-версия). Та же разметка:
+   .sheet--dock снимает фикс, подложку, скругления и футер — остаётся
+   тихая колонка в потоке страницы без своего скролла. Строка под шапкой
+   «Фильтры» — структурная линия, как у липкой шапки. */
+@media (min-width: 1024px) {
+  .sheet--dock {
+    position: static;
+    inset: auto;
+    z-index: auto;
+    visibility: visible;
+    transition: none;
+  }
+
+  .sheet--dock .sheet__backdrop { display: none; }
+
+  .sheet--dock .sheet__panel {
+    position: static;
+    width: 100%;
+    max-height: none;
+    background: none;
+    border-radius: 0;
+    box-shadow: none;
+    transform: none;
+    transition: none;
+  }
+
+  .sheet--dock .sheet__head {
+    align-items: baseline;
+    padding: 0 0 var(--s-4);
+    margin-bottom: var(--s-6);
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  .sheet--dock .sheet__title { font-size: var(--fs-body); }
+
+  .sheet--dock .sheet__head [data-sheet-close] { display: none; }
+  .sheet--dock .sheet__reset { display: inline; }
+
+  .sheet--dock .sheet__body {
+    overflow: visible;
+    padding: 0;
+  }
+
+  .sheet--dock .sheet__foot { display: none; }
+
+  /* Строки-переключатели в колонке компактнее шторочных */
+  .sheet--dock .radio-list { gap: var(--s-2); }
+
+  .sheet--dock .radio-row {
+    min-height: 0;
+    gap: var(--s-3);
+  }
+
+  .sheet--dock .radio-row__mark {
+    width: 16px;
+    height: 16px;
+  }
+
+  .sheet--dock .radio-row__input:checked + .radio-row__mark::after { inset: 5px; }
+
+  .sheet--dock .radio-row__label { font-size: var(--fs-small); }
 }
 
 /* Круглая кнопка-иконка (аккаунт, назад) — та же пилюля, только квадратная */

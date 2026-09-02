@@ -2,15 +2,19 @@
 // ПОЛОСА НАД КАТАЛОГОМ (реф. Яндекс Путешествия): один ряд чипов с
 // горизонтальным скроллом. Слева направо:
 //   1. иконка-слайдеры — открывает шторку FilterSheet целиком;
-//   2. сортировка — чип с кареткой, под ним выпадающий список;
-//   3. быстрые группы (FilterGroup.quick) — «Цена ▾»: открывают шторку,
-//      прокрученную к своей группе;
+//   2. сортировка — чип с кареткой, открывает свою шторку со списком;
+//   3. быстрые группы (FilterGroup.quick) — «Цена ▾»: открывают шторку
+//      фильтров, прокрученную к своей группе;
 //   4. популярные пункты (FilterOption.popular) — чипы-переключатели,
 //      это те же чекбоксы шторки, только вынесенные наружу.
+// Любая настройка открывается шторкой снизу — никаких выпадающих списков.
+// На ПК (от 1024px) полосы нет вовсе: все настройки, включая сортировку,
+// живут в левой колонке (FilterSheet в режиме .sheet--dock).
 // Сама фильтрация и синхронизация состояния чипов — в FilterSheet.astro:
 // полоса только отдаёт клики. Здесь — только сортировка.
 import type { FilterGroup } from '../data/specialists';
 import type { FilterCounts } from '../lib/filter-counts';
+import { SORTS } from '../lib/sort';
 import Icon from './Icon.astro';
 
 interface Props {
@@ -33,41 +37,24 @@ const popular = groups.flatMap((g) =>
       count: counts[g.key]?.[o.value],
     }))
 );
-
-// ЗАГЛУШКА: порядок и набор сортировок — до серверной выдачи.
-const SORTS = [
-  { value: '', label: 'Популярные' },
-  { value: 'price-asc', label: 'Сначала дешевле' },
-  { value: 'price-desc', label: 'Сначала дороже' },
-  { value: 'rating', label: 'По рейтингу' },
-];
 ---
 
-<div class="fbar" data-fbar>
+<div class="fbar">
   <div class="fbar__scroll">
-    <button class="chip chip--icon" type="button" data-sheet-open aria-label="Все фильтры">
+    <button class="chip chip--icon" type="button" data-sheet-open="filters" aria-label="Все фильтры">
       <Icon name="tune" />
       <span class="chip__badge" data-filters-badge hidden>0</span>
     </button>
 
     {sortable && (
-      <div class="fbar__sort" data-sort>
-        <button class="chip" type="button" data-sort-toggle aria-expanded="false" aria-controls="fbar-sort">
-          <span data-sort-label>{SORTS[0].label}</span>
-          <Icon name="caretDown" class="chip__caret" />
-        </button>
-        <div class="fbar__pop" id="fbar-sort" data-sort-pop>
-          {SORTS.map((s, i) => (
-            <button class={`fbar__opt${i === 0 ? ' is-active' : ''}`} type="button" data-sort-by={s.value}>
-              {s.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      <button class="chip" type="button" data-sheet-open="sort" data-sort-toggle>
+        <span data-sort-label>{SORTS[0].label}</span>
+        <Icon name="caretDown" class="chip__caret" />
+      </button>
     )}
 
     {quick.map((g) => (
-      <button class="chip" type="button" data-sheet-open={g.key} data-quick-group={g.key}>
+      <button class="chip" type="button" data-sheet-open="filters" data-sheet-group={g.key} data-quick-group={g.key}>
         {g.label}
         <Icon name="caretDown" class="chip__caret" />
       </button>
@@ -80,11 +67,34 @@ const SORTS = [
       </button>
     ))}
   </div>
+
+  {sortable && (
+    <div class="sheet" data-sheet="sort">
+      <div class="sheet__backdrop" data-sheet-close></div>
+      <section class="sheet__panel" role="dialog" aria-modal="true" aria-labelledby="sort-title">
+        <header class="sheet__head">
+          <h2 class="sheet__title" id="sort-title">Сортировка</h2>
+          <button class="icon-btn" type="button" data-sheet-close aria-label="Закрыть">
+            <Icon name="close" />
+          </button>
+        </header>
+        <div class="sheet__body" data-lenis-prevent>
+          <div class="radio-list">
+            {SORTS.map((s, i) => (
+              <label class="radio-row">
+                <input class="radio-row__input" type="radio" name="sort" value={s.value} checked={i === 0} data-sort-by />
+                <span class="radio-row__mark" aria-hidden="true"></span>
+                <span class="radio-row__label">{s.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      </section>
+    </div>
+  )}
 </div>
 
 <style>
-  .fbar { position: relative; }
-
   /* Ряд уходит за край экрана и листается пальцем; сами чипы не сжимаются.
      touch-action: pan-x — жест на ленте живёт только по горизонтали:
      без него браузер разрешает косой свайп, и лента едет вбок, пока
@@ -107,88 +117,30 @@ const SORTS = [
 
   .fbar__scroll > * { flex: none; }
 
-  /* ============ СОРТИРОВКА: выпадающий список ============
-     Тот же язык, что у панели локации в ScopePicker: непрозрачная
-     плашка с парящей тенью, появляется сдвигом вверх. */
-  .fbar__sort { position: relative; }
-
-  .fbar__pop {
-    position: absolute;
-    top: calc(100% + var(--s-2));
-    left: 0;
-    z-index: var(--z-overlay);
-    display: grid;
-    min-width: 220px;
-    padding: var(--s-2);
-    background: var(--surface);
-    box-shadow: var(--shadow-float);
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(-6px);
-    transition: opacity var(--dur-fast) var(--ease-out),
-                transform var(--dur-fast) var(--ease-out),
-                visibility 0s linear var(--dur-fast);
+  /* ПК: настройки в левой колонке, полоса не нужна */
+  @media (min-width: 1024px) {
+    .fbar { display: none; }
   }
-
-  .fbar__sort.is-open .fbar__pop {
-    opacity: 1;
-    visibility: visible;
-    transform: none;
-    transition-delay: 0s;
-  }
-
-  .fbar__opt {
-    padding: 10px 12px;
-    border: 0;
-    background: none;
-    color: var(--fg);
-    font: inherit;
-    font-size: var(--fs-small);
-    font-weight: var(--w-medium);
-    text-align: left;
-    white-space: nowrap;
-    cursor: pointer;
-    border-radius: var(--radius-pill);
-  }
-
-  .fbar__opt.is-active { background: var(--fg); color: var(--bg); }
-
-  @media (hover: hover) {
-    .fbar__opt:not(.is-active):hover { background: var(--surface-dim); }
-  }
-
-  /* Выпадающий список открыт — ряд не должен его обрезать. Скролл-контейнер
-     с overflow-x: auto режет всё, что вылезает по вертикали, поэтому на
-     время раскрытия отпускаем overflow (ряд у планшета и шире и так влезает). */
-  .fbar:has(.fbar__sort.is-open) .fbar__scroll { overflow: visible; }
 </style>
 
 <script>
+  import { bindSheet } from '../lib/sheet';
+
   // ============ СОРТИРОВКА ============
   // Карточки уже в разметке; сортируем через CSS order — DOM не двигаем,
   // порядок для поисковика остаётся исходным. Рекламная карточка (без
   // data-sort) остаётся на своём месте в ряду.
   // ЗАГЛУШКА: с бэкендом сортировка уходит в запрос, полоса не меняется.
-  const sort = document.querySelector<HTMLElement>('[data-sort]');
+  const sheet = document.querySelector<HTMLElement>('[data-sheet="sort"]');
   const grid = document.querySelector<HTMLElement>('[data-sort-grid]');
 
-  if (sort && grid) {
-    const toggle = sort.querySelector<HTMLButtonElement>('[data-sort-toggle]')!;
-    const label = sort.querySelector<HTMLElement>('[data-sort-label]')!;
-    const opts = Array.from(sort.querySelectorAll<HTMLButtonElement>('[data-sort-by]'));
-
-    const setOpen = (open: boolean) => {
-      sort.classList.toggle('is-open', open);
-      toggle.setAttribute('aria-expanded', String(open));
-    };
-
-    toggle.addEventListener('click', () => setOpen(!sort.classList.contains('is-open')));
-    document.addEventListener('click', (e) => {
-      if (!sort.contains(e.target as Node)) setOpen(false);
-    });
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') setOpen(false);
-    });
+  if (sheet && grid) {
+    const handle = bindSheet(sheet);
+    const toggle = document.querySelector<HTMLButtonElement>('[data-sort-toggle]')!;
+    const label = toggle.querySelector<HTMLElement>('[data-sort-label]')!;
+    // Радио два комплекта: в шторке (телефон) и в колонке FilterSheet (ПК) —
+    // слушаем все, при выборе выравниваем остальные под то же значение.
+    const radios = Array.from(document.querySelectorAll<HTMLInputElement>('[data-sort-by]'));
 
     type SortKey = { price: number; rating: number };
     const keyOf = (el: Element): SortKey | null => {
@@ -215,14 +167,15 @@ const SORTS = [
       });
     }
 
-    opts.forEach((opt) =>
-      opt.addEventListener('click', () => {
-        opts.forEach((o) => o.classList.toggle('is-active', o === opt));
-        label.textContent = opt.textContent!.trim();
+    radios.forEach((radio) =>
+      radio.addEventListener('change', () => {
+        if (!radio.checked) return;
+        radios.forEach((r) => { r.checked = r.value === radio.value; });
+        label.textContent = radio.closest('.radio-row')!.querySelector('.radio-row__label')!.textContent!.trim();
         // Чип сортировки подсвечен, пока порядок не «Популярные»
-        toggle.classList.toggle('is-active', opt.dataset.sortBy !== '');
-        applySort(opt.dataset.sortBy ?? '');
-        setOpen(false);
+        toggle.classList.toggle('is-active', radio.value !== '');
+        applySort(radio.value);
+        handle.close();
       })
     );
   }

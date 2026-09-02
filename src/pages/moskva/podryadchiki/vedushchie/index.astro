@@ -109,6 +109,12 @@ const priceFmt = new Intl.NumberFormat('ru-RU');
   <FilterBar groups={VEDUSHCHIE_FILTERS} counts={counts} />
 
   <div class="layout">
+    <!-- ШТОРКА ФИЛЬТРОВ: на телефоне всплывает снизу, на ПК — эта же
+         разметка стоит постоянной колонкой слева (.sheet--dock) -->
+    <aside class="sidebar">
+      <FilterSheet groups={VEDUSHCHIE_FILTERS} counts={counts} noun={['ведущий', 'ведущих', 'ведущих']} sortable />
+    </aside>
+
     <!-- СЕТКА: мозаика без дыр, фото — главное -->
     <main class="wrap">
       <div class="vgrid" data-reveal-group data-sort-grid>
@@ -207,15 +213,28 @@ const priceFmt = new Intl.NumberFormat('ru-RU');
     </main>
   </div>
 
-  <FilterSheet groups={VEDUSHCHIE_FILTERS} counts={counts} noun={['ведущий', 'ведущих', 'ведущих']} />
-
   <BottomDock active="vendors" />
 </Layout>
 
 <style>
-  /* ============ КАРКАС ============ */
+  /* ============ КАРКАС ============
+     На ПК — колонка настроек слева, каталог справа; отбивка колонки от
+     мозаики — вертикальная структурная линия. */
   .layout {
     padding-bottom: calc(var(--safe-b) + 120px);
+  }
+
+  @media (min-width: 1024px) {
+    .layout {
+      display: grid;
+      grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+      align-items: start;
+    }
+
+    .sidebar {
+      padding: 0 var(--s-6) 0 var(--gutter);
+      border-right: 1px solid var(--hairline);
+    }
   }
 
   /* ============ СЕТКА-МОЗАИКА ============

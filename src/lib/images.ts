@@ -13,6 +13,7 @@
 // глобу для этого ничего менять не нужно.
 // ============================================================
 import type { ImageMetadata } from 'astro';
+import { getImage } from 'astro:assets';
 
 const modules = import.meta.glob<{ default: ImageMetadata }>(
   '/src/assets/**/*.{webp,jpg,jpeg,png}',
@@ -30,4 +31,14 @@ export function resolveImage(path: string): ImageMetadata {
     throw new Error(`resolveImage: нет файла в src/assets для пути "${path}" — проверь, что фото лежит в src/assets, а не только в public`);
   }
   return image;
+}
+
+/**
+ * Готовый URL пережатого кадра для снимка в localStorage (избранное):
+ * туда нельзя класть путь из данных — файл живёт только в src/assets и по
+ * такому адресу не отдаётся. Ширина 800 — хватает на обложку папки и карточку.
+ */
+export async function favoriteImage(path: string): Promise<string> {
+  const img = await getImage({ src: resolveImage(path), width: 800, format: 'webp' });
+  return img.src;
 }
