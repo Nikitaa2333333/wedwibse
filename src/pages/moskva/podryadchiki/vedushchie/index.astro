@@ -229,17 +229,19 @@ const priceFmt = new Intl.NumberFormat('ru-RU');
     padding-bottom: calc(var(--safe-b) + 120px);
   }
 
-  /* ============ СЕТКА-МОЗАИКА ============ */
+  /* ============ СЕТКА-МОЗАИКА ============
+     Поля, зазоры и пропорции кадра — общие ручки каталога из global.css
+     (--catalog-*, --card-ratio*): на телефоне карточка встык с краем. */
   .wrap {
     max-width: none;
-    padding: 0 clamp(8px, 1vw, 16px) 0;
+    padding: 0 var(--catalog-edge) 0;
   }
 
   .vgrid {
     display: grid;
     grid-auto-flow: dense;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--s-6) clamp(8px, 1vw, 12px);
+    gap: var(--catalog-gap-y) var(--catalog-gap-x);
   }
 
   @media (min-width: 640px) {
@@ -253,11 +255,11 @@ const priceFmt = new Intl.NumberFormat('ru-RU');
   .scard--duo,
   .scard--wide { grid-column: span 2; }
 
-  /* Большой кадр на две колонки: 13:8 держит высоту ряда 4:5 (см. алгоритм).
-     :global — сама галерея живёт в PhotoRail, тут только переопределяем. */
-  .scard--wide :global(.prail) { aspect-ratio: 13 / 8; }
+  /* Карточка подменяет себе пропорцию кадра — дальше её читают и рельс
+     PhotoRail, и кадры дуо-карточки. Широкая держит высоту ряда. */
+  .scard--wide { --card-ratio: var(--card-ratio-wide); }
 
-  .empty { padding: var(--s-7) clamp(4px, 0.6vw, 8px); }
+  .empty { padding: var(--s-7) var(--catalog-pad); }
   .empty[hidden] { display: none; }
 
   [data-card].is-hidden { display: none; }
@@ -274,7 +276,7 @@ const priceFmt = new Intl.NumberFormat('ru-RU');
 
   .scard__frame {
     position: relative;
-    aspect-ratio: 4 / 5;
+    aspect-ratio: var(--card-ratio);
     background: var(--surface-dim);
   }
 
@@ -284,11 +286,11 @@ const priceFmt = new Intl.NumberFormat('ru-RU');
     object-fit: cover;
   }
 
-  /* Дуо-карточка: два кадра 4:5 видны сразу; если фото больше —
+  /* Дуо-карточка: два кадра видны сразу; если фото больше —
      полоса листается вбок (scroll-snap), как в карточках площадок */
   .scard__strip {
     display: flex;
-    gap: clamp(8px, 1vw, 12px); /* тот же зазор, что у колонок сетки */
+    gap: var(--catalog-gap-x); /* тот же зазор, что у колонок сетки */
     overflow-x: auto;
     scroll-snap-type: x mandatory;
     scrollbar-width: none;
@@ -297,7 +299,7 @@ const priceFmt = new Intl.NumberFormat('ru-RU');
   .scard__strip::-webkit-scrollbar { display: none; }
 
   .scard__strip .scard__frame {
-    flex: 0 0 calc(50% - clamp(8px, 1vw, 12px) / 2);
+    flex: 0 0 calc(50% - var(--catalog-gap-x) / 2);
     scroll-snap-align: start;
   }
 
@@ -312,7 +314,11 @@ const priceFmt = new Intl.NumberFormat('ru-RU');
     pointer-events: none;
   }
 
-  /* ============ ПОДПИСЬ: только имя, рейтинг, одна строка ============ */
+  /* ============ ПОДПИСЬ: только имя, рейтинг, одна строка ============
+     Кадр идёт в край экрана, текст — нет: поле подписи держит
+     --catalog-pad (от планшета он ноль, поля даёт сама сетка). */
+  .scard__body { padding-inline: var(--catalog-pad); }
+
   .scard__top {
     display: flex;
     align-items: baseline;

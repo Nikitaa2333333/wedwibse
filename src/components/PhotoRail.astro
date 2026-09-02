@@ -59,9 +59,13 @@ const { photos, alt, href, sizes, widths = [360, 560, 800, 1100] } = Astro.props
     position: relative;
   }
 
+  /* Пропорция кадра — общий токен каталога: карточка на две колонки или
+     витринная подменяют его у себя (--card-ratio: var(--card-ratio-wide)),
+     а не переопределяют .prail вслепую. Запасное значение — для мест,
+     где рельс живёт вне каталога. */
   .prail {
     display: flex;
-    aspect-ratio: 4 / 5;
+    aspect-ratio: var(--card-ratio, 4 / 5);
     overflow-x: auto;
     scroll-snap-type: x mandatory;
     scrollbar-width: none;

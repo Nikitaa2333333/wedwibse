@@ -100,21 +100,31 @@ const items = [
     .dock__item:not(.is-active):hover { background: color-mix(in srgb, var(--ink) 6%, transparent); }
   }
 
-  /* На узком экране все пять разделов обязаны поместиться в строку */
+  /* На узком экране все пять разделов обязаны поместиться в строку.
+     Считали по факту: на 390px пять подписей при 16px не влезали —
+     «Избранное» обрезалось краем капсулы, «Чат» уходил за экран целиком.
+     Отсюда ступенька кегля и полей ниже. */
   @media (max-width: 640px) {
     .dock {
       padding: 4px;
       max-width: calc(100vw - var(--s-4));
+      /* Аварийный клапан: на экранах уже 360px строка всё равно не влезет —
+         пусть лучше листается вбок, чем режется краем капсулы */
+      overflow-x: auto;
+      scrollbar-width: none;
     }
 
+    .dock::-webkit-scrollbar { display: none; }
+
     .dock__item {
-      padding: 9px 9px;
-      font-size: var(--fs-small);
+      flex: none;
+      padding: 9px 8px;
+      font-size: var(--fs-caption);
     }
   }
 
-  @media (max-width: 380px) {
-    .dock__item { padding: 9px 7px; font-size: var(--fs-caption); }
+  @media (max-width: 400px) {
+    .dock__item { padding: 9px 6px; }
   }
 </style>
 

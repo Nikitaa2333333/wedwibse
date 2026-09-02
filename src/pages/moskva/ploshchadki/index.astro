@@ -216,17 +216,20 @@ const venueCount = FEED.filter((item) => item.kind === 'venue').length;
     padding-bottom: calc(var(--safe-b) + 120px);
   }
 
-  /* ============ СЕТКА-МОЗАИКА ============ */
+  /* ============ СЕТКА-МОЗАИКА ============
+     Поля, зазоры и пропорции кадра — ручки каталога из global.css
+     (--catalog-*, --card-ratio*). На телефоне они дают ноль по краям:
+     карточка встык с краем экрана, между колонками волосок. */
   .wrap {
     max-width: none;
-    padding: 0 clamp(8px, 1vw, 16px) 0;
+    padding: 0 var(--catalog-edge) 0;
   }
 
   .vgrid {
     display: grid;
     grid-auto-flow: dense;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--s-6) clamp(8px, 1vw, 12px);
+    gap: var(--catalog-gap-y) var(--catalog-gap-x);
   }
 
   @media (min-width: 640px) {
@@ -242,13 +245,13 @@ const venueCount = FEED.filter((item) => item.kind === 'venue').length;
 
   .vcard--hero { grid-column: 1 / -1; }
 
-  /* Большой кадр на две колонки держит высоту ряда 4:5 у соседей.
-     Витринная карточка во всю ширину — широкий баннерный кадр.
-     :global — сама галерея живёт в PhotoRail, тут только переопределяем. */
-  .vcard--wide :global(.prail) { aspect-ratio: 13 / 8; }
-  .vcard--hero :global(.prail) { aspect-ratio: 21 / 9; }
+  /* Карточка подменяет себе пропорцию кадра — дальше её читают и рельс
+     PhotoRail, и кадры дуо-карточки. Большой кадр на две колонки держит
+     высоту ряда у соседей, витринная во всю ширину — витрина раздела. */
+  .vcard--wide { --card-ratio: var(--card-ratio-wide); }
+  .vcard--hero { --card-ratio: var(--card-ratio-hero); }
 
-  .empty { padding: var(--s-7) clamp(4px, 0.6vw, 8px); }
+  .empty { padding: var(--s-7) var(--catalog-pad); }
   .empty[hidden] { display: none; }
 
   [data-card].is-hidden { display: none; }
@@ -263,15 +266,16 @@ const venueCount = FEED.filter((item) => item.kind === 'venue').length;
 
   .vcard__media { position: relative; }
 
-  /* Дуо-карточка: два кадра 4:5 видны сразу, без свайпа */
+  /* Дуо-карточка: два кадра видны сразу, без свайпа. Пропорция и зазор —
+     те же ручки каталога, что у остальных карточек ряда */
   .vcard__strip {
     display: flex;
-    gap: clamp(8px, 1vw, 12px);
+    gap: var(--catalog-gap-x);
   }
 
   .vcard__frame {
     flex: 1 1 0;
-    aspect-ratio: 4 / 5;
+    aspect-ratio: var(--card-ratio);
     background: var(--surface-dim);
   }
 
@@ -292,7 +296,11 @@ const venueCount = FEED.filter((item) => item.kind === 'venue').length;
     pointer-events: none;
   }
 
-  /* ============ ПОДПИСЬ ПОД ФОТО ============ */
+  /* ============ ПОДПИСЬ ПОД ФОТО ============
+     Кадр идёт в край экрана, текст — нет: своё поле подписи держит
+     --catalog-pad (на планшете и шире он ноль, поля даёт сама сетка). */
+  .vcard__body { padding-inline: var(--catalog-pad); }
+
   .vcard__top {
     display: flex;
     align-items: baseline;
