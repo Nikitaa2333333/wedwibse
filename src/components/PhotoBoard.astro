@@ -3,10 +3,10 @@
 // каждая плитка в своей настоящей пропорции, следующая плитка ложится
 // в самую короткую колонку (layoutColumns в lib/gallery.ts).
 //
-// Доска идёт блоками колонок, между ними — горизонтальный кадр полосой
-// во всю ширину экрана: в узкой колонке такой снимок выглядит маркой,
-// а полосой держит целый экран. Вертикальных кадров кратно больше —
-// доска держится на них, полоса работает акцентом (см. lib/gallery.ts).
+// Доска — один непрерывный поток: колонки идут вниз и заканчиваются
+// на разной высоте, как лента. Ни полос во всю ширину, ни растянутых
+// «дотянутых» кадров: и то и другое ломает пропорцию снимка ради
+// ровной линии. Кадры в доске только вертикальные (см. lib/gallery.ts).
 //
 // Сервер раскладывает под телефон — две колонки: это основной сценарий,
 // и там доска стоит без единой строки JS. На широком экране колонок 3–5:
@@ -17,9 +17,9 @@
 // свайпом — тот же PhotoRail, что в карточке каталога. Пропорция кадра
 // приходит через --card-ratio: её читает .prail внутри рельса.
 import PhotoRail from './PhotoRail.astro';
-import { collectSections, layoutColumns } from '../lib/gallery';
+import { collectPins, layoutColumns } from '../lib/gallery';
 
-const sections = collectSections();
+const columns = layoutColumns(collectPins(), 2);
 
 const TILE_SIZES =
   '(min-width: 1440px) 19vw, (min-width: 1024px) 24vw, (min-width: 640px) 32vw, 48vw';
@@ -28,58 +28,36 @@ const TILE_SIZES =
 <!-- Без data-reveal и без параллакса намеренно: доска листается как
      обычная страница, все кадры на месте сразу, ничего не проявляется. -->
 <section class="board" aria-label="Фотографии площадок каталога">
-  {
-    sections.map((section) =>
-      section.kind === 'strip' ? (
-        <figure class="strip" style={`--card-ratio:${section.pin.ratio};`}>
-          <PhotoRail
-            photos={section.pin.photos}
-            alt={section.pin.alt}
-            href={section.pin.href}
-            sizes="100vw"
-            widths={[640, 1000, 1600]}
-          />
+  <div class="board__cols" data-board>
+    {
+      columns.map((col) => (
+        <div class="board__col">
+          {col.map((pin) => (
+            <article
+              class="pin"
+              style={`--card-ratio:${pin.ratio};`}
+              data-i={pin.index}
+              data-h={pin.height.toFixed(3)}
+            >
+              <PhotoRail
+                photos={pin.photos}
+                alt={pin.alt}
+                href={pin.href}
+                sizes={TILE_SIZES}
+                widths={[360, 560, 800]}
+              />
 
-          {section.pin.caption && (
-            <figcaption>
-              <a class="cap t-caption" href={section.pin.href}>
-                {section.pin.caption}
-              </a>
-            </figcaption>
-          )}
-        </figure>
-      ) : (
-        <div class="board__cols" data-board>
-          {layoutColumns(section.pins, 2).map((col) => (
-            <div class="board__col">
-              {col.map((pin) => (
-                <article
-                  class="pin"
-                  style={`--card-ratio:${pin.ratio};`}
-                  data-i={pin.index}
-                  data-h={pin.height.toFixed(3)}
-                >
-                  <PhotoRail
-                    photos={pin.photos}
-                    alt={pin.alt}
-                    href={pin.href}
-                    sizes={TILE_SIZES}
-                    widths={[360, 560, 800]}
-                  />
-
-                  {pin.caption && (
-                    <a class="cap t-caption" href={pin.href}>
-                      {pin.caption}
-                    </a>
-                  )}
-                </article>
-              ))}
-            </div>
+              {pin.caption && (
+                <a class="cap t-caption" href={pin.href}>
+                  {pin.caption}
+                </a>
+              )}
+            </article>
           ))}
         </div>
-      )
-    )
-  }
+      ))
+    }
+  </div>
 </section>
 
 <style>
@@ -106,7 +84,7 @@ const TILE_SIZES =
     display: grid;
     grid-template-columns: repeat(var(--board-cols), minmax(0, 1fr));
     gap: var(--pin-gap);
-    align-items: stretch;
+    align-items: start;
   }
 
   .board__col {
@@ -116,40 +94,15 @@ const TILE_SIZES =
     min-width: 0;
   }
 
-  .pin {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-  }
-
-  /* Нижний кадр колонки дотягивается до низа блока. Жадная раскладка
-     заканчивает колонки на разной высоте — под ними полоса встала бы
-     с дырами по краям, а это и читается как ошибка вёрстки. Разницу
-     забирает последний кадр: она мала, кроп по cover незаметен. */
-  .board__col > .pin:last-child { flex: 1 1 auto; }
-
-  .board__col > .pin:last-child :global(.prail-wrap) {
-    display: flex;
-    flex-direction: column;
-    flex: 1 1 auto;
-    min-height: 0;
-  }
-
-  .board__col > .pin:last-child :global(.prail) { height: 100%; }
-
-  /* ПОЛОСА: горизонтальный кадр во всю ширину экрана. Потолок высоты —
-     чтобы 3:2 на ПК не занимал полтора экрана: выше режется по cover. */
-  .strip :global(.prail) { max-height: 64svh; }
-
-  /* Подпись прижата к своему кадру (--s-1 против --pin-gap до соседнего)
-     и выровнена по правому краю: так видно, к какой фотографии она
-     относится, — правило внутреннего и внешнего. */
+  /* Подпись прижата к своему кадру по вертикали (--s-1 против --pin-gap
+     до соседнего) — правило внутреннего и внешнего. По горизонтали, наоборот,
+     отступает от краёв кадра тем же полем, что подпись карточки каталога
+     (--catalog-pad): текст в край экрана упирается некрасиво. */
   .cap {
     display: block;
-    padding-top: var(--s-1);
+    padding: var(--s-1) var(--catalog-pad) 0;
     color: var(--ink);
     font-weight: var(--w-body);
-    text-align: right;
     text-decoration: none;
   }
 
