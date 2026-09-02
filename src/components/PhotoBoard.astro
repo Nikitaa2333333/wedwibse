@@ -1,0 +1,86 @@
+---
+// ДОСКА КАДРОВ (главная) — масонри-раскладка: колонки одинаковой ширины,
+// плитки своей высоты, ряды намеренно не сходятся. Раскладку считает сам
+// браузер (CSS multi-column): количество колонок меняется медиазапросом,
+// серверу нечего пересчитывать, JS не нужен.
+//
+// Плитка с несколькими кадрами получает точки-индикаторы и листание
+// свайпом — тот же PhotoRail, что в карточке каталога, второй механики
+// листания в проекте нет. Пропорция кадра приходит из данных через
+// --card-ratio: её читает .prail внутри рельса.
+import PhotoRail from './PhotoRail.astro';
+import { collectPins } from '../lib/gallery';
+
+const pins = collectPins();
+---
+
+<section class="board" aria-label="Фотографии площадок каталога">
+  <div class="board__cols" data-reveal-group>
+    {
+      pins.map((pin) => (
+        <article class="pin" style={`--card-ratio:${pin.ratio};`}>
+          <PhotoRail
+            photos={pin.photos}
+            alt={pin.alt}
+            href={pin.href}
+            sizes="(min-width: 1440px) 19vw, (min-width: 1024px) 24vw, (min-width: 640px) 32vw, 48vw"
+            widths={[360, 560, 800]}
+          />
+
+          {pin.caption && (
+            <a class="pin__cap t-caption" href={pin.href}>
+              {pin.caption}
+            </a>
+          )}
+        </article>
+      ))
+    }
+  </div>
+</section>
+
+<style>
+  .board {
+    background: var(--bg);
+    padding-block: var(--s-6) var(--section-gap);
+  }
+
+  /* --pin-gap — единственная ручка зазора доски: на телефоне волосок,
+     как стык карточек каталога, на ПК полноценный шов. */
+  .board__cols {
+    --pin-gap: clamp(6px, 0.9vw, 12px);
+    columns: 2;
+    column-gap: var(--pin-gap);
+    padding-inline: clamp(10px, 1.5vw, 24px);
+  }
+
+  /* flow-root + break-inside: плитка не должна разрываться между колонками
+     (иначе подпись уезжает от своего кадра) */
+  .pin {
+    display: flow-root;
+    break-inside: avoid;
+    -webkit-column-break-inside: avoid;
+    margin-bottom: var(--pin-gap);
+  }
+
+  /* Подпись живёт под кадром, не на нём: на фото её место занимают
+     точки-индикаторы, а тут она читается как строка доски. */
+  .pin__cap {
+    display: block;
+    padding: var(--s-2) 2px 0;
+    color: var(--ink);
+    font-weight: var(--w-body);
+    text-decoration: none;
+  }
+
+  @media (min-width: 640px) {
+    .board__cols { columns: 3; }
+  }
+
+  @media (min-width: 1024px) {
+    .board__cols { columns: 4; }
+  }
+
+  @media (min-width: 1440px) {
+    .board__cols { columns: 5; }
+  }
+</style>
