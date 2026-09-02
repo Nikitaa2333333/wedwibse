@@ -15,8 +15,10 @@ import { collectPins } from '../lib/gallery';
 const pins = collectPins();
 ---
 
+<!-- Без data-reveal и без параллакса намеренно: доска листается как
+     обычная страница, все кадры на месте сразу, ничего не проявляется. -->
 <section class="board" aria-label="Фотографии площадок каталога">
-  <div class="board__cols" data-reveal-group>
+  <div class="board__cols">
     {
       pins.map((pin) => (
         <article class:list={['pin', pin.wide && 'pin--wide']} style={`--card-ratio:${pin.ratio};`}>
