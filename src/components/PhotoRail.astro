@@ -70,14 +70,22 @@ const { photos, alt, href, sizes, widths = [360, 560, 800, 1100] } = Astro.props
     scroll-snap-type: x mandatory;
     scrollbar-width: none;
     background: var(--surface-dim);
+    /* Свайп рельса не утаскивает за собой страницу: без этого косой жест
+       уводил и кадр, и вертикальный скролл — кадр оставался «на полпути» */
+    overscroll-behavior-x: contain;
   }
 
   .prail::-webkit-scrollbar { display: none; }
 
+  /* Кадр встаёт по левому краю окна прокрутки, а не по центру: с center
+     позиция кадра считается от середины и на дробной ширине колонки
+     промахивается мимо края. scroll-snap-stop: always — один свайп ровно
+     на один кадр, быстрый жест не пролистывает пачку. */
   .prail__item {
     flex: 0 0 100%;
     height: 100%;
-    scroll-snap-align: center;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
   }
 
   .prail__item :global(img) {
@@ -125,6 +133,33 @@ const { photos, alt, href, sizes, widths = [360, 560, 800, 1100] } = Astro.props
     };
     rail.addEventListener('scroll', sync, { passive: true });
     sync();
+
+    // ============ ДОВОРОТ ДО КАДРА ============
+    // Страховка поверх scroll-snap: на косом жесте (палец ведёт страницу
+    // вниз и заодно чуть вбок) браузер довольно часто бросает рельс на
+    // полпути — половина одного кадра, половина следующего. Как только
+    // прокрутка утихла и палец снят, доводим до ближайшего кадра сами.
+    let touching = false;
+    let idle: ReturnType<typeof setTimeout> | null = null;
+
+    const settle = () => {
+      const w = rail.clientWidth;
+      if (!w || touching) return;
+      const target = Math.round(rail.scrollLeft / w) * w;
+      if (Math.abs(rail.scrollLeft - target) > 1) {
+        rail.scrollTo({ left: target, behavior: 'smooth' });
+      }
+    };
+
+    const settleSoon = () => {
+      if (idle) clearTimeout(idle);
+      idle = setTimeout(settle, 120);
+    };
+
+    rail.addEventListener('scroll', settleSoon, { passive: true });
+    rail.addEventListener('touchstart', () => { touching = true; }, { passive: true });
+    rail.addEventListener('touchend', () => { touching = false; settleSoon(); }, { passive: true });
+    rail.addEventListener('touchcancel', () => { touching = false; settleSoon(); }, { passive: true });
 
     if (!hoverCapable || frames < 2) return;
 
