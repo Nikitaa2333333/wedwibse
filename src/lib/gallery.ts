@@ -22,8 +22,10 @@ export interface Pin {
   caption: string | null;
   /** настоящая пропорция кадра для aspect-ratio — кадр не кропится */
   ratio: string;
-  /** во всю ширину доски, поверх всех колонок — акцент раз в несколько рядов */
-  wide: boolean;
+  /** порядок в потоке; по нему клиент перекладывает доску под другое число колонок */
+  index: number;
+  /** высота плитки в долях ширины колонки (кадр + подпись) — для жадной раскладки */
+  height: number;
 }
 
 // Размеры плиток по кругу: одиночные кадры вперемешку с мини-галереями.
@@ -39,10 +41,10 @@ const PER_VENUE = 9;
 const MIN_RATIO = 0.6;
 const MAX_RATIO = 1.6;
 
-// Каждый N-й горизонтальный кадр уходит во всю ширину доски: он ложится
-// поперёк всех колонок и ломает регулярность рядов. Горизонтальному там
-// самое место — в одной колонке он мельче всех.
-const WIDE_EVERY = 3;
+// Подпись под плиткой в долях ширины колонки (кегль сноски + отступ при
+// колонке ~190px). Нужна только жадной раскладке, чтобы колонка с подписями
+// не вырастала незаметно; на сам зазор не влияет.
+const CAPTION_H = 0.14;
 
 function buildPins(venue: (typeof VENUES)[number], lane: number): Pin[] {
   const shots = venue.gallery.slice(0, PER_VENUE);
@@ -51,9 +53,6 @@ function buildPins(venue: (typeof VENUES)[number], lane: number): Pin[] {
 
   let i = 0;
   let s = 0;
-  // счётчик горизонтальных со сдвигом по площадке — широкие кадры разных
-  // площадок не встают друг под другом
-  let landscapes = lane;
 
   while (i < shots.length) {
     const size = Math.min(SIZES[s++ % SIZES.length], shots.length - i);
@@ -61,9 +60,8 @@ function buildPins(venue: (typeof VENUES)[number], lane: number): Pin[] {
     i += size;
 
     const first = resolveImage(group[0].src);
-    const real = first.width / first.height;
-    const ratio = Math.min(MAX_RATIO, Math.max(MIN_RATIO, real));
-    const wide = real > 1.15 && landscapes++ % WIDE_EVERY === 0;
+    const ratio = Math.min(MAX_RATIO, Math.max(MIN_RATIO, first.width / first.height));
+    const caption = group.length > 1 ? venue.name : null;
 
     pins.push({
       photos: group.map((g) => g.src),
@@ -71,9 +69,10 @@ function buildPins(venue: (typeof VENUES)[number], lane: number): Pin[] {
       href,
       // Подписываем только мини-галереи: подпись у каждой плитки
       // превращает доску в каталог, а тут нужен именно поток кадров.
-      caption: group.length > 1 ? venue.name : null,
+      caption,
       ratio: `${ratio.toFixed(3)} / 1`,
-      wide,
+      index: 0, // проставится в collectPins после перемешивания
+      height: 1 / ratio + (caption ? CAPTION_H : 0),
     });
   }
 
@@ -92,5 +91,27 @@ export function collectPins(): Pin[] {
     }
   }
 
-  return out;
+  return out.map((pin, index) => ({ ...pin, index }));
+}
+
+// ЖАДНАЯ РАСКЛАДКА — тот же алгоритм, что у Masonry.js/MiniMasonry:
+// каждая следующая плитка ложится в самую короткую на этот момент колонку.
+// Стыки внутри колонки ровные всегда, низ доски — честно рваный.
+// Не CSS multi-column: тот «балансирует» колонки по высоте и заканчивает
+// их с разницей в пару пикселей — выглядит как ошибка, а не как ритм.
+// Колонки одной ширины, поэтому высоты считаются в её долях и сходятся
+// с реальными до пикселя. Тем же кодом раскладывает клиент (PhotoBoard),
+// когда колонок на экране больше двух.
+export function layoutColumns(pins: Pin[], count: number): Pin[][] {
+  const cols: Pin[][] = Array.from({ length: count }, () => []);
+  const tall = new Array<number>(count).fill(0);
+
+  for (const pin of pins) {
+    let k = 0;
+    for (let j = 1; j < count; j++) if (tall[j] < tall[k]) k = j;
+    cols[k].push(pin);
+    tall[k] += pin.height;
+  }
+
+  return cols;
 }

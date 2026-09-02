@@ -1,45 +1,57 @@
 ---
-// ДОСКА КАДРОВ (главная) — масонри-раскладка: колонки одинаковой ширины,
-// плитки своей высоты, ряды намеренно не сходятся. Раскладку считает сам
-// браузер (CSS multi-column): количество колонок меняется медиазапросом,
-// серверу нечего пересчитывать, JS не нужен.
+// ДОСКА КАДРОВ (главная) — масонри как в Pinterest: колонки одной ширины,
+// каждая плитка в своей настоящей пропорции, следующая плитка ложится
+// в самую короткую колонку (layoutColumns в lib/gallery.ts).
+//
+// Сервер раскладывает под телефон — две колонки: это основной сценарий,
+// и там доска стоит без единой строки JS. На широком экране колонок 3–5:
+// скрипт ниже перекладывает те же плитки тем же жадным алгоритмом —
+// узлы переезжают, ничего не рисуется заново, слушатели PhotoRail живы.
 //
 // Плитка с несколькими кадрами получает точки-индикаторы и листание
-// свайпом — тот же PhotoRail, что в карточке каталога, второй механики
-// листания в проекте нет. Пропорция кадра — настоящая, из файла, приходит
-// через --card-ratio: её читает .prail внутри рельса, кадр не кропится.
-// Широкая плитка (column-span: all) ложится поперёк всех колонок.
+// свайпом — тот же PhotoRail, что в карточке каталога. Пропорция кадра
+// приходит через --card-ratio: её читает .prail внутри рельса.
+//
+// Кадров «во всю ширину» посреди доски нет намеренно: колонки перед ним
+// пришлось бы заканчивать вровень, а это либо кроп, либо разница в пару
+// пикселей — то самое, что читается как ошибка вёрстки.
 import PhotoRail from './PhotoRail.astro';
-import { collectPins } from '../lib/gallery';
+import { collectPins, layoutColumns } from '../lib/gallery';
 
 const pins = collectPins();
+const columns = layoutColumns(pins, 2);
 ---
 
 <!-- Без data-reveal и без параллакса намеренно: доска листается как
      обычная страница, все кадры на месте сразу, ничего не проявляется. -->
 <section class="board" aria-label="Фотографии площадок каталога">
-  <div class="board__cols">
+  <div class="board__cols" data-board>
     {
-      pins.map((pin) => (
-        <article class:list={['pin', pin.wide && 'pin--wide']} style={`--card-ratio:${pin.ratio};`}>
-          <PhotoRail
-            photos={pin.photos}
-            alt={pin.alt}
-            href={pin.href}
-            sizes={
-              pin.wide
-                ? '100vw'
-                : '(min-width: 1440px) 19vw, (min-width: 1024px) 24vw, (min-width: 640px) 32vw, 48vw'
-            }
-            widths={pin.wide ? [640, 1000, 1600] : [360, 560, 800]}
-          />
+      columns.map((col) => (
+        <div class="board__col">
+          {col.map((pin) => (
+            <article
+              class="pin"
+              style={`--card-ratio:${pin.ratio};`}
+              data-i={pin.index}
+              data-h={pin.height.toFixed(3)}
+            >
+              <PhotoRail
+                photos={pin.photos}
+                alt={pin.alt}
+                href={pin.href}
+                sizes="(min-width: 1440px) 19vw, (min-width: 1024px) 24vw, (min-width: 640px) 32vw, 48vw"
+                widths={[360, 560, 800]}
+              />
 
-          {pin.caption && (
-            <a class="pin__cap t-caption" href={pin.href}>
-              {pin.caption}
-            </a>
-          )}
-        </article>
+              {pin.caption && (
+                <a class="pin__cap t-caption" href={pin.href}>
+                  {pin.caption}
+                </a>
+              )}
+            </article>
+          ))}
+        </div>
       ))
     }
   </div>
@@ -51,31 +63,25 @@ const pins = collectPins();
     padding-block: var(--s-6) var(--section-gap);
   }
 
-  /* --pin-gap — единственная ручка зазора доски: на телефоне волосок,
-     как стык карточек каталога, на ПК полноценный шов. Боковых полей нет:
-     крайние плитки идут в край экрана, зазор только между кадрами. */
+  /* --board-cols — число колонок на брейкпоинте; его же читает скрипт,
+     чтобы переложить плитки. --pin-gap — единственная ручка зазора:
+     на телефоне волосок, как стык карточек каталога, на ПК полный шов.
+     Боковых полей нет: крайние плитки идут в край экрана. */
   .board__cols {
+    --board-cols: 2;
     --pin-gap: clamp(6px, 0.9vw, 12px);
-    columns: 2;
-    column-gap: var(--pin-gap);
+    display: grid;
+    grid-template-columns: repeat(var(--board-cols), minmax(0, 1fr));
+    gap: var(--pin-gap);
+    align-items: start;
   }
 
-  /* flow-root + break-inside: плитка не должна разрываться между колонками
-     (иначе подпись уезжает от своего кадра) */
-  .pin {
-    display: flow-root;
-    break-inside: avoid;
-    -webkit-column-break-inside: avoid;
-    margin-bottom: var(--pin-gap);
+  .board__col {
+    display: flex;
+    flex-direction: column;
+    gap: var(--pin-gap);
+    min-width: 0;
   }
-
-  /* Широкая плитка ложится поперёк всех колонок и рвёт поток доски:
-     колонки до и после неё балансируются заново, ряды не сходятся.
-     Потолок высоты — чтобы кадр 3:2 на ПК не занял полтора экрана:
-     выше потолка режется по cover, это единственное место, где кроп есть. */
-  .pin--wide { column-span: all; }
-
-  .pin--wide :global(.prail) { max-height: 64svh; }
 
   /* Подпись живёт под кадром, не на нём: на фото её место занимают
      точки-индикаторы, а тут она читается как строка доски. */
@@ -88,14 +94,52 @@ const pins = collectPins();
   }
 
   @media (min-width: 640px) {
-    .board__cols { columns: 3; }
+    .board__cols { --board-cols: 3; }
   }
 
   @media (min-width: 1024px) {
-    .board__cols { columns: 4; }
+    .board__cols { --board-cols: 4; }
   }
 
   @media (min-width: 1440px) {
-    .board__cols { columns: 5; }
+    .board__cols { --board-cols: 5; }
   }
 </style>
+
+<script>
+  // Перекладка под число колонок с экрана. Высота плитки известна из
+  // data-h (пропорция + подпись, в долях ширины колонки) — картинки ждать
+  // не нужно, раскладка считается до их загрузки. Колонку клонируем
+  // с существующей, чтобы сохранить scoped-атрибут стилей Astro.
+  document.querySelectorAll<HTMLElement>('[data-board]').forEach((board) => {
+    const pins = Array.from(board.querySelectorAll<HTMLElement>('.pin')).sort(
+      (a, b) => Number(a.dataset.i) - Number(b.dataset.i)
+    );
+    const proto = board.firstElementChild as HTMLElement | null;
+    if (!proto) return;
+
+    let current = board.children.length;
+
+    const relayout = () => {
+      const count = parseInt(getComputedStyle(board).getPropertyValue('--board-cols'), 10) || 2;
+      if (count === current) return;
+      current = count;
+
+      const cols = Array.from({ length: count }, () => proto.cloneNode(false) as HTMLElement);
+      const tall = new Array<number>(count).fill(0);
+
+      for (const pin of pins) {
+        let k = 0;
+        for (let j = 1; j < count; j++) if (tall[j] < tall[k]) k = j;
+        cols[k].append(pin);
+        tall[k] += parseFloat(pin.dataset.h || '1');
+      }
+
+      board.replaceChildren(...cols);
+    };
+
+    relayout();
+    // выходит сразу, если число колонок не поменялось — ресайз дешёвый
+    window.addEventListener('resize', relayout);
+  });
+</script>
