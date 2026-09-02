@@ -1,11 +1,19 @@
 ---
 // ГАЛЕРЕЯ КАРТОЧКИ — единый принцип для любого каталога (площадки,
-// специалисты, дальше — любая новая категория подрядчиков): фото листаются
-// свайпом на тач (scroll-snap) и сами автолистаются при наведении мышью
-// (тач не трогаем — там уже свайп), точки-индикаторы кружками сверху слева
-// (справа — место под сердечко «в избранное», снизу — под пилюли-теги).
+// специалисты, дальше — любая новая категория подрядчиков): кадры
+// перекладываются свайпом на тач и сами листаются при наведении мышью,
+// точки-индикаторы кружками сверху слева (справа — место под сердечко
+// «в избранное», снизу — под пилюли-теги).
 // Один источник правды: меняем логику/тайминг листания здесь, а не в
 // каждой странице каталога отдельно.
+//
+// ПОЧЕМУ НЕ НАТИВНАЯ ПРОКРУТКА. Раньше рельс был overflow-x: auto со
+// scroll-snap. Кадр при этом ходит за пальцем: его можно взять и возить
+// по фрейму, вытянуть за край в резинку, бросить на полпути — и ни snap,
+// ни доворот в JS этого не убирают, потому что само перетаскивание и есть
+// нативное поведение скролл-контейнера. Здесь прокрутки нет вовсе:
+// жест только принимает решение «влево/вправо», кадр перекладывается
+// целиком, по своей оси, одним движением.
 //
 // Компонент отвечает только за сам просмотр фото — цену/тип/сердечко
 // кладёт вызывающая страница через слот, поверх .veil.
@@ -25,20 +33,22 @@ const { photos, alt, href, sizes, widths = [360, 560, 800, 1100] } = Astro.props
 ---
 
 <div class="prail-wrap" data-prail-host>
-  <div class="prail" data-rail>
-    {photos.map((src, n) => {
-      const frameAlt = photos.length > 1 ? `${alt} — фото ${n + 1}` : alt;
-      const image = (
-        <Image src={resolveImage(src)} alt={frameAlt} widths={widths} sizes={sizes} loading="lazy" decoding="async" />
-      );
-      return href ? (
-        <a class="prail__item" href={href} aria-label={alt}>
-          {image}
-        </a>
-      ) : (
-        <div class="prail__item">{image}</div>
-      );
-    })}
+  <div class="prail">
+    <div class="prail__track" data-rail>
+      {photos.map((src, n) => {
+        const frameAlt = photos.length > 1 ? `${alt} — фото ${n + 1}` : alt;
+        const image = (
+          <Image src={resolveImage(src)} alt={frameAlt} widths={widths} sizes={sizes} loading="lazy" decoding="async" />
+        );
+        return href ? (
+          <a class="prail__item" href={href} aria-label={alt}>
+            {image}
+          </a>
+        ) : (
+          <div class="prail__item">{image}</div>
+        );
+      })}
+    </div>
   </div>
 
   <div class="veil" aria-hidden="true"></div>
@@ -59,39 +69,41 @@ const { photos, alt, href, sizes, widths = [360, 560, 800, 1100] } = Astro.props
     position: relative;
   }
 
-  /* Пропорция кадра — общий токен каталога: карточка на две колонки или
-     витринная подменяют его у себя (--card-ratio: var(--card-ratio-wide)),
-     а не переопределяют .prail вслепую. Запасное значение — для мест,
-     где рельс живёт вне каталога. */
+  /* Окно кадра. Прокрутки нет: overflow: hidden — единственная причина,
+     по которой фото больше нельзя взять пальцем и возить по фрейму.
+     touch-action: pan-y отдаёт вертикальный скролл страницы браузеру —
+     он остаётся нативным, а горизонтальный жест разбирает скрипт. */
   .prail {
-    display: flex;
+    position: relative;
     aspect-ratio: var(--card-ratio, 4 / 5);
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
+    overflow: hidden;
     background: var(--surface-dim);
-    /* Свайп рельса не утаскивает за собой страницу: без этого косой жест
-       уводил и кадр, и вертикальный скролл — кадр оставался «на полпути» */
-    overscroll-behavior-x: contain;
+    touch-action: pan-y;
   }
 
-  .prail::-webkit-scrollbar { display: none; }
+  /* Лента кадров. Ширина ленты равна окну, кадры из неё вываливаются
+     вправо и обрезаются — поэтому сдвиг ровно на --i окон и есть
+     переход к кадру номер --i. Без JS виден первый кадр. */
+  .prail__track {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    transform: translateX(calc(var(--i, 0) * -100%));
+    transition: transform var(--dur-base) var(--ease-out);
+  }
 
-  /* Кадр встаёт по левому краю окна прокрутки, а не по центру: с center
-     позиция кадра считается от середины и на дробной ширине колонки
-     промахивается мимо края. scroll-snap-stop: always — один свайп ровно
-     на один кадр, быстрый жест не пролистывает пачку. */
   .prail__item {
     flex: 0 0 100%;
     height: 100%;
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
   }
 
   .prail__item :global(img) {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    /* кадр не должен «отрываться» от карточки при долгом нажатии */
+    -webkit-user-drag: none;
+    user-select: none;
   }
 
   /* Точки-индикаторы: сверху слева, кружками — свободное место на кадре */
@@ -116,64 +128,77 @@ const { photos, alt, href, sizes, widths = [360, 560, 800, 1100] } = Astro.props
 </style>
 
 <script>
-  // Точки синхронизируются со скроллом всегда (мобильный свайп); автолистание
-  // по наведению — только там, где есть настоящий ховер (мышь, не тач).
+  // Кадр меняется целиком: жест решает только направление, промежуточных
+  // положений нет. Автолистание по наведению — там, где есть настоящий
+  // ховер (мышь, не тач).
   const hoverCapable = window.matchMedia('(hover: hover)').matches;
 
   document.querySelectorAll<HTMLElement>('[data-prail-host]').forEach((host) => {
-    const rail = host.querySelector<HTMLElement>('[data-rail]');
+    const track = host.querySelector<HTMLElement>('[data-rail]');
     const dots = Array.from(host.querySelectorAll<HTMLElement>('.prail__dot'));
-    if (!rail) return;
+    if (!track) return;
 
-    const frames = rail.children.length;
+    const frames = track.children.length;
+    let index = 0;
 
-    const sync = () => {
-      const i = Math.round(rail.scrollLeft / rail.clientWidth);
-      dots.forEach((d, n) => d.classList.toggle('is-on', n === i));
-    };
-    rail.addEventListener('scroll', sync, { passive: true });
-    sync();
-
-    // ============ ДОВОРОТ ДО КАДРА ============
-    // Страховка поверх scroll-snap: на косом жесте (палец ведёт страницу
-    // вниз и заодно чуть вбок) браузер довольно часто бросает рельс на
-    // полпути — половина одного кадра, половина следующего. Как только
-    // прокрутка утихла и палец снят, доводим до ближайшего кадра сами.
-    let touching = false;
-    let idle: ReturnType<typeof setTimeout> | null = null;
-
-    const settle = () => {
-      const w = rail.clientWidth;
-      if (!w || touching) return;
-      const target = Math.round(rail.scrollLeft / w) * w;
-      if (Math.abs(rail.scrollLeft - target) > 1) {
-        rail.scrollTo({ left: target, behavior: 'smooth' });
-      }
+    const show = (n: number) => {
+      index = Math.max(0, Math.min(frames - 1, n));
+      track.style.setProperty('--i', String(index));
+      dots.forEach((d, k) => d.classList.toggle('is-on', k === index));
     };
 
-    const settleSoon = () => {
-      if (idle) clearTimeout(idle);
-      idle = setTimeout(settle, 120);
-    };
+    show(0);
+    if (frames < 2) return;
 
-    rail.addEventListener('scroll', settleSoon, { passive: true });
-    rail.addEventListener('touchstart', () => { touching = true; }, { passive: true });
-    rail.addEventListener('touchend', () => { touching = false; settleSoon(); }, { passive: true });
-    rail.addEventListener('touchcancel', () => { touching = false; settleSoon(); }, { passive: true });
+    // ============ СВАЙП ============
+    // Считаем только начало и конец жеста. Порог в 36px отсекает дрожание
+    // пальца при вертикальной прокрутке, сравнение с dy — косые жесты:
+    // если палец шёл больше вниз, чем вбок, это скролл страницы, не свайп.
+    let x0 = 0;
+    let y0 = 0;
+    let tracking = false;
+    let swiped = false;
 
-    if (!hoverCapable || frames < 2) return;
+    host.addEventListener('touchstart', (e) => {
+      const t = e.changedTouches[0];
+      x0 = t.clientX;
+      y0 = t.clientY;
+      tracking = true;
+      swiped = false;
+    }, { passive: true });
+
+    host.addEventListener('touchend', (e) => {
+      if (!tracking) return;
+      tracking = false;
+
+      const t = e.changedTouches[0];
+      const dx = t.clientX - x0;
+      const dy = t.clientY - y0;
+      if (Math.abs(dx) < 36 || Math.abs(dx) <= Math.abs(dy)) return;
+
+      swiped = true;
+      show(index + (dx < 0 ? 1 : -1));
+    }, { passive: true });
+
+    host.addEventListener('touchcancel', () => { tracking = false; }, { passive: true });
+
+    // Свайп не должен открывать карточку и не должен жать сердечко:
+    // ловим клик на перехвате, до того как он дойдёт до ссылки и кнопки.
+    host.addEventListener('click', (e) => {
+      if (!swiped) return;
+      swiped = false;
+      e.preventDefault();
+      e.stopPropagation();
+    }, true);
+
+    if (!hoverCapable) return;
 
     let timer: ReturnType<typeof setInterval> | null = null;
 
-    const advance = (instant = false) => {
-      const next = (Math.round(rail.scrollLeft / rail.clientWidth) + 1) % frames;
-      rail.scrollTo({ left: next * rail.clientWidth, behavior: instant ? 'auto' : 'smooth' });
-    };
-
     host.addEventListener('pointerenter', (e) => {
       if (e.pointerType !== 'mouse' || timer) return;
-      advance(true); // первый кадр — мгновенно, сразу видно, что галерея живая
-      timer = setInterval(() => advance(), 1800); // дальше — плавным перелистыванием
+      show((index + 1) % frames); // первый кадр сразу — видно, что галерея живая
+      timer = setInterval(() => show((index + 1) % frames), 1800);
     });
 
     host.addEventListener('pointerleave', (e) => {
