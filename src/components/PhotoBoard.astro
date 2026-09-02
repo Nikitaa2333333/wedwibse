@@ -16,10 +16,15 @@
 // Плитка с несколькими кадрами получает точки-индикаторы и листание
 // свайпом — тот же PhotoRail, что в карточке каталога. Пропорция кадра
 // приходит через --card-ratio: её читает .prail внутри рельса.
+//
+// Раз в несколько плиток в потоке попадается карточка статьи — блог
+// человек встречает, пока листает фотографии, а не идёт за ним отдельно.
+import { Image } from 'astro:assets';
 import PhotoRail from './PhotoRail.astro';
-import { collectPins, layoutColumns } from '../lib/gallery';
+import { collectTiles, layoutColumns } from '../lib/gallery';
+import { resolveImage } from '../lib/images';
 
-const columns = layoutColumns(collectPins(), 2);
+const columns = layoutColumns(collectTiles(), 2);
 
 const TILE_SIZES =
   '(min-width: 1440px) 19vw, (min-width: 1024px) 24vw, (min-width: 640px) 32vw, 48vw';
@@ -32,25 +37,48 @@ const TILE_SIZES =
     {
       columns.map((col) => (
         <div class="board__col">
-          {col.map((pin) => (
+          {col.map((tile) => (
             <article
-              class="pin"
-              style={`--card-ratio:${pin.ratio};`}
-              data-i={pin.index}
-              data-h={pin.height.toFixed(3)}
+              class:list={['pin', tile.kind === 'article' && 'pin--article']}
+              style={`--card-ratio:${tile.ratio};`}
+              data-i={tile.index}
+              data-h={tile.height.toFixed(3)}
             >
-              <PhotoRail
-                photos={pin.photos}
-                alt={pin.alt}
-                href={pin.href}
-                sizes={TILE_SIZES}
-                widths={[360, 560, 800]}
-              />
+              {tile.kind === 'article' ? (
+                <>
+                  <a class="pin__media media" href={tile.href} tabindex="-1" aria-hidden="true">
+                    <Image
+                      src={resolveImage(tile.cover)}
+                      alt=""
+                      widths={[360, 560, 800]}
+                      sizes={TILE_SIZES}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </a>
 
-              {pin.caption && (
-                <a class="cap t-caption" href={pin.href}>
-                  {pin.caption}
-                </a>
+                  <p class="cap t-caption">{tile.rubric}</p>
+
+                  <h3 class="pin__title">
+                    <a href={tile.href}>{tile.title}</a>
+                  </h3>
+                </>
+              ) : (
+                <>
+                  <PhotoRail
+                    photos={tile.photos}
+                    alt={tile.alt}
+                    href={tile.href}
+                    sizes={TILE_SIZES}
+                    widths={[360, 560, 800]}
+                  />
+
+                  {tile.caption && (
+                    <a class="cap t-caption" href={tile.href}>
+                      {tile.caption}
+                    </a>
+                  )}
+                </>
               )}
             </article>
           ))}
@@ -105,6 +133,24 @@ const TILE_SIZES =
     font-weight: var(--w-body);
     text-decoration: none;
   }
+
+  /* КАРТОЧКА СТАТЬИ в потоке: тот же кадр той же ширины, но под ним
+     рубрика и заголовок — статью видно как статью, не как фото площадки.
+     Рамок и подложек нет: карточку отбивает кадр, как в ArticleCard. */
+  .pin__media {
+    display: block;
+    aspect-ratio: var(--card-ratio);
+    background: var(--surface-dim);
+  }
+
+  .pin__title {
+    padding: 0 var(--catalog-pad);
+    font-size: var(--fs-small);
+    font-weight: var(--w-head);
+    line-height: var(--lh-heading);
+  }
+
+  .pin__title a { text-decoration: none; }
 
   @media (min-width: 640px) {
     .board__cols { --board-cols: 3; }

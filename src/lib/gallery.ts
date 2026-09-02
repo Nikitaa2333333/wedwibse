@@ -14,8 +14,15 @@
 // Плитка (Pin) может нести несколько кадров: тогда в ней работает
 // PhotoRail — точки-индикаторы и листание свайпом, как в карточке
 // каталога. Пропорция всегда настоящая, из файла: кадр не кропится.
+//
+// СТАТЬИ ЛЕЖАТ В ТОМ ЖЕ ПОТОКЕ. Раз в ARTICLE_EVERY плиток в доску
+// вклинивается карточка статьи — так блог попадается сам собой, пока
+// человек листает фотографии (воронка «статья → подборка → карточка»
+// из SEO.md). Отдельной полосой во всю ширину статьи не ставим: полоса
+// рвёт колонки на блоки и оставляет над собой дыры разной высоты.
 // ============================================================
 import { VENUES } from '../data/venues';
+import { ARTICLES, articleUrl, rubricBySlug } from '../data/articles';
 import { resolveImage } from './images';
 
 export interface Pin {
@@ -108,10 +115,63 @@ function interleave(lanes: Pin[][]): Pin[] {
   return out;
 }
 
+/** Карточка статьи в потоке доски: обложка + рубрика + заголовок */
+export interface ArticleTile {
+  kind: 'article';
+  href: string;
+  cover: string;
+  alt: string;
+  rubric: string;
+  title: string;
+  ratio: string;
+  index: number;
+  height: number;
+}
+
+export type Tile = ({ kind: 'photo' } & Pin) | ArticleTile;
+
+/** через сколько фото-плиток в поток вклинивается статья */
+const ARTICLE_EVERY = 5;
+
+// Текст карточки статьи (рубрика + заголовок в 2-3 строки) в долях ширины
+// колонки — жадной раскладке нужна полная высота плитки, иначе колонка
+// со статьями незаметно перевешивает.
+const ARTICLE_TEXT_H = 0.5;
+
+function articleTile(article: (typeof ARTICLES)[number]): ArticleTile {
+  const meta = resolveImage(article.cover.src);
+  const ratio = meta.width / meta.height;
+
+  return {
+    kind: 'article',
+    href: articleUrl(article),
+    cover: article.cover.src,
+    alt: article.cover.alt,
+    rubric: rubricBySlug(article.rubricSlug)?.title ?? 'Журнал',
+    title: article.title,
+    ratio: `${ratio.toFixed(3)} / 1`,
+    index: 0,
+    height: 1 / ratio + ARTICLE_TEXT_H,
+  };
+}
+
 /** Доска целиком — один непрерывный поток плиток, без блоков и полос:
- *  колонки просто идут вниз и заканчиваются на разной высоте, как в ленте. */
-export function collectPins(): Pin[] {
-  return interleave(VENUES.map(tallPins)).map((p, index) => ({ ...p, index }));
+ *  колонки просто идут вниз и заканчиваются на разной высоте, как в ленте.
+ *  Каждая ARTICLE_EVERY-я позиция — карточка статьи. */
+export function collectTiles(): Tile[] {
+  const photos = interleave(VENUES.map(tallPins));
+  const articles = ARTICLES.map(articleTile);
+  const out: Tile[] = [];
+
+  let a = 0;
+
+  photos.forEach((pin, i) => {
+    // статью ставим ПЕРЕД плиткой, чтобы доска не начиналась с неё
+    if (i > 0 && i % ARTICLE_EVERY === 0 && articles[a]) out.push(articles[a++]);
+    out.push({ kind: 'photo', ...pin });
+  });
+
+  return out.map((tile, index) => ({ ...tile, index }));
 }
 
 // ЖАДНАЯ РАСКЛАДКА — тот же алгоритм, что у Masonry.js/MiniMasonry:
@@ -121,8 +181,8 @@ export function collectPins(): Pin[] {
 // как ошибка, а не как ритм. Колонки одной ширины, поэтому высоты считаются
 // в её долях и сходятся с реальными до пикселя. Тем же кодом раскладывает
 // клиент (PhotoBoard), когда колонок на экране больше двух.
-export function layoutColumns(pins: Pin[], count: number): Pin[][] {
-  const cols: Pin[][] = Array.from({ length: count }, () => []);
+export function layoutColumns(pins: Tile[], count: number): Tile[][] {
+  const cols: Tile[][] = Array.from({ length: count }, () => []);
   const tall = new Array<number>(count).fill(0);
 
   for (const p of pins) {
