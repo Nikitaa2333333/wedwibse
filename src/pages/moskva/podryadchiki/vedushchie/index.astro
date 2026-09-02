@@ -120,9 +120,10 @@ const favImg = new Map(
       <FilterSheet groups={VEDUSHCHIE_FILTERS} counts={counts} noun={['ведущий', 'ведущих', 'ведущих']} sortable />
     </aside>
 
-    <!-- СЕТКА: мозаика без дыр, фото — главное -->
+    <!-- СЕТКА: мозаика без дыр, фото — главное. Без анимации появления:
+         каталог листается спокойно, карточки стоят на месте. -->
     <main class="wrap">
-      <div class="vgrid" data-reveal-group data-sort-grid>
+      <div class="vgrid" data-sort-grid>
         {cards.map(({ s, variant, styleTag, filters, sortKey }) => {
           const sizes =
             variant === 'scard--wide' || variant === 'scard--duo'

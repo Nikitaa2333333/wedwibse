@@ -89,9 +89,10 @@ const favImg = new Map(
       <FilterSheet groups={VENUE_FILTERS} counts={counts} noun={['площадка', 'площадки', 'площадок']} sortable />
     </aside>
 
-    <!-- СЕТКА: мозаика без дыр, фото — главное -->
+    <!-- СЕТКА: мозаика без дыр, фото — главное. Без анимации появления:
+         каталог листается спокойно, карточки стоят на месте. -->
     <main class="wrap">
-      <div class="vgrid" data-reveal-group data-sort-grid>
+      <div class="vgrid" data-sort-grid>
         {FEED.map((item) => {
           if (item.kind === 'ad') {
             return (
