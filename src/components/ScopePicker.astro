@@ -46,18 +46,7 @@ const options = [{ value: '', label: ALL_LABEL }, ...cities.options];
 
 <header class="scope" data-scope>
   <div class="scope__title-row">
-    <h1 class="t-h1 scope__title">
-      <button
-        class="scope__trigger"
-        type="button"
-        data-sheet-open="scope"
-        aria-expanded="false"
-        aria-controls="scope-sheet"
-      >
-        {title}
-        <Icon name="caretDown" class="scope__caret" />
-      </button>
-    </h1>
+    <h1 class="t-h1 scope__title">{title}</h1>
     {count && <p class="scope__count" data-results-count>{count}</p>}
   </div>
 
@@ -118,30 +107,6 @@ const options = [{ value: '', label: ALL_LABEL }, ...cities.options];
     font-weight: var(--w-medium);
   }
 
-  /* Заголовок остаётся заголовком: кнопка внутри h1 наследует набор,
-     от обычного h1 её отличает только каретка. */
-  .scope__trigger {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.24em;
-    padding: 0;
-    border: 0;
-    background: none;
-    font: inherit;
-    color: inherit;
-    text-align: left;
-    cursor: pointer;
-  }
-
-  :global(.scope__caret) {
-    width: 0.44em;
-    height: 0.44em;
-    flex: none;
-    transition: transform var(--dur-fast) var(--ease-out);
-  }
-
-  .scope.is-open :global(.scope__caret) { transform: rotate(180deg); }
-
   /* Инструменты (локация + слот «Фильтры»): на телефоне своей строкой,
      от планшета — прижаты вправо к заголовку. */
   .scope__tools {
@@ -165,11 +130,9 @@ const options = [{ value: '', label: ALL_LABEL }, ...cities.options];
   .scope__city-caret { font-size: 9px; }
 
   /* ПК: локация выбирается в левой колонке (группа «Локация» фильтров),
-     шторка не нужна — чип прячем, заголовок становится обычным h1. */
+     шторка не нужна — чип прячем. */
   @media (min-width: 1024px) {
     .scope__city { display: none; }
-    .scope__trigger { pointer-events: none; }
-    :global(.scope__caret) { display: none; }
   }
 </style>
 
