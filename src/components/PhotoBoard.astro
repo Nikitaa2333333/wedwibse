@@ -20,18 +20,79 @@
 // Раз в несколько плиток в потоке попадается статья — типографическая
 // плашка (.theme-dark) той же пропорции, что кадры вокруг. Блог человек
 // встречает, пока листает фотографии, а не идёт за ним отдельно.
+//
+// ПЕРКИ (площадки/специалисты — входы в разделы) идут первой строкой
+// доски, а не отдельным экраном перед ней: раньше это были две плашки
+// почти в полный экран каждая, и до самой ленты приходилось пролистать
+// два «пустых» экрана. Тут они — часть доски (тот же --pin-gap, без
+// своих полей), просто крупнее и на всю ширину, а не колонка потока.
 import PhotoRail from './PhotoRail.astro';
 import { collectTiles, layoutColumns } from '../lib/gallery';
+
+interface Perk {
+  kind: 'photo' | 'light';
+  name: string;
+  tag: string;
+  imgs: string[];
+  alt: string;
+  href: string;
+  words?: string[];
+}
+
+interface Props {
+  perks?: Perk[];
+}
+
+const { perks = [] } = Astro.props;
 
 const columns = layoutColumns(collectTiles(), 2);
 
 const TILE_SIZES =
   '(min-width: 1440px) 19vw, (min-width: 1024px) 24vw, (min-width: 640px) 32vw, 48vw';
+
+const PERK_SIZES = '(min-width: 640px) 50vw, 100vw';
 ---
 
 <!-- Без data-reveal и без параллакса намеренно: доска листается как
      обычная страница, все кадры на месте сразу, ничего не проявляется. -->
 <section class="board" aria-label="Фотографии площадок каталога">
+  {perks.length > 0 && (
+    <div class="board__perks">
+      {perks.map((perk) =>
+        perk.kind === 'photo' ? (
+          <a class="perk perk--photo" href={perk.href}>
+            <PhotoRail photos={perk.imgs} alt={perk.alt} sizes={PERK_SIZES} widths={[560, 900, 1400]} />
+            <span class="perk__overlay">
+              <span class="perk__name">{perk.name}</span>
+              <span class="perk__tag" set:html={perk.tag} />
+            </span>
+          </a>
+        ) : (
+          <a class="perk perk--light" href={perk.href}>
+            <PhotoRail photos={perk.imgs} alt={perk.alt} sizes={PERK_SIZES} widths={[560, 900, 1400]} />
+            <span class="perk__scrim" aria-hidden="true"></span>
+
+            <span class="perk__body">
+              <span class="perk__top">
+                <span class="perk__tag">{perk.tag}</span>
+                <span class="perk__arrow">↗</span>
+              </span>
+              <span class="perk__name">{perk.name}</span>
+            </span>
+
+            <span class="perk__list" aria-hidden="true">
+              <span class="perk__list-track">
+                {(perk.words ?? []).concat(perk.words ?? []).map((word) => (
+                  <span class="perk__word">{word}</span>
+                ))}
+              </span>
+            </span>
+          </a>
+        )
+      )}
+    </div>
+  )}
+
   <div class="board__cols" data-board>
     {
       columns.map((col) => (
@@ -94,6 +155,174 @@ const TILE_SIZES =
   /* Затемнение под подписи тут лишнее: подпись живёт под кадром, а не на
      нём, и градиент только гасит низ фотографии. */
   .board :global(.veil) { display: none; }
+
+  /* ============ ПЕРКИ: строка входов в разделы, первой в доске ============
+     Раньше — отдельная секция почти в полный экран каждая плашка (до ленты
+     приходилось пролистать два «пустых» экрана). Тут это первая строка
+     самой доски: тот же --pin-gap, без своих полей, но заметно крупнее
+     и шире соседних кадров потока — контраст даёт не высота, а ширина
+     (на телефоне плашка на весь пролёт доски, а не одна колонка). */
+  .board__perks {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--pin-gap);
+  }
+
+  @media (min-width: 640px) {
+    .board__perks { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  .perk {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    aspect-ratio: 4 / 3;
+    padding: var(--s-5);
+    background: var(--surface);
+    color: var(--ink);
+    text-decoration: none;
+    overflow: hidden;
+  }
+
+  /* Плашке с фото нужен свой veil обратно: текст лежит прямо на кадре */
+  .perk--photo :global(.veil) { display: block; }
+
+  .perk__top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--s-3);
+  }
+
+  .perk__tag {
+    font-size: var(--fs-small);
+    font-weight: var(--w-medium);
+    line-height: 1.35;
+  }
+
+  .perk__arrow {
+    font-size: var(--fs-body);
+    line-height: 1;
+  }
+
+  .perk__name {
+    font-size: clamp(24px, 4vw, 36px);
+    font-weight: var(--w-head);
+    line-height: 1.05;
+    letter-spacing: -0.015em;
+  }
+
+  /* Фото-плашка: тот же слайдер, что в каталоге (PhotoRail) — кадры
+     листаются при наведении и свайпом, с точками-индикаторами. */
+  .perk--photo { padding: 0; overflow: hidden; }
+
+  .perk--photo :global(.prail-wrap) {
+    position: absolute;
+    inset: 0;
+  }
+
+  .perk--photo :global(.prail) {
+    aspect-ratio: auto;
+    height: 100%;
+  }
+
+  .perk__overlay {
+    position: relative;
+    margin-top: auto;
+    padding: var(--s-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    color: var(--white);
+  }
+
+  /* Светлая плашка: слева статичный текст, справа — колесо категорий
+     во всю высоту карточки. */
+  .perk--light {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: stretch;
+    background: var(--paper);
+    color: var(--ink);
+  }
+
+  .perk--light :global(.prail-wrap) {
+    position: absolute;
+    inset: 0 34% 0 0;
+  }
+
+  .perk--light :global(.prail) {
+    aspect-ratio: auto;
+    height: 100%;
+    background: var(--paper);
+  }
+
+  .perk--light :global(.veil) { display: none; }
+
+  .perk__scrim {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to right,
+      transparent 0%,
+      color-mix(in srgb, var(--paper) 55%, transparent) 34%,
+      var(--paper) 66%
+    );
+    pointer-events: none;
+  }
+
+  .perk__body {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-width: 0;
+    grid-column: 1;
+  }
+
+  /* Колесо категорий — крутится непрерывно, обрезается краями карточки */
+  .perk__list {
+    position: relative;
+    grid-column: 2;
+    overflow: hidden;
+    text-align: right;
+    mask-image: linear-gradient(to bottom, transparent 0%, black 38%, black 62%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 38%, black 62%, transparent 100%);
+  }
+
+  .perk__list-track {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    animation: perk-scroll 14s linear infinite;
+  }
+
+  .perk__word {
+    height: 1.15em;
+    display: flex;
+    align-items: center;
+    font-size: clamp(22px, 3.2vw, 30px);
+    font-weight: var(--w-head);
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+  }
+
+  @keyframes perk-scroll {
+    from { transform: translateY(0); }
+    to { transform: translateY(-50%); }
+  }
+
+  @media (hover: hover) {
+    .perk { transition: transform var(--dur-fast) var(--ease-out); }
+    .perk__arrow { transition: transform var(--dur-fast) var(--ease-out); }
+    .perk:hover .perk__arrow { transform: translate(3px, -3px); }
+  }
+
+  @media (min-width: 1024px) {
+    .perk { padding: var(--s-6); }
+    .perk--photo .perk__overlay { padding: var(--s-6); }
+  }
 
   /* --board-cols — число колонок на брейкпоинте; его же читает скрипт,
      чтобы переложить плитки. */
