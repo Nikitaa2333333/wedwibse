@@ -910,6 +910,94 @@ mark {
   }
 }
 
+/* выбранная метка (открыта её карточка) — чернильная инверсия, как у .chip */
+.map-pin.is-active {
+  color: var(--paper);
+  background: var(--ink);
+}
+
+/* Карточка площадки поверх карты — только широкий экран с мышью: на телефоне
+   тап по метке ведёт прямо на страницу площадки, промежуточная плашка там
+   лишний шаг. Разметка карточек приезжает с сервера, скрипт их только
+   показывает. */
+.map-cards {
+  display: none;
+}
+
+@media (min-width: 1024px) and (pointer: fine) {
+  .map-cards {
+    display: block;
+    position: absolute;
+    inset: auto var(--s-4) var(--s-4) var(--s-4);
+    pointer-events: none;
+  }
+}
+
+.map-card {
+  position: relative;
+  width: min(360px, 100%);
+  pointer-events: auto;
+  background: var(--paper);
+  box-shadow: var(--shadow-float);
+  animation: map-card-in var(--dur-base) var(--ease-out) both;
+}
+
+@keyframes map-card-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.map-card__link {
+  display: flex;
+  gap: var(--s-4);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.map-card__media {
+  flex: none;
+  width: 110px;
+  align-self: stretch;
+}
+
+.map-card__body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: var(--s-4) var(--s-6) var(--s-4) 0;
+}
+
+.map-card__price {
+  font-size: var(--fs-small);
+  font-weight: var(--w-medium);
+}
+
+.map-card__name {
+  font-size: var(--fs-body);
+  font-weight: var(--w-head);
+  line-height: var(--lh-heading);
+}
+
+.map-card__close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.map-card__close svg {
+  width: 18px;
+  height: 18px;
+}
+
 /* ============ ДОСТУПНОСТЬ ============ */
 :focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
 

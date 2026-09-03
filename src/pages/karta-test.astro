@@ -3,8 +3,12 @@
 // находка про карту конкурента). Не часть каталога, отдельная страница —
 // удалить или перенести логику в каталог площадок, когда появятся реальные
 // координаты подрядчиков.
+import { Image } from 'astro:assets';
 import Layout from '../layouts/Layout.astro';
+import Icon from '../components/Icon.astro';
+import { FEED, type FeedVenue } from '../data/feed';
 import { riverLoft, forestDew } from '../data/venues';
+import { resolveImage } from '../lib/images';
 
 // Ключ пакета «JavaScript API и HTTP Геокодер» — сам по себе публичный
 // браузерный ключ (защищается привязкой к домену в кабинете Яндекса, не
@@ -12,20 +16,75 @@ import { riverLoft, forestDew } from '../data/venues';
 // из секрета GitHub Actions (YANDEX_MAPS_API_KEY), подставляется на сборке.
 const YANDEX_MAPS_API_KEY = import.meta.env.YANDEX_MAPS_API_KEY;
 
+// Метка показывает цену, как у маркетплейсов недвижимости, — значит берём те же
+// данные, что и карточка каталога: цена, рейтинг, фото из ленты (feed.ts),
+// адрес — из карточки площадки (venues.ts).
+const feedVenues = FEED.filter((item): item is FeedVenue => item.kind === 'venue');
+
 // Координат в данных площадок пока нет — берём адрес из карточки и просим
 // геокодер Яндекса найти точку. Когда в схеме появится поле с координатами,
 // геокодирование на клиенте уйдёт: метка будет ставиться сразу по цифрам.
-const POINTS = [riverLoft, forestDew].map((v) => ({
-  name: v.name,
-  address: v.contacts.address,
-  href: `/moskva/ploshchadki/${v.slug}/`,
-}));
+const POINTS = [riverLoft, forestDew].map((venue) => {
+  const feed = feedVenues.find((item) => item.slug === venue.slug);
+
+  return {
+    slug: venue.slug,
+    name: venue.name,
+    address: venue.contacts.address,
+    href: `/moskva/ploshchadki/${venue.slug}/`,
+    price: feed?.avgCheck ?? '',
+    city: feed?.city ?? venue.city,
+    capacity: feed?.capacity ?? '',
+    rating: feed?.rating ?? null,
+    photo: feed?.media[0] ?? venue.hero.image,
+  };
+});
 ---
 
 <Layout title="Тест карты — WED Secrets">
   <main class="wrap">
     <h1 class="t-h1">Тест: метки площадок на карте</h1>
-    <div id="map" class="map" data-points={JSON.stringify(POINTS)}></div>
+
+    <div class="map-wrap">
+      <div id="map" class="map" data-points={JSON.stringify(POINTS)}></div>
+
+      <!-- Карточки отрисованы на сервере и просто прячутся: так фото проходит
+           через astro:assets (оптимизация + srcset), а не собирается в
+           браузере строкой. На телефоне карточек нет вовсе — там тап по метке
+           сразу открывает страницу площадки (см. скрипт ниже). -->
+      <div class="map-cards">
+        {POINTS.map((point) => (
+          <article class="map-card" data-map-card={point.slug} hidden>
+            <a class="map-card__link" href={point.href}>
+              <div class="map-card__media media">
+                <Image
+                  src={resolveImage(point.photo)}
+                  alt={point.name}
+                  widths={[220, 440]}
+                  sizes="110px"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+
+              <div class="map-card__body">
+                <p class="map-card__price">{point.price}</p>
+                <h2 class="map-card__name">{point.name}</h2>
+                <p class="map-card__meta t-small">
+                  {point.city}
+                  {point.capacity ? ` · ${point.capacity}` : ''}
+                  {point.rating ? ` · ★ ${point.rating.toFixed(1)}` : ''}
+                </p>
+              </div>
+            </a>
+
+            <button class="map-card__close" type="button" data-map-close aria-label="Закрыть карточку">
+              <Icon name="close" />
+            </button>
+          </article>
+        ))}
+      </div>
+    </div>
   </main>
 </Layout>
 
@@ -34,8 +93,12 @@ const POINTS = [riverLoft, forestDew].map((v) => ({
     padding: var(--s-6) var(--gutter);
   }
 
-  .map {
+  .map-wrap {
+    position: relative;
     margin-top: var(--s-5);
+  }
+
+  .map {
     width: 100%;
     height: 480px;
     border-radius: var(--radius-media);
@@ -66,37 +129,45 @@ const POINTS = [riverLoft, forestDew].map((v) => ({
       );
 
       // Своя метка (.map-pin в global.css) вместо яндексовской капли: капсула
-      // с названием — и сразу ссылка на карточку, поэтому балун не нужен.
+      // с ценой. Разметка — ссылка на карточку: на телефоне это и есть
+      // поведение (тап — переход), на широком экране клик перехватывается
+      // и вместо перехода всплывает карточка площадки.
       const PinLayout = window.ymaps.templateLayoutFactory.createClass(
-        '<a class="map-pin" href="$[properties.pinHref]" title="$[properties.pinAddress]">' +
-          '<span class="map-pin__dot"></span>$[properties.pinName]' +
+        '<a class="map-pin $[properties.pinState]" href="$[properties.pinHref]"' +
+          ' data-pin="$[properties.pinSlug]" title="$[properties.pinName]">' +
+          '<span class="map-pin__dot"></span>$[properties.pinPrice]' +
           '</a>'
       );
 
+      const marks = new Map();
+
       located.filter(Boolean).forEach((point) => {
-        map.geoObjects.add(
-          new window.ymaps.Placemark(
-            point.coords,
-            {
-              pinName: point.name,
-              pinHref: point.href,
-              pinAddress: point.address,
+        const mark = new window.ymaps.Placemark(
+          point.coords,
+          {
+            pinSlug: point.slug,
+            pinName: point.name,
+            pinPrice: point.price || point.name,
+            pinHref: point.href,
+            pinState: '',
+          },
+          {
+            iconLayout: PinLayout,
+            // активная область метки: капсула стоит над точкой, ширина
+            // зависит от подписи — берём с запасом
+            iconShape: {
+              type: 'Rectangle',
+              coordinates: [
+                [-110, -46],
+                [110, 2],
+              ],
             },
-            {
-              iconLayout: PinLayout,
-              // активная область метки: капсула стоит над точкой, ширина
-              // зависит от названия — берём с запасом
-              iconShape: {
-                type: 'Rectangle',
-                coordinates: [
-                  [-110, -46],
-                  [110, 2],
-                ],
-              },
-              hasBalloon: false,
-            }
-          )
+            hasBalloon: false,
+          }
         );
+
+        marks.set(point.slug, mark);
+        map.geoObjects.add(mark);
       });
 
       if (map.geoObjects.getLength() > 0) {
@@ -105,6 +176,38 @@ const POINTS = [riverLoft, forestDew].map((v) => ({
           zoomMargin: 48,
         });
       }
+
+      // ——— карточка по клику: только широкий экран с мышью ———
+      const desktop = window.matchMedia('(min-width: 1024px) and (pointer: fine)');
+      const cards = document.querySelectorAll('[data-map-card]');
+
+      const closeCard = () => {
+        cards.forEach((card) => {
+          card.hidden = true;
+        });
+        marks.forEach((mark) => mark.properties.set('pinState', ''));
+      };
+
+      const openCard = (slug) => {
+        closeCard();
+        const card = document.querySelector(`[data-map-card="${slug}"]`);
+        if (card) card.hidden = false;
+        const mark = marks.get(slug);
+        if (mark) mark.properties.set('pinState', 'is-active');
+      };
+
+      el.addEventListener('click', (event) => {
+        const pin = event.target.closest('.map-pin');
+        if (!pin || !desktop.matches) return; // на телефоне ссылка работает как ссылка
+        event.preventDefault();
+        openCard(pin.dataset.pin);
+      });
+
+      document.querySelectorAll('[data-map-close]').forEach((btn) => {
+        btn.addEventListener('click', closeCard);
+      });
+
+      map.events.add('click', closeCard); // клик по пустому месту карты
     });
   };
   document.head.appendChild(script);
