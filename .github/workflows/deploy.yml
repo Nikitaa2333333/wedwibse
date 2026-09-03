@@ -28,6 +28,7 @@ jobs:
           # SITE_BASE не задаём: на своём домене сайт живёт в корне.
           # SITE_INDEXABLE тоже не задаём — дизайн-фаза, сайт закрыт
           # от поисковиков (см. SEO.md, раздел 5). Перед запуском: true.
+          YANDEX_MAPS_API_KEY: ${{ secrets.YANDEX_MAPS_API_KEY }}
         run: npx astro build
 
       - name: Prepare SSH

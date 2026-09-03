@@ -1,0 +1,61 @@
+---
+// ВРЕМЕННО: тестовая страница, проверяем встраивание Яндекс Карт (см. SEO.md,
+// находка про карту конкурента). Не часть каталога, отдельная страница —
+// удалить или перенести логику в каталог площадок, когда появятся реальные
+// координаты подрядчиков.
+import Layout from '../layouts/Layout.astro';
+
+// Ключ пакета «JavaScript API и HTTP Геокодер» — сам по себе публичный
+// браузерный ключ (защищается привязкой к домену в кабинете Яндекса, не
+// секретностью), но в гит-репозиторий текстом всё равно не кладём — читаем
+// из секрета GitHub Actions (YANDEX_MAPS_API_KEY), подставляется на сборке.
+const YANDEX_MAPS_API_KEY = import.meta.env.YANDEX_MAPS_API_KEY;
+
+// Пока без реальных координат подрядчиков — одна тестовая метка, центр Москвы.
+const TEST_POINT: [number, number] = [55.751244, 37.618423];
+---
+
+<Layout title="Тест карты — WED Secrets">
+  <main class="wrap">
+    <h1 class="t-h1">Тест: карта с одной меткой</h1>
+    <div id="map" class="map" data-coords={JSON.stringify(TEST_POINT)}></div>
+  </main>
+</Layout>
+
+<style>
+  .wrap {
+    padding: var(--s-6) var(--gutter);
+  }
+
+  .map {
+    margin-top: var(--s-5);
+    width: 100%;
+    height: 480px;
+    border-radius: var(--radius-media);
+    background: var(--surface-dim);
+    overflow: hidden;
+  }
+</style>
+
+<script define:vars={{ apiKey: YANDEX_MAPS_API_KEY }}>
+  const script = document.createElement('script');
+  script.src = `https://api-maps.yandex.ru/2.1/?apikey=${apiKey}&lang=ru_RU`;
+  script.onload = () => {
+    window.ymaps.ready(() => {
+      const el = document.getElementById('map');
+      const [lat, lon] = JSON.parse(el.dataset.coords);
+
+      const map = new window.ymaps.Map('map', {
+        center: [lat, lon],
+        zoom: 12,
+      });
+
+      map.geoObjects.add(
+        new window.ymaps.Placemark([lat, lon], {
+          balloonContent: 'Тестовая площадка',
+        })
+      );
+    });
+  };
+  document.head.appendChild(script);
+</script>
