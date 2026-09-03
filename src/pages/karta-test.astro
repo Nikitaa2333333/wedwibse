@@ -21,24 +21,28 @@ const YANDEX_MAPS_API_KEY = import.meta.env.YANDEX_MAPS_API_KEY;
 // адрес — из карточки площадки (venues.ts).
 const feedVenues = FEED.filter((item): item is FeedVenue => item.kind === 'venue');
 
-// Координат в данных площадок пока нет — берём адрес из карточки и просим
-// геокодер Яндекса найти точку. Когда в схеме появится поле с координатами,
-// геокодирование на клиенте уйдёт: метка будет ставиться сразу по цифрам.
-const POINTS = [riverLoft, forestDew].map((venue) => {
-  const feed = feedVenues.find((item) => item.slug === venue.slug);
+// Координаты берём из данных площадки (contacts.geo) — геокодер в браузере
+// требует своего ключа и запроса на каждую загрузку, поэтому адрес переводим
+// в точку один раз, руками, при заведении карточки. Без geo площадки на карте
+// просто нет.
+const POINTS = [riverLoft, forestDew]
+  .filter((venue) => venue.contacts.geo)
+  .map((venue) => {
+    const feed = feedVenues.find((item) => item.slug === venue.slug);
 
-  return {
-    slug: venue.slug,
-    name: venue.name,
-    address: venue.contacts.address,
-    href: `/moskva/ploshchadki/${venue.slug}/`,
-    price: feed?.avgCheck ?? '',
-    city: feed?.city ?? venue.city,
-    capacity: feed?.capacity ?? '',
-    rating: feed?.rating ?? null,
-    photo: feed?.media[0] ?? venue.hero.image,
-  };
-});
+    return {
+      slug: venue.slug,
+      name: venue.name,
+      coords: [venue.contacts.geo!.lat, venue.contacts.geo!.lon],
+      address: venue.contacts.address,
+      href: `/moskva/ploshchadki/${venue.slug}/`,
+      price: feed?.avgCheck ?? '',
+      city: feed?.city ?? venue.city,
+      capacity: feed?.capacity ?? '',
+      rating: feed?.rating ?? null,
+      photo: feed?.media[0] ?? venue.hero.image,
+    };
+  });
 ---
 
 <Layout title="Тест карты — WED Secrets">
@@ -111,7 +115,7 @@ const POINTS = [riverLoft, forestDew].map((venue) => {
   const script = document.createElement('script');
   script.src = `https://api-maps.yandex.ru/2.1/?apikey=${apiKey}&lang=ru_RU`;
   script.onload = () => {
-    window.ymaps.ready(async () => {
+    window.ymaps.ready(() => {
       const el = document.getElementById('map');
       const points = JSON.parse(el.dataset.points);
 
@@ -119,14 +123,6 @@ const POINTS = [riverLoft, forestDew].map((venue) => {
         center: [55.55, 37.5],
         zoom: 10,
       });
-
-      const located = await Promise.all(
-        points.map(async (point) => {
-          const res = await window.ymaps.geocode(point.address, { results: 1 });
-          const found = res.geoObjects.get(0);
-          return found ? { ...point, coords: found.geometry.getCoordinates() } : null;
-        })
-      );
 
       // Своя метка (.map-pin в global.css) вместо яндексовской капли: капсула
       // с ценой. Разметка — ссылка на карточку: на телефоне это и есть
@@ -141,7 +137,7 @@ const POINTS = [riverLoft, forestDew].map((venue) => {
 
       const marks = new Map();
 
-      located.filter(Boolean).forEach((point) => {
+      points.forEach((point) => {
         const mark = new window.ymaps.Placemark(
           point.coords,
           {

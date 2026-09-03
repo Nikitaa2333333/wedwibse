@@ -90,6 +90,10 @@ export interface Venue {
   contacts: {
     address: string;
     addressNote: string;
+    /** Точка на карте. Геокодируем один раз при заведении карточки и храним
+     *  цифрами: клиентский геокодер требует отдельного ключа и лишнего запроса
+     *  на каждую загрузку. Без geo площадка просто не попадает на карту. */
+    geo?: { lat: number; lon: number };
     phone: string;
     phoneHref: string;
     email: string;
@@ -415,6 +419,7 @@ export const riverLoft: Venue = {
   contacts: {
     address: 'Московская область, городской округ Подольск, посёлок Дубровицы, д. 38',
     addressNote: 'Рядом: усадьба Голицыных, Церковь Знамения 1699 года, слияние Пахры и Десны',
+    geo: { lat: 55.440658, lon: 37.491289 },
     phone: '+7 925 859 22 25',
     phoneHref: 'tel:+79258592225',
     email: 'info@river-loft.ru',
@@ -822,6 +827,7 @@ export const forestDew: Venue = {
     addressNote:
       'Парк бывшей усадьбы: вековые деревья, искусственный водоём, арт-объекты. ' +
       'На той же территории, в 100 метрах, — вторая оранжерея «Из-за любви»',
+    geo: { lat: 55.468076, lon: 37.599354 },
     phone: '+7 993 594 71 24',
     phoneHref: 'tel:+79935947124',
     email: 'info@forestdew.ru',
