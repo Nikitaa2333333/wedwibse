@@ -127,9 +127,14 @@ const apiKey = import.meta.env.YANDEX_MAPS_API_KEY;
 
       // Метка не ссылка: у неё задан iconShape, и клики забирает слой карты —
       // нажатие ловим событием метки ниже.
+      // Подпись метки — название площадки плюс цена: по одной цене метки
+      // неразличимы («от 9 000 ₽» встречается у нескольких площадок), а имя
+      // сразу говорит, куда ведёт тап. Цена остаётся, но вторым планом.
       const PinLayout = ymaps.templateLayoutFactory.createClass(
-        '<span class="map-pin $[properties.pinState]" title="$[properties.pinName]">' +
-          '<span class="map-pin__dot"></span>$[properties.pinPrice]' +
+        '<span class="map-pin $[properties.pinState]" title="$[properties.pinTitle]">' +
+          '<span class="map-pin__dot"></span>' +
+          '<span class="map-pin__name">$[properties.pinName]</span>' +
+          '{% if properties.pinPrice %}<span class="map-pin__price">$[properties.pinPrice]</span>{% endif %}' +
           '</span>'
       );
 
@@ -143,14 +148,16 @@ const apiKey = import.meta.env.YANDEX_MAPS_API_KEY;
             point.coords,
             {
               pinName: point.name,
-              pinPrice: point.price || point.name,
+              pinPrice: point.price,
+              pinTitle: point.price ? `${point.name} — ${point.price}` : point.name,
               pinState: '',
             },
             {
               iconLayout: PinLayout,
               // активная область: капсула стоит над точкой, ширина зависит
-              // от подписи — берём с запасом
-              iconShape: { type: 'Rectangle', coordinates: [[-110, -46], [110, 2]] },
+              // от подписи — берём с запасом (длинное имя обрезается в CSS,
+              // так что шире этого капсула не станет)
+              iconShape: { type: 'Rectangle', coordinates: [[-130, -46], [130, 2]] },
               hasBalloon: false,
             }
           )
