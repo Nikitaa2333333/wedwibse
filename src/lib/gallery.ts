@@ -129,7 +129,25 @@ export interface ArticleTile {
   height: number;
 }
 
-export type Tile = ({ kind: 'photo' } & Pin) | ArticleTile;
+/** Перк (вход в раздел «Площадки»/«Специалисты») — плитка в потоке доски,
+ *  той же формы, что и остальные: главной странице нужен только сам тип,
+ *  данные и разметка приходят оттуда (PhotoBoard.astro). */
+export interface PerkTile {
+  kind: 'perk';
+  /** фото-плашка (площадки) или бумажная с колесом категорий (специалисты) */
+  variant: 'photo' | 'light';
+  name: string;
+  tag: string;
+  imgs: string[];
+  alt: string;
+  href: string;
+  words?: string[];
+  ratio: string;
+  index: number;
+  height: number;
+}
+
+export type Tile = ({ kind: 'photo' } & Pin) | ArticleTile | PerkTile;
 
 /** через сколько фото-плиток в поток вклинивается статья */
 const ARTICLE_EVERY = 5;

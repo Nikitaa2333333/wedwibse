@@ -21,13 +21,12 @@
 // плашка (.theme-dark) той же пропорции, что кадры вокруг. Блог человек
 // встречает, пока листает фотографии, а не идёт за ним отдельно.
 //
-// ПЕРКИ (площадки/специалисты — входы в разделы) идут первой строкой
-// доски, а не отдельным экраном перед ней: раньше это были две плашки
-// почти в полный экран каждая, и до самой ленты приходилось пролистать
-// два «пустых» экрана. Тут они — часть доски (тот же --pin-gap, без
-// своих полей), просто крупнее и на всю ширину, а не колонка потока.
+// ПЕРКИ (площадки/специалисты — входы в разделы) вписаны прямо в поток
+// доски — две первые плитки, той же ширины и пропорции, что и карточка
+// статьи (--card-ratio 2:3): обычная колонка потока, не полоса и не
+// отдельная строка. Выделяет их только стиль (фото/бумага), не размер.
 import PhotoRail from './PhotoRail.astro';
-import { collectTiles, layoutColumns } from '../lib/gallery';
+import { collectTiles, layoutColumns, type Tile } from '../lib/gallery';
 
 interface Perk {
   kind: 'photo' | 'light';
@@ -45,61 +44,38 @@ interface Props {
 
 const { perks = [] } = Astro.props;
 
-const columns = layoutColumns(collectTiles(), 2);
+// Та же пропорция, что у карточки статьи, — перк встаёт в ритм доски
+// как ещё один текстовый пин, не выламывается шириной или высотой.
+const PERK_RATIO = 2 / 3;
+
+const perkTiles: Tile[] = perks.map((perk) => ({
+  ...perk,
+  kind: 'perk' as const,
+  variant: perk.kind,
+  ratio: `${PERK_RATIO} / 1`,
+  index: 0,
+  height: 1 / PERK_RATIO,
+}));
+
+const columns = layoutColumns(
+  [...perkTiles, ...collectTiles()].map((tile, index) => ({ ...tile, index })),
+  2
+);
 
 const TILE_SIZES =
   '(min-width: 1440px) 19vw, (min-width: 1024px) 24vw, (min-width: 640px) 32vw, 48vw';
-
-const PERK_SIZES = '(min-width: 640px) 50vw, 100vw';
 ---
 
 <!-- Без data-reveal и без параллакса намеренно: доска листается как
      обычная страница, все кадры на месте сразу, ничего не проявляется. -->
 <section class="board" aria-label="Фотографии площадок каталога">
-  {perks.length > 0 && (
-    <div class="board__perks">
-      {perks.map((perk) =>
-        perk.kind === 'photo' ? (
-          <a class="perk perk--photo" href={perk.href}>
-            <PhotoRail photos={perk.imgs} alt={perk.alt} sizes={PERK_SIZES} widths={[560, 900, 1400]} />
-            <span class="perk__overlay">
-              <span class="perk__name">{perk.name}</span>
-              <span class="perk__tag" set:html={perk.tag} />
-            </span>
-          </a>
-        ) : (
-          <a class="perk perk--light" href={perk.href}>
-            <PhotoRail photos={perk.imgs} alt={perk.alt} sizes={PERK_SIZES} widths={[560, 900, 1400]} />
-            <span class="perk__scrim" aria-hidden="true"></span>
-
-            <span class="perk__body">
-              <span class="perk__top">
-                <span class="perk__tag">{perk.tag}</span>
-                <span class="perk__arrow">↗</span>
-              </span>
-              <span class="perk__name">{perk.name}</span>
-            </span>
-
-            <span class="perk__list" aria-hidden="true">
-              <span class="perk__list-track">
-                {(perk.words ?? []).concat(perk.words ?? []).map((word) => (
-                  <span class="perk__word">{word}</span>
-                ))}
-              </span>
-            </span>
-          </a>
-        )
-      )}
-    </div>
-  )}
-
   <div class="board__cols" data-board>
     {
       columns.map((col) => (
         <div class="board__col">
           {col.map((tile) => (
             <article
-              class:list={['pin', tile.kind === 'article' && 'pin--article']}
+              class:list={['pin', (tile.kind === 'article' || tile.kind === 'perk') && `pin--${tile.kind}`]}
               style={`--card-ratio:${tile.ratio};`}
               data-i={tile.index}
               data-h={tile.height.toFixed(3)}
@@ -110,6 +86,37 @@ const PERK_SIZES = '(min-width: 640px) 50vw, 100vw';
                   <h3 class="note__title">{tile.title}</h3>
                   <span class="pill pill--sm note__cta">Читать</span>
                 </a>
+              ) : tile.kind === 'perk' ? (
+                tile.variant === 'photo' ? (
+                  <a class="perk perk--photo" href={tile.href}>
+                    <PhotoRail photos={tile.imgs} alt={tile.alt} sizes={TILE_SIZES} widths={[360, 560, 800]} />
+                    <span class="perk__overlay">
+                      <span class="perk__name">{tile.name}</span>
+                      <span class="perk__tag" set:html={tile.tag} />
+                    </span>
+                  </a>
+                ) : (
+                  <a class="perk perk--light" href={tile.href}>
+                    <PhotoRail photos={tile.imgs} alt={tile.alt} sizes={TILE_SIZES} widths={[360, 560, 800]} />
+                    <span class="perk__scrim" aria-hidden="true"></span>
+
+                    <span class="perk__body">
+                      <span class="perk__top">
+                        <span class="perk__tag">{tile.tag}</span>
+                        <span class="perk__arrow">↗</span>
+                      </span>
+                      <span class="perk__name">{tile.name}</span>
+                    </span>
+
+                    <span class="perk__list" aria-hidden="true">
+                      <span class="perk__list-track">
+                        {(tile.words ?? []).concat(tile.words ?? []).map((word: string) => (
+                          <span class="perk__word">{word}</span>
+                        ))}
+                      </span>
+                    </span>
+                  </a>
+                )
               ) : (
                 <>
                   <PhotoRail
@@ -156,29 +163,19 @@ const PERK_SIZES = '(min-width: 640px) 50vw, 100vw';
      нём, и градиент только гасит низ фотографии. */
   .board :global(.veil) { display: none; }
 
-  /* ============ ПЕРКИ: строка входов в разделы, первой в доске ============
-     Раньше — отдельная секция почти в полный экран каждая плашка (до ленты
-     приходилось пролистать два «пустых» экрана). Тут это первая строка
-     самой доски: тот же --pin-gap, без своих полей, но заметно крупнее
-     и шире соседних кадров потока — контраст даёт не высота, а ширина
-     (на телефоне плашка на весь пролёт доски, а не одна колонка). */
-  .board__perks {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--pin-gap);
-  }
-
-  @media (min-width: 640px) {
-    .board__perks { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  }
+  /* ============ ПЕРКИ: обычная плитка потока, как у статьи ============
+     Вход в «Площадки»/«Специалисты» — такая же колонка ленты, как кадр
+     или заметка блога (--card-ratio 2:3), просто со своим стилем вместо
+     фото или инверсии. Ширину и высоту у соседних плиток не отбирает. */
+  .pin--perk { container-type: inline-size; }
 
   .perk {
     position: relative;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    aspect-ratio: 4 / 3;
-    padding: var(--s-5);
+    aspect-ratio: var(--card-ratio);
+    padding: var(--s-4);
     background: var(--surface);
     color: var(--ink);
     text-decoration: none;
@@ -207,7 +204,7 @@ const PERK_SIZES = '(min-width: 640px) 50vw, 100vw';
   }
 
   .perk__name {
-    font-size: clamp(24px, 4vw, 36px);
+    font-size: clamp(17px, 11cqi, 28px);
     font-weight: var(--w-head);
     line-height: 1.05;
     letter-spacing: -0.015em;
@@ -230,7 +227,7 @@ const PERK_SIZES = '(min-width: 640px) 50vw, 100vw';
   .perk__overlay {
     position: relative;
     margin-top: auto;
-    padding: var(--s-5);
+    padding: var(--s-4);
     display: flex;
     flex-direction: column;
     gap: var(--s-2);
@@ -302,7 +299,7 @@ const PERK_SIZES = '(min-width: 640px) 50vw, 100vw';
     height: 1.15em;
     display: flex;
     align-items: center;
-    font-size: clamp(22px, 3.2vw, 30px);
+    font-size: clamp(13px, 9cqi, 22px);
     font-weight: var(--w-head);
     letter-spacing: -0.02em;
     white-space: nowrap;
@@ -317,11 +314,6 @@ const PERK_SIZES = '(min-width: 640px) 50vw, 100vw';
     .perk { transition: transform var(--dur-fast) var(--ease-out); }
     .perk__arrow { transition: transform var(--dur-fast) var(--ease-out); }
     .perk:hover .perk__arrow { transform: translate(3px, -3px); }
-  }
-
-  @media (min-width: 1024px) {
-    .perk { padding: var(--s-6); }
-    .perk--photo .perk__overlay { padding: var(--s-6); }
   }
 
   /* --board-cols — число колонок на брейкпоинте; его же читает скрипт,
