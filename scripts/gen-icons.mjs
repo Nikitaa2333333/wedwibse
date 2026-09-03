@@ -5,8 +5,9 @@
 // мегабайты и лежат в devDependencies — прод-сборка от них не зависит,
 // в репозитории живёт только десяток нужных контуров.
 //
-// Набор — Solar (стиль Bold, с заливкой). Меняем иконку или стиль —
-// правим таблицу ниже и перегоняем скрипт.
+// Набор — Solar. Навигация (нижний док) — стиль Linear, контурный;
+// служебные иконки (закрыть, каретки, аккаунт) — Bold. Меняем иконку
+// или стиль — правим таблицу ниже и перегоняем скрипт.
 import { createRequire } from 'node:module';
 import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -19,19 +20,17 @@ const SET = 'solar';
 
 // ключ в проекте -> имя иконки в наборе
 const MAP = {
-  home: 'home-2-bold',
-  venue: 'map-point-bold',
-  vendors: 'users-group-rounded-bold',
-  heart: 'heart-bold',
+  // нижний док — контурные
+  home: 'home-2-linear',
+  venue: 'map-point-linear',
+  vendors: 'users-group-rounded-linear',
+  heart: 'heart-linear',
   // контурное сердце: состояние «не в избранном» у кнопки на фото
   heartOutline: 'heart-linear',
-  chat: 'chat-round-bold',
   account: 'user-bold',
   caretDown: 'alt-arrow-down-bold',
   arrowLeft: 'alt-arrow-left-bold',
   close: 'close-bold',
-  // слайдеры-«тюнинг»: кнопка, открывающая шторку фильтров каталога
-  tune: 'tuning-2-bold',
 };
 
 const data = require(`@iconify-json/${SET}/icons.json`);

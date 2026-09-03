@@ -1,7 +1,7 @@
 ---
 // ПОЛОСА НАД КАТАЛОГОМ (реф. Яндекс Путешествия): один ряд чипов с
 // горизонтальным скроллом. Слева направо:
-//   1. иконка-слайдеры — открывает шторку FilterSheet целиком (там же
+//   1. чип «Фильтры» — открывает шторку FilterSheet целиком (там же
 //      живут все категории — полоса их не повторяет);
 //   2. сортировка — чип с кареткой, открывает свою шторку со списком.
 // Любая настройка открывается шторкой снизу — никаких выпадающих списков.
@@ -27,8 +27,9 @@ const { sortable = true } = Astro.props;
 
 <div class="fbar">
   <div class="fbar__scroll">
-    <button class="chip chip--icon" type="button" data-sheet-open="filters" aria-label="Все фильтры">
-      <Icon name="tune" />
+    <!-- Словом, не иконкой-«тюнингом»: слайдеры без подписи не читались -->
+    <button class="chip" type="button" data-sheet-open="filters">
+      Фильтры
       <span class="chip__badge" data-filters-badge hidden>0</span>
     </button>
 

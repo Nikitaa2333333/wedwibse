@@ -1,18 +1,17 @@
 ---
-// Единое нижнее меню сайта: одно и то же на главной и на страницах площадок.
-// От планшета — только типографика, без иконок: язык сайта строится на
-// шрифте. На телефоне пять подписей в строку не живут (проверено: 16px
-// не влезали, 14px читались мелко и тесно) — там док становится таб-баром
-// приложения: иконка и подпись под ней, пять равных ячеек.
+// Единое нижнее меню сайта: одно и то же на главной и на страницах каталога.
+// Обычный фиксированный таб-бар во всю ширину, как шапка, только снизу:
+// без капсулы, без сжатия при скролле — всегда на месте, всегда одинаковый.
+// Четыре раздела; «Чат» убран до появления самого чата.
 import Icon from './Icon.astro';
 
 interface Props {
-  active?: 'feed' | 'venues' | 'vendors' | 'saved' | 'chat';
+  active?: 'feed' | 'venues' | 'vendors' | 'saved';
 }
 
 const { active } = Astro.props;
 
-// icon — ключ из реестра src/lib/icons.ts (набор Solar Bold).
+// icon — ключ из реестра src/lib/icons.ts (Solar Linear, контурные).
 const items = [
   {
     key: 'feed',
@@ -41,12 +40,6 @@ const items = [
     label: 'Избранное',
     icon: 'heart',
   },
-  {
-    key: 'chat',
-    href: '#',
-    label: 'Чат',
-    icon: 'chat',
-  },
 ] as const;
 ---
 
@@ -57,123 +50,80 @@ const items = [
       href={it.href}
       aria-current={it.key === active ? 'page' : undefined}
     >
-      <Icon name={it.icon} class="dock__icon" />
+      <span class="dock__icon-wrap">
+        <Icon name={it.icon} class="dock__icon" />
+        {it.key === 'saved' && (
+          <span class="dock__badge" data-fav-badge aria-hidden="true" hidden>0</span>
+        )}
+      </span>
       <span class="dock__label">{it.label}</span>
-      {it.key === 'saved' && (
-        <span class="dock__badge" data-fav-badge aria-hidden="true" hidden>0</span>
-      )}
     </a>
   ))}
 </nav>
 
 <style>
-  /* ============ ТЕЛЕФОН: ТАБ-БАР ============
-     База — мобильная. Капсула во всю ширину минус поля, пять равных
-     ячеек, в каждой иконка и подпись под ней. Активная ячейка —
-     та же чернильная заливка, что у пилюли на ПК. */
+  /* ============ ТАБ-БАР ============
+     Во всю ширину, прибит к низу, отделён от страницы волосяной линией —
+     зеркально шапке. Фон — бумага (--bg), не плашка: бар часть страницы,
+     а не парящий элемент. Четыре равные ячейки: иконка, под ней подпись.
+     Активный раздел — чернила, остальные приглушены прозрачностью
+     (правило проекта: гасим opacity, не отдельным цветом). */
   .dock {
     position: fixed;
-    bottom: calc(var(--safe-b) + var(--s-4));
-    /* Центрируем и задаём ширину явно (а не парой left/right): из этой
-       геометрии док умеет стягиваться в компактную капсулу при скролле. */
-    left: 50%;
-    transform: translateX(-50%);
-    width: calc(100% - var(--s-3) * 2);
+    inset: auto 0 0 0;
     z-index: var(--z-nav);
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    align-items: stretch;
-    padding: 5px;
-    border-radius: var(--radius-pill);
-    /* База — непрозрачная капсула. Стекло ниже, и только там, где оно
-       по карману: backdrop-filter пересчитывается каждый кадр скролла. */
-    background: var(--surface);
-    border: 1px solid color-mix(in srgb, var(--ink) 8%, transparent);
-    box-shadow: var(--shadow-float);
-    /* Быстрый токен намеренно: --dur-base (0.8s) — темп появления
-       блоков, док на таком времени тянулся бы за скроллом. */
-    transition: width var(--dur-fast) var(--ease-out);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    padding: 6px 0 calc(6px + var(--safe-b));
+    background: var(--bg);
+    border-top: 1px solid var(--hairline);
   }
 
-  /* ============ СЖАТИЕ ПРИ СКРОЛЛЕ ============
-     Пока читают ленту, док уходит с дороги: подписи схлопываются,
-     капсула стягивается к центру — остаются пять иконок. Скролл вверх
-     или возврат к началу страницы разворачивает его обратно (класс
-     ставит скрипт внизу файла). Ширина капсулы — единственное, что
-     меняется у самого дока: у него нет соседей в потоке, пересчёт
-     раскладки не выходит за его границы. */
-  .dock.is-compact {
-    width: min(248px, calc(100% - var(--s-3) * 2));
-  }
-
-  /* Стекла тут нет намеренно. Док висит поверх страницы всё время, и
-     backdrop-filter на нём пересчитывается каждый кадр скролла — на
-     длинной главной с коллажом это заметно тормозит. Стеклянными
-     оставлены только панели, которые всплывают по клику (ScopePicker). */
-
-  /* Ячейка — grid из двух строк: иконка и подпись. Строка подписи
-     задана в fr именно ради сжатия: 1fr → 0fr анимируется, в отличие
-     от height: auto → 0, и подпись уезжает без скачка. */
   .dock__item {
-    position: relative;
-    display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
-    justify-items: center;
-    align-content: center;
-    row-gap: 3px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
     min-width: 0;
-    padding: 7px 2px 6px;
+    padding: 4px 2px 2px;
     font-size: var(--fs-micro);
     font-weight: var(--w-medium);
     line-height: 1;
     color: var(--ink);
     text-decoration: none;
-    border-radius: var(--radius-pill);
     white-space: nowrap;
-    transition: background var(--dur-fast) var(--ease-out),
-                color var(--dur-fast) var(--ease-out),
-                grid-template-rows var(--dur-fast) var(--ease-out),
-                row-gap var(--dur-fast) var(--ease-out);
+    opacity: 0.45;
+    transition: opacity var(--dur-fast) var(--ease-out);
   }
 
-  .dock.is-compact .dock__item {
-    grid-template-rows: auto minmax(0, 0fr);
-    row-gap: 0;
+  .dock__item.is-active { opacity: 1; }
+
+  .dock__icon-wrap {
+    position: relative;
+    display: block;
   }
 
   /* :global — иконку рисует Icon.astro, scoped-селектор этого файла
      до неё не достаёт (см. комментарий в Icon.astro). */
   :global(.dock__icon) {
     display: block;
-    width: 22px;
-    height: 22px;
-    flex: none;
+    width: 24px;
+    height: 24px;
   }
 
-  /* Подпись под иконкой: «Специалисты» в ячейке ~68px иначе не влезает.
-     min-height: 0 — иначе строка 0fr не даст тексту сжаться. */
+  /* Подпись под иконкой: «Специалисты» в ячейке ~90px влезает в микро-кегле */
   .dock__label {
     max-width: 100%;
-    min-height: 0;
     overflow: hidden;
     text-overflow: ellipsis;
-    transition: opacity var(--dur-fast) var(--ease-out);
   }
 
-  .dock.is-compact .dock__label { opacity: 0; }
-
-  .dock__item.is-active {
-    background: var(--ink);
-    color: var(--surface);
-  }
-
-  /* Счётчик избранного: обводка текущим цветом — читается и в активном,
-     и в обычном состоянии пилюли без отдельной палитры. На телефоне
-     сидит у правого плеча иконки. */
+  /* Счётчик избранного на плече иконки. Внутри приглушённой ячейки
+     он гаснет вместе с ней — иначе кричит громче активного раздела. */
   .dock__badge {
     position: absolute;
-    top: 3px;
-    left: calc(50% + 6px);
+    top: -5px;
+    left: calc(100% - 8px);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -182,7 +132,7 @@ const items = [
     padding: 0 4px;
     border: 1px solid currentColor;
     border-radius: var(--radius-pill);
-    background: var(--surface);
+    background: var(--bg);
     color: var(--ink);
     font-size: var(--fs-caption);
     font-weight: var(--w-medium);
@@ -191,49 +141,31 @@ const items = [
 
   .dock__badge[hidden] { display: none; }
 
-  /* ============ ОТ ПЛАНШЕТА: ТИПОГРАФИЧЕСКАЯ КАПСУЛА ============
-     Иконки уходят, остаются подписи в строку — капсула по центру,
-     шириной по содержимому. */
+  /* ============ ОТ ПЛАНШЕТА ============
+     Та же полоса, ячейки собираются к центру: иконка и подпись в строку. */
   @media (min-width: 640px) {
-    /* Здесь док и так капсула по содержимому, а подписи — единственное,
-       что в нём есть: сжимать нечего, состояние is-compact гасим. */
-    .dock,
-    .dock.is-compact {
-      bottom: calc(var(--safe-b) + var(--s-5));
+    .dock {
       display: flex;
-      align-items: center;
-      width: auto;
-      max-width: calc(100vw - var(--s-5) * 2);
+      justify-content: center;
+      gap: var(--s-6);
+      padding: 10px 0 calc(10px + var(--safe-b));
     }
 
-    .dock__item,
-    .dock.is-compact .dock__item {
-      position: static;
-      display: flex;
+    .dock__item {
       flex-direction: row;
-      align-items: center;
-      gap: 6px;
-      row-gap: 6px;
-      padding: 10px clamp(14px, 2vw, 22px);
+      gap: 8px;
+      padding: 4px 6px;
       font-size: var(--fs-small);
       line-height: var(--lh-body);
     }
 
-    .dock.is-compact .dock__label { opacity: 1; }
-
-    :global(.dock__icon) { display: none; }
+    :global(.dock__icon) { width: 20px; height: 20px; }
 
     .dock__label { overflow: visible; }
-
-    .dock__badge {
-      position: static;
-      background: none;
-      color: inherit;
-    }
   }
 
   @media (hover: hover) {
-    .dock__item:not(.is-active):hover { background: color-mix(in srgb, var(--ink) 6%, transparent); }
+    .dock__item:not(.is-active):hover { opacity: 0.8; }
   }
 </style>
 
@@ -252,48 +184,4 @@ const items = [
   updateBadge();
   window.addEventListener(CHANGE_EVENT, updateBadge);
   window.addEventListener('storage', (e) => { if (e.key === STORAGE_KEY) updateBadge(); });
-
-  // ============ СЖАТИЕ ДОКА ПРИ СКРОЛЛЕ ============
-  // Читают ленту — док стягивается в капсулу с иконками; ведут страницу
-  // вверх или вернулись к началу — разворачивается с подписями.
-  // Направление, а не «просто скролл»: иначе док схлопывался бы и при
-  // возврате наверх, когда до него как раз тянется рука.
-  const dock = document.querySelector<HTMLElement>('.dock');
-
-  if (dock) {
-    // TOP_ZONE — у начала страницы док всегда развёрнут: там он часть
-    // первого экрана. THRESHOLD гасит дрожание пальца и отскок резинки.
-    const TOP_ZONE = 40;
-    const THRESHOLD = 6;
-
-    let lastY = window.scrollY;
-    let ticking = false;
-
-    function sync() {
-      const y = window.scrollY;
-
-      if (y <= TOP_ZONE) {
-        dock!.classList.remove('is-compact');
-      } else if (y > lastY + THRESHOLD) {
-        dock!.classList.add('is-compact');
-      } else if (y < lastY - THRESHOLD) {
-        dock!.classList.remove('is-compact');
-      }
-
-      // Порог считаем от последнего учтённого положения, иначе медленный
-      // скролл никогда его не наберёт.
-      if (Math.abs(y - lastY) > THRESHOLD) lastY = y;
-      ticking = false;
-    }
-
-    window.addEventListener(
-      'scroll',
-      () => {
-        if (ticking) return;
-        ticking = true;
-        requestAnimationFrame(sync);
-      },
-      { passive: true },
-    );
-  }
 </script>

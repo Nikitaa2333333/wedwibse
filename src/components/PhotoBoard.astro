@@ -138,7 +138,9 @@ const PERK_SIZES = '(min-width: 640px) 50vw, 100vw';
 <style>
   .board {
     background: var(--bg);
-    padding-block: var(--s-6) var(--section-gap);
+    /* Сверху ноль: отбивку от заголовка даёт сам герой (index.astro),
+       плитки начинаются сразу под подсказкой. */
+    padding-block: 0 var(--section-gap);
     display: flex;
     flex-direction: column;
     gap: var(--pin-gap);

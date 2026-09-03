@@ -51,10 +51,12 @@ const options = [{ value: '', label: ALL_LABEL }, ...cities.options];
   </div>
 
   <div class="scope__tools">
-    <button class="pill pill--sm scope__city" type="button" data-sheet-open="scope" aria-controls="scope-sheet" aria-expanded="false">
+    <!-- Тот же .chip, что у сортировки и «Фильтры» в полосе ниже: локация —
+         такой же выбор-настройка, а не действие, отдельная обводка ей не нужна -->
+    <button class="chip scope__city" type="button" data-sheet-open="scope" aria-controls="scope-sheet" aria-expanded="false">
       <Icon name="venue" class="scope__pin" />
       <span data-scope-city-label>{ALL_LABEL}</span>
-      <span class="scope__city-caret" aria-hidden="true">▾</span>
+      <Icon name="caretDown" class="chip__caret" />
     </button>
     <slot name="actions" />
   </div>
@@ -120,14 +122,9 @@ const options = [{ value: '', label: ALL_LABEL }, ...cities.options];
     .scope__tools { flex: 0 0 auto; margin-left: auto; }
   }
 
-  .scope__city {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  :global(.scope__pin) { width: 13px; height: 13px; flex: none; }
-  .scope__city-caret { font-size: 9px; }
+  /* Селектор с .chip впереди: у Icon.astro свой scoped-размер 24px,
+     перебить его можно только большей специфичностью (как .chip__caret). */
+  .scope__city :global(svg.scope__pin) { width: 16px; height: 16px; flex: none; }
 
   /* ПК: локация выбирается в левой колонке (группа «Локация» фильтров),
      шторка не нужна — чип прячем. */

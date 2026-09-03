@@ -173,19 +173,22 @@ const favImg = new Map(
                 </PhotoRail>
               )}
 
-              <!-- Подпись плотная, как у маркетплейса: цена, имя с рейтингом,
-                   город. Только то, что решает при выборе площадки — тип
-                   и вместимость из подписи убраны, фото без затемнения и
-                   без цены поверх кадра: цена только здесь, одним местом. -->
+              <!-- Подпись по принципу близости: имя и город — одно целое
+                   (город вплотную под именем), рейтинг справа на строке имени,
+                   цена крупно под ними. Без воздуха между строками: карточка
+                   читается одним блоком. Тип и вместимость убраны — при
+                   выборе не решают; цена только здесь, поверх фото её нет. -->
               <div class="vcard__body">
-                <p class="vcard__price">{item.avgCheck}</p>
                 <div class="vcard__top">
-                  <h2 class="vcard__name">
-                    <a href={`/moskva/ploshchadki/${item.slug}/`}>{item.name}</a>
-                  </h2>
+                  <div class="vcard__title">
+                    <h2 class="vcard__name">
+                      <a href={`/moskva/ploshchadki/${item.slug}/`}>{item.name}</a>
+                    </h2>
+                    <p class="vcard__meta">{item.city}</p>
+                  </div>
                   <span class="vcard__rate" aria-label={`Рейтинг ${item.rating}`}>★ {item.rating.toFixed(1)}</span>
                 </div>
-                <p class="vcard__meta t-small">{item.city}</p>
+                <p class="vcard__price">{item.avgCheck}</p>
               </div>
             </article>
           );
@@ -304,21 +307,21 @@ const favImg = new Map(
   .vcard__body {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 0;
     padding-inline: var(--catalog-pad);
   }
 
-  .vcard__price {
-    font-size: var(--fs-body);
-    font-weight: var(--w-medium);
-  }
-
+  /* Имя + город слева, рейтинг справа на строке имени. Рейтинг сидит
+     по первой строке (flex-start), а не по нижней линии: при переносе
+     имени на две строки он не уезжает вниз к городу. */
   .vcard__top {
     display: flex;
-    align-items: baseline;
+    align-items: flex-start;
     justify-content: space-between;
     gap: var(--s-3);
   }
+
+  .vcard__title { min-width: 0; }
 
   /* На телефоне имя в кегле корпуса: h3 (21px) в колонке 190px ломал
      «Усадьба Дубровицы» на две строки и раздувал подпись. */
@@ -330,18 +333,33 @@ const favImg = new Map(
 
   .vcard__name a { text-decoration: none; }
 
-  .vcard__rate {
+  /* Город вплотную под именем — одна смысловая группа, зазор нулевой */
+  .vcard__meta {
     font-size: var(--fs-caption);
-    font-weight: var(--w-medium);
-    flex-shrink: 0;
+    line-height: 1.3;
   }
 
-  .vcard__meta { font-size: var(--fs-caption); }
+  .vcard__rate {
+    flex-shrink: 0;
+    padding-top: 0.15em; /* оптически на строке имени, кегль у него меньше */
+    font-size: var(--fs-caption);
+    font-weight: var(--w-medium);
+  }
+
+  /* Цена — крупно, но с минимальным отрывом от группы «имя + город» */
+  .vcard__price {
+    margin-top: 4px;
+    font-size: var(--fs-h3);
+    font-weight: var(--w-head);
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+  }
 
   @media (min-width: 640px) {
     .vcard__name { font-size: var(--fs-h3); line-height: 1.15; }
-    .vcard__rate { font-size: var(--fs-small); }
     .vcard__meta { font-size: var(--fs-small); }
+    .vcard__rate { font-size: var(--fs-small); padding-top: 0.2em; }
+    .vcard__price { font-size: var(--fs-h2); }
   }
 
   /* Сердце на фото: без подложек и обводок, тень отделяет от кадра */
