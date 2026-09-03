@@ -1,12 +1,9 @@
 ---
 // ПОЛОСА НАД КАТАЛОГОМ (реф. Яндекс Путешествия): один ряд чипов с
 // горизонтальным скроллом. Слева направо:
-//   1. иконка-слайдеры — открывает шторку FilterSheet целиком;
-//   2. сортировка — чип с кареткой, открывает свою шторку со списком;
-//   3. быстрые группы (FilterGroup.quick) — «Цена ▾»: открывают шторку
-//      фильтров, прокрученную к своей группе;
-//   4. популярные пункты (FilterOption.popular) — чипы-переключатели,
-//      это те же чекбоксы шторки, только вынесенные наружу.
+//   1. иконка-слайдеры — открывает шторку FilterSheet целиком (там же
+//      живут все категории — полоса их не повторяет);
+//   2. сортировка — чип с кареткой, открывает свою шторку со списком.
 // Любая настройка открывается шторкой снизу — никаких выпадающих списков.
 // На ПК (от 1024px) полосы нет вовсе: все настройки, включая сортировку,
 // живут в левой колонке (FilterSheet в режиме .sheet--dock).
@@ -18,25 +15,14 @@ import { SORTS } from '../lib/sort';
 import Icon from './Icon.astro';
 
 interface Props {
-  groups: FilterGroup[];
+  /** оставлен для совместимости вызовов страниц каталога, полосой не используется */
+  groups?: FilterGroup[];
   counts?: FilterCounts;
   /** есть ли что сортировать — у категорий-заглушек карточек нет */
   sortable?: boolean;
 }
 
-const { groups, counts = {}, sortable = true } = Astro.props;
-
-const quick = groups.filter((g) => g.quick);
-const popular = groups.flatMap((g) =>
-  g.options
-    .filter((o) => o.popular)
-    .map((o) => ({
-      key: g.key,
-      value: o.value,
-      label: typeof o.popular === 'string' ? o.popular : o.label,
-      count: counts[g.key]?.[o.value],
-    }))
-);
+const { sortable = true } = Astro.props;
 ---
 
 <div class="fbar">
@@ -52,20 +38,6 @@ const popular = groups.flatMap((g) =>
         <Icon name="caretDown" class="chip__caret" />
       </button>
     )}
-
-    {quick.map((g) => (
-      <button class="chip" type="button" data-sheet-open="filters" data-sheet-group={g.key} data-quick-group={g.key}>
-        {g.label}
-        <Icon name="caretDown" class="chip__caret" />
-      </button>
-    ))}
-
-    {popular.map((p) => (
-      <button class="chip" type="button" data-chip-proxy data-chip-key={p.key} data-chip-value={p.value} aria-pressed="false">
-        {p.label}
-        {p.count !== undefined && <span class="chip__count">{p.count}</span>}
-      </button>
-    ))}
   </div>
 
   {sortable && (

@@ -85,7 +85,6 @@ const popular = groups.flatMap((g) =>
             {popular.map((p) => (
               <button class="chip" type="button" data-chip-proxy data-chip-key={p.key} data-chip-value={p.value} aria-pressed="false">
                 {p.label}
-                {p.count !== undefined && <span class="chip__count">{p.count}</span>}
               </button>
             ))}
           </div>
@@ -106,12 +105,7 @@ const popular = groups.flatMap((g) =>
                   data-filter-key={group.key}
                   data-filter-single={group.type === 'single' ? '' : undefined}
                 />
-                <span class="chip">
-                  {opt.label}
-                  {counts[group.key]?.[opt.value] !== undefined && (
-                    <span class="chip__count">{counts[group.key][opt.value]}</span>
-                  )}
-                </span>
+                <span class="chip">{opt.label}</span>
               </label>
             ))}
           </div>

@@ -62,7 +62,7 @@ const counts = countOptions(VENUE_FILTERS, venues.map(filtersOf));
 
 // Кадр для снимка в избранном — уже пережатый URL, не путь из данных
 const favImg = new Map(
-  await Promise.all(venues.map(async (v) => [v.slug, await favoriteImage(v.media[0])] as const))
+  await Promise.all(venues.map(async (v) => [v.name, await favoriteImage(v.media[0])] as const))
 );
 ---
 
@@ -124,10 +124,10 @@ const favImg = new Map(
             cat: 'venue',
             catLabel: 'Площадки',
             name: item.name,
-            meta: `${item.type} · ${item.city}`,
+            meta: item.city,
             price: item.avgCheck,
             rating: item.rating,
-            img: favImg.get(item.slug),
+            img: favImg.get(item.name),
             href: `/moskva/ploshchadki/${item.slug}/`,
           });
 
@@ -155,12 +155,6 @@ const favImg = new Map(
                     ))}
                   </div>
 
-                  <div class="veil" aria-hidden="true"></div>
-
-                  <div class="vcard__tags">
-                    <span class="photo-tag">{item.avgCheck}</span>
-                  </div>
-
                   <button class="save" type="button" data-save={saveData} aria-pressed="false" aria-label="В избранное">
                     <Icon name="heartOutline" />
                   </button>
@@ -173,10 +167,6 @@ const favImg = new Map(
                   sizes={sizes}
                   widths={cardVariant === 'vcard--hero' ? [640, 1000, 1600, 2000] : [360, 560, 800, 1100]}
                 >
-                  <div class="vcard__tags">
-                    <span class="photo-tag">{item.avgCheck}</span>
-                  </div>
-
                   <button class="save" type="button" data-save={saveData} aria-pressed="false" aria-label="В избранное">
                     <Icon name="heartOutline" />
                   </button>
@@ -184,9 +174,9 @@ const favImg = new Map(
               )}
 
               <!-- Подпись плотная, как у маркетплейса: цена, имя с рейтингом,
-                   строка «тип · город · вместимость». Число отзывов ушло —
-                   для выбора площадки оно не решает. Цена на телефоне живёт
-                   здесь, на ПК — пилюлей на кадре (см. стили .vcard__price). -->
+                   город. Только то, что решает при выборе площадки — тип
+                   и вместимость из подписи убраны, фото без затемнения и
+                   без цены поверх кадра: цена только здесь, одним местом. -->
               <div class="vcard__body">
                 <p class="vcard__price">{item.avgCheck}</p>
                 <div class="vcard__top">
@@ -195,7 +185,7 @@ const favImg = new Map(
                   </h2>
                   <span class="vcard__rate" aria-label={`Рейтинг ${item.rating}`}>★ {item.rating.toFixed(1)}</span>
                 </div>
-                <p class="vcard__meta t-small">{item.type} · {item.city} · {item.capacity}</p>
+                <p class="vcard__meta t-small">{item.city}</p>
               </div>
             </article>
           );
@@ -282,6 +272,11 @@ const favImg = new Map(
 
   .vcard__media { position: relative; }
 
+  /* Без тёмного градиента снизу — цена ушла в подпись под кадром,
+     на самом фото остаётся только сердце (у него своя тень, .veil
+     ему не нужен). */
+  .vcard :global(.veil) { display: none; }
+
   /* Дуо-карточка: два кадра видны сразу, без свайпа. Пропорция и зазор —
      те же ручки каталога, что у остальных карточек ряда */
   .vcard__strip {
@@ -299,19 +294,6 @@ const favImg = new Map(
     width: 100%;
     height: 100%;
     object-fit: cover;
-  }
-
-  /* Метка цены на фото — только от планшета. На телефоне пилюли на
-     190-пиксельном кадре переносились в две строки и закрывали фото,
-     а фото в каталоге — главное; цена там уходит в подпись. */
-  .vcard__tags {
-    position: absolute;
-    bottom: var(--s-3);
-    left: var(--s-3);
-    display: none;
-    flex-wrap: wrap;
-    gap: var(--s-2);
-    pointer-events: none;
   }
 
   /* ============ ПОДПИСЬ ПОД ФОТО ============
@@ -357,8 +339,6 @@ const favImg = new Map(
   .vcard__meta { font-size: var(--fs-caption); }
 
   @media (min-width: 640px) {
-    .vcard__tags { display: flex; }
-    .vcard__price { display: none; }
     .vcard__name { font-size: var(--fs-h3); line-height: 1.15; }
     .vcard__rate { font-size: var(--fs-small); }
     .vcard__meta { font-size: var(--fs-small); }

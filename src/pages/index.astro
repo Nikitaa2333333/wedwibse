@@ -1,12 +1,11 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import BottomDock from '../components/BottomDock.astro';
-import PhotoRail from '../components/PhotoRail.astro';
 import PhotoBoard from '../components/PhotoBoard.astro';
 import Icon from '../components/Icon.astro';
 
-// ПРЕИМУЩЕСТВА: крупные плашки в два столбца с минимальным стыком —
-// сразу на главном экране показываем, что умеет сервис.
+// ПЕРКИ: входы в разделы «Площадки» и «Специалисты» — рендерятся
+// первой строкой доски (см. PhotoBoard), а не отдельным экраном.
 const perks = [
   {
     kind: 'photo',
@@ -71,58 +70,12 @@ const perks = [
       </div>
     </section>
 
-    <!-- ПРЕИМУЩЕСТВА: крупные плашки, минимальный стык -->
-    <section class="perks container--wide">
-      <div class="perks__grid" data-reveal-group>
-        <a class="perk perk--photo" href={perks[0].href}>
-          <PhotoRail
-            photos={perks[0].imgs}
-            alt={perks[0].alt}
-            sizes="(min-width: 1024px) 50vw, 100vw"
-            widths={[560, 900, 1400]}
-          />
-          <span class="perk__index" aria-hidden="true">(01)</span>
-          <span class="perk__overlay">
-            <span class="perk__name">{perks[0].name}</span>
-            <span class="perk__tag" set:html={perks[0].tag} />
-          </span>
-        </a>
-
-        <a class="perk perk--light" href={perks[1].href}>
-          <PhotoRail
-            photos={perks[1].imgs}
-            alt={perks[1].alt}
-            sizes="(min-width: 1024px) 50vw, 100vw"
-            widths={[560, 900, 1400]}
-          />
-          <span class="perk__scrim" aria-hidden="true"></span>
-
-          <div class="perk__body">
-            <span class="perk__top">
-              <span class="perk__tag">{perks[1].tag}</span>
-              <span class="perk__arrow">↗</span>
-            </span>
-            <span class="perk__name">{perks[1].name}</span>
-          </div>
-
-          <span class="perk__list" aria-hidden="true">
-            <span class="perk__list-track">
-              {perks[1].words.concat(perks[1].words).map((word) => (
-                <span class="perk__word">{word}</span>
-              ))}
-            </span>
-          </span>
-
-          <span class="perk__index" aria-hidden="true">(02)</span>
-        </a>
-      </div>
-    </section>
-
-    <!-- ДОСКА: все кадры каталога масонри-раскладкой, часть плиток листается.
+    <!-- ДОСКА: перки (площадки/специалисты) первой строкой, за ними все
+         кадры каталога масонри-раскладкой, часть плиток листается.
          Статьи лежат в том же потоке (см. PhotoBoard) — отдельной секции
          «Журнал» на главной нет: она дублировала бы то, что человек уже
          встретил, пока листал. Внизу остаётся только вход в блог целиком. -->
-    <PhotoBoard />
+    <PhotoBoard perks={perks} />
 
     <div class="journal-more container--wide">
       <a class="pill" href="/blog/">Весь журнал</a>
@@ -262,185 +215,10 @@ const perks = [
     .hero__hint-text { max-width: 52ch; }
   }
 
-  /* ============ ПРЕИМУЩЕСТВА: крупные плашки, минимальный стык ============ */
-  .perks {
-    background: var(--bg);
-    padding: 0;
-    max-width: none;
-  }
-
-  .perks__grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0;                   /* плашки встык, без шва */
-    background: var(--surface-dim);
-  }
-
-  .perk {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    aspect-ratio: 3 / 4;
-    padding: var(--s-5);
-    background: var(--surface);
-    color: var(--ink);
-    text-decoration: none;
-    overflow: hidden;
-  }
-
-  .perk__top {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: var(--s-3);
-  }
-
-  .perk__tag {
-    font-size: var(--fs-small);
-    font-weight: var(--w-medium);
-    line-height: 1.35;
-  }
-
-  .perk__arrow {
-    font-size: var(--fs-body);
-    line-height: 1;
-  }
-
-  /* Имя плашки — витринный кегль: плашка занимает полэкрана, и заголовок
-     считается от её ширины, а не от страницы. Потолок держим ниже кегля h1
-     (50px): на 58px имя плашки перебивало главный заголовок страницы. */
-  .perk__name {
-    font-size: clamp(27px, 4.5vw, 44px);
-    font-weight: var(--w-head);
-    line-height: 1.05;
-    letter-spacing: -0.015em;
-  }
-
-  /* Фото-плашка: тот же слайдер, что в каталоге (PhotoRail) — кадры
-     листаются при наведении и свайпом, с точками-индикаторами.
-     Медленной автопрокрутки нет: движение только по действию пользователя. */
-  .perk--photo { padding: 0; overflow: hidden; }
-
-  .perk--photo :global(.prail-wrap) {
-    position: absolute;
-    inset: 0;
-  }
-
-  .perk--photo :global(.prail) {
-    aspect-ratio: auto;
-    height: 100%;
-  }
-
-  .perk__overlay {
-    position: relative;
-    margin-top: auto;
-    padding: var(--s-5);
-    display: flex;
-    flex-direction: column;
-    gap: var(--s-2);
-    color: var(--white);
-  }
-
-  /* Светлая плашка: слева статичный текст, справа — колесо категорий
-     во всю высоту карточки (там как раз оставалось пустое место). */
-  .perk--light {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    align-items: stretch;
-    background: var(--paper);
-    color: var(--ink);
-  }
-
-  /* Фото занимает левую часть плашки и растворяется в бумажном фоне:
-     колесо категорий справа остаётся на чистой бумаге, а текст лежит
-     не на самом кадре, а на плотной части градиента. */
-  .perk--light :global(.prail-wrap) {
-    position: absolute;
-    inset: 0 34% 0 0;
-  }
-
-  .perk--light :global(.prail) {
-    aspect-ratio: auto;
-    height: 100%;
-    background: var(--paper);
-  }
-
-  /* Затемнение под подписи из PhotoRail тут лишнее: текст на этой плашке
-     тёмный, и тёмный низ кадра его только глушит. */
-  .perk--light :global(.veil) { display: none; }
-
-  /* Переход фото → бумага. Слева кадр почти чистый, к середине светлеет,
-     справа — сплошной фон плашки, стык кадра не читается. */
-  .perk__scrim {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      to right,
-      transparent 0%,
-      color-mix(in srgb, var(--paper) 55%, transparent) 34%,
-      var(--paper) 66%
-    );
-    pointer-events: none;
-  }
-
-  .perk__body {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    min-width: 0;
-    grid-column: 1;
-  }
-
-  /* Колесо категорий — крутится непрерывно, крупно, обрезается краями
-     самой карточки. Маска глушит верх/низ: в фокусе только середина,
-     к краям слова уходят в прозрачность — как у «колеса» с активной точкой. */
-  .perk__list {
-    position: relative;
-    grid-column: 2;
-    overflow: hidden;
-    text-align: right;
-    mask-image: linear-gradient(to bottom, transparent 0%, black 38%, black 62%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 38%, black 62%, transparent 100%);
-  }
-
-  .perk__list-track {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    animation: perk-scroll 14s linear infinite;
-  }
-
-  .perk__word {
-    height: 1.15em;
-    display: flex;
-    align-items: center;
-    /* Бегущая колонка направлений — фон-текстура, а не заголовок: на 48px
-       она вставала вровень с h1 и с именем плашки, три уровня схлопывались. */
-    font-size: clamp(27px, 4vw, 38px);
-    font-weight: var(--w-head);
-    letter-spacing: -0.02em;
-    white-space: nowrap;
-  }
-
-  @keyframes perk-scroll {
-    from { transform: translateY(0); }
-    to { transform: translateY(-50%); }
-  }
-
-  /* Номер плашки — как «(01)» в углу карточки, чисто декоративная деталь */
-  .perk__index {
-    position: absolute;
-    right: var(--s-5);
-    bottom: var(--s-5);
-    font-size: var(--fs-caption);
-    font-weight: var(--w-medium);
-    color: var(--white);
-  }
-
-  .perk--light .perk__index { color: inherit; }
-
+  /* ============ СЕРДЦЕ В ПОДСКАЗКЕ ГЕРОЯ ============
+     Мини-демо «сохранили в избранное» рядом с заголовком — та же анимация,
+     что раньше жила в плашках-перках (сами перки теперь часть доски,
+     см. PhotoBoard), тут остались только классы для сердца в hero__hint. */
   .perk__heart-wrap {
     position: relative;
     display: inline-flex;
@@ -498,24 +276,6 @@ const perks = [
     90%, 100% { transform: scale(0); opacity: 0; }
   }
 
-  @media (hover: hover) {
-    .perk { transition: transform var(--dur-fast) var(--ease-out); }
-    .perk__arrow { transition: transform var(--dur-fast) var(--ease-out); }
-    .perk:hover .perk__arrow { transform: translate(3px, -3px); }
-  }
-
-  /* ============ ПЛАШКИ НА ТЕЛЕФОНЕ: ОДНА ПОД ДРУГОЙ ============
-     Две плашки в ряд на 390px — по 190px каждая: кадр не читался, а
-     раскладка «текст слева, колесо справа» у «Специалистов» не влезала
-     (слова направлений наезжали на имя). В одну колонку плашка получает
-     всю ширину экрана — и ПК-раскладка внутри неё работает без правок.
-     Кадр вертикальный 4:5: две такие плашки — это ровно два экрана
-     витрины, каждая держит экран сама. */
-  @media (max-width: 639px) {
-    .perks__grid { grid-template-columns: minmax(0, 1fr); }
-    .perk { aspect-ratio: 4 / 5; }
-  }
-
   /* ============ ВХОД В БЛОГ ============
      Сами статьи попадаются в доске выше; тут только ссылка на журнал
      целиком — по центру, без заголовка и без карточек. */
@@ -523,18 +283,5 @@ const perks = [
     display: flex;
     justify-content: center;
     padding-bottom: var(--s-8);
-  }
-
-  /* ============ ПК ============ */
-  @media (min-width: 1024px) {
-    .perk { padding: var(--s-6); }
-    .perk--photo .perk__overlay { padding: var(--s-6); }
-
-    /* Плашки не растут по ширине колонки — высота ограничена, чтобы
-       обе помещались на экран без прокрутки */
-    .perk {
-      aspect-ratio: auto;
-      height: clamp(480px, 68vh, 700px);
-    }
   }
 </style>
