@@ -125,14 +125,13 @@ const POINTS = [riverLoft, forestDew]
       });
 
       // Своя метка (.map-pin в global.css) вместо яндексовской капли: капсула
-      // с ценой. Разметка — ссылка на карточку: на телефоне это и есть
-      // поведение (тап — переход), на широком экране клик перехватывается
-      // и вместо перехода всплывает карточка площадки.
+      // с ценой. Не ссылка: клики по макету перехватывает слой карты (у метки
+      // задан iconShape), поэтому нажатие ловим событием метки ниже — на ПК
+      // открываем карточку, на телефоне уводим на страницу площадки.
       const PinLayout = window.ymaps.templateLayoutFactory.createClass(
-        '<a class="map-pin $[properties.pinState]" href="$[properties.pinHref]"' +
-          ' data-pin="$[properties.pinSlug]" title="$[properties.pinName]">' +
+        '<span class="map-pin $[properties.pinState]" title="$[properties.pinName]">' +
           '<span class="map-pin__dot"></span>$[properties.pinPrice]' +
-          '</a>'
+          '</span>'
       );
 
       const marks = new Map();
@@ -192,18 +191,24 @@ const POINTS = [riverLoft, forestDew]
         if (mark) mark.properties.set('pinState', 'is-active');
       };
 
-      el.addEventListener('click', (event) => {
-        const pin = event.target.closest('.map-pin');
-        if (!pin || !desktop.matches) return; // на телефоне ссылка работает как ссылка
-        event.preventDefault();
-        openCard(pin.dataset.pin);
+      const bySlug = new Map(points.map((point) => [point.slug, point]));
+
+      marks.forEach((mark, slug) => {
+        mark.events.add('click', () => {
+          if (desktop.matches) openCard(slug);
+          else window.location.href = bySlug.get(slug).href; // телефон — сразу на страницу
+        });
       });
 
       document.querySelectorAll('[data-map-close]').forEach((btn) => {
         btn.addEventListener('click', closeCard);
       });
 
-      map.events.add('click', closeCard); // клик по пустому месту карты
+      // клик по пустому месту карты — закрыть карточку; клик по самой метке
+      // тоже всплывает сюда, поэтому проверяем, что цель — карта
+      map.events.add('click', (event) => {
+        if (event.get('target') === map) closeCard();
+      });
     });
   };
   document.head.appendChild(script);

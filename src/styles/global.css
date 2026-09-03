@@ -855,11 +855,11 @@ mark {
 }
 
 /* ============ МЕТКА НА КАРТЕ ============
-   Своя метка вместо яндексовской капли: капсула с названием площадки, родня
-   .photo-tag и .pill — бумага, чернила, алая точка, тень парящих элементов.
-   Живёт в global.css, а не в стилях страницы: разметку метки рисует JS карты,
-   scoped-стили Astro туда не попадают. Сама метка — ссылка на карточку,
-   поэтому балун карты не нужен. */
+   Своя метка вместо яндексовской капли: капсула с ценой площадки, родня
+   .photo-tag и .pill. Заливка чернильная: подложка карты пёстрая и светлая —
+   белая капсула на ней тонет среди домов и подписей, тёмная читается на любом
+   участке. Живёт в global.css, а не в стилях страницы: разметку метки рисует
+   JS карты, scoped-стили Astro туда не попадают. */
 .map-pin {
   position: absolute;
   transform: translate(-50%, -100%);
@@ -871,8 +871,8 @@ mark {
   font-weight: var(--w-medium);
   line-height: 1;
   white-space: nowrap;
-  color: var(--ink);
-  background: var(--paper);
+  color: var(--paper);
+  background: var(--ink);
   border-radius: var(--radius-pill);
   box-shadow: var(--shadow-float);
   text-decoration: none;
@@ -894,27 +894,33 @@ mark {
   transform: translate(-50%, -65%) rotate(45deg);
 }
 
-/* алая точка — единственный цвет метки, остаётся алой и в инверсии */
+/* алая точка — единственный цвет метки */
 .map-pin__dot {
   flex: none;
   width: 7px;
   height: 7px;
   border-radius: 50%;
   background: var(--accent);
+  transition: background var(--dur-fast) var(--ease-out);
 }
 
+/* наведение и выбранная метка (открыта её карточка) — алая заливка:
+   на тёмной капсуле точка растворяется, поэтому в этом состоянии она белая */
 @media (hover: hover) {
   .map-pin:hover {
-    color: var(--paper);
-    background: var(--ink);
+    color: var(--white);
+    background: var(--accent);
   }
+
+  .map-pin:hover .map-pin__dot { background: var(--white); }
 }
 
-/* выбранная метка (открыта её карточка) — чернильная инверсия, как у .chip */
 .map-pin.is-active {
-  color: var(--paper);
-  background: var(--ink);
+  color: var(--white);
+  background: var(--accent);
 }
+
+.map-pin.is-active .map-pin__dot { background: var(--white); }
 
 /* Карточка площадки поверх карты — только широкий экран с мышью: на телефоне
    тап по метке ведёт прямо на страницу площадки, промежуточная плашка там
