@@ -4,6 +4,7 @@
 // удалить или перенести логику в каталог площадок, когда появятся реальные
 // координаты подрядчиков.
 import Layout from '../layouts/Layout.astro';
+import { riverLoft, forestDew } from '../data/venues';
 
 // Ключ пакета «JavaScript API и HTTP Геокодер» — сам по себе публичный
 // браузерный ключ (защищается привязкой к домену в кабинете Яндекса, не
@@ -11,14 +12,20 @@ import Layout from '../layouts/Layout.astro';
 // из секрета GitHub Actions (YANDEX_MAPS_API_KEY), подставляется на сборке.
 const YANDEX_MAPS_API_KEY = import.meta.env.YANDEX_MAPS_API_KEY;
 
-// Пока без реальных координат подрядчиков — одна тестовая метка, центр Москвы.
-const TEST_POINT: [number, number] = [55.751244, 37.618423];
+// Координат в данных площадок пока нет — берём адрес из карточки и просим
+// геокодер Яндекса найти точку. Когда в схеме появится поле с координатами,
+// геокодирование на клиенте уйдёт: метка будет ставиться сразу по цифрам.
+const POINTS = [riverLoft, forestDew].map((v) => ({
+  name: v.name,
+  address: v.contacts.address,
+  href: `/moskva/ploshchadki/${v.slug}/`,
+}));
 ---
 
 <Layout title="Тест карты — WED Secrets">
   <main class="wrap">
-    <h1 class="t-h1">Тест: карта с одной меткой</h1>
-    <div id="map" class="map" data-coords={JSON.stringify(TEST_POINT)}></div>
+    <h1 class="t-h1">Тест: метки площадок на карте</h1>
+    <div id="map" class="map" data-points={JSON.stringify(POINTS)}></div>
   </main>
 </Layout>
 
@@ -41,20 +48,63 @@ const TEST_POINT: [number, number] = [55.751244, 37.618423];
   const script = document.createElement('script');
   script.src = `https://api-maps.yandex.ru/2.1/?apikey=${apiKey}&lang=ru_RU`;
   script.onload = () => {
-    window.ymaps.ready(() => {
+    window.ymaps.ready(async () => {
       const el = document.getElementById('map');
-      const [lat, lon] = JSON.parse(el.dataset.coords);
+      const points = JSON.parse(el.dataset.points);
 
       const map = new window.ymaps.Map('map', {
-        center: [lat, lon],
-        zoom: 12,
+        center: [55.55, 37.5],
+        zoom: 10,
       });
 
-      map.geoObjects.add(
-        new window.ymaps.Placemark([lat, lon], {
-          balloonContent: 'Тестовая площадка',
+      const located = await Promise.all(
+        points.map(async (point) => {
+          const res = await window.ymaps.geocode(point.address, { results: 1 });
+          const found = res.geoObjects.get(0);
+          return found ? { ...point, coords: found.geometry.getCoordinates() } : null;
         })
       );
+
+      // Своя метка (.map-pin в global.css) вместо яндексовской капли: капсула
+      // с названием — и сразу ссылка на карточку, поэтому балун не нужен.
+      const PinLayout = window.ymaps.templateLayoutFactory.createClass(
+        '<a class="map-pin" href="$[properties.pinHref]" title="$[properties.pinAddress]">' +
+          '<span class="map-pin__dot"></span>$[properties.pinName]' +
+          '</a>'
+      );
+
+      located.filter(Boolean).forEach((point) => {
+        map.geoObjects.add(
+          new window.ymaps.Placemark(
+            point.coords,
+            {
+              pinName: point.name,
+              pinHref: point.href,
+              pinAddress: point.address,
+            },
+            {
+              iconLayout: PinLayout,
+              // активная область метки: капсула стоит над точкой, ширина
+              // зависит от названия — берём с запасом
+              iconShape: {
+                type: 'Rectangle',
+                coordinates: [
+                  [-110, -46],
+                  [110, 2],
+                ],
+              },
+              hasBalloon: false,
+            }
+          )
+        );
+      });
+
+      if (map.geoObjects.getLength() > 0) {
+        map.setBounds(map.geoObjects.getBounds(), {
+          checkZoomRange: true,
+          zoomMargin: 48,
+        });
+      }
     });
   };
   document.head.appendChild(script);

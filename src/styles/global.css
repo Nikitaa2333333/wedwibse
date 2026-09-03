@@ -854,6 +854,62 @@ mark {
   white-space: nowrap;
 }
 
+/* ============ МЕТКА НА КАРТЕ ============
+   Своя метка вместо яндексовской капли: капсула с названием площадки, родня
+   .photo-tag и .pill — бумага, чернила, алая точка, тень парящих элементов.
+   Живёт в global.css, а не в стилях страницы: разметку метки рисует JS карты,
+   scoped-стили Astro туда не попадают. Сама метка — ссылка на карточку,
+   поэтому балун карты не нужен. */
+.map-pin {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  font-size: var(--fs-caption);
+  font-weight: var(--w-medium);
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--ink);
+  background: var(--paper);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-float);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out),
+              color var(--dur-fast) var(--ease-out);
+}
+
+/* остриё: ромб того же цвета, наполовину спрятанный под капсулой */
+.map-pin::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  background: inherit;
+  border-radius: 2px;
+  transform: translate(-50%, -65%) rotate(45deg);
+}
+
+/* алая точка — единственный цвет метки, остаётся алой и в инверсии */
+.map-pin__dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+@media (hover: hover) {
+  .map-pin:hover {
+    color: var(--paper);
+    background: var(--ink);
+  }
+}
+
 /* ============ ДОСТУПНОСТЬ ============ */
 :focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
 
