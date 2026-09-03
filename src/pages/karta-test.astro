@@ -1,94 +1,19 @@
 ---
-// ВРЕМЕННО: тестовая страница, проверяем встраивание Яндекс Карт (см. SEO.md,
-// находка про карту конкурента). Не часть каталога, отдельная страница —
-// удалить или перенести логику в каталог площадок, когда появятся реальные
-// координаты подрядчиков.
-import { Image } from 'astro:assets';
+// ВРЕМЕННО: тестовая страница карты. Сама карта живёт в компоненте
+// VenueMap.astro и стоит в каталоге площадок (кнопка «На карте») — здесь она
+// просто открыта сразу, чтобы проверять метки без фильтров и переключателя.
+// Удалить, когда карта в каталоге отработает.
 import Layout from '../layouts/Layout.astro';
-import Icon from '../components/Icon.astro';
-import { FEED, type FeedVenue } from '../data/feed';
-import { riverLoft, forestDew } from '../data/venues';
-import { resolveImage } from '../lib/images';
+import VenueMap from '../components/VenueMap.astro';
+import { venueMapPoints } from '../lib/map-points';
 
-// Ключ пакета «JavaScript API и HTTP Геокодер» — сам по себе публичный
-// браузерный ключ (защищается привязкой к домену в кабинете Яндекса, не
-// секретностью), но в гит-репозиторий текстом всё равно не кладём — читаем
-// из секрета GitHub Actions (YANDEX_MAPS_API_KEY), подставляется на сборке.
-const YANDEX_MAPS_API_KEY = import.meta.env.YANDEX_MAPS_API_KEY;
-
-// Метка показывает цену, как у маркетплейсов недвижимости, — значит берём те же
-// данные, что и карточка каталога: цена, рейтинг, фото из ленты (feed.ts),
-// адрес — из карточки площадки (venues.ts).
-const feedVenues = FEED.filter((item): item is FeedVenue => item.kind === 'venue');
-
-// Координаты берём из данных площадки (contacts.geo) — геокодер в браузере
-// требует своего ключа и запроса на каждую загрузку, поэтому адрес переводим
-// в точку один раз, руками, при заведении карточки. Без geo площадки на карте
-// просто нет.
-const POINTS = [riverLoft, forestDew]
-  .filter((venue) => venue.contacts.geo)
-  .map((venue) => {
-    const feed = feedVenues.find((item) => item.slug === venue.slug);
-
-    return {
-      slug: venue.slug,
-      name: venue.name,
-      coords: [venue.contacts.geo!.lat, venue.contacts.geo!.lon],
-      address: venue.contacts.address,
-      href: `/moskva/ploshchadki/${venue.slug}/`,
-      price: feed?.avgCheck ?? '',
-      city: feed?.city ?? venue.city,
-      capacity: feed?.capacity ?? '',
-      rating: feed?.rating ?? null,
-      photo: feed?.media[0] ?? venue.hero.image,
-    };
-  });
+const points = venueMapPoints();
 ---
 
 <Layout title="Тест карты — WED Secrets">
   <main class="wrap">
     <h1 class="t-h1">Тест: метки площадок на карте</h1>
-
-    <div class="map-wrap">
-      <div id="map" class="map" data-points={JSON.stringify(POINTS)}></div>
-
-      <!-- Карточки отрисованы на сервере и просто прячутся: так фото проходит
-           через astro:assets (оптимизация + srcset), а не собирается в
-           браузере строкой. На телефоне карточек нет вовсе — там тап по метке
-           сразу открывает страницу площадки (см. скрипт ниже). -->
-      <div class="map-cards">
-        {POINTS.map((point) => (
-          <article class="map-card" data-map-card={point.slug} hidden>
-            <a class="map-card__link" href={point.href}>
-              <div class="map-card__media media">
-                <Image
-                  src={resolveImage(point.photo)}
-                  alt={point.name}
-                  widths={[220, 440]}
-                  sizes="110px"
-                  loading="lazy"
-                  decoding="async"
-                />
-              </div>
-
-              <div class="map-card__body">
-                <p class="map-card__price">{point.price}</p>
-                <h2 class="map-card__name">{point.name}</h2>
-                <p class="map-card__meta t-small">
-                  {point.city}
-                  {point.capacity ? ` · ${point.capacity}` : ''}
-                  {point.rating ? ` · ★ ${point.rating.toFixed(1)}` : ''}
-                </p>
-              </div>
-            </a>
-
-            <button class="map-card__close" type="button" data-map-close aria-label="Закрыть карточку">
-              <Icon name="close" />
-            </button>
-          </article>
-        ))}
-      </div>
-    </div>
+    <VenueMap points={points} />
   </main>
 </Layout>
 
@@ -97,119 +22,7 @@ const POINTS = [riverLoft, forestDew]
     padding: var(--s-6) var(--gutter);
   }
 
-  .map-wrap {
-    position: relative;
+  .wrap :global(.vmap) {
     margin-top: var(--s-5);
   }
-
-  .map {
-    width: 100%;
-    height: 480px;
-    border-radius: var(--radius-media);
-    background: var(--surface-dim);
-    overflow: hidden;
-  }
 </style>
-
-<script define:vars={{ apiKey: YANDEX_MAPS_API_KEY }}>
-  const script = document.createElement('script');
-  script.src = `https://api-maps.yandex.ru/2.1/?apikey=${apiKey}&lang=ru_RU`;
-  script.onload = () => {
-    window.ymaps.ready(() => {
-      const el = document.getElementById('map');
-      const points = JSON.parse(el.dataset.points);
-
-      const map = new window.ymaps.Map('map', {
-        center: [55.55, 37.5],
-        zoom: 10,
-      });
-
-      // Своя метка (.map-pin в global.css) вместо яндексовской капли: капсула
-      // с ценой. Не ссылка: клики по макету перехватывает слой карты (у метки
-      // задан iconShape), поэтому нажатие ловим событием метки ниже — на ПК
-      // открываем карточку, на телефоне уводим на страницу площадки.
-      const PinLayout = window.ymaps.templateLayoutFactory.createClass(
-        '<span class="map-pin $[properties.pinState]" title="$[properties.pinName]">' +
-          '<span class="map-pin__dot"></span>$[properties.pinPrice]' +
-          '</span>'
-      );
-
-      const marks = new Map();
-
-      points.forEach((point) => {
-        const mark = new window.ymaps.Placemark(
-          point.coords,
-          {
-            pinSlug: point.slug,
-            pinName: point.name,
-            pinPrice: point.price || point.name,
-            pinHref: point.href,
-            pinState: '',
-          },
-          {
-            iconLayout: PinLayout,
-            // активная область метки: капсула стоит над точкой, ширина
-            // зависит от подписи — берём с запасом
-            iconShape: {
-              type: 'Rectangle',
-              coordinates: [
-                [-110, -46],
-                [110, 2],
-              ],
-            },
-            hasBalloon: false,
-          }
-        );
-
-        marks.set(point.slug, mark);
-        map.geoObjects.add(mark);
-      });
-
-      if (map.geoObjects.getLength() > 0) {
-        map.setBounds(map.geoObjects.getBounds(), {
-          checkZoomRange: true,
-          zoomMargin: 48,
-        });
-      }
-
-      // ——— карточка по клику: только широкий экран с мышью ———
-      const desktop = window.matchMedia('(min-width: 1024px) and (pointer: fine)');
-      const cards = document.querySelectorAll('[data-map-card]');
-
-      const closeCard = () => {
-        cards.forEach((card) => {
-          card.hidden = true;
-        });
-        marks.forEach((mark) => mark.properties.set('pinState', ''));
-      };
-
-      const openCard = (slug) => {
-        closeCard();
-        const card = document.querySelector(`[data-map-card="${slug}"]`);
-        if (card) card.hidden = false;
-        const mark = marks.get(slug);
-        if (mark) mark.properties.set('pinState', 'is-active');
-      };
-
-      const bySlug = new Map(points.map((point) => [point.slug, point]));
-
-      marks.forEach((mark, slug) => {
-        mark.events.add('click', () => {
-          if (desktop.matches) openCard(slug);
-          else window.location.href = bySlug.get(slug).href; // телефон — сразу на страницу
-        });
-      });
-
-      document.querySelectorAll('[data-map-close]').forEach((btn) => {
-        btn.addEventListener('click', closeCard);
-      });
-
-      // клик по пустому месту карты — закрыть карточку; клик по самой метке
-      // тоже всплывает сюда, поэтому проверяем, что цель — карта
-      map.events.add('click', (event) => {
-        if (event.get('target') === map) closeCard();
-      });
-    });
-  };
-  document.head.appendChild(script);
-</script>

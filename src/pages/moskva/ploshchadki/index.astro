@@ -15,9 +15,11 @@ import FilterSheet from '../../../components/FilterSheet.astro';
 import ScopePicker from '../../../components/ScopePicker.astro';
 import PhotoRail from '../../../components/PhotoRail.astro';
 import Icon from '../../../components/Icon.astro';
+import VenueMap from '../../../components/VenueMap.astro';
 import { FEED, VENUE_FILTERS, type FeedVenue } from '../../../data/feed';
 import { resolveImage, favoriteImage } from '../../../lib/images';
 import { countOptions } from '../../../lib/filter-counts';
+import { venueMapPoints } from '../../../lib/map-points';
 
 // Бакеты для диапазонных фильтров — считаются на сборке (см. тот же приём
 // в podryadchiki/vedushchie/index.astro).
@@ -60,6 +62,9 @@ const venues = FEED.filter((item): item is FeedVenue => item.kind === 'venue');
 const venueCount = venues.length;
 const counts = countOptions(VENUE_FILTERS, venues.map(filtersOf));
 
+// Точки для карты: только площадки, которым проставлены координаты
+const mapPoints = venueMapPoints();
+
 // Кадр для снимка в избранном — уже пережатый URL, не путь из данных
 const favImg = new Map(
   await Promise.all(venues.map(async (v) => [v.name, await favoriteImage(v.media[0])] as const))
@@ -77,7 +82,13 @@ const favImg = new Map(
     active="ploshchadki"
     count={`${venueCount} найдено`}
     cityGroup={VENUE_FILTERS.find((g) => g.key === 'city')}
-  />
+  >
+    <!-- Переключатель вида: сетка ↔ карта. Действие, а не выбор, — поэтому
+         .pill рядом с чипом локации. -->
+    <button class="pill pill--sm" type="button" slot="actions" data-map-toggle aria-pressed="false">
+      На карте
+    </button>
+  </ScopePicker>
 
   <!-- ФИЛЬТРЫ: полоса чипов над каталогом; вся настройка — в шторке снизу -->
   <FilterBar groups={VENUE_FILTERS} counts={counts} />
@@ -92,6 +103,13 @@ const favImg = new Map(
     <!-- СЕТКА: мозаика без дыр, фото — главное. Без анимации появления:
          каталог листается спокойно, карточки стоят на месте. -->
     <main class="wrap">
+      <!-- КАРТА: тот же набор площадок, что и в сетке (фильтры карта
+           повторяет). Скрыта до нажатия «На карте» — пока её не открыли,
+           скрипт Яндекса не грузится вовсе. -->
+      <section class="mapview" data-map-view hidden>
+        <VenueMap points={mapPoints} size="screen" />
+      </section>
+
       <div class="vgrid" data-sort-grid>
         {FEED.map((item) => {
           if (item.kind === 'ad') {
@@ -135,6 +153,7 @@ const favImg = new Map(
             <article
               class={`vcard${cardVariant ? ` ${cardVariant}` : ''}`}
               data-card
+              data-slug={item.slug}
               data-filters={JSON.stringify(filters)}
               data-sort={JSON.stringify(sortKey)}
             >
@@ -262,6 +281,10 @@ const favImg = new Map(
 
   .empty { padding: var(--s-7) var(--catalog-pad); }
   .empty[hidden] { display: none; }
+
+  /* Режим «На карте»: карта встаёт на место сетки, поля — как у мозаики */
+  .mapview[hidden] { display: none; }
+  .vgrid[hidden] { display: none; }
 
   [data-card].is-hidden { display: none; }
 
@@ -421,6 +444,23 @@ const favImg = new Map(
   // Фильтрация и шторка — внутри FilterSheet.astro, сортировка — в
   // FilterBar.astro; точки-индикаторы и автолистание — в PhotoRail.astro.
   // Здесь только избранное.
+
+  // Вид «На карте»: карта подменяет мозаику, фильтры и сортировка остаются
+  // на месте и продолжают работать — карта повторяет выдачу (см. VenueMap).
+  const mapToggle = document.querySelector<HTMLButtonElement>('[data-map-toggle]');
+  const mapView = document.querySelector<HTMLElement>('[data-map-view]');
+  const grid = document.querySelector<HTMLElement>('[data-sort-grid]');
+
+  if (mapToggle && mapView && grid) {
+    mapToggle.addEventListener('click', () => {
+      const showMap = mapView.hidden;
+      mapView.hidden = !showMap;
+      grid.hidden = showMap;
+      mapToggle.textContent = showMap ? 'Списком' : 'На карте';
+      mapToggle.setAttribute('aria-pressed', String(showMap));
+      if (showMap) mapView.querySelector('[data-venue-map]')?.dispatchEvent(new Event('vmap:show'));
+    });
+  }
 
   // Избранное: сохраняется в общее хранилище, читается разделом «Избранное»
   document.querySelectorAll<HTMLButtonElement>('[data-save]').forEach((btn) => {

@@ -1,0 +1,238 @@
+---
+// КАРТА ПЛОЩАДОК — модуль каталога, а не украшение одной страницы.
+// Метка (.map-pin в global.css) показывает цену, клик на ПК поднимает
+// карточку площадки поверх карты, на телефоне сразу уводит на её страницу.
+//
+// Три вещи, ради которых компонент устроен именно так:
+//   1. Карточки под карту рендерятся здесь же, на сервере: фото проходит
+//      через astro:assets (сжатие + srcset), а не собирается строкой в
+//      браузере.
+//   2. Скрипт Яндекса грузится лениво — только когда карта реально показана
+//      (в каталоге она за кнопкой «На карте»). Пока карту не открыли, страница
+//      не тянет ни килобайта чужого JS.
+//   3. Если рядом на странице есть карточки каталога ([data-card][data-slug]),
+//      карта повторяет их фильтрацию: скрытую фильтрами площадку убираем и
+//      с карты.
+import { Image } from 'astro:assets';
+import Icon from './Icon.astro';
+import { resolveImage } from '../lib/images';
+import type { MapPoint } from '../lib/map-points';
+
+interface Props {
+  points: MapPoint[];
+  /** 'block' — карта высотой в блок (обычная секция страницы),
+   *  'screen' — почти во весь экран (режим «На карте» в каталоге) */
+  size?: 'block' | 'screen';
+}
+
+const { points, size = 'block' } = Astro.props;
+
+// Ключ пакета «JavaScript API» — публичный браузерный ключ (защищается
+// списком доменов в кабинете Яндекса, не секретностью), но в репозиторий
+// текстом не кладём: читается из секрета GitHub Actions на сборке.
+const apiKey = import.meta.env.YANDEX_MAPS_API_KEY;
+---
+
+<div
+  class:list={['vmap', { 'vmap--screen': size === 'screen' }]}
+  data-venue-map
+  data-points={JSON.stringify(points)}
+  data-api-key={apiKey}
+>
+  <div class="vmap__canvas" data-map-canvas></div>
+
+  <div class="map-cards">
+    {points.map((point) => (
+      <article class="map-card" data-map-card={point.slug} hidden>
+        <a class="map-card__link" href={point.href}>
+          <div class="map-card__media media">
+            <Image
+              src={resolveImage(point.photo)}
+              alt={point.name}
+              widths={[220, 440]}
+              sizes="110px"
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+
+          <div class="map-card__body">
+            <p class="map-card__price">{point.price}</p>
+            <h2 class="map-card__name">{point.name}</h2>
+            <p class="map-card__meta t-small">
+              {point.city}
+              {point.capacity ? ` · ${point.capacity}` : ''}
+              {point.rating ? ` · ★ ${point.rating.toFixed(1)}` : ''}
+            </p>
+          </div>
+        </a>
+
+        <button class="map-card__close" type="button" data-map-close aria-label="Закрыть карточку">
+          <Icon name="close" />
+        </button>
+      </article>
+    ))}
+  </div>
+</div>
+
+<style>
+  .vmap {
+    position: relative;
+  }
+
+  .vmap__canvas {
+    width: 100%;
+    height: 480px;
+    background: var(--surface-dim);
+    overflow: hidden;
+  }
+
+  /* режим «На карте»: карта занимает экран, но не лезет под нижний док */
+  .vmap--screen .vmap__canvas { height: 72dvh; }
+</style>
+
+<script>
+  interface MapPointData {
+    slug: string;
+    name: string;
+    coords: [number, number];
+    href: string;
+    price: string;
+  }
+
+  // Скрипт Яндекса один на страницу и грузится по первому показу карты
+  let apiPromise: Promise<any> | null = null;
+
+  function loadMapsApi(key: string): Promise<any> {
+    if (!apiPromise) {
+      apiPromise = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = `https://api-maps.yandex.ru/2.1/?apikey=${key}&lang=ru_RU`;
+        script.onload = () => (window as any).ymaps.ready(() => resolve((window as any).ymaps));
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+    }
+    return apiPromise;
+  }
+
+  function initMap(root: HTMLElement) {
+    const canvas = root.querySelector<HTMLElement>('[data-map-canvas]');
+    const points: MapPointData[] = JSON.parse(root.dataset.points || '[]');
+    const key = root.dataset.apiKey || '';
+    if (!canvas || points.length === 0) return;
+
+    loadMapsApi(key).then((ymaps) => {
+      const map = new ymaps.Map(canvas, { center: [55.75, 37.62], zoom: 9 });
+
+      // Метка не ссылка: у неё задан iconShape, и клики забирает слой карты —
+      // нажатие ловим событием метки ниже.
+      const PinLayout = ymaps.templateLayoutFactory.createClass(
+        '<span class="map-pin $[properties.pinState]" title="$[properties.pinName]">' +
+          '<span class="map-pin__dot"></span>$[properties.pinPrice]' +
+          '</span>'
+      );
+
+      const marks = new Map<string, any>();
+      const bySlug = new Map(points.map((p) => [p.slug, p]));
+
+      points.forEach((point) => {
+        marks.set(
+          point.slug,
+          new ymaps.Placemark(
+            point.coords,
+            {
+              pinName: point.name,
+              pinPrice: point.price || point.name,
+              pinState: '',
+            },
+            {
+              iconLayout: PinLayout,
+              // активная область: капсула стоит над точкой, ширина зависит
+              // от подписи — берём с запасом
+              iconShape: { type: 'Rectangle', coordinates: [[-110, -46], [110, 2]] },
+              hasBalloon: false,
+            }
+          )
+        );
+      });
+
+      // ——— карточка по клику: только широкий экран с мышью ———
+      const desktop = window.matchMedia('(min-width: 1024px) and (pointer: fine)');
+      const cards = Array.from(root.querySelectorAll<HTMLElement>('[data-map-card]'));
+
+      const closeCard = () => {
+        cards.forEach((card) => { card.hidden = true; });
+        marks.forEach((mark) => mark.properties.set('pinState', ''));
+      };
+
+      const openCard = (slug: string) => {
+        closeCard();
+        const card = root.querySelector<HTMLElement>(`[data-map-card="${slug}"]`);
+        if (card) card.hidden = false;
+        marks.get(slug)?.properties.set('pinState', 'is-active');
+      };
+
+      marks.forEach((mark, slug) => {
+        mark.events.add('click', () => {
+          if (desktop.matches) openCard(slug);
+          else window.location.href = bySlug.get(slug)!.href; // телефон — сразу на страницу
+        });
+      });
+
+      root.querySelectorAll('[data-map-close]').forEach((btn) => btn.addEventListener('click', closeCard));
+
+      // клик по метке всплывает и до карты — закрываем только по подложке
+      map.events.add('click', (event: any) => {
+        if (event.get('target') === map) closeCard();
+      });
+
+      // ——— карта повторяет фильтрацию каталога ———
+      // Карточка выдачи скрывается классом .is-hidden (см. FilterSheet):
+      // ту же площадку убираем и с карты, потом подгоняем масштаб под
+      // оставшиеся метки.
+      // Карточек с одним slug может быть несколько (демо-карточки ленты ведут
+      // на ту же площадку) — метка остаётся, пока видна хоть одна из них.
+      const visibleSlugs = () =>
+        points
+          .filter((point) => {
+            const cards = document.querySelectorAll<HTMLElement>(`[data-card][data-slug="${point.slug}"]`);
+            return cards.length === 0 || Array.from(cards).some((card) => !card.classList.contains('is-hidden'));
+          })
+          .map((point) => point.slug);
+
+      const sync = () => {
+        const visible = new Set(visibleSlugs());
+
+        marks.forEach((mark, slug) => {
+          const onMap = map.geoObjects.indexOf(mark) !== -1;
+          if (visible.has(slug) && !onMap) map.geoObjects.add(mark);
+          if (!visible.has(slug) && onMap) {
+            map.geoObjects.remove(mark);
+            const card = root.querySelector<HTMLElement>(`[data-map-card="${slug}"]`);
+            if (card) card.hidden = true;
+          }
+        });
+
+        if (map.geoObjects.getLength() > 0) {
+          map.setBounds(map.geoObjects.getBounds(), { checkZoomRange: true, zoomMargin: 48 });
+        }
+      };
+
+      sync();
+      document.addEventListener('change', sync); // фильтры каталога — обычные input'ы
+      root.addEventListener('vmap:show', sync);
+    });
+  }
+
+  // Инициализация по первому показу: скрытый блок ничего не пересекает,
+  // поэтому карта в каталоге просыпается ровно тогда, когда её открыли.
+  document.querySelectorAll<HTMLElement>('[data-venue-map]').forEach((root) => {
+    const observer = new IntersectionObserver((entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return;
+      observer.disconnect();
+      initMap(root);
+    });
+    observer.observe(root);
+  });
+</script>
