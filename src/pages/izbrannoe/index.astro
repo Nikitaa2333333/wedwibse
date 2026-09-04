@@ -343,8 +343,15 @@ import Icon from '../../components/Icon.astro';
 
   .fcard__meta { margin-top: 2px; }
 
-  /* ============ ПЛАВАЮЩАЯ ПАНЕЛЬ СРАВНЕНИЯ ============ */
+  /* ============ ПЛАВАЮЩАЯ ПАНЕЛЬ СРАВНЕНИЯ ============
+     Панель выбивается из фона страницы — та же роль, что у .theme-dark,
+     поэтому и цвета те же ручки (--invert-bg/--invert-fg), а не чернила
+     с белым напрямую: в тёмной теме --ink светлый, и заливка чернилами
+     с белым текстом дала бы белое по белому. Дальше по блоку пишем
+     --fg/--bg — внутри панели они уже переопределены. */
   .compare-bar {
+    --bg: var(--invert-bg);
+    --fg: var(--invert-fg);
     position: fixed;
     left: 50%;
     bottom: calc(var(--safe-b) + var(--s-5) + 64px);
@@ -355,8 +362,8 @@ import Icon from '../../components/Icon.astro';
     gap: var(--s-4);
     padding: var(--s-2) var(--s-2) var(--s-2) var(--s-4);
     border-radius: var(--radius-pill);
-    background: var(--ink);
-    color: var(--white);
+    background: var(--bg);
+    color: var(--fg);
     box-shadow: var(--shadow-float);
     max-width: calc(100vw - var(--s-5) * 2);
   }
@@ -364,13 +371,13 @@ import Icon from '../../components/Icon.astro';
   .compare-bar[hidden] { display: none; }
 
   .compare-bar .pill {
-    border-color: var(--white);
-    color: var(--white);
+    border-color: var(--fg);
+    color: var(--fg);
     white-space: nowrap;
   }
 
   @media (hover: hover) {
-    .compare-bar .pill:hover { background: var(--white); color: var(--ink); }
+    .compare-bar .pill:hover { background: var(--fg); color: var(--bg); }
   }
 
   .compare-bar .pill:disabled {
@@ -380,12 +387,12 @@ import Icon from '../../components/Icon.astro';
   }
 
   .compare-bar__cancel {
-    border-color: var(--white);
-    color: var(--white);
+    border-color: var(--fg);
+    color: var(--fg);
   }
 
   @media (hover: hover) {
-    .compare-bar__cancel:hover { background: var(--white); color: var(--ink); }
+    .compare-bar__cancel:hover { background: var(--fg); color: var(--bg); }
   }
 
   /* ============ ТАБЛИЦА СРАВНЕНИЯ ============ */

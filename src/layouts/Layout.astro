@@ -24,11 +24,19 @@ const indexable = process.env.SITE_INDEXABLE === 'true';
 ---
 
 <!doctype html>
-<html lang="ru">
+{/* Тема сайта — атрибутом на <html>, палитра живёт в global.css
+    (:root — светлая, :root[data-theme='dark'] — тёмная). Вернуть светлую
+    = убрать атрибут в этой строке, ничего больше трогать не нужно. */}
+<html lang="ru" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
+    {/* Тёмными должны быть и системные части, которые CSS не красит:
+        подложка под резинкой скролла, встроенные контролы, адресная
+        строка мобильного браузера. */}
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#1c1815" />
     {!indexable && <meta name="robots" content="noindex, nofollow" />}
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
