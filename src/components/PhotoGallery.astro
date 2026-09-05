@@ -4,6 +4,7 @@
 import { Image } from 'astro:assets';
 import type { Venue } from '../data/venues';
 import { resolveImage } from '../lib/images';
+import { isVideo, posterOf } from '../lib/media';
 
 interface Props {
   kicker: string;
@@ -25,14 +26,19 @@ const { kicker, title, items } = Astro.props;
       {
         items.map((item) => (
           <figure class:list={['gal__cell', 'media', item.wide && 'gal__cell--wide']}>
+            {/* Видео-кадр показывает постер (обычное фото через astro:assets),
+                поверх него проявляется немой луп, когда доходит до экрана */}
             <Image
-              src={resolveImage(item.src)}
+              src={resolveImage(isVideo(item.src) ? posterOf(item.src) : item.src)}
               alt={item.alt}
               widths={item.wide ? [640, 1000, 1600] : [360, 560, 800]}
               sizes={item.wide ? '100vw' : '(min-width: 900px) 33vw, 50vw'}
               loading="lazy"
               decoding="async"
             />
+            {isVideo(item.src) && (
+              <video class="gal__video" data-video={item.src} muted loop playsinline preload="none" aria-hidden="true" />
+            )}
           </figure>
         ))
       }
@@ -75,4 +81,28 @@ const { kicker, title, items } = Astro.props;
     .gal__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .gal__cell--wide { aspect-ratio: 21 / 9; }
   }
+
+  /* Ролик лежит поверх своего постера и проявляется, когда пошёл: не пошёл
+     (энергосбережение на iPhone) — в ячейке остаётся фото */
+  .gal__cell { position: relative; }
+
+  .gal__video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity var(--dur-base) var(--ease-out);
+    pointer-events: none;
+  }
+
+  .gal__video.is-playing { opacity: 1; }
 </style>
+
+<script>
+  import { bindVideosIn } from '../lib/video';
+
+  // Кадры галереи не листаются — ролику достаточно попасть в зону видимости
+  bindVideosIn(document);
+</script>

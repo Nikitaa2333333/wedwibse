@@ -168,8 +168,9 @@ const { photos, alt, href, sizes, widths = [360, 560, 800, 1100] } = Astro.props
   // Кадр меняется целиком: жест решает только направление, промежуточных
   // положений нет. Автолистание по наведению — там, где есть настоящий
   // ховер (мышь, не тач).
+  import { bindVideo } from '../lib/video';
+
   const hoverCapable = window.matchMedia('(hover: hover)').matches;
-  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   document.querySelectorAll<HTMLElement>('[data-prail-host]').forEach((host) => {
     const track = host.querySelector<HTMLElement>('[data-rail]');
@@ -187,42 +188,19 @@ const { photos, alt, href, sizes, widths = [360, 560, 800, 1100] } = Astro.props
     };
 
     // ============ ВИДЕО В КАДРЕ ============
-    // Немой луп, как в Pinterest: играет только тот ролик, который сейчас и
-    // в активном кадре карусели, и в зоне видимости. Файл не качается, пока
-    // до него не дошли (src подставляется здесь, не в разметке) — в ленте из
-    // сорока карточек грузятся два-три видимых, а не все.
-    // Со включённым «уменьшить движение» ролики не запускаются вовсе:
-    // в кадре остаётся постер.
-    const videos = Array.from(track.querySelectorAll<HTMLVideoElement>('.prail__video'));
-    let onScreen = false;
+    // Немой луп играет, пока карточка видна И его кадр — текущий в карусели
+    // (механика целиком — в lib/video.ts). Слушатель видимости висит на всей
+    // карточке: кадры лежат друг за другом внутри одного окна.
+    const handles = Array.from(track.querySelectorAll<HTMLVideoElement>('.prail__video')).map((video) => {
+      const frame = video.closest('.prail__item');
+      return bindVideo(video, {
+        root: host,
+        active: () => !!frame && Array.prototype.indexOf.call(track!.children, frame) === index,
+      });
+    });
 
     function syncVideo() {
-      if (reducedMotion) return;
-
-      videos.forEach((video) => {
-        const frame = video.closest('.prail__item');
-        const active = frame ? Array.prototype.indexOf.call(track!.children, frame) === index : false;
-
-        if (onScreen && active) {
-          if (!video.src) video.src = video.dataset.video!;
-          // Промис отваливается там, где автозапуск запрещён (энергосбережение
-          // на iPhone) — тогда просто остаётся постер, это нормальный сценарий.
-          video.play().then(() => video.classList.add('is-playing')).catch(() => {});
-        } else if (video.src) {
-          video.pause();
-          video.classList.remove('is-playing');
-        }
-      });
-    }
-
-    if (videos.length && !reducedMotion) {
-      new IntersectionObserver(
-        ([entry]) => {
-          onScreen = entry.isIntersecting;
-          syncVideo();
-        },
-        { threshold: 0.5 }
-      ).observe(host);
+      handles.forEach((handle) => handle.sync());
     }
 
     show(0);

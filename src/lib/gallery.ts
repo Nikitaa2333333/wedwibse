@@ -24,6 +24,7 @@
 import { VENUES } from '../data/venues';
 import { ARTICLES, articleUrl, rubricBySlug } from '../data/articles';
 import { resolveImage } from './images';
+import { isVideo, posterOf } from './media';
 
 export interface Pin {
   /** один кадр — статичная плитка, несколько — мини-галерея с точками */
@@ -74,8 +75,11 @@ function makePin(group: Shot[], venue: Venue, ratio: number, caption: string | n
   };
 }
 
+// Пропорцию видео берём у его постера: файл ролика Astro не читает, а постер
+// лежит тем же путём с расширением .webp (см. lib/media.ts). Ролик готовится
+// под пропорцию колонки заранее — кадр в доске всё равно не кропится.
 function ratioOf(src: string): number {
-  const meta = resolveImage(src);
+  const meta = resolveImage(isVideo(src) ? posterOf(src) : src);
   return meta.width / meta.height;
 }
 
