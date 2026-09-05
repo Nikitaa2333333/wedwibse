@@ -55,7 +55,10 @@ const venues: FeedVenue[] = [
     avgCheck: 'от 4 000 ₽',
     rating: 4.9,
     reviews: 37,
-    media: [`${RL}/gal/g8.webp`, `${RL}/gal/g2.webp`, `${RL}/gal/g5.webp`, `${RL}/welcome/w1.webp`],
+    // Второй кадр — короткий немой луп: первым идёт статичное фото, как в
+    // Pinterest. Ролик лежит в public/, постер (тот же путь, .webp) —
+    // в src/assets. Правила подготовки видео — в VIDEO.md.
+    media: [`${RL}/gal/g8.webp`, `${RL}/gal/clip.mp4`, `${RL}/gal/g2.webp`, `${RL}/gal/g5.webp`],
   },
   {
     // Рейтинг и число отзывов — с карточки площадки в Яндекс.Картах.

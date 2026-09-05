@@ -19,8 +19,10 @@
 // кладёт вызывающая страница через слот, поверх .veil.
 import { Image } from 'astro:assets';
 import { resolveImage } from '../lib/images';
+import { isVideo, posterOf } from '../lib/media';
 
 interface Props {
+  /** кадры карточки: фото и — по желанию — короткие немые лупы (.mp4) */
   photos: string[];
   alt: string;
   /** есть — кадры оборачиваются в ссылку (площадки); нет — просто фото (специалисты) */
@@ -36,16 +38,34 @@ const { photos, alt, href, sizes, widths = [360, 560, 800, 1100] } = Astro.props
   <div class="prail">
     <div class="prail__track" data-rail>
       {photos.map((src, n) => {
-        const frameAlt = photos.length > 1 ? `${alt} — фото ${n + 1}` : alt;
-        const image = (
-          <Image src={resolveImage(src)} alt={frameAlt} widths={widths} sizes={sizes} loading="lazy" decoding="async" />
+        const video = isVideo(src);
+        const frameAlt = photos.length > 1 ? `${alt} — ${video ? 'видео' : 'фото'} ${n + 1}` : alt;
+
+        // У ролика видимый кадр — тот же <Image>, что и у фото: постер грузится
+        // лениво и с srcset, а сам файл скрипт подставляет, только когда кадр
+        // реально виден (см. блок «видео» в скрипте ниже).
+        const frame = (
+          <Fragment>
+            <Image
+              src={resolveImage(video ? posterOf(src) : src)}
+              alt={frameAlt}
+              widths={widths}
+              sizes={sizes}
+              loading="lazy"
+              decoding="async"
+            />
+            {video && (
+              <video class="prail__video" data-video={src} muted loop playsinline preload="none" aria-hidden="true"></video>
+            )}
+          </Fragment>
         );
+
         return href ? (
           <a class="prail__item" href={href} aria-label={alt}>
-            {image}
+            {frame}
           </a>
         ) : (
-          <div class="prail__item">{image}</div>
+          <div class="prail__item">{frame}</div>
         );
       })}
     </div>
@@ -93,9 +113,26 @@ const { photos, alt, href, sizes, widths = [360, 560, 800, 1100] } = Astro.props
   }
 
   .prail__item {
+    position: relative;
     flex: 0 0 100%;
     height: 100%;
   }
+
+  /* Ролик лежит поверх своего постера и проявляется, когда реально пошёл:
+     если автозапуск заблокирован (энергосбережение на iPhone) — в кадре
+     просто остаётся постер, и карточка выглядит как обычное фото. */
+  .prail__video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity var(--dur-base) var(--ease-out);
+    pointer-events: none;
+  }
+
+  .prail__video.is-playing { opacity: 1; }
 
   .prail__item :global(img) {
     width: 100%;
@@ -132,6 +169,7 @@ const { photos, alt, href, sizes, widths = [360, 560, 800, 1100] } = Astro.props
   // положений нет. Автолистание по наведению — там, где есть настоящий
   // ховер (мышь, не тач).
   const hoverCapable = window.matchMedia('(hover: hover)').matches;
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   document.querySelectorAll<HTMLElement>('[data-prail-host]').forEach((host) => {
     const track = host.querySelector<HTMLElement>('[data-rail]');
@@ -145,7 +183,47 @@ const { photos, alt, href, sizes, widths = [360, 560, 800, 1100] } = Astro.props
       index = Math.max(0, Math.min(frames - 1, n));
       track.style.setProperty('--i', String(index));
       dots.forEach((d, k) => d.classList.toggle('is-on', k === index));
+      syncVideo();
     };
+
+    // ============ ВИДЕО В КАДРЕ ============
+    // Немой луп, как в Pinterest: играет только тот ролик, который сейчас и
+    // в активном кадре карусели, и в зоне видимости. Файл не качается, пока
+    // до него не дошли (src подставляется здесь, не в разметке) — в ленте из
+    // сорока карточек грузятся два-три видимых, а не все.
+    // Со включённым «уменьшить движение» ролики не запускаются вовсе:
+    // в кадре остаётся постер.
+    const videos = Array.from(track.querySelectorAll<HTMLVideoElement>('.prail__video'));
+    let onScreen = false;
+
+    function syncVideo() {
+      if (reducedMotion) return;
+
+      videos.forEach((video) => {
+        const frame = video.closest('.prail__item');
+        const active = frame ? Array.prototype.indexOf.call(track!.children, frame) === index : false;
+
+        if (onScreen && active) {
+          if (!video.src) video.src = video.dataset.video!;
+          // Промис отваливается там, где автозапуск запрещён (энергосбережение
+          // на iPhone) — тогда просто остаётся постер, это нормальный сценарий.
+          video.play().then(() => video.classList.add('is-playing')).catch(() => {});
+        } else if (video.src) {
+          video.pause();
+          video.classList.remove('is-playing');
+        }
+      });
+    }
+
+    if (videos.length && !reducedMotion) {
+      new IntersectionObserver(
+        ([entry]) => {
+          onScreen = entry.isIntersecting;
+          syncVideo();
+        },
+        { threshold: 0.5 }
+      ).observe(host);
+    }
 
     show(0);
     if (frames < 2) return;

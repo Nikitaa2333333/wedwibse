@@ -20,6 +20,7 @@ import { FEED, VENUE_FILTERS, type FeedVenue } from '../../../data/feed';
 import { resolveImage, favoriteImage } from '../../../lib/images';
 import { countOptions } from '../../../lib/filter-counts';
 import { venueMapPoints } from '../../../lib/map-points';
+import { photosOnly } from '../../../lib/media';
 
 // Бакеты для диапазонных фильтров — считаются на сборке (см. тот же приём
 // в podryadchiki/vedushchie/index.astro).
@@ -65,9 +66,10 @@ const counts = countOptions(VENUE_FILTERS, venues.map(filtersOf));
 // Точки для карты: только площадки, которым проставлены координаты
 const mapPoints = venueMapPoints();
 
-// Кадр для снимка в избранном — уже пережатый URL, не путь из данных
+// Кадр для снимка в избранном — уже пережатый URL, не путь из данных.
+// Только фото: в media может стоять видео, а в избранном нужен статичный кадр.
 const favImg = new Map(
-  await Promise.all(venues.map(async (v) => [v.name, await favoriteImage(v.media[0])] as const))
+  await Promise.all(venues.map(async (v) => [v.name, await favoriteImage(photosOnly(v.media)[0])] as const))
 );
 ---
 
@@ -160,7 +162,8 @@ const favImg = new Map(
               {cardVariant === 'vcard--duo' ? (
                 <div class="vcard__media">
                   <div class="vcard__strip">
-                    {item.media.slice(0, 2).map((src, n) => (
+                    {/* дуо показывает два кадра сразу, без карусели — только фото */}
+                    {photosOnly(item.media).slice(0, 2).map((src, n) => (
                       <div class="vcard__frame media">
                         <Image
                           src={resolveImage(src)}
