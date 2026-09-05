@@ -115,12 +115,12 @@ const PERK_SIZES = '(min-width: 640px) 50vw, 100vw';
                   <PhotoRail
                     photos={tile.photos}
                     alt={tile.alt}
-                    href={tile.href}
+                    href={tile.href ?? undefined}
                     sizes={TILE_SIZES}
                     widths={[360, 560, 800]}
                   />
 
-                  {tile.caption && (
+                  {tile.caption && tile.href && (
                     <a class="cap t-caption" href={tile.href}>
                       {tile.caption}
                     </a>
