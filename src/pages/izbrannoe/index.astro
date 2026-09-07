@@ -115,23 +115,33 @@ import Icon from '../../components/Icon.astro';
   }
 
   /* ============ ПАПКИ: СТОПКА ПЛАШЕК ============
-     Реф. — экран закладок мобильного приложения: карточки лежат стопкой
-     и наезжают друг на друга, как папки в лотке. У накрытой видна только
-     шапка (кружок с кадром, имя, счётчик) и полоска кадров под ней,
-     нижняя лежит целиком.
+     Реф. — экран закладок мобильного приложения: крупные карточки лежат
+     стопкой во всю высоту экрана и наезжают друг на друга, как папки
+     в лотке. У накрытой видна шапка (кружок с кадром, имя, счётчик)
+     и верх единственного кадра под ней, нижняя лежит целиком.
 
-     Почему не сетка. Папок в избранном единицы — две-три направления, —
+     Почему не сетка. Папок в избранном единицы — два-три направления, —
      и сетка из двух плиток на телефоне читалась списком, а не собранной
-     подборкой. Стопка занимает вдвое меньше экрана и сразу говорит
+     подборкой. Стопка занимает экран целиком и сразу говорит
      «это моя стопка папок».
 
+     Внутри плашки один кадр, а не коллаж: коллаж из трёх делал папку
+     похожей на карточку каталога. Кадр вырезан SVG-маской своей формы
+     (сердце, капля, арка, шестиугольник, круг) — форма, как и тон,
+     ничего не значит, она только делает папки непохожими друг на друга.
+
      Наложение — отрицательный отступ, а не абсолютное позиционирование:
-     плашки остаются в потоке, высота блока считается сама, и порядок
-     перекрытия задаётся одним --i (следующая лежит ПОВЕРХ предыдущей,
+     плашки остаются в потоке, высота блока считается сама, порядок
+     перекрытия задаёт один --i (следующая лежит ПОВЕРХ предыдущей,
      как в референсе). Ни скриптов, ни измерений. */
   .boards {
     display: flex;
     flex-direction: column;
+    /* Лёгкий наклон стопки «вперёд», как у папок в лотке: только
+       transform (моушн-бюджет телефона), точка опоры — низ стопки,
+       чтобы нижняя, полностью видимая папка стояла ровно. */
+    perspective: 1400px;
+    perspective-origin: 50% 100%;
   }
 
   .boards[hidden] { display: none; }
@@ -141,9 +151,9 @@ import Icon from '../../components/Icon.astro';
     z-index: var(--i);
     display: flex;
     flex-direction: column;
-    gap: var(--s-3);
+    gap: var(--s-4);
     height: var(--fold-card);
-    padding: var(--s-4);
+    padding: var(--s-5) var(--s-4) 0;
     background: var(--tile);
     color: var(--ink);
     border-radius: var(--radius-card);
@@ -152,6 +162,8 @@ import Icon from '../../components/Icon.astro';
     box-shadow: var(--shadow-float);
     text-decoration: none;
     overflow: hidden;
+    transform: rotateX(2deg);
+    transform-origin: 50% 100%;
   }
 
   .board + .board { margin-top: calc(var(--fold-head) - var(--fold-card)); }
@@ -164,6 +176,14 @@ import Icon from '../../components/Icon.astro';
   .board--sage { --tile: var(--tint-sage); }
   .board--lilac { --tile: var(--tint-lilac); }
 
+  /* Формы кадра. Маска — инлайн-SVG в viewBox 100×100, растягивается
+     на весь блок кадра через mask-size: contain. */
+  .board--heart { --mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M50 92C22 70 4 54 4 33A21 21 0 0 1 50 21A21 21 0 0 1 96 33C96 54 78 70 50 92Z'/></svg>"); }
+  .board--drop { --mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M50 4C66 26 92 44 92 66A42 42 0 0 1 8 66C8 44 34 26 50 4Z'/></svg>"); }
+  .board--arch { --mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M8 100V46A42 42 0 0 1 92 46V100Z'/></svg>"); }
+  .board--hex { --mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M50 3L92 27V73L50 97L8 73V27Z'/></svg>"); }
+  .board--round { --mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='46'/></svg>"); }
+
   /* Шапка — единственное, что видно у накрытой папки */
   .board__top {
     display: flex;
@@ -173,8 +193,8 @@ import Icon from '../../components/Icon.astro';
   }
 
   .board__thumb {
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
     flex: none;
     border-radius: var(--radius-pill);
     overflow: hidden;
@@ -191,6 +211,7 @@ import Icon from '../../components/Icon.astro';
   .board__text {
     display: flex;
     flex-direction: column;
+    gap: var(--s-1);
     min-width: 0;
   }
 
@@ -210,42 +231,27 @@ import Icon from '../../components/Icon.astro';
     font-weight: var(--w-medium);
   }
 
-  /* Стрелка приглушена opacity, а не серым цветом: плашка каждый раз
-     своего тона, и серый на них ложится по-разному. */
-  .board__go {
-    margin-left: auto;
-    width: 36px;
-    height: 36px;
-    flex: none;
-    border-radius: var(--radius-pill);
-    border: 1.5px solid currentColor;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: var(--fs-small);
-    line-height: 1;
-    opacity: 0.45;
-  }
-
-  /* Кадры папки: у накрытой видна только верхняя полоска, у нижней —
-     целиком. Три последних сохранённых, в ряд. */
-  .board__shots {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: var(--pin-gap);
+  /* Единственный кадр папки — последний сохранённый — под маской формы.
+     Стоит по центру и занимает большую часть ширины: у накрытой папки
+     из-под следующей шапки выглядывает верх формы, у нижней она целиком. */
+  .board__pic {
+    display: block;
+    width: 72%;
+    margin-inline: auto;
     flex: 1;
     min-height: 0;
-    border-radius: var(--radius-card);
-    overflow: hidden;
-  }
-
-  .board__shot {
+    -webkit-mask-image: var(--mask);
+    mask-image: var(--mask);
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: top center;
+    mask-position: top center;
     background: var(--surface-dim);
-    min-width: 0;
-    overflow: hidden;
   }
 
-  .board__shot img {
+  .board__pic img {
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -254,9 +260,7 @@ import Icon from '../../components/Icon.astro';
   }
 
   @media (hover: hover) {
-    .board__go { transition: transform var(--dur-fast) var(--ease-out), opacity var(--dur-fast) var(--ease-out); }
-    .board:hover .board__go { transform: translate(3px, -3px); opacity: 1; }
-    .board:hover .board__shot img { transform: scale(1.04); }
+    .board:hover .board__pic img { transform: scale(1.04); }
   }
 
   /* ============ СЕТКА КАРТОЧЕК ============ */
@@ -563,10 +567,13 @@ import Icon from '../../components/Icon.astro';
     updateCompareToggleVisibility();
   }
 
-  /** Тона стопки: цвет ничего не значит, он только разделяет соседей */
+  /** Тона и формы стопки: ни цвет, ни форма ничего не значат — они
+   *  только делают соседние папки непохожими. Списки разной длины,
+   *  поэтому пары «тон + форма» не повторяются дольше. */
   const FOLD_TINTS = ['sand', 'ice', 'clay', 'sage', 'lilac'];
+  const FOLD_MASKS = ['heart', 'drop', 'arch', 'hex', 'round'];
 
-  /** Уровень папок: стопка плашек, у накрытой видна шапка и полоска кадров */
+  /** Уровень папок: стопка плашек, у накрытой видна шапка и верх кадра */
   function renderBoards() {
     if (!boardsEl) return;
     const cats = Array.from(new Set(items.map((i) => i.cat)));
@@ -576,34 +583,34 @@ import Icon from '../../components/Icon.astro';
         const list = items.filter((i) => i.cat === cat);
         const label = list[0]?.catLabel ?? cat;
         const recent = [...list].reverse();
-        const shots = [0, 1, 2].map((n) => {
-          const it = recent[n];
-          return it
-            ? `<span class="board__shot"><img src="${escapeHtml(it.img)}" alt="" loading="lazy" decoding="async" /></span>`
-            : '<span class="board__shot"></span>';
-        }).join('');
         const cover = recent[0]?.img;
-        const thumb = cover
+        const pic = cover
           ? `<img src="${escapeHtml(cover)}" alt="" loading="lazy" decoding="async" />`
+          : '';
+        // в кружке шапки — предыдущий сохранённый, чтобы не дублировать кадр;
+        // если он один, кружок повторяет его
+        const face = recent[1]?.img ?? cover;
+        const thumb = face
+          ? `<img src="${escapeHtml(face)}" alt="" loading="lazy" decoding="async" />`
           : '';
         const latest = Math.max(0, ...list.map((i) => i.addedAt ?? 0));
         const when = ago(latest || undefined);
         const count = `${list.length} ${plural(list.length, ['карточка', 'карточки', 'карточек'])}`;
         const tint = FOLD_TINTS[idx % FOLD_TINTS.length];
+        const mask = FOLD_MASKS[idx % FOLD_MASKS.length];
 
         // --i задаёт порядок перекрытия: следующая папка лежит поверх
         // предыдущей, как в референсе.
         return `
-          <a class="board board--${tint}" href="#${encodeURIComponent(cat)}" data-board="${escapeHtml(cat)}" style="--i:${idx + 1}">
+          <a class="board board--${tint} board--${mask}" href="#${encodeURIComponent(cat)}" data-board="${escapeHtml(cat)}" style="--i:${idx + 1}">
             <span class="board__top">
               <span class="board__thumb" aria-hidden="true">${thumb}</span>
               <span class="board__text">
                 <span class="board__name">${escapeHtml(label)}</span>
                 <span class="board__meta">${count}${when ? ` · ${when}` : ''}</span>
               </span>
-              <span class="board__go" aria-hidden="true">↗</span>
             </span>
-            <span class="board__shots" aria-hidden="true">${shots}</span>
+            <span class="board__pic" aria-hidden="true">${pic}</span>
           </a>
         `;
       })

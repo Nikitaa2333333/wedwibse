@@ -96,6 +96,10 @@ const columns = layoutColumns(tiles, 2);
     display: grid;
     grid-template-columns: repeat(var(--board-cols), minmax(0, 1fr));
     gap: var(--pin-gap);
+    /* Поле от края экрана равно зазору между колонками: доска раньше шла
+       встык с рамкой, и крайний кадр читался обрезанным. Воздух вокруг
+       плитки одинаковый со всех сторон. */
+    padding-inline: var(--pin-gap);
     align-items: start;
   }
 
