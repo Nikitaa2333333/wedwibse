@@ -1,0 +1,263 @@
+---
+// СЕТКА КАРТОЧЕК СПЕЦИАЛИСТОВ — одна на все 19 категорий.
+// Раньше жила прямо в каталоге ведущих; вынесена, чтобы новая категория
+// (фотографы, видеографы, декораторы) получала тот же каталог без копии
+// четырёхсот строк вёрстки.
+//
+// Карточки приходят УЖЕ подготовленными: у каждой категории свои фильтры
+// и своя логика бакетов (цена за 6 часов у ведущих, за час у фотографов),
+// и решать это должна страница категории, а не общая сетка.
+//
+// ============ «УМНАЯ» МОЗАИКА БЕЗ ДЫР — алгоритм ============
+// Три типа карточек, все ряды остаются в линию:
+//   normal — один кадр 4:5 в одну колонку;
+//   wide   — ОДИН большой кадр на две колонки, аспект 13:8: при span 2
+//            с зазором его высота = высоте соседнего 4:5 ((2w+g)/1.625 ≈
+//            1.25w) — размер-акцент без разрыва ряда;
+//   duo    — два кадра 4:5 рядом на две колонки (несколько фото видно
+//            сразу, референс WedWed) — высота сходится по построению.
+// Правила, из-за которых дыр не бывает:
+// 1. Никаких row-span: вытянутая по вертикали карточка пробивает соседний
+//    ряд и оставляет дыру сбоку. Динамика — только шириной.
+// 2. grid-auto-flow: dense — если span-2 не влезает в конец ряда, слот
+//    занимает следующая обычная карточка.
+// 3. Каденция: wide — i % 6 === 1, duo — i % 6 === 4.
+import { Image } from 'astro:assets';
+import PhotoRail from './PhotoRail.astro';
+import Icon from './Icon.astro';
+import type { SpecialistCard } from '../lib/specialist-card';
+import { resolveImage } from '../lib/images';
+import { photosOnly } from '../lib/media';
+
+interface Props {
+  cards: SpecialistCard[];
+}
+
+const { cards } = Astro.props;
+---
+
+<!-- СЕТКА: мозаика без дыр, фото — главное. Без анимации появления:
+     каталог листается спокойно, карточки стоят на месте. -->
+<main class="wrap">
+  <div class="vgrid" data-sort-grid>
+    {cards.map(({ s, variant, styleTag, filters, sortKey, price, href, save }) => {
+      const sizes =
+        variant === 'scard--wide' || variant === 'scard--duo'
+          ? '(min-width: 1440px) 50vw, (min-width: 640px) 66vw, 100vw'
+          : '(min-width: 1440px) 25vw, (min-width: 640px) 33vw, 50vw';
+
+      return (
+      <article
+        class={`scard${variant ? ` ${variant}` : ''}`}
+        data-card
+        data-filters={JSON.stringify(filters)}
+        data-sort={JSON.stringify(sortKey)}
+      >
+        {variant === 'scard--duo' ? (
+          <div class="scard__media">
+            <div class="scard__strip">
+              {photosOnly(s.photos).slice(0, 2).map((src, n) => (
+                <div class="scard__frame media">
+                  <Image
+                    src={resolveImage(src)}
+                    alt={`${s.name} — фото ${n + 1}`}
+                    widths={[360, 560, 800]}
+                    sizes={sizes}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </div>
+              ))}
+            </div>
+
+            <button class="save" type="button" data-save={save} aria-pressed="false" aria-label="В избранное">
+              <Icon name="heartOutline" />
+            </button>
+          </div>
+        ) : (
+          <PhotoRail
+            photos={s.photos.slice(0, 6)}
+            alt={s.name}
+            href={href}
+            sizes={sizes}
+            widths={[360, 560, 800, 1100]}
+          >
+            <button class="save" type="button" data-save={save} aria-pressed="false" aria-label="В избранное">
+              <Icon name="heartOutline" />
+            </button>
+          </PhotoRail>
+        )}
+
+        <!-- Цена и стиль — в подписи под кадром на любой ширине.
+             Одно правило на весь сайт: текст не кладём на фотографию. -->
+        <div class="scard__body">
+          <p class="scard__price">
+            {price}
+            {styleTag && <span class="scard__style">{styleTag}</span>}
+          </p>
+          <div class="scard__top">
+            <h2 class="scard__name">
+              <a href={href}>{s.name}</a>
+            </h2>
+            {s.rating && (
+              <span class="scard__rate" aria-label={`Рейтинг ${s.rating}`}>★ {s.rating.toFixed(1)}</span>
+            )}
+          </div>
+          <p class="scard__tagline t-small">{s.tagline}</p>
+        </div>
+      </article>
+      );
+    })}
+  </div>
+
+  <p class="empty t-small" data-results-empty hidden>
+    По заданным фильтрам никого не нашлось — попробуйте снять часть условий.
+  </p>
+</main>
+
+<style>
+  /* ============ СЕТКА-МОЗАИКА ============
+     Поля, зазоры и пропорции кадра — общие ручки каталога из global.css
+     (--catalog-*, --card-ratio*): на телефоне карточка встык с краем. */
+  .wrap {
+    max-width: none;
+    padding: 0 var(--catalog-edge) 0;
+  }
+
+  .vgrid {
+    display: grid;
+    grid-auto-flow: dense;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--catalog-gap-y) var(--catalog-gap-x);
+  }
+
+  @media (min-width: 640px) {
+    .vgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+
+  @media (min-width: 1440px) {
+    .vgrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  }
+
+  .scard--duo,
+  .scard--wide { grid-column: span 2; }
+
+  /* Карточка подменяет себе пропорцию кадра — дальше её читают и рельс
+     PhotoRail, и кадры дуо-карточки. Широкая держит высоту ряда. */
+  .scard--wide { --card-ratio: var(--card-ratio-wide); }
+
+  .empty { padding: var(--s-7) var(--catalog-pad); }
+  .empty[hidden] { display: none; }
+
+  [data-card].is-hidden { display: none; }
+
+  /* ============ КАРТОЧКА ============ */
+  .scard {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    min-width: 0;
+  }
+
+  .scard__media { position: relative; }
+
+  .scard__frame {
+    position: relative;
+    aspect-ratio: var(--card-ratio);
+    background: var(--surface-dim);
+  }
+
+  .scard__frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* Дуо-карточка: два кадра видны сразу; если фото больше —
+     полоса листается вбок (scroll-snap), как в карточках площадок */
+  .scard__strip {
+    display: flex;
+    gap: var(--catalog-gap-x); /* тот же зазор, что у колонок сетки */
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x; /* жест только по горизонтали, без косого свайпа (см. FilterBar) */
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .scard__strip::-webkit-scrollbar { display: none; }
+
+  .scard__strip .scard__frame {
+    flex: 0 0 calc(50% - var(--catalog-gap-x) / 2);
+    scroll-snap-align: start;
+  }
+
+  /* ============ ПОДПИСЬ: цена, имя с рейтингом, слоган ============
+     Кадр идёт в край экрана, текст — нет: поле подписи держит
+     --catalog-pad (от планшета он ноль, поля даёт сама сетка).
+     Строки стоят плотно, как у маркетплейса: подпись читается одним блоком. */
+  .scard__body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-inline: var(--catalog-pad);
+  }
+
+  /* Цена и стиль — одной строкой, разделены зазором, а не пробелом
+     из разметки (его схлопывает сборка). */
+  .scard__price {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 var(--s-2);
+    font-size: var(--fs-body);
+    font-weight: var(--w-medium);
+  }
+
+  /* Стиль — вторым планом: приглушение прозрачностью, не цветом.
+     На телефоне колонка ~190px, и стиль в строке с ценой переносится
+     и рвёт подпись — там его нет. */
+  .scard__style {
+    display: none;
+    opacity: 0.6;
+  }
+
+  @media (min-width: 640px) {
+    .scard__style { display: inline; }
+  }
+
+  /* Вуаль не нужна: под кадром больше нет текста, на фото осталось
+     только сердце, а у него своя тень. */
+  .scard :global(.veil) { display: none; }
+
+  .scard__top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--s-3);
+  }
+
+  /* На телефоне имя в кегле корпуса: h3 в колонке 190px ломал имена
+     на две строки и раздувал подпись. */
+  .scard__name {
+    font-size: var(--fs-body);
+    font-weight: var(--w-head);
+    line-height: 1.2;
+  }
+
+  .scard__name a { text-decoration: none; }
+
+  .scard__rate {
+    font-size: var(--fs-caption);
+    font-weight: var(--w-medium);
+    flex-shrink: 0;
+  }
+
+  .scard__tagline { font-size: var(--fs-caption); }
+
+  @media (min-width: 640px) {
+    .scard__name { font-size: var(--fs-h3); line-height: 1.15; }
+    .scard__rate { font-size: var(--fs-small); }
+    .scard__tagline { font-size: var(--fs-small); }
+  }
+</style>

@@ -1,37 +1,73 @@
 ---
-// СТРАНИЦА-ВИЗИТКА СПЕЦИАЛИСТА — третий заход (реф. Cineteca Milano):
-// крупная фото-карусель + контрастная инфо-плашка с ценой и заявкой.
-// Прототип только на одном специалисте (Антон Волков): quote/reels/reviewsList
-// пока заполнены не у всех 12 — как только формат утверждён, распространяем
-// на остальных и снимаем фильтр в getStaticPaths.
+// СТРАНИЦА-ВИЗИТКА СПЕЦИАЛИСТА — одна на все 19 категорий (реф. Cineteca
+// Milano): крупная фото-карусель + контрастная инфо-плашка с ценой и заявкой.
+// Раньше лежала отдельным роутом под ведущих; блоки те же, но всё, чего у
+// подрядчика нет, просто не рендерится — цена, рейтинг, отзывы, видео.
+//
+// Открывается визитка у тех, у кого есть материал для неё (quote/offers),
+// а не у всех карточек каталога: пустая страница-визитка хуже её отсутствия.
+//
+// Карточка, стоящая в двух категориях (пара «фото + видео» — и в
+// «Фотографах», и в «Видеографах»), имеет РОВНО ОДИН адрес: путь строится
+// по родной categorySlug, дубля страницы под тем же текстом нет.
 import { Image } from 'astro:assets';
 import Layout from '../../../../layouts/Layout.astro';
 import SiteHeader from '../../../../components/SiteHeader.astro';
 import BottomDock from '../../../../components/BottomDock.astro';
 import PhotoRail from '../../../../components/PhotoRail.astro';
 import Icon from '../../../../components/Icon.astro';
-import { VEDUSHCHIE, VEDUSHCHIE_FILTERS } from '../../../../data/specialists';
+import { SPECIALISTS_BY_CATEGORY, FILTERS_BY_CATEGORY, type Specialist } from '../../../../data/specialists';
+import { reelsOf } from '../../../../data/reels';
 import { resolveImage, favoriteImage } from '../../../../lib/images';
+import { frameId, photosOnly } from '../../../../lib/media';
 
 export function getStaticPaths() {
-  return VEDUSHCHIE.filter((s) => s.slug === 'anton-volkov').map((s) => ({
-    params: { slug: s.slug },
-    props: { s },
-  }));
+  const seen = new Set<string>();
+
+  return Object.values(SPECIALISTS_BY_CATEGORY)
+    .flat()
+    // визитка есть у тех, кто дал материал: предложение или список причин
+    .filter((s) => s.quote || s.offers)
+    .filter((s) => !seen.has(s.slug) && seen.add(s.slug))
+    .map((s) => ({ params: { category: s.categorySlug, slug: s.slug }, props: { s } }));
 }
 
-const { s } = Astro.props;
+const { s } = Astro.props as { s: Specialist };
 
 function labelsFor(groupKey: string, values: string[]): string[] {
-  const group = VEDUSHCHIE_FILTERS.find((g) => g.key === groupKey)!;
+  const group = FILTERS_BY_CATEGORY[s.categorySlug]?.find((g) => g.key === groupKey);
+  if (!group) return values;
   const map = new Map(group.options.map((o) => [o.value, o.label]));
   return values.map((v) => map.get(v) ?? v);
 }
 
 const priceFmt = new Intl.NumberFormat('ru-RU');
-const styleLabels = labelsFor('style', s.styles);
+const styleLabels = s.styles ? labelsFor('style', s.styles) : [];
 const bioParagraphs = s.bio.split('\n\n');
-const firstName = s.name.split(' ')[0];
+
+// Строка под ценой собирается из того, что есть: пустых «· ·» не остаётся
+const priceFacts = [
+  s.priceFrom ? 'за 6 часов работы' : null,
+  s.experienceYears ? `${s.experienceYears} лет опыта` : null,
+  s.hasOwnDJ ? 'свой диджей' : null,
+  s.gender === 'pair' ? 'фото и видео' : null,
+].filter(Boolean);
+
+// ПЕРВЫЙ ЭКРАН — РЕЛЬС ИЗ ВСЕХ КАДРОВ: фотографии и ролики вперемешку,
+// как в доске главной. Отдельной страницы у ролика нет — нажали на видео
+// в доске, попали сюда, и рельс уже стоит на нём (якорь `#foto-<кадр>`
+// разбирает инлайновый скрипт внизу, как в карточке площадки).
+// Порядок: обложка, ролики, остальные фото — видео видно сразу, но
+// первым кадром (и LCP) остаётся снимок.
+// Кадров в рельсе ровно столько, сколько их уходит в доску главной
+// (PER_SPECIALIST в lib/gallery): любой кадр, по которому там можно нажать,
+// в рельсе есть, а строка точек-индикаторов не превращается в пунктир.
+// Вся съёмка целиком — ниже, в блоке «Фотографии».
+const HERO_PHOTOS = 12;
+const reels = reelsOf(s.slug);
+const frames = [
+  ...new Set([s.photos[0], ...reels.map((r) => r.src), ...s.photos.slice(1, HERO_PHOTOS)]),
+];
 
 // Инициалы автора отзыва — для кружка-аватара, пока нет реального фото
 function initials(author: string): string {
@@ -43,22 +79,25 @@ function initials(author: string): string {
     .join('');
 }
 
+const priceLabel = s.priceFrom ? `от ${priceFmt.format(s.priceFrom)} ₽` : 'Цена по запросу';
+const href = `/moskva/podryadchiki/${s.categorySlug}/${s.slug}/`;
+
 const saveData = JSON.stringify({
-  id: `vedushchie:${s.slug}`,
-  cat: 'vedushchie',
-  catLabel: 'Ведущие',
+  id: `${s.categorySlug}:${s.slug}`,
+  cat: s.categorySlug,
+  catLabel: s.category,
   name: s.name,
   meta: styleLabels[0] || s.tagline,
-  price: `от ${priceFmt.format(s.priceFrom)} ₽`,
+  price: priceLabel,
   rating: s.rating,
   img: await favoriteImage(s.photos[0]),
-  href: `/moskva/podryadchiki/vedushchie/${s.slug}/`,
+  href,
 });
 ---
 
 <Layout
-  title={`${s.name} — ведущий на свадьбу в Москве и области — WED Secrets`}
-  description={s.tagline}
+  title={`${s.name} — ${s.category.toLowerCase()} на свадьбу в Москве и области — WED Secrets`}
+  description={`${s.name} — ${s.tagline.toLowerCase()}. ${s.category} на свадьбу в Москве и Московской области.`}
 >
   <SiteHeader />
 
@@ -71,29 +110,34 @@ const saveData = JSON.stringify({
           <nav class="crumbs t-caption">
             <a href="/">Главная</a>
             <span aria-hidden="true">/</span>
-            <a href="/moskva/podryadchiki/vedushchie/">Ведущие</a>
+            <a href={`/moskva/podryadchiki/${s.categorySlug}/`}>{s.category}</a>
             <span aria-hidden="true">/</span>
             <span>{s.name}</span>
           </nav>
 
           <h1 class="phero__name">{s.name}</h1>
           <p class="t-lead phero__tagline">{s.tagline}</p>
-          <a class="pill pill--sm phero__rate" href="#otzyvy">★ {s.rating.toFixed(1)} · {s.reviews}&nbsp;отзывов</a>
+          {s.rating && s.reviews && (
+            <a class="pill pill--sm phero__rate" href="#otzyvy">★ {s.rating.toFixed(1)} · {s.reviews}&nbsp;отзывов</a>
+          )}
         </div>
 
         <div class="phero__deal">
-          <p class="phero__price">от {priceFmt.format(s.priceFrom)}&nbsp;₽</p>
-          <p class="t-caption phero__price-note">за 6&nbsp;часов работы · {s.experienceYears}&nbsp;лет опыта{s.hasOwnDJ ? ' · свой диджей' : ''}</p>
+          <p class="phero__price">{priceLabel}</p>
+          <p class="t-caption phero__price-note">
+            {priceFacts.join(' · ')}
+          </p>
           <a class="pill pill--lg" href="#zayavka">Оставить заявку</a>
         </div>
       </div>
 
-      <div class="phero__media">
+      <div class="phero__media" data-hero-rail data-frames={JSON.stringify(frames.map(frameId))}>
         <PhotoRail
-          photos={s.photos}
+          photos={frames}
           alt={s.name}
           sizes="(min-width: 1024px) 50vw, 100vw"
           widths={[480, 800, 1200]}
+          priority
         >
           <button class="save" type="button" data-save={saveData} aria-pressed="false" aria-label="В избранное">
             <Icon name="heartOutline" />
@@ -102,22 +146,48 @@ const saveData = JSON.stringify({
       </div>
     </section>
 
-    <!-- О ВЕДУЩЕМ -->
+    <!-- О ПОДРЯДЧИКЕ -->
     <section class="pabout">
-      <h2 class="t-h2">О ведущем</h2>
+      <h2 class="t-h2">{s.aboutTitle ?? 'О подрядчике'}</h2>
       {bioParagraphs.map((p) => <p class="pabout__text">{p}</p>)}
     </section>
+
+    <!-- ПОЧЕМУ ВЫБИРАЮТ: причины формулирует сам подрядчик. Заголовок
+         пункта — отдельной строкой h3, а не жирной фразой внутри абзаца. -->
+    {s.offers && (
+      <section class="pwhy">
+        <h2 class="t-h2">Почему выбирают</h2>
+        <div class="pwhy__grid" data-reveal-group>
+          {s.offers.map((offer) => (
+            <article class="pwhy__item" data-reveal>
+              <h3 class="pwhy__title">{offer.title}</h3>
+              <p class="pwhy__text">{offer.text}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <!-- ЧТО ВХОДИТ В ПАКЕТ -->
+    {s.packageIncludes && (
+      <section class="ppack">
+        <h2 class="t-h2">Что входит</h2>
+        <ul class="ppack__list list">
+          {s.packageIncludes.map((item) => <li>{item}</li>)}
+        </ul>
+      </section>
+    )}
 
     <!-- ГАЛЕРЕЯ: компактная ровная сетка, без растянутых кадров -->
     <section class="pgallery">
       <h2 class="t-h2">Фотографии</h2>
       <div class="pgallery__grid" data-reveal-group>
-        {s.photos.map((src, n) => (
+        {photosOnly(s.photos).map((src, n) => (
           <figure class="pgallery__cell media" data-reveal>
             <Image
               src={resolveImage(src)}
               alt={`${s.name} — фото ${n + 1}`}
-              widths={[360, 560]}
+              widths={[360, 560, 800]}
               sizes="(min-width: 900px) 33vw, 50vw"
               loading="lazy"
               decoding="async"
@@ -127,39 +197,36 @@ const saveData = JSON.stringify({
       </div>
     </section>
 
-    <!-- ВИДЕО: вертикальные reels каруселью (пока постеры-заглушки) -->
-    {s.reels && (
+    <!-- ВИДЕО отдельной секцией у подрядчика с реальными роликами нет:
+         они лежат кадрами в первом экране, вперемешку с фотографиями.
+         Ниже — старый демо-блок постеров (карточки-заглушки прототипа). -->
+    {!reels.length && s.reels && (
       <section class="preels">
         <h2 class="t-h2">Видео</h2>
         <div class="preels__rail" data-reveal-group>
           {s.reels.map((reel, n) => (
             <figure class="preels__item media" data-reveal>
-              {reel.video ? (
-                <video src={reel.video} playsinline muted loop preload="none"></video>
-              ) : (
-                <Image
-                  src={resolveImage(reel.poster)}
-                  alt={`${s.name} — видео ${n + 1}`}
-                  widths={[240, 360, 480]}
-                  sizes="(min-width: 1024px) 220px, 48vw"
-                  loading="lazy"
-                  decoding="async"
-                />
-              )}
-              <span class="preels__play" aria-hidden="true">▶</span>
+              <Image
+                src={resolveImage(reel.poster)}
+                alt={`${s.name} — видео ${n + 1}`}
+                widths={[240, 360, 480]}
+                sizes="(min-width: 1024px) 220px, 48vw"
+                loading="lazy"
+                decoding="async"
+              />
             </figure>
           ))}
         </div>
       </section>
     )}
 
-    <!-- ПРЕДЛОЖЕНИЕ ОТ ВЕДУЩЕГО: формулирует сам специалист, подаём цитатой -->
+    <!-- ПРЕДЛОЖЕНИЕ ОТ ПОДРЯДЧИКА: формулирует сам, подаём цитатой -->
     {s.quote && (
       <section class="pquote">
-        <p class="t-caption pquote__kicker">Предложение от {firstName === 'Антон' ? 'Антона' : s.name}</p>
+        <p class="t-caption pquote__kicker">Предложение</p>
         <blockquote class="pquote__body">
           <p class="pquote__text">{s.quote}</p>
-          <footer class="pquote__author t-small">{s.name} · ведущий</footer>
+          <footer class="pquote__author t-small">{s.name} · {s.category.toLowerCase()}</footer>
         </blockquote>
       </section>
     )}
@@ -194,7 +261,7 @@ const saveData = JSON.stringify({
 
     <!-- ЗАЯВКА -->
     <section class="pcta theme-accent" id="zayavka">
-      <h2 class="t-h2">Забронировать {s.name} на свою свадьбу</h2>
+      <h2 class="t-h2">Забронировать на свою свадьбу</h2>
       <p class="t-small pcta__note">Оставьте заявку — менеджер свяжется и уточнит дату и детали.</p>
       <a class="pill pill--lg" href="#">Оставить заявку</a>
     </section>
@@ -314,7 +381,7 @@ const saveData = JSON.stringify({
     .phero__media :global(.prail__item img) { object-position: center top; }
   }
 
-  /* ============ О ВЕДУЩЕМ ============ */
+  /* ============ О ПОДРЯДЧИКЕ ============ */
   .pabout {
     padding: 0 var(--gutter) var(--section-gap-tight);
   }
@@ -323,6 +390,41 @@ const saveData = JSON.stringify({
     max-width: var(--measure-text);
     margin-top: var(--s-4);
   }
+
+  /* ============ ПОЧЕМУ ВЫБИРАЮТ ============
+     Две колонки на ПК, одна на телефоне. Ни рамок, ни линий между
+     пунктами: их разделяет воздух, заголовок пункта — сам себе знак. */
+  .pwhy {
+    padding: 0 var(--gutter) var(--section-gap-tight);
+  }
+
+  .pwhy__grid {
+    display: grid;
+    gap: var(--s-6) var(--s-7);
+    margin-top: var(--s-5);
+  }
+
+  @media (min-width: 720px) {
+    .pwhy__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  .pwhy__title {
+    font-size: var(--fs-h3);
+    font-weight: var(--w-head);
+    line-height: var(--lh-heading);
+  }
+
+  .pwhy__text {
+    margin-top: var(--s-2);
+    max-width: var(--measure-text);
+  }
+
+  /* ============ ЧТО ВХОДИТ ============ */
+  .ppack {
+    padding: 0 var(--gutter) var(--section-gap-tight);
+  }
+
+  .ppack__list { margin-top: var(--s-5); }
 
   /* ============ ГАЛЕРЕЯ ============ */
   .pgallery {
@@ -342,8 +444,8 @@ const saveData = JSON.stringify({
     .pgallery__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   }
 
-  /* ============ ВИДЕО-REELS ============
-     Вертикальные 9:16 карточки, листаются вбок (scroll-snap),
+  /* ============ ВИДЕО-РОЛИКИ ============
+     Вертикальные 2:3 карточки, листаются вбок (scroll-snap),
      как карусели карточек каталога. */
   .preels {
     padding: 0 0 var(--section-gap-tight) var(--gutter);
@@ -367,25 +469,9 @@ const saveData = JSON.stringify({
   .preels__item {
     position: relative;
     flex: 0 0 clamp(180px, 48vw, 240px);
-    aspect-ratio: 9 / 16;
+    aspect-ratio: 2 / 3;
     scroll-snap-align: start;
     background: var(--surface-dim);
-  }
-
-  .preels__play {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    border: 1.5px solid var(--white);
-    color: var(--white);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
   }
 
   /* ============ ПРЕДЛОЖЕНИЕ-ЦИТАТА ============ */
@@ -482,8 +568,34 @@ const saveData = JSON.stringify({
   .pcta .pill { margin-top: var(--s-5); }
 </style>
 
+<!-- Якорь разбираем ДО модульных скриптов (те отложены и выполняются после
+     разбора документа): рельс должен сразу встать на нужный кадр, иначе
+     человек, нажавший в доске на ролик, на мгновение увидит чужое фото.
+     Тот же приём, что в VenueHero. -->
+<script is:inline>
+  (() => {
+    const host = document.querySelector('[data-hero-rail]');
+    const id = (location.hash.match(/^#foto-(.+)$/) || [])[1];
+    if (!host || !id) return;
+
+    const frames = JSON.parse(host.dataset.frames || '[]');
+    const index = frames.indexOf(decodeURIComponent(id));
+    if (index < 1) return; // 0 и «кадр не найден» — рельс и так стоит на первом
+
+    host.querySelector('[data-prail-host]').dataset.start = String(index);
+    host.querySelector('.prail__track').style.setProperty('--i', String(index));
+
+    const img = host.querySelector(`img[data-frame="${CSS.escape(frames[index])}"]`);
+    if (img) {
+      img.loading = 'eager';
+      img.fetchPriority = 'high';
+    }
+  })();
+</script>
+
 <script>
   import { bindSaveButtons } from '../../../../lib/save';
 
+  // Ролики в первом экране играют сами — их ведёт PhotoRail
   bindSaveButtons();
 </script>

@@ -23,7 +23,8 @@
 // ============================================================
 import { VENUES } from '../data/venues';
 import { ARTICLES, articleUrl, rubricBySlug } from '../data/articles';
-import { REELS } from '../data/reels';
+import { REELS, reelHref } from '../data/reels';
+import { FOTOGRAFY, specialistUrl, type Specialist } from '../data/specialists';
 import { resolveImage } from './images';
 import { frameId, isVideo, posterOf } from './media';
 
@@ -117,19 +118,54 @@ function tallPins(venue: Venue): Pin[] {
 }
 
 /** Видео-кадры общего потока (data/reels.ts): такие же плитки, как фото.
- *  Ссылки у них нет — плитка ни на что не указывает, пока у ролика не
- *  появится карточка-источник. Подписи тоже нет: подпись под кадром в доске
- *  бывает только у мини-галерей. */
+ *  В доске крутится немой луп, а нажатие открывает визитку того, кто снял,
+ *  сразу на этом ролике (якорь `#foto-<кадр>` — как у кадров площадки).
+ *  Подписи под плиткой нет: она в доске бывает только у мини-галерей. */
 function reelPins(): Pin[] {
   return REELS.map((reel) => ({
     photos: [reel.src],
     alt: reel.alt,
-    href: reel.href ?? null,
+    href: reelHref(reel),
     caption: null,
     ratio: `${ratioOf(reel.src).toFixed(3)} / 1`,
     index: 0,
     height: 1 / ratioOf(reel.src),
   }));
+}
+
+/** сколько кадров берём с карточки одного специалиста */
+const PER_SPECIALIST = 12;
+
+/** Кадры специалиста — второй источник доски рядом с площадками: подрядчик
+ *  со своей карточкой попадает на главную сам, без правок вёрстки.
+ *  Правило то же: только вертикальные кадры, подпись — у мини-галерей. */
+function specialistPins(s: Specialist): Pin[] {
+  const shots = s.photos.slice(0, PER_SPECIALIST).filter((src) => ratioOf(src) <= LANDSCAPE);
+  const pins: Pin[] = [];
+
+  let i = 0;
+  let n = 0;
+
+  while (i < shots.length) {
+    const size = Math.min(SIZES[n++ % SIZES.length], shots.length - i);
+    const group = shots.slice(i, i + size);
+    i += size;
+
+    pins.push({
+      photos: group,
+      alt: `${s.name} — свадебная съёмка`,
+      // как у площадок: открываем визитку НА ТОМ кадре, по которому нажали
+      href: `${specialistUrl(s)}#foto-${frameId(group[0])}`,
+      caption: group.length > 1 ? s.name : null,
+      ratio: `${Math.max(MIN_RATIO, ratioOf(group[0])).toFixed(3)} / 1`,
+      index: 0,
+      height:
+        1 / Math.max(MIN_RATIO, ratioOf(group[0])) +
+        (group.length > 1 ? CAPTION_H + DOTS_H : 0),
+    });
+  }
+
+  return pins;
 }
 
 /** по одной штуке с каждой площадки по кругу — доска не идёт блоками
@@ -185,9 +221,13 @@ function articleTile(article: (typeof ARTICLES)[number]): ArticleTile {
  *  колонки просто идут вниз и заканчиваются на разной высоте, как в ленте.
  *  Каждая ARTICLE_EVERY-я позиция — карточка статьи. */
 export function collectTiles(): Tile[] {
-  // Ролики идут отдельной дорожкой в том же interleave — так они
-  // расходятся по всему потоку, а не встают тремя плитками подряд.
-  const photos = interleave([...VENUES.map(tallPins), reelPins()]);
+  // Ролики и кадры подрядчиков идут своими дорожками в том же interleave —
+  // так они расходятся по всему потоку, а не встают пачкой плиток подряд.
+  const photos = interleave([
+    ...VENUES.map(tallPins),
+    ...FOTOGRAFY.map(specialistPins),
+    reelPins(),
+  ]);
   const articles = ARTICLES.map(articleTile);
   const out: Tile[] = [];
 

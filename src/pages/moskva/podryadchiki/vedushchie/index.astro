@@ -1,12 +1,11 @@
 ---
-// КАТАЛОГ ПОДРЯДЧИКОВ: ВЕДУЩИЕ (первая из 19 категорий раздела «Специалисты»).
-// Паттерн для остальных категорий: свой FilterGroup[] + свой массив карточек
-// в data/specialists.ts, разметка страницы не меняется.
+// КАТАЛОГ ПОДРЯДЧИКОВ: ВЕДУЩИЕ.
+// Вёрстка сетки и карточки — общий компонент SpecialistGrid: здесь только
+// то, что у категории своё, — фильтры, бакеты цены и опыта, цена строкой.
 //
 // Фильтр: полоса чипов над каталогом (FilterBar: иконка «все фильтры»,
 // сортировка, быстрые группы и популярные пункты) и шторка снизу
 // (FilterSheet) — одна механика на всех экранах, реф. Яндекс Путешествия.
-import { Image } from 'astro:assets';
 import Layout from '../../../../layouts/Layout.astro';
 import SiteHeader from '../../../../components/SiteHeader.astro';
 import BottomDock from '../../../../components/BottomDock.astro';
@@ -14,11 +13,11 @@ import FilterBar from '../../../../components/FilterBar.astro';
 import FilterSheet from '../../../../components/FilterSheet.astro';
 import CategoryNav from '../../../../components/CategoryNav.astro';
 import ScopePicker from '../../../../components/ScopePicker.astro';
-import PhotoRail from '../../../../components/PhotoRail.astro';
-import Icon from '../../../../components/Icon.astro';
-import { VEDUSHCHIE, VEDUSHCHIE_FILTERS, SPECIALIST_CATEGORIES } from '../../../../data/specialists';
-import { resolveImage, favoriteImage } from '../../../../lib/images';
+import SpecialistGrid from '../../../../components/SpecialistGrid.astro';
+import { VEDUSHCHIE, VEDUSHCHIE_FILTERS, SPECIALIST_CATEGORIES, specialistUrl } from '../../../../data/specialists';
+import { favoriteImage } from '../../../../lib/images';
 import { countOptions } from '../../../../lib/filter-counts';
+import { variantOf, type SpecialistCard } from '../../../../lib/specialist-card';
 
 // Бакеты для диапазонных фильтров — считаются на сборке, в разметку идёт
 // уже готовое значение бакета, JS на клиенте сравнивает строки.
@@ -37,61 +36,55 @@ function experienceBucket(years: number): string {
   return ''; // 10–15 лет вне заданных вариантов фильтра — карточка не попадёт в этот фильтр
 }
 
-// ============ «УМНАЯ» МОЗАИКА БЕЗ ДЫР — алгоритм ============
-// Три типа карточек, все ряды остаются в линию:
-//   normal — один кадр 4:5 в одну колонку;
-//   wide   — ОДИН большой кадр на две колонки, аспект 13:8: при span 2
-//            с зазором его высота = высоте соседнего 4:5 ((2w+g)/1.625 ≈
-//            1.25w) — размер-акцент без разрыва ряда;
-//   duo    — два кадра 4:5 рядом на две колонки (несколько фото видно
-//            сразу, референс WedWed) — высота сходится по построению.
-// Правила, из-за которых дыр не бывает:
-// 1. Никаких row-span: вытянутая по вертикали карточка пробивает соседний
-//    ряд и оставляет дыру сбоку. Динамика — только шириной.
-// 2. grid-auto-flow: dense — если span-2 не влезает в конец ряда, слот
-//    занимает следующая обычная карточка.
-// 3. Каденция: wide — i % 6 === 1, duo — i % 6 === 4. На 12 карточках при
-//    4 колонках это ровно 4 полных ряда (16 юнитов), при 2 и 3 колонках
-//    dense укладывает без дыр (проверено перебором).
-type CardVariant = '' | 'scard--wide' | 'scard--duo';
-function variant(i: number): CardVariant {
-  if (i % 6 === 1) return 'scard--wide';
-  if (i % 6 === 4) return 'scard--duo';
-  return '';
-}
-
 const styleLabels = new Map(
   VEDUSHCHIE_FILTERS.find((g) => g.key === 'style')!.options.map((o) => [o.value, o.label])
 );
 
-const cards = VEDUSHCHIE.map((s, i) => ({
-  s,
-  variant: variant(i),
-  styleTag: styleLabels.get(s.styles[0]) ?? '',
-  filters: {
-    gender: s.gender,
-    price: priceBucket(s.priceFrom),
-    city: s.cities,
-    style: s.styles,
-    age: s.age,
-    experience: experienceBucket(s.experienceYears),
-    ownDJ: s.hasOwnDJ ? 'yes' : 'no',
-    formats: s.formats,
-    languages: s.languages,
-    ceremonyMaster: s.ceremonyMaster ? 'yes' : 'no',
-    equipment: s.hasEquipment ? 'yes' : 'no',
-  },
-  sortKey: { price: s.priceFrom, rating: s.rating },
-}));
-
-const counts = countOptions(VEDUSHCHIE_FILTERS, cards.map((c) => c.filters));
-
 const priceFmt = new Intl.NumberFormat('ru-RU');
 
-// Кадр для снимка в избранном — уже пережатый URL, не путь из данных
-const favImg = new Map(
-  await Promise.all(VEDUSHCHIE.map(async (s) => [s.slug, await favoriteImage(s.photos[0])] as const))
+const cards: SpecialistCard[] = await Promise.all(
+  VEDUSHCHIE.map(async (s, i) => {
+    const price = `от ${priceFmt.format(s.priceFrom!)} ₽`;
+    const href = specialistUrl(s);
+    const styleTag = styleLabels.get(s.styles![0]) ?? '';
+
+    return {
+      s,
+      variant: variantOf(i),
+      styleTag,
+      filters: {
+        gender: s.gender!,
+        price: priceBucket(s.priceFrom!),
+        city: s.cities!,
+        style: s.styles!,
+        age: s.age!,
+        experience: experienceBucket(s.experienceYears!),
+        ownDJ: s.hasOwnDJ ? 'yes' : 'no',
+        formats: s.formats!,
+        languages: s.languages!,
+        ceremonyMaster: s.ceremonyMaster ? 'yes' : 'no',
+        equipment: s.hasEquipment ? 'yes' : 'no',
+      },
+      sortKey: { price: s.priceFrom!, rating: s.rating ?? 0 },
+      price,
+      href,
+      // Кадр для снимка в избранном — уже пережатый URL, не путь из данных
+      save: JSON.stringify({
+        id: `vedushchie:${s.slug}`,
+        cat: 'vedushchie',
+        catLabel: 'Ведущие',
+        name: s.name,
+        meta: styleTag || s.tagline,
+        price,
+        rating: s.rating,
+        img: await favoriteImage(s.photos[0]),
+        href,
+      }),
+    };
+  })
 );
+
+const counts = countOptions(VEDUSHCHIE_FILTERS, cards.map((c) => c.filters));
 ---
 
 <Layout
@@ -120,95 +113,7 @@ const favImg = new Map(
       <FilterSheet groups={VEDUSHCHIE_FILTERS} counts={counts} noun={['ведущий', 'ведущих', 'ведущих']} sortable />
     </aside>
 
-    <!-- СЕТКА: мозаика без дыр, фото — главное. Без анимации появления:
-         каталог листается спокойно, карточки стоят на месте. -->
-    <main class="wrap">
-      <div class="vgrid" data-sort-grid>
-        {cards.map(({ s, variant, styleTag, filters, sortKey }) => {
-          const sizes =
-            variant === 'scard--wide' || variant === 'scard--duo'
-              ? '(min-width: 1440px) 50vw, (min-width: 640px) 66vw, 100vw'
-              : '(min-width: 1440px) 25vw, (min-width: 640px) 33vw, 50vw';
-
-          const saveData = JSON.stringify({
-            id: `vedushchie:${s.slug}`,
-            cat: 'vedushchie',
-            catLabel: 'Ведущие',
-            name: s.name,
-            meta: styleTag || s.tagline,
-            price: `от ${priceFmt.format(s.priceFrom)} ₽`,
-            rating: s.rating,
-            img: favImg.get(s.slug),
-            href: `/moskva/podryadchiki/vedushchie/${s.slug}/`,
-          });
-
-          return (
-          <article
-            class={`scard${variant ? ` ${variant}` : ''}`}
-            data-card
-            data-filters={JSON.stringify(filters)}
-            data-sort={JSON.stringify(sortKey)}
-          >
-            {variant === 'scard--duo' ? (
-              <div class="scard__media">
-                <div class="scard__strip">
-                  {s.photos.map((src, n) => (
-                    <div class="scard__frame media">
-                      <Image
-                        src={resolveImage(src)}
-                        alt={`${s.name} — фото ${n + 1}`}
-                        widths={[360, 560, 800]}
-                        sizes={sizes}
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    </div>
-                  ))}
-                </div>
-
-                <button class="save" type="button" data-save={saveData} aria-pressed="false" aria-label="В избранное">
-                  <Icon name="heartOutline" />
-                </button>
-              </div>
-            ) : (
-              <PhotoRail
-                photos={s.photos}
-                alt={s.name}
-                href={`/moskva/podryadchiki/vedushchie/${s.slug}/`}
-                sizes={sizes}
-                widths={[360, 560, 800, 1100]}
-              >
-                <button class="save" type="button" data-save={saveData} aria-pressed="false" aria-label="В избранное">
-                  <Icon name="heartOutline" />
-                </button>
-              </PhotoRail>
-            )}
-
-            <!-- Цена и стиль — в подписи под кадром на любой ширине.
-                 Раньше на ПК они лежали пилюлями на самом фото: одно правило
-                 на весь сайт — текст не кладём на фотографию. -->
-            <div class="scard__body">
-              <p class="scard__price">
-                от {priceFmt.format(s.priceFrom)} ₽
-                {styleTag && <span class="scard__style">{styleTag}</span>}
-              </p>
-              <div class="scard__top">
-                <h2 class="scard__name">
-                  <a href={`/moskva/podryadchiki/vedushchie/${s.slug}/`}>{s.name}</a>
-                </h2>
-                <span class="scard__rate" aria-label={`Рейтинг ${s.rating}`}>★ {s.rating.toFixed(1)}</span>
-              </div>
-              <p class="scard__tagline t-small">{s.tagline}</p>
-            </div>
-          </article>
-          );
-        })}
-      </div>
-
-      <p class="empty t-small" data-results-empty hidden>
-        По заданным фильтрам никого не нашлось — попробуйте снять часть условий.
-      </p>
-    </main>
+    <SpecialistGrid cards={cards} />
   </div>
 
   <BottomDock active="vendors" />
@@ -234,159 +139,6 @@ const favImg = new Map(
       border-right: 1px solid var(--hairline);
     }
   }
-
-  /* ============ СЕТКА-МОЗАИКА ============
-     Поля, зазоры и пропорции кадра — общие ручки каталога из global.css
-     (--catalog-*, --card-ratio*): на телефоне карточка встык с краем. */
-  .wrap {
-    max-width: none;
-    padding: 0 var(--catalog-edge) 0;
-  }
-
-  .vgrid {
-    display: grid;
-    grid-auto-flow: dense;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--catalog-gap-y) var(--catalog-gap-x);
-  }
-
-  @media (min-width: 640px) {
-    .vgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  }
-
-  @media (min-width: 1440px) {
-    .vgrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  }
-
-  .scard--duo,
-  .scard--wide { grid-column: span 2; }
-
-  /* Карточка подменяет себе пропорцию кадра — дальше её читают и рельс
-     PhotoRail, и кадры дуо-карточки. Широкая держит высоту ряда. */
-  .scard--wide { --card-ratio: var(--card-ratio-wide); }
-
-  .empty { padding: var(--s-7) var(--catalog-pad); }
-  .empty[hidden] { display: none; }
-
-  [data-card].is-hidden { display: none; }
-
-  /* ============ КАРТОЧКА ============ */
-  .scard {
-    display: flex;
-    flex-direction: column;
-    gap: var(--s-2);
-    min-width: 0;
-  }
-
-  .scard__media { position: relative; }
-
-  .scard__frame {
-    position: relative;
-    aspect-ratio: var(--card-ratio);
-    background: var(--surface-dim);
-  }
-
-  .scard__frame img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  /* Дуо-карточка: два кадра видны сразу; если фото больше —
-     полоса листается вбок (scroll-snap), как в карточках площадок */
-  .scard__strip {
-    display: flex;
-    gap: var(--catalog-gap-x); /* тот же зазор, что у колонок сетки */
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    touch-action: pan-x; /* жест только по горизонтали, без косого свайпа (см. FilterBar) */
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
-  }
-
-  .scard__strip::-webkit-scrollbar { display: none; }
-
-  .scard__strip .scard__frame {
-    flex: 0 0 calc(50% - var(--catalog-gap-x) / 2);
-    scroll-snap-align: start;
-  }
-
-  /* Метки на фото (цена + фирменный стиль) — только от планшета. На
-     телефоне они переносились в две строки и закрывали кадр, а фото в
-     каталоге — главное; цена там уходит в подпись. */
-  /* ============ ПОДПИСЬ: цена, имя с рейтингом, слоган ============
-     Кадр идёт в край экрана, текст — нет: поле подписи держит
-     --catalog-pad (от планшета он ноль, поля даёт сама сетка).
-     Строки стоят плотно, как у маркетплейса: подпись читается одним блоком. */
-  .scard__body {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding-inline: var(--catalog-pad);
-  }
-
-  .scard__price {
-    font-size: var(--fs-body);
-    font-weight: var(--w-medium);
-  }
-
-  /* Цена и стиль — одной строкой, разделены зазором, а не пробелом
-     из разметки (его схлопывает сборка). */
-  .scard__price {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 0 var(--s-2);
-  }
-
-  /* Стиль ведущего — вторым планом: приглушение прозрачностью, не цветом.
-     На телефоне колонка ~190px, и стиль в строке с ценой переносится
-     и рвёт подпись — там его нет, как не было и раньше (на фото он
-     показывался только на широком экране). */
-  .scard__style {
-    display: none;
-    opacity: 0.6;
-  }
-
-  @media (min-width: 640px) {
-    .scard__style { display: inline; }
-  }
-
-  /* Вуаль не нужна: под кадром больше нет текста, на фото осталось
-     только сердце, а у него своя тень. */
-  .scard :global(.veil) { display: none; }
-
-  .scard__top {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: var(--s-3);
-  }
-
-  /* На телефоне имя в кегле корпуса: h3 в колонке 190px ломал имена
-     на две строки и раздувал подпись. */
-  .scard__name {
-    font-size: var(--fs-body);
-    font-weight: var(--w-head);
-    line-height: 1.2;
-  }
-
-  .scard__name a { text-decoration: none; }
-
-  .scard__rate {
-    font-size: var(--fs-caption);
-    font-weight: var(--w-medium);
-    flex-shrink: 0;
-  }
-
-  .scard__tagline { font-size: var(--fs-caption); }
-
-  @media (min-width: 640px) {
-    .scard__name { font-size: var(--fs-h3); line-height: 1.15; }
-    .scard__rate { font-size: var(--fs-small); }
-    .scard__tagline { font-size: var(--fs-small); }
-  }
-
 </style>
 
 <script>
@@ -394,6 +146,5 @@ const favImg = new Map(
 
   // Фильтрация и шторка — внутри FilterSheet.astro, сортировка — в
   // FilterBar.astro. Здесь только избранное.
-  // Избранное: сохраняется в общее хранилище, читается разделом «Избранное»
   bindSaveButtons();
 </script>

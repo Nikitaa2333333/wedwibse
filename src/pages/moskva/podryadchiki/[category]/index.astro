@@ -1,9 +1,11 @@
 ---
-// ЗАГЛУШКА для категорий специалистов, у которых ещё нет карточек
-// (паттерн карточек и сетки — vedushchie/index.astro). Как только для
-// категории появляются фильтры в FILTERS_BY_CATEGORY (data/specialists.ts),
-// страница сама показывает полосу чипов и шторку фильтров — раньше
-// они лежали в данных, но нигде не были видны, теперь видны сразу.
+// КАТАЛОГ КАТЕГОРИИ СПЕЦИАЛИСТОВ (все, кроме ведущих — у тех свои бакеты
+// цены и опыта, поэтому своя страница). Здесь три состояния одной вёрстки:
+//   есть карточки  → сетка SpecialistGrid + фильтры;
+//   есть фильтры   → полоса и шторка стоят, под ними «скоро»;
+//   нет ничего     → одна строка «скоро».
+// Появились карточки категории в SPECIALISTS_BY_CATEGORY — каталог
+// поднимается сам, править вёрстку не нужно.
 import Layout from '../../../../layouts/Layout.astro';
 import SiteHeader from '../../../../components/SiteHeader.astro';
 import BottomDock from '../../../../components/BottomDock.astro';
@@ -11,7 +13,16 @@ import CategoryNav from '../../../../components/CategoryNav.astro';
 import FilterBar from '../../../../components/FilterBar.astro';
 import FilterSheet from '../../../../components/FilterSheet.astro';
 import ScopePicker from '../../../../components/ScopePicker.astro';
-import { SPECIALIST_CATEGORIES, FILTERS_BY_CATEGORY } from '../../../../data/specialists';
+import SpecialistGrid from '../../../../components/SpecialistGrid.astro';
+import {
+  SPECIALIST_CATEGORIES,
+  FILTERS_BY_CATEGORY,
+  SPECIALISTS_BY_CATEGORY,
+  specialistUrl,
+} from '../../../../data/specialists';
+import { favoriteImage } from '../../../../lib/images';
+import { countOptions } from '../../../../lib/filter-counts';
+import { variantOf, type SpecialistCard } from '../../../../lib/specialist-card';
 
 export function getStaticPaths() {
   return SPECIALIST_CATEGORIES.filter((c) => c.slug !== 'vedushchie').map((c) => ({
@@ -22,11 +33,56 @@ export function getStaticPaths() {
 
 const { category } = Astro.props;
 const filters = FILTERS_BY_CATEGORY[category.slug];
+const items = SPECIALISTS_BY_CATEGORY[category.slug] ?? [];
+
+const styleLabels = new Map(
+  (filters?.find((g) => g.key === 'style')?.options ?? []).map((o) => [o.value, o.label])
+);
+
+const priceFmt = new Intl.NumberFormat('ru-RU');
+
+// Значения фильтров у съёмочных категорий лежат готовой картой в самой
+// карточке (s.filters): у каждой категории свой набор параметров, и
+// раскладывать их по бакетам здесь, в общей странице, было бы гаданием.
+const cards: SpecialistCard[] = await Promise.all(
+  items.map(async (s, i) => {
+    const price = s.priceFrom ? `от ${priceFmt.format(s.priceFrom)} ₽` : 'Цена по запросу';
+    const href = specialistUrl(s);
+    const styleTag = styleLabels.get(s.styles?.[0] ?? '') ?? '';
+
+    return {
+      s,
+      variant: variantOf(i),
+      styleTag,
+      filters: s.filters ?? {},
+      sortKey: { price: s.priceFrom ?? 0, rating: s.rating ?? 0 },
+      price,
+      href,
+      save: JSON.stringify({
+        id: `${category.slug}:${s.slug}`,
+        cat: category.slug,
+        catLabel: category.label,
+        name: s.name,
+        meta: styleTag || s.tagline,
+        price,
+        rating: s.rating,
+        img: await favoriteImage(s.photos[0]),
+        href,
+      }),
+    };
+  })
+);
+
+const counts = filters ? countOptions(filters, cards.map((c) => c.filters)) : undefined;
 ---
 
 <Layout
   title={`${category.label} на свадьбу в Москве и области — WED Secrets`}
-  description={`Каталог специалистов «${category.label}» — скоро на WED Secrets.`}
+  description={
+    cards.length
+      ? `Каталог специалистов «${category.label}» в Москве и Московской области: работы, условия и заявка.`
+      : `Каталог специалистов «${category.label}» — скоро на WED Secrets.`
+  }
 >
   <SiteHeader />
   <CategoryNav categories={SPECIALIST_CATEGORIES} activeSlug={category.slug} />
@@ -34,33 +90,42 @@ const filters = FILTERS_BY_CATEGORY[category.slug];
   <ScopePicker
     title={category.label}
     active={category.slug}
+    count={cards.length ? `${cards.length} найдено` : undefined}
     cityGroup={filters?.find((g) => g.key === 'city')}
   />
 
-  {filters && <FilterBar groups={filters} sortable={false} />}
+  {filters && <FilterBar groups={filters} counts={counts} sortable={cards.length > 0} />}
 
   <div class="layout">
     {filters && (
       <aside class="sidebar">
-        <FilterSheet groups={filters} />
+        <FilterSheet groups={filters} counts={counts} sortable={cards.length > 0} />
       </aside>
     )}
 
-    <main class="wrap">
-      <p class="soon t-lead">
-        {filters
-          ? `Каталог «${category.label}» скоро появится здесь — а фильтры уже готовы.`
-          : `Каталог «${category.label}» скоро появится здесь.`}
-      </p>
-    </main>
+    {cards.length > 0 ? (
+      <SpecialistGrid cards={cards} />
+    ) : (
+      <main class="wrap">
+        <p class="soon t-lead">
+          {filters
+            ? `Каталог «${category.label}» скоро появится здесь — а фильтры уже готовы.`
+            : `Каталог «${category.label}» скоро появится здесь.`}
+        </p>
+      </main>
+    )}
   </div>
 
   <BottomDock active="vendors" />
 </Layout>
 
 <style>
+  .layout {
+    padding-bottom: calc(var(--safe-b) + 120px);
+  }
+
   .wrap {
-    padding: 0 var(--gutter) calc(var(--section-gap) + var(--safe-b) + 80px);
+    padding: 0 var(--gutter) var(--section-gap);
   }
 
   /* ПК: колонка настроек слева, как в каталогах с карточками */
@@ -77,3 +142,9 @@ const filters = FILTERS_BY_CATEGORY[category.slug];
     }
   }
 </style>
+
+<script>
+  import { bindSaveButtons } from '../../../../lib/save';
+
+  bindSaveButtons();
+</script>
