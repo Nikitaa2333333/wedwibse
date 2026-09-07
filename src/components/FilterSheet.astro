@@ -266,6 +266,9 @@ const popular = groups.flatMap((g) =>
 
 <script>
   import { bindSheet } from '../lib/sheet';
+  // Склонение при числе — общее правило проекта (та же строка «N площадок»
+  // считается на сборке в EntryRail), поэтому лежит в lib, а не здесь.
+  import { plural } from '../lib/plural';
 
   const sheet = document.querySelector<HTMLElement>('[data-sheet="filters"]');
 
@@ -301,14 +304,6 @@ const popular = groups.flatMap((g) =>
       return map;
     }
 
-    function plural(n: number): string {
-      const m10 = n % 10;
-      const m100 = n % 100;
-      if (m10 === 1 && m100 !== 11) return noun[0];
-      if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return noun[1];
-      return noun[2];
-    }
-
     function syncChips(sel: Record<string, string[]>) {
       proxies.forEach((p) => {
         const { chipKey: key, chipValue: value } = p.dataset;
@@ -341,7 +336,7 @@ const popular = groups.flatMap((g) =>
 
       if (countEl) countEl.textContent = `${visible} найдено`;
       if (emptyEl) emptyEl.hidden = visible !== 0;
-      if (cards.length) foundEl.textContent = visible ? `Нашли ${visible} ${plural(visible)}` : 'Ничего не нашли';
+      if (cards.length) foundEl.textContent = visible ? `Нашли ${visible} ${plural(visible, noun)}` : 'Ничего не нашли';
       syncChips(sel);
     }
 

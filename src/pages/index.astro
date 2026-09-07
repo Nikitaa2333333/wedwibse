@@ -1,41 +1,9 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import BottomDock from '../components/BottomDock.astro';
+import EntryRail from '../components/EntryRail.astro';
 import PhotoBoard from '../components/PhotoBoard.astro';
 import Icon from '../components/Icon.astro';
-
-// ПЕРКИ: входы в разделы «Площадки» и «Специалисты» — рендерятся
-// первой строкой доски (см. PhotoBoard), а не отдельным экраном.
-const perks = [
-  {
-    kind: 'photo',
-    name: 'Площадки',
-    tag: 'Выберите площадку под&nbsp;свой формат',
-    imgs: [
-      '/venues/river-loft/hero-pt-5.webp',
-      '/venues/river-loft/hero-pt-6.webp',
-      '/venues/river-loft/hero-pt-7.webp',
-      '/venues/river-loft/hero-pt-8.webp',
-    ],
-    alt: 'Зал площадки Ривер Лофт',
-    href: '/moskva/ploshchadki/',
-  },
-  {
-    kind: 'light',
-    name: 'Специалисты',
-    tag: '30+ направлений',
-    words: ['Ведущие', 'Хореографы', 'Диджеи', 'Фотографы', 'Декораторы'],
-    // Кадры специалистов за работой — тот же слайдер, что у площадок,
-    // только кадр уходит в бумажный градиент: поверх идут колесо и подписи.
-    imgs: [
-      '/specialists/glavnaya/fotograf.png',
-      '/specialists/glavnaya/konditer.png',
-    ],
-    alt: 'Специалисты за работой',
-    href: '/moskva/podryadchiki/vedushchie/',
-  },
-];
-
 ---
 
 <Layout title="Свадебные Секреты — лучшие площадки и специалисты">
@@ -59,9 +27,9 @@ const perks = [
         <h1 class="hero__title">Всё для Вашей свадьбы</h1>
 
         <a class="hero__hint" href="/izbrannoe/">
-          <span class="perk__heart-wrap">
-            <Icon name="heartOutline" class="perk__heart" />
-            <span class="perk__badge" aria-hidden="true">1</span>
+          <span class="hint__heart-wrap">
+            <Icon name="heartOutline" class="hint__heart" />
+            <span class="hint__badge" aria-hidden="true">1</span>
           </span>
           <span class="hero__hint-text t-small">
             Листай ленту, сохраняй в избранное
@@ -70,12 +38,18 @@ const perks = [
       </div>
     </section>
 
-    <!-- ДОСКА: перки (площадки/специалисты) первой строкой, за ними все
-         кадры каталога масонри-раскладкой, часть плиток листается.
-         Статьи лежат в том же потоке (см. PhotoBoard) — отдельной секции
-         «Журнал» на главной нет: она дублировала бы то, что человек уже
-         встретил, пока листал. Внизу остаётся только вход в блог целиком. -->
-    <PhotoBoard perks={perks} />
+    <!-- ВХОДЫ: цветные карточки разделов и направлений, лента вбок.
+         Раньше это были две фото-плашки первой строкой доски; теперь
+         разделов не два, а два плюс два десятка направлений — см.
+         EntryRail и DESIGN.md. -->
+    <EntryRail />
+
+    <!-- ДОСКА: все кадры каталога масонри-раскладкой, часть плиток
+         листается. Статьи лежат в том же потоке (см. PhotoBoard) —
+         отдельной секции «Журнал» на главной нет: она дублировала бы то,
+         что человек уже встретил, пока листал. Внизу остаётся только
+         вход в блог целиком. -->
+    <PhotoBoard />
 
     <div class="journal-more container--wide">
       <a class="pill" href="/blog/">Весь журнал</a>
@@ -97,7 +71,7 @@ const perks = [
     width: 100%;
     max-width: none;
     margin-inline: auto;
-    padding-inline: clamp(10px, 1.5vw, 24px);
+    padding-inline: var(--home-edge);
   }
 
   /* ============ ГЕРОЙ: шапка + заголовок, без пустого экрана ============ */
@@ -221,40 +195,40 @@ const perks = [
      Мини-демо «сохранили в избранное» рядом с заголовком — та же анимация,
      что раньше жила в плашках-перках (сами перки теперь часть доски,
      см. PhotoBoard), тут остались только классы для сердца в hero__hint. */
-  .perk__heart-wrap {
+  .hint__heart-wrap {
     position: relative;
     display: inline-flex;
   }
 
-  :global(.perk__heart) {
+  :global(.hint__heart) {
     width: clamp(32px, 4vw, 48px);
     height: clamp(32px, 4vw, 48px);
     transform-origin: center;
-    animation: perk-heart-tap 4s ease-in-out infinite;
+    animation: hint-heart-tap 4s ease-in-out infinite;
   }
 
   /* Заливка живёт на самом контуре: у контурного сердца Solar
      свой fill="none", на внешнем svg его не перебить. */
-  :global(.perk__heart > *) {
-    animation: perk-heart-fill 4s steps(1, end) infinite;
+  :global(.hint__heart > *) {
+    animation: hint-heart-fill 4s steps(1, end) infinite;
   }
 
   /* Мини-демо «сохранили в избранное»: сердце жмётся и заливается,
      следом всплывает счётчик — короткий цикл, крутится по кругу. */
-  @keyframes perk-heart-tap {
+  @keyframes hint-heart-tap {
     0%, 16% { transform: scale(1); }
     20% { transform: scale(1.3); }
     24%, 88% { transform: scale(1); }
     100% { transform: scale(1); }
   }
 
-  @keyframes perk-heart-fill {
+  @keyframes hint-heart-fill {
     0%, 19% { fill: none; }
     20%, 88% { fill: currentColor; }
     89%, 100% { fill: none; }
   }
 
-  .perk__badge {
+  .hint__badge {
     position: absolute;
     top: -6px;
     right: -10px;
@@ -268,10 +242,10 @@ const perks = [
     justify-content: center;
     font-size: 11px;
     font-weight: var(--w-medium);
-    animation: perk-badge-pop 4s ease-out infinite;
+    animation: hint-badge-pop 4s ease-out infinite;
   }
 
-  @keyframes perk-badge-pop {
+  @keyframes hint-badge-pop {
     0%, 22% { transform: scale(0); opacity: 0; }
     28% { transform: scale(1.2); opacity: 1; }
     34%, 82% { transform: scale(1); opacity: 1; }
