@@ -58,38 +58,33 @@ const PERK_SIZES = '(min-width: 640px) 50vw, 100vw';
 <section class="board" aria-label="Фотографии площадок каталога">
   {perks.length > 0 && (
     <div class="board__perks">
-      {perks.map((perk) =>
-        perk.kind === 'photo' ? (
-          <a class="perk perk--photo" href={perk.href}>
+      {perks.map((perk) => (
+        <a class:list={['perk', `perk--${perk.kind}`]} href={perk.href}>
+          <span class="perk__media">
             <PhotoRail photos={perk.imgs} alt={perk.alt} sizes={PERK_SIZES} widths={[560, 900, 1400]} />
-            <span class="perk__overlay">
-              <span class="perk__name">{perk.name}</span>
+          </span>
+
+          <span class="perk__body">
+            <span class="perk__text">
+              <span class="perk__top">
+                <span class="perk__name">{perk.name}</span>
+                <span class="perk__arrow" aria-hidden="true">↗</span>
+              </span>
               <span class="perk__tag" set:html={perk.tag} />
             </span>
-          </a>
-        ) : (
-          <a class="perk perk--light" href={perk.href}>
-            <PhotoRail photos={perk.imgs} alt={perk.alt} sizes={PERK_SIZES} widths={[560, 900, 1400]} />
-            <span class="perk__scrim" aria-hidden="true"></span>
 
-            <span class="perk__body">
-              <span class="perk__top">
-                <span class="perk__tag">{perk.tag}</span>
-                <span class="perk__arrow">↗</span>
+            {perk.words && perk.words.length > 0 && (
+              <span class="perk__list" aria-hidden="true">
+                <span class="perk__list-track">
+                  {perk.words.concat(perk.words).map((word) => (
+                    <span class="perk__word">{word}</span>
+                  ))}
+                </span>
               </span>
-              <span class="perk__name">{perk.name}</span>
-            </span>
-
-            <span class="perk__list" aria-hidden="true">
-              <span class="perk__list-track">
-                {(perk.words ?? []).concat(perk.words ?? []).map((word) => (
-                  <span class="perk__word">{word}</span>
-                ))}
-              </span>
-            </span>
-          </a>
-        )
-      )}
+            )}
+          </span>
+        </a>
+      ))}
     </div>
   )}
 
@@ -174,38 +169,58 @@ const PERK_SIZES = '(min-width: 640px) 50vw, 100vw';
     .board__perks { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
 
+  /* Плитка входа: фотография сверху, текст ПОД ней, на бумаге.
+     Раньше название и подпись лежали прямо на кадре: кадр приходилось
+     гасить вуалью, а у светлой плашки — растворять градиентом в бумагу,
+     чтобы текст читался. Одно правило на весь сайт: фотография остаётся
+     фотографией, текст живёт на бумаге (то же сделано на первом экране
+     карточки площадки). */
   .perk {
-    position: relative;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    aspect-ratio: 4 / 3;
-    padding: var(--s-5);
-    background: var(--surface);
-    color: var(--ink);
+    color: var(--fg);
     text-decoration: none;
-    overflow: hidden;
+    min-width: 0;
   }
 
-  /* Плашке с фото нужен свой veil обратно: текст лежит прямо на кадре */
-  .perk--photo :global(.veil) { display: block; }
+  .perk__media {
+    display: block;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    background: var(--surface-dim);
+  }
+
+  .perk :global(.prail-wrap),
+  .perk :global(.prail) {
+    aspect-ratio: auto;
+    height: 100%;
+  }
+
+  /* Вуаль в плитке не нужна: гасить кадр было нужно только под текст */
+  .perk :global(.veil) { display: none; }
+
+  /* Поле подписи — общая ручка доски (--cap-pad), чтобы текст плитки стоял
+     по той же вертикали, что подписи кадров потока рядом. */
+  .perk__body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: var(--s-4);
+    padding: var(--s-3) var(--cap-pad) 0;
+  }
+
+  .perk__text {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-1);
+    min-width: 0;
+  }
 
   .perk__top {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
     gap: var(--s-3);
-  }
-
-  .perk__tag {
-    font-size: var(--fs-small);
-    font-weight: var(--w-medium);
-    line-height: 1.35;
-  }
-
-  .perk__arrow {
-    font-size: var(--fs-body);
-    line-height: 1;
   }
 
   .perk__name {
@@ -215,79 +230,27 @@ const PERK_SIZES = '(min-width: 640px) 50vw, 100vw';
     letter-spacing: -0.015em;
   }
 
-  /* Фото-плашка: тот же слайдер, что в каталоге (PhotoRail) — кадры
-     листаются при наведении и свайпом, с точками-индикаторами. */
-  .perk--photo { padding: 0; overflow: hidden; }
-
-  .perk--photo :global(.prail-wrap) {
-    position: absolute;
-    inset: 0;
+  .perk__arrow {
+    font-size: var(--fs-body);
+    line-height: 1;
+    flex: none;
   }
 
-  .perk--photo :global(.prail) {
-    aspect-ratio: auto;
-    height: 100%;
+  .perk__tag {
+    font-size: var(--fs-small);
+    font-weight: var(--w-medium);
+    line-height: 1.35;
   }
 
-  .perk__overlay {
-    position: relative;
-    margin-top: auto;
-    padding: var(--s-5);
-    display: flex;
-    flex-direction: column;
-    gap: var(--s-2);
-    color: var(--white);
-  }
+  /* Колесо категорий: у плитки «Специалисты» вместо статичной подписи
+     крутится список направлений. Оно съезжает во вторую колонку подписи,
+     а не лежит на кадре, как раньше. */
+  .perk--light .perk__body { grid-template-columns: minmax(0, 1fr) auto; }
 
-  /* Светлая плашка: слева статичный текст, справа — колесо категорий
-     во всю высоту карточки. */
-  .perk--light {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    align-items: stretch;
-    background: var(--paper);
-    color: var(--ink);
-  }
-
-  .perk--light :global(.prail-wrap) {
-    position: absolute;
-    inset: 0 34% 0 0;
-  }
-
-  .perk--light :global(.prail) {
-    aspect-ratio: auto;
-    height: 100%;
-    background: var(--paper);
-  }
-
-  .perk--light :global(.veil) { display: none; }
-
-  .perk__scrim {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      to right,
-      transparent 0%,
-      color-mix(in srgb, var(--paper) 55%, transparent) 34%,
-      var(--paper) 66%
-    );
-    pointer-events: none;
-  }
-
-  .perk__body {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    min-width: 0;
-    grid-column: 1;
-  }
-
-  /* Колесо категорий — крутится непрерывно, обрезается краями карточки */
   .perk__list {
     position: relative;
-    grid-column: 2;
     overflow: hidden;
+    height: 3.45em;
     text-align: right;
     mask-image: linear-gradient(to bottom, transparent 0%, black 38%, black 62%, transparent 100%);
     -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 38%, black 62%, transparent 100%);
@@ -304,7 +267,7 @@ const PERK_SIZES = '(min-width: 640px) 50vw, 100vw';
     height: 1.15em;
     display: flex;
     align-items: center;
-    font-size: clamp(22px, 3.2vw, 30px);
+    font-size: clamp(18px, 2.4vw, 24px);
     font-weight: var(--w-head);
     letter-spacing: -0.02em;
     white-space: nowrap;
@@ -321,10 +284,6 @@ const PERK_SIZES = '(min-width: 640px) 50vw, 100vw';
     .perk:hover .perk__arrow { transform: translate(3px, -3px); }
   }
 
-  @media (min-width: 1024px) {
-    .perk { padding: var(--s-6); }
-    .perk--photo .perk__overlay { padding: var(--s-6); }
-  }
 
   /* --board-cols — число колонок на брейкпоинте; его же читает скрипт,
      чтобы переложить плитки. */

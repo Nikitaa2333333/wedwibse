@@ -166,12 +166,6 @@ const favImg = new Map(
                   ))}
                 </div>
 
-                <div class="veil" aria-hidden="true"></div>
-                <div class="scard__tags">
-                  <span class="photo-tag">от {priceFmt.format(s.priceFrom)} ₽</span>
-                  {styleTag && <span class="photo-tag">{styleTag}</span>}
-                </div>
-
                 <button class="save" type="button" data-save={saveData} aria-pressed="false" aria-label="В избранное">
                   <Icon name="heartOutline" />
                 </button>
@@ -184,22 +178,20 @@ const favImg = new Map(
                 sizes={sizes}
                 widths={[360, 560, 800, 1100]}
               >
-                <div class="scard__tags">
-                  <span class="photo-tag">от {priceFmt.format(s.priceFrom)} ₽</span>
-                  {styleTag && <span class="photo-tag">{styleTag}</span>}
-                </div>
-
                 <button class="save" type="button" data-save={saveData} aria-pressed="false" aria-label="В избранное">
                   <Icon name="heartOutline" />
                 </button>
               </PhotoRail>
             )}
 
-            <!-- Цена на телефоне живёт в подписи, на ПК — пилюлей на кадре
-                 (см. стили .scard__price): на 190-пиксельном кадре пилюли
-                 закрывали фото. -->
+            <!-- Цена и стиль — в подписи под кадром на любой ширине.
+                 Раньше на ПК они лежали пилюлями на самом фото: одно правило
+                 на весь сайт — текст не кладём на фотографию. -->
             <div class="scard__body">
-              <p class="scard__price">от {priceFmt.format(s.priceFrom)} ₽</p>
+              <p class="scard__price">
+                от {priceFmt.format(s.priceFrom)} ₽
+                {styleTag && <span class="scard__style">{styleTag}</span>}
+              </p>
               <div class="scard__top">
                 <h2 class="scard__name">
                   <a href={`/moskva/podryadchiki/vedushchie/${s.slug}/`}>{s.name}</a>
@@ -322,16 +314,6 @@ const favImg = new Map(
   /* Метки на фото (цена + фирменный стиль) — только от планшета. На
      телефоне они переносились в две строки и закрывали кадр, а фото в
      каталоге — главное; цена там уходит в подпись. */
-  .scard__tags {
-    position: absolute;
-    bottom: var(--s-3);
-    left: var(--s-3);
-    display: none;
-    flex-wrap: wrap;
-    gap: var(--s-2);
-    pointer-events: none;
-  }
-
   /* ============ ПОДПИСЬ: цена, имя с рейтингом, слоган ============
      Кадр идёт в край экрана, текст — нет: поле подписи держит
      --catalog-pad (от планшета он ноль, поля даёт сама сетка).
@@ -347,6 +329,32 @@ const favImg = new Map(
     font-size: var(--fs-body);
     font-weight: var(--w-medium);
   }
+
+  /* Цена и стиль — одной строкой, разделены зазором, а не пробелом
+     из разметки (его схлопывает сборка). */
+  .scard__price {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 var(--s-2);
+  }
+
+  /* Стиль ведущего — вторым планом: приглушение прозрачностью, не цветом.
+     На телефоне колонка ~190px, и стиль в строке с ценой переносится
+     и рвёт подпись — там его нет, как не было и раньше (на фото он
+     показывался только на широком экране). */
+  .scard__style {
+    display: none;
+    opacity: 0.6;
+  }
+
+  @media (min-width: 640px) {
+    .scard__style { display: inline; }
+  }
+
+  /* Вуаль не нужна: под кадром больше нет текста, на фото осталось
+     только сердце, а у него своя тень. */
+  .scard :global(.veil) { display: none; }
 
   .scard__top {
     display: flex;
@@ -374,8 +382,6 @@ const favImg = new Map(
   .scard__tagline { font-size: var(--fs-caption); }
 
   @media (min-width: 640px) {
-    .scard__tags { display: flex; }
-    .scard__price { display: none; }
     .scard__name { font-size: var(--fs-h3); line-height: 1.15; }
     .scard__rate { font-size: var(--fs-small); }
     .scard__tagline { font-size: var(--fs-small); }

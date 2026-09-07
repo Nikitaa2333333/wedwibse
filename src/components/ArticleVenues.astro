@@ -46,14 +46,15 @@ const items = venues.slice(0, 3);
               href={href}
               sizes="(min-width: 900px) 33vw, (min-width: 640px) 50vw, 100vw"
               widths={[360, 560, 800]}
-            >
-              <div class="vmini__tags">
-                <span class="photo-tag">{venue.avgCheck}</span>
-                <span class="photo-tag">{venue.type}</span>
-              </div>
-            </PhotoRail>
+            />
 
+            <!-- Цена и тип — в подписи под кадром, а не плашками на фото:
+                 одно правило на весь сайт, текст не кладём на фотографию. -->
             <div class="vmini__body">
+              <p class="vmini__price">
+                {venue.avgCheck}
+                <span class="vmini__type">{venue.type}</span>
+              </p>
               <h3 class="vmini__name">
                 <a href={href}>{venue.name}</a>
               </h3>
@@ -103,15 +104,20 @@ const items = venues.slice(0, 3);
   /* Кадр карточки — тот же формат, что в ленте каталога */
   .vmini :global(.prail) { aspect-ratio: 4 / 5; }
 
-  .vmini__tags {
-    position: absolute;
-    bottom: var(--s-3);
-    left: var(--s-3);
+  /* Цена крупно, тип вторым планом рядом — та же подпись, что в каталоге
+     площадок. Вуаль не нужна: на кадре больше нет текста. */
+  .vmini__price {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--s-2);
-    pointer-events: none;
+    align-items: baseline;
+    gap: 0 var(--s-2);
+    font-size: var(--fs-body);
+    font-weight: var(--w-medium);
   }
+
+  .vmini__type { opacity: 0.6; }
+
+  .vmini :global(.veil) { display: none; }
 
   .vmini__name {
     font-size: var(--fs-h3);

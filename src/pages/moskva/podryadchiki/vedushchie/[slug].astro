@@ -146,9 +146,7 @@ const saveData = JSON.stringify({
                   decoding="async"
                 />
               )}
-              <div class="veil" aria-hidden="true"></div>
               <span class="preels__play" aria-hidden="true">▶</span>
-              {!reel.video && <span class="preels__label t-caption">Скоро — видео</span>}
             </figure>
           ))}
         </div>
@@ -385,13 +383,6 @@ const saveData = JSON.stringify({
     align-items: center;
     justify-content: center;
     font-size: 16px;
-  }
-
-  .preels__label {
-    position: absolute;
-    bottom: var(--s-3);
-    left: var(--s-3);
-    color: var(--white);
   }
 
   /* ============ ПРЕДЛОЖЕНИЕ-ЦИТАТА ============ */
