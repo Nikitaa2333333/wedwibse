@@ -33,6 +33,7 @@ const { kicker, title, scenes } = Astro.props;
             {scene.layout === 'gallery' ? (
               <div class="scene__rail">
                 <PhotoRail
+                  bleed
                   photos={scene.images?.length ? scene.images : [scene.image]}
                   alt={scene.alt}
                   sizes="100vw"
@@ -40,7 +41,7 @@ const { kicker, title, scenes } = Astro.props;
                 />
               </div>
             ) : (
-              <figure class="scene__shot media">
+              <figure class="scene__shot media media--bleed">
                 <Image
                   src={resolveImage(scene.image)}
                   alt={scene.alt}
