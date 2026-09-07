@@ -1,25 +1,9 @@
 ---
-// ДОСКА КАДРОВ (главная) — масонри как в Pinterest: колонки одной ширины,
-// каждая плитка в своей настоящей пропорции, следующая плитка ложится
-// в самую короткую колонку (layoutColumns в lib/gallery.ts).
-//
-// Доска — один непрерывный поток: колонки идут вниз и заканчиваются
-// на разной высоте, как лента. Ни полос во всю ширину, ни растянутых
-// «дотянутых» кадров: и то и другое ломает пропорцию снимка ради
-// ровной линии. Кадры в доске только вертикальные (см. lib/gallery.ts).
-//
-// Сервер раскладывает под телефон — две колонки: это основной сценарий,
-// и там доска стоит без единой строки JS. На широком экране колонок 3–5:
-// скрипт ниже перекладывает те же плитки тем же жадным алгоритмом —
-// узлы переезжают, ничего не рисуется заново, слушатели PhotoRail живы.
-//
-// Плитка с несколькими кадрами получает точки-индикаторы и листание
-// свайпом — тот же PhotoRail, что в карточке каталога. Пропорция кадра
-// приходит через --card-ratio: её читает .prail внутри рельса.
-//
-// Раз в несколько плиток в потоке попадается статья — типографическая
-// плашка (.theme-dark) той же пропорции, что кадры вокруг. Блог человек
-// встречает, пока листает фотографии, а не идёт за ним отдельно.
+// ДОСКА КАДРОВ (главная) — поток фотографий всего каталога. Сама раскладка
+// (колонки-масонри, плитки, статьи в потоке) живёт в PhotoMasonry: тот же
+// компонент показывает галерею карточки подрядчика, чтобы кадры на главной
+// и в визитке выглядели одинаково. Здесь остаётся то, что есть только
+// у главной, — перки и источник плиток.
 //
 // ПЕРКИ (площадки/специалисты — входы в разделы) идут первой строкой
 // доски, а не отдельным экраном перед ней: раньше это были две плашки
@@ -27,7 +11,8 @@
 // два «пустых» экрана. Тут они — часть доски (тот же --pin-gap, без
 // своих полей), просто крупнее и на всю ширину, а не колонка потока.
 import PhotoRail from './PhotoRail.astro';
-import { collectTiles, layoutColumns } from '../lib/gallery';
+import PhotoMasonry from './PhotoMasonry.astro';
+import { collectTiles } from '../lib/gallery';
 import { IMG_WIDTHS } from '../lib/images';
 
 interface Perk {
@@ -46,16 +31,12 @@ interface Props {
 
 const { perks = [] } = Astro.props;
 
-const columns = layoutColumns(collectTiles(), 2);
-
 const TILE_SIZES =
   '(min-width: 1440px) 19vw, (min-width: 1024px) 24vw, (min-width: 640px) 32vw, 48vw';
 
 const PERK_SIZES = '(min-width: 640px) 50vw, 100vw';
 ---
 
-<!-- Без data-reveal и без параллакса намеренно: доска листается как
-     обычная страница, все кадры на месте сразу, ничего не проявляется. -->
 <section class="board" aria-label="Фотографии площадок каталога">
   {perks.length > 0 && (
     <div class="board__perks">
@@ -89,46 +70,7 @@ const PERK_SIZES = '(min-width: 640px) 50vw, 100vw';
     </div>
   )}
 
-  <div class="board__cols" data-board>
-    {
-      columns.map((col) => (
-        <div class="board__col">
-          {col.map((tile) => (
-            <article
-              class:list={['pin', tile.kind === 'article' && 'pin--article']}
-              style={`--card-ratio:${tile.ratio};`}
-              data-i={tile.index}
-              data-h={tile.height.toFixed(3)}
-            >
-              {tile.kind === 'article' ? (
-                <a class="note theme-dark" href={tile.href}>
-                  <span class="note__rubric t-caption">{tile.rubric}</span>
-                  <h3 class="note__title">{tile.title}</h3>
-                  <span class="pill pill--sm note__cta">Читать</span>
-                </a>
-              ) : (
-                <>
-                  <PhotoRail
-                    photos={tile.photos}
-                    alt={tile.alt}
-                    href={tile.href ?? undefined}
-                    sizes={TILE_SIZES}
-                    widths={IMG_WIDTHS.tile}
-                  />
-
-                  {tile.caption && tile.href && (
-                    <a class="cap t-caption" href={tile.href}>
-                      {tile.caption}
-                    </a>
-                  )}
-                </>
-              )}
-            </article>
-          ))}
-        </div>
-      ))
-    }
-  </div>
+  <PhotoMasonry tiles={collectTiles()} sizes={TILE_SIZES} widths={IMG_WIDTHS.tile} />
 </section>
 
 <style>
@@ -140,19 +82,10 @@ const PERK_SIZES = '(min-width: 640px) 50vw, 100vw';
     display: flex;
     flex-direction: column;
     gap: var(--pin-gap);
-    /* --pin-gap — единственная ручка зазора доски: на телефоне волосок,
-       как стык карточек каталога, на ПК полный шов. Боковых полей нет:
-       крайние кадры идут в край экрана. */
-    --pin-gap: clamp(6px, 0.9vw, 12px);
-    /* --cap-pad — поле подписи от краёв кадра. Своя ручка, а не --catalog-pad:
-       тот от 640px обнуляется (карточки каталога там не в край), а доска
-       в край на любой ширине — и подпись впритык к краю читается плохо. */
-    --cap-pad: var(--s-3);
+    /* Боковых полей нет: крайние кадры идут в край экрана. Зазор доски
+       и поле подписи — общие ручки проекта (--pin-gap, --cap-pad
+       в global.css), тут они только используются. */
   }
-
-  /* Затемнение под подписи тут лишнее: подпись живёт под кадром, а не на
-     нём, и градиент только гасит низ фотографии. */
-  .board :global(.veil) { display: none; }
 
   /* ============ ПЕРКИ: строка входов в разделы, первой в доске ============
      Раньше — отдельная секция почти в полный экран каждая плашка (до ленты
@@ -280,120 +213,4 @@ const PERK_SIZES = '(min-width: 640px) 50vw, 100vw';
     .perk__arrow { transition: transform var(--dur-fast) var(--ease-out); }
     .perk:hover .perk__arrow { transform: translate(3px, -3px); }
   }
-
-
-  /* --board-cols — число колонок на брейкпоинте; его же читает скрипт,
-     чтобы переложить плитки. */
-  .board__cols {
-    --board-cols: 2;
-    display: grid;
-    grid-template-columns: repeat(var(--board-cols), minmax(0, 1fr));
-    gap: var(--pin-gap);
-    align-items: start;
-  }
-
-  .board__col {
-    display: flex;
-    flex-direction: column;
-    gap: var(--pin-gap);
-    min-width: 0;
-  }
-
-  /* Подпись прижата к своему кадру по вертикали (--s-1 против --pin-gap
-     до соседнего) — правило внутреннего и внешнего. По горизонтали, наоборот,
-     отступает от краёв кадра (--cap-pad): текст впритык к краю некрасив. */
-  .cap {
-    display: block;
-    padding: var(--s-1) var(--cap-pad) 0;
-    color: var(--ink);
-    font-weight: var(--w-body);
-    text-decoration: none;
-  }
-
-  /* СТАТЬЯ В ПОТОКЕ — плашка-инверсия той же пропорции, что кадр рядом.
-     Рубрика сверху, заголовок в середине, пилюля «Читать» внизу — три
-     уровня одной плитки, как у текстового пина. Цвета из .theme-dark:
-     пилюля внутри сама становится белой, руками ничего не красим. */
-  .note {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    gap: var(--s-4);
-    aspect-ratio: var(--card-ratio);
-    padding: var(--s-4);
-    background: var(--bg);
-    color: var(--fg);
-    text-decoration: none;
-  }
-
-  .note__rubric { font-weight: var(--w-medium); }
-
-  /* Кегль от ширины колонки, не экрана: колонка на телефоне ~190px
-     (→ 19px, пять строк), на ПК ~300px (→ 27px) — заголовок держит плашку,
-     а не тонет в ней. Без переносов внутри слова. */
-  .note__title {
-    font-size: clamp(19px, 9cqi, 30px);
-    font-weight: var(--w-head);
-    line-height: var(--lh-heading);
-    letter-spacing: var(--ls-display);
-    hyphens: manual;
-  }
-
-  .note__cta { align-self: flex-start; }
-
-  .pin--article { container-type: inline-size; }
-
-  @media (min-width: 1024px) {
-    .note { padding: var(--s-5); }
-  }
-
-  @media (min-width: 640px) {
-    .board__cols { --board-cols: 3; }
-  }
-
-  @media (min-width: 1024px) {
-    .board__cols { --board-cols: 4; }
-  }
-
-  @media (min-width: 1440px) {
-    .board__cols { --board-cols: 5; }
-  }
 </style>
-
-<script>
-  // Перекладка под число колонок с экрана. Высота плитки известна из
-  // data-h (пропорция + подпись, в долях ширины колонки) — картинки ждать
-  // не нужно, раскладка считается до их загрузки. Колонку клонируем
-  // с существующей, чтобы сохранить scoped-атрибут стилей Astro.
-  document.querySelectorAll<HTMLElement>('[data-board]').forEach((board) => {
-    const pins = Array.from(board.querySelectorAll<HTMLElement>('.pin')).sort(
-      (a, b) => Number(a.dataset.i) - Number(b.dataset.i)
-    );
-    const proto = board.firstElementChild as HTMLElement | null;
-    if (!proto) return;
-
-    let current = board.children.length;
-
-    const relayout = () => {
-      const count = parseInt(getComputedStyle(board).getPropertyValue('--board-cols'), 10) || 2;
-      if (count === current) return;
-      current = count;
-
-      const cols = Array.from({ length: count }, () => proto.cloneNode(false) as HTMLElement);
-      const tall = new Array<number>(count).fill(0);
-
-      for (const pin of pins) {
-        let k = 0;
-        for (let j = 1; j < count; j++) if (tall[j] < tall[k]) k = j;
-        cols[k].append(pin);
-        tall[k] += parseFloat(pin.dataset.h || '1');
-      }
-
-      board.replaceChildren(...cols);
-    };
-
-    relayout();
-    // выходит сразу, если число колонок не поменялось — ресайз дешёвый
-    window.addEventListener('resize', relayout);
-  });
-</script>

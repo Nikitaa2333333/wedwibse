@@ -1,6 +1,6 @@
 ---
 // СТРАНИЦА-ВИЗИТКА СПЕЦИАЛИСТА — одна на все 19 категорий (реф. Cineteca
-// Milano): крупная фото-карусель + контрастная инфо-плашка с ценой и заявкой.
+// Milano): крупный кадр + контрастная инфо-плашка с ценой и заявкой.
 // Раньше лежала отдельным роутом под ведущих; блоки те же, но всё, чего у
 // подрядчика нет, просто не рендерится — цена, рейтинг, отзывы, видео.
 //
@@ -14,13 +14,14 @@ import { Image } from 'astro:assets';
 import Layout from '../../../../layouts/Layout.astro';
 import SiteHeader from '../../../../components/SiteHeader.astro';
 import BottomDock from '../../../../components/BottomDock.astro';
-import PhotoRail from '../../../../components/PhotoRail.astro';
+import PhotoMasonry from '../../../../components/PhotoMasonry.astro';
 import Icon from '../../../../components/Icon.astro';
 import BackButton from '../../../../components/BackButton.astro';
 import { SPECIALISTS_BY_CATEGORY, FILTERS_BY_CATEGORY, type Specialist } from '../../../../data/specialists';
 import { reelsOf } from '../../../../data/reels';
+import { photoTiles } from '../../../../lib/gallery';
 import { resolveImage, favoriteImage, IMG_WIDTHS } from '../../../../lib/images';
-import { frameId, photosOnly } from '../../../../lib/media';
+import { frameId, isPortrait, isVideo, photosOnly, posterOf } from '../../../../lib/media';
 
 export function getStaticPaths() {
   const seen = new Set<string>();
@@ -54,21 +55,38 @@ const priceFacts = [
   s.gender === 'pair' ? 'фото и видео' : null,
 ].filter(Boolean);
 
-// ПЕРВЫЙ ЭКРАН — РЕЛЬС ИЗ ВСЕХ КАДРОВ: фотографии и ролики вперемешку,
-// как в доске главной. Отдельной страницы у ролика нет — нажали на видео
-// в доске, попали сюда, и рельс уже стоит на нём (якорь `#foto-<кадр>`
-// разбирает инлайновый скрипт внизу, как в карточке площадки).
-// Порядок: обложка, ролики, остальные фото — видео видно сразу, но
-// первым кадром (и LCP) остаётся снимок.
-// Кадров в рельсе ровно столько, сколько их уходит в доску главной
-// (PER_SPECIALIST в lib/gallery): любой кадр, по которому там можно нажать,
-// в рельсе есть, а строка точек-индикаторов не превращается в пунктир.
-// Вся съёмка целиком — ниже, в блоке «Фотографии».
+// ПЕРВЫЙ ЭКРАН — ОДИН КАДР, БЕЗ КАРУСЕЛИ. Раньше тут стоял рельс
+// PhotoRail: фиксированное окно 4:5, все кадры внутри кроются под одну
+// пропорцию, под кадром строка из полутора десятков точек, а вуаль рельса
+// (.veil — градиент на нижние 62% обёртки) ложилась НЕ ТОЛЬКО на фото, но
+// и на эту строку, и под снимком висела серая полоса непонятного
+// назначения. Карточка площадки от карусели в первом экране отказалась
+// раньше (см. VenueHero) — визитка подрядчика идёт тем же правилом: кадр
+// в СВОЕЙ пропорции на телефоне, ничем не закрытый.
+//
+// Кадры всё равно рендерятся все: по адресу `#foto-<кадр>` из доски
+// главной открывается именно тот снимок или ролик, по которому нажали
+// (якорь разбирает инлайновый скрипт внизу файла, как в карточке
+// площадки). Лишние кадры скрыты обычным `hidden` — из потока выпадают
+// полностью, высоту блока меряет ровно показанный.
+// Порядок: обложка, ролики, остальные фото. Кадров ровно столько, сколько
+// их уходит в доску главной (PER_SPECIALIST в lib/gallery): любой кадр,
+// по которому там можно нажать, тут есть. Вся съёмка целиком — ниже,
+// в блоке «Фотографии».
 const HERO_PHOTOS = 12;
 const reels = reelsOf(s.slug);
 const frames = [
   ...new Set([s.photos[0], ...reels.map((r) => r.src), ...s.photos.slice(1, HERO_PHOTOS)]),
 ];
+
+// Дежурный кадр — первый вертикальный: телефон главный сценарий, и
+// вертикаль полнее заполняет экран. Граница вертикальности одна на весь
+// проект (isPortrait в lib/media). Фолбэк — просто первый кадр.
+const defaultFrame = frames.find(isPortrait) ?? frames[0];
+
+// sizes галереи — те же колонки, что у доски главной (PhotoMasonry)
+const GALLERY_SIZES =
+  '(min-width: 1440px) 19vw, (min-width: 1024px) 24vw, (min-width: 640px) 32vw, 48vw';
 
 // Инициалы автора отзыва — для кружка-аватара, пока нет реального фото
 function initials(author: string): string {
@@ -125,20 +143,36 @@ const saveData = JSON.stringify({
         </div>
       </div>
 
-      <div class="phero__media" data-hero-rail data-frames={JSON.stringify(frames.map(frameId))}>
-        <BackButton href={`/moskva/podryadchiki/${s.categorySlug}/`} label={`К списку «${s.category}»`} />
+      <div class="phero__media">
+        <figure class="phero__shot" data-hero-shot>
+          <BackButton href={`/moskva/podryadchiki/${s.categorySlug}/`} label={`К списку «${s.category}»`} />
 
-        <PhotoRail
-          photos={frames}
-          alt={s.name}
-          sizes="(min-width: 1024px) 50vw, 100vw"
-          widths={IMG_WIDTHS.hero}
-          priority
-        >
+          {frames.map((src, n) => {
+            const video = isVideo(src);
+            const eager = src === defaultFrame;
+
+            return (
+              <div class="phero__frame" data-frame={frameId(src)} hidden={src !== defaultFrame}>
+                <Image
+                  src={resolveImage(video ? posterOf(src) : src)}
+                  alt={n === 0 ? s.name : `${s.name} — свадебная съёмка`}
+                  widths={IMG_WIDTHS.hero}
+                  sizes="(min-width: 1024px) 50vw, 100vw"
+                  loading={eager ? 'eager' : 'lazy'}
+                  fetchpriority={eager ? 'high' : undefined}
+                  decoding="async"
+                />
+                {video && (
+                  <video class="phero__video" data-video={src} muted loop playsinline preload="none" aria-hidden="true"></video>
+                )}
+              </div>
+            );
+          })}
+
           <button class="save" type="button" data-save={saveData} aria-pressed="false" aria-label="В избранное">
             <Icon name="heartOutline" />
           </button>
-        </PhotoRail>
+        </figure>
       </div>
     </section>
 
@@ -174,23 +208,14 @@ const saveData = JSON.stringify({
       </section>
     )}
 
-    <!-- ГАЛЕРЕЯ: компактная ровная сетка, без растянутых кадров -->
+    <!-- ГАЛЕРЕЯ: ТА ЖЕ ДОСКА, ЧТО НА ГЛАВНОЙ (PhotoMasonry) — колонки
+         одной ширины, каждый кадр в своей настоящей пропорции. Раньше тут
+         стояла своя сетка с жёстким aspect-ratio 3/4: каждый снимок
+         кропился под чужую рамку, и портфолио подрядчика показывалось
+         не так, как те же кадры в ленте главной. -->
     <section class="pgallery">
       <h2 class="t-h2">Фотографии</h2>
-      <div class="pgallery__grid" data-reveal-group>
-        {photosOnly(s.photos).map((src, n) => (
-          <figure class="pgallery__cell media" data-reveal>
-            <Image
-              src={resolveImage(src)}
-              alt={`${s.name} — фото ${n + 1}`}
-              widths={IMG_WIDTHS.card}
-              sizes="(min-width: 900px) 33vw, 50vw"
-              loading="lazy"
-              decoding="async"
-            />
-          </figure>
-        ))}
-      </div>
+      <PhotoMasonry tiles={photoTiles(photosOnly(s.photos), s.name)} sizes={GALLERY_SIZES} />
     </section>
 
     <!-- ВИДЕО отдельной секцией у подрядчика с реальными роликами нет:
@@ -280,10 +305,43 @@ const saveData = JSON.stringify({
     margin-bottom: var(--section-gap-tight);
   }
 
-  /* position: relative на всех ширинах — держит BackButton прижатым
-     к кадру, а не к секции целиком; на десктопе низкий приоритет
-     переопределяет ниже (там медиа и так растянута абсолютом). */
-  .phero__media { grid-area: media; position: relative; }
+  .phero__media { grid-area: media; }
+
+  /* Кадр — единственное место в системе, где на фото лежит не текст,
+     а иконка со своей тенью (сердце, кнопка «назад»); position: relative
+     держит их прижатыми к кадру, а не к секции целиком. */
+  .phero__shot {
+    position: relative;
+    background: var(--surface-dim);
+  }
+
+  /* Показанный кадр — блок во всю ширину, высоту диктует его СОБСТВЕННАЯ
+     пропорция (width/height у Image расставлены Astro'ой из файла):
+     никакого aspect-ratio/object-fit на телефоне тут нет и не должно быть,
+     в этом весь смысл отказа от общего окна карусели. Скрытые кадры —
+     display: none, из потока выпадают полностью. */
+  .phero__frame img,
+  .phero__frame video {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .phero__frame[hidden] { display: none; }
+
+  /* Ролик лежит поверх своего постера и проявляется, когда реально пошёл:
+     заблокировали автозапуск — в кадре просто остаётся постер. */
+  .phero__video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity var(--dur-fast) var(--ease-out);
+  }
+
+  .phero__video.is-playing { opacity: 1; }
 
   /* Якорная композиция: имя с теглайном тяготеют к верху плашки,
      цена с кнопкой — к низу, середина дышит (space-between). */
@@ -347,25 +405,26 @@ const saveData = JSON.stringify({
       padding: var(--s-6) var(--s-7) var(--s-6) var(--gutter);
     }
 
-    /* Кадр НЕ диктует высоту блока: колонка фото — просто холст,
-       карусель растянута абсолютом по высоте карточки */
+    /* Сплит-полоса: высоту задаёт плашка слева, кадр справа растянут по
+       ней абсолютом. Тут кроп неизбежен (два блока стоят полосой в край
+       экрана и обязаны быть одной высоты) — держим верх кадра, чтобы не
+       резать голову. На телефоне, где кадр стоит сам по себе, кропа нет. */
     .phero__media { position: relative; }
 
-    .phero__media :global(.prail-wrap) {
+    .phero__shot {
       position: absolute;
       inset: 0;
+      overflow: hidden;
     }
 
-    /* Кадр забирает всю свободную высоту, точки под ним — свою строку.
-       С height: 100% точки выпадали за нижний край колонки. */
-    .phero__media :global(.prail) {
-      aspect-ratio: auto;
-      flex: 1;
-      min-height: 0;
-    }
+    .phero__frame { height: 100%; }
 
-    /* Горизонтальный кроп портрета: держим верх кадра — не режем голову */
-    .phero__media :global(.prail__item img) { object-position: center top; }
+    .phero__frame img,
+    .phero__frame video {
+      height: 100%;
+      object-fit: cover;
+      object-position: center top;
+    }
   }
 
   /* ============ О ПОДРЯДЧИКЕ ============ */
@@ -413,23 +472,16 @@ const saveData = JSON.stringify({
 
   .ppack__list { margin-top: var(--s-5); }
 
-  /* ============ ГАЛЕРЕЯ ============ */
+  /* ============ ГАЛЕРЕЯ ============
+     Доска идёт в край экрана, как на главной: боковых полей у неё нет,
+     в них остаётся только заголовок секции. */
   .pgallery {
-    padding: 0 var(--gutter) var(--section-gap-tight);
+    padding-bottom: var(--section-gap-tight);
   }
 
-  .pgallery__grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--s-3);
-    margin-top: var(--s-5);
-  }
+  .pgallery h2 { padding: 0 var(--gutter); }
 
-  .pgallery__cell { aspect-ratio: 3 / 4; }
-
-  @media (min-width: 900px) {
-    .pgallery__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  }
+  .pgallery :global(.masonry) { margin-top: var(--s-5); }
 
   /* ============ ВИДЕО-РОЛИКИ ============
      Вертикальные 2:3 карточки, листаются вбок (scroll-snap),
@@ -556,23 +608,21 @@ const saveData = JSON.stringify({
 </style>
 
 <!-- Якорь разбираем ДО модульных скриптов (те отложены и выполняются после
-     разбора документа): рельс должен сразу встать на нужный кадр, иначе
-     человек, нажавший в доске на ролик, на мгновение увидит чужое фото.
-     Тот же приём, что в VenueHero. -->
+     разбора документа): нужный кадр должен встать сразу, иначе человек,
+     нажавший в доске на ролик, на мгновение увидит чужое фото.
+     Тот же приём и тот же код, что в VenueHero. -->
 <script is:inline>
   (() => {
-    const host = document.querySelector('[data-hero-rail]');
+    const host = document.querySelector('[data-hero-shot]');
     const id = (location.hash.match(/^#foto-(.+)$/) || [])[1];
     if (!host || !id) return;
 
-    const frames = JSON.parse(host.dataset.frames || '[]');
-    const index = frames.indexOf(decodeURIComponent(id));
-    if (index < 1) return; // 0 и «кадр не найден» — рельс и так стоит на первом
+    const frame = host.querySelector(`[data-frame="${CSS.escape(decodeURIComponent(id))}"]`);
+    if (!frame) return; // кадр не найден по ссылке — визитка открывается дежурным
 
-    host.querySelector('[data-prail-host]').dataset.start = String(index);
-    host.querySelector('.prail__track').style.setProperty('--i', String(index));
+    host.querySelectorAll('[data-frame]').forEach((f) => { f.hidden = f !== frame; });
 
-    const img = host.querySelector(`img[data-frame="${CSS.escape(frames[index])}"]`);
+    const img = frame.querySelector('img');
     if (img) {
       img.loading = 'eager';
       img.fetchPriority = 'high';
@@ -582,7 +632,16 @@ const saveData = JSON.stringify({
 
 <script>
   import { bindSaveButtons } from '../../../../lib/save';
+  import { bindVideo } from '../../../../lib/video';
 
-  // Ролики в первом экране играют сами — их ведёт PhotoRail
   bindSaveButtons();
+
+  // Ролик в первом экране: играет, пока его кадр показан (а не скрыт
+  // через [hidden]) и секция в поле зрения — как в герое площадки.
+  document.querySelectorAll<HTMLElement>('[data-hero-shot]').forEach((host) => {
+    host.querySelectorAll<HTMLVideoElement>('[data-video]').forEach((video) => {
+      const frame = video.closest<HTMLElement>('[data-frame]');
+      bindVideo(video, { root: host, active: () => !!frame && !frame.hidden });
+    });
+  });
 </script>
