@@ -16,6 +16,7 @@ import SiteHeader from '../../../../components/SiteHeader.astro';
 import BottomDock from '../../../../components/BottomDock.astro';
 import PhotoRail from '../../../../components/PhotoRail.astro';
 import Icon from '../../../../components/Icon.astro';
+import BackButton from '../../../../components/BackButton.astro';
 import { SPECIALISTS_BY_CATEGORY, FILTERS_BY_CATEGORY, type Specialist } from '../../../../data/specialists';
 import { reelsOf } from '../../../../data/reels';
 import { resolveImage, favoriteImage } from '../../../../lib/images';
@@ -103,18 +104,11 @@ const saveData = JSON.stringify({
 
   <div class="profile">
     <!-- ГЕРОЙ: инфо-плашка + крупная фото-карусель встык (реф. Cineteca).
-         Крошки живут внутри плашки: герой занимает весь экран под шапкой. -->
+         Кнопка «назад» — на кадре, не текстовая крошка на плашке: тот же
+         паттерн, что у карточки площадки (см. BackButton.astro). -->
     <section class="phero">
       <div class="phero__card theme-accent">
         <div class="phero__top">
-          <nav class="crumbs t-caption">
-            <a href="/">Главная</a>
-            <span aria-hidden="true">/</span>
-            <a href={`/moskva/podryadchiki/${s.categorySlug}/`}>{s.category}</a>
-            <span aria-hidden="true">/</span>
-            <span>{s.name}</span>
-          </nav>
-
           <h1 class="phero__name">{s.name}</h1>
           <p class="t-lead phero__tagline">{s.tagline}</p>
           {s.rating && s.reviews && (
@@ -132,6 +126,8 @@ const saveData = JSON.stringify({
       </div>
 
       <div class="phero__media" data-hero-rail data-frames={JSON.stringify(frames.map(frameId))}>
+        <BackButton href={`/moskva/podryadchiki/${s.categorySlug}/`} label={`К списку «${s.category}»`} />
+
         <PhotoRail
           photos={frames}
           alt={s.name}
@@ -275,18 +271,6 @@ const saveData = JSON.stringify({
     padding-bottom: calc(var(--safe-b) + 120px);
   }
 
-  .crumbs {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--s-2);
-  }
-
-  .crumbs a { text-decoration: none; }
-
-  @media (hover: hover) {
-    .crumbs a:hover { color: var(--accent); }
-  }
-
   /* ============ ГЕРОЙ: плашка + карусель встык ============
      Мобилка: фото сверху во всю ширину, плашка под ним.
      ПК: сплит-полоса в край экрана — плашка слева, карусель справа. */
@@ -296,7 +280,10 @@ const saveData = JSON.stringify({
     margin-bottom: var(--section-gap-tight);
   }
 
-  .phero__media { grid-area: media; }
+  /* position: relative на всех ширинах — держит BackButton прижатым
+     к кадру, а не к секции целиком; на десктопе низкий приоритет
+     переопределяет ниже (там медиа и так растянута абсолютом). */
+  .phero__media { grid-area: media; position: relative; }
 
   /* Якорная композиция: имя с теглайном тяготеют к верху плашки,
      цена с кнопкой — к низу, середина дышит (space-between). */

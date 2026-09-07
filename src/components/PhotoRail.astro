@@ -34,7 +34,14 @@ interface Props {
   priority?: boolean;
 }
 
-const { photos, alt, href, sizes, widths = [360, 560, 800, 1100], priority = false } = Astro.props;
+const {
+  photos,
+  alt,
+  href,
+  sizes,
+  widths = [360, 560, 800, 1100],
+  priority = false,
+} = Astro.props;
 ---
 
 <div class="prail-wrap" data-prail-host>
