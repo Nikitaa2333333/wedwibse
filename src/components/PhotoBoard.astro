@@ -3,81 +3,29 @@
 // (колонки-масонри, плитки, статьи в потоке) живёт в PhotoMasonry: тот же
 // компонент показывает галерею карточки подрядчика, чтобы кадры на главной
 // и в визитке выглядели одинаково. Здесь остаётся то, что есть только
-// у главной, — перки и источник плиток.
+// у главной, — источник плиток.
 //
-// ПЕРКИ (площадки/специалисты — входы в разделы) идут первой строкой
-// доски, а не отдельным экраном перед ней: раньше это были две плашки
-// почти в полный экран каждая, и до самой ленты приходилось пролистать
-// два «пустых» экрана. Тут они — часть доски (тот же --pin-gap, без
-// своих полей), просто крупнее и на всю ширину, а не колонка потока.
-import PhotoRail from './PhotoRail.astro';
+// Входы в разделы («Площадки», «Подрядчики», направления) доске больше
+// не принадлежат: они переехали в EntryRail — цветной ряд над доской.
+// Раньше это были две фото-плашки первой строкой доски, и вход в раздел
+// приходилось искать среди кадров, которыми доска и заполнена.
 import PhotoMasonry from './PhotoMasonry.astro';
 import { collectTiles } from '../lib/gallery';
 import { IMG_WIDTHS } from '../lib/images';
 
-interface Perk {
-  kind: 'photo' | 'light';
-  name: string;
-  tag: string;
-  imgs: string[];
-  alt: string;
-  href: string;
-  words?: string[];
-}
-
-interface Props {
-  perks?: Perk[];
-}
-
-const { perks = [] } = Astro.props;
-
 const TILE_SIZES =
   '(min-width: 1440px) 19vw, (min-width: 1024px) 24vw, (min-width: 640px) 32vw, 48vw';
-
-const PERK_SIZES = '(min-width: 640px) 50vw, 100vw';
 ---
 
 <section class="board" aria-label="Фотографии площадок каталога">
-  {perks.length > 0 && (
-    <div class="board__perks">
-      {perks.map((perk) => (
-        <a class:list={['perk', `perk--${perk.kind}`]} href={perk.href}>
-          <span class="perk__media">
-            <PhotoRail photos={perk.imgs} alt={perk.alt} sizes={PERK_SIZES} widths={IMG_WIDTHS.wide} />
-          </span>
-
-          <span class="perk__body">
-            <span class="perk__text">
-              <span class="perk__top">
-                <span class="perk__name">{perk.name}</span>
-                <span class="perk__arrow" aria-hidden="true">↗</span>
-              </span>
-              <span class="perk__tag" set:html={perk.tag} />
-            </span>
-
-            {perk.words && perk.words.length > 0 && (
-              <span class="perk__list" aria-hidden="true">
-                <span class="perk__list-track">
-                  {perk.words.concat(perk.words).map((word) => (
-                    <span class="perk__word">{word}</span>
-                  ))}
-                </span>
-              </span>
-            )}
-          </span>
-        </a>
-      ))}
-    </div>
-  )}
-
   <PhotoMasonry tiles={collectTiles()} sizes={TILE_SIZES} widths={IMG_WIDTHS.tile} />
 </section>
 
 <style>
   .board {
     background: var(--bg);
-    /* Сверху ноль: отбивку от заголовка даёт сам герой (index.astro),
-       плитки начинаются сразу под подсказкой. */
+    /* Сверху ноль: отбивку от заголовка даёт ряд входов над доской,
+       плитки начинаются сразу под ним. */
     padding-block: 0 var(--section-gap);
     display: flex;
     flex-direction: column;
@@ -85,132 +33,5 @@ const PERK_SIZES = '(min-width: 640px) 50vw, 100vw';
     /* Боковых полей нет: крайние кадры идут в край экрана. Зазор доски
        и поле подписи — общие ручки проекта (--pin-gap, --cap-pad
        в global.css), тут они только используются. */
-  }
-
-  /* ============ ПЕРКИ: строка входов в разделы, первой в доске ============
-     Раньше — отдельная секция почти в полный экран каждая плашка (до ленты
-     приходилось пролистать два «пустых» экрана). Тут это первая строка
-     самой доски: тот же --pin-gap, без своих полей, но заметно крупнее
-     и шире соседних кадров потока — контраст даёт не высота, а ширина
-     (на телефоне плашка на весь пролёт доски, а не одна колонка). */
-  .board__perks {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--pin-gap);
-  }
-
-  @media (min-width: 640px) {
-    .board__perks { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  }
-
-  /* Плитка входа: фотография сверху, текст ПОД ней, на бумаге.
-     Раньше название и подпись лежали прямо на кадре: кадр приходилось
-     гасить вуалью, а у светлой плашки — растворять градиентом в бумагу,
-     чтобы текст читался. Одно правило на весь сайт: фотография остаётся
-     фотографией, текст живёт на бумаге (то же сделано на первом экране
-     карточки площадки). */
-  .perk {
-    display: flex;
-    flex-direction: column;
-    color: var(--fg);
-    text-decoration: none;
-    min-width: 0;
-  }
-
-  /* Пропорцию держит сам кадр, а не обёртка: точки-индикаторы идут строкой
-     под кадром и должны попадать в поток, а не обрезаться рамкой медиа. */
-  .perk__media { display: block; }
-
-  .perk :global(.prail) {
-    aspect-ratio: 4 / 3;
-    background: var(--surface-dim);
-  }
-
-  /* Вуаль в плитке не нужна: гасить кадр было нужно только под текст */
-  .perk :global(.veil) { display: none; }
-
-  /* Поле подписи — общая ручка доски (--cap-pad), чтобы текст плитки стоял
-     по той же вертикали, что подписи кадров потока рядом. */
-  .perk__body {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    align-items: start;
-    gap: var(--s-4);
-    padding: var(--s-3) var(--cap-pad) 0;
-  }
-
-  .perk__text {
-    display: flex;
-    flex-direction: column;
-    gap: var(--s-1);
-    min-width: 0;
-  }
-
-  .perk__top {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: var(--s-3);
-  }
-
-  .perk__name {
-    font-size: clamp(24px, 4vw, 36px);
-    font-weight: var(--w-head);
-    line-height: 1.05;
-    letter-spacing: -0.015em;
-  }
-
-  .perk__arrow {
-    font-size: var(--fs-body);
-    line-height: 1;
-    flex: none;
-  }
-
-  .perk__tag {
-    font-size: var(--fs-small);
-    font-weight: var(--w-medium);
-    line-height: 1.35;
-  }
-
-  /* Колесо категорий: у плитки «Специалисты» вместо статичной подписи
-     крутится список направлений. Оно съезжает во вторую колонку подписи,
-     а не лежит на кадре, как раньше. */
-  .perk--light .perk__body { grid-template-columns: minmax(0, 1fr) auto; }
-
-  .perk__list {
-    position: relative;
-    overflow: hidden;
-    height: 3.45em;
-    text-align: right;
-    mask-image: linear-gradient(to bottom, transparent 0%, black 38%, black 62%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 38%, black 62%, transparent 100%);
-  }
-
-  .perk__list-track {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    animation: perk-scroll 14s linear infinite;
-  }
-
-  .perk__word {
-    height: 1.15em;
-    display: flex;
-    align-items: center;
-    font-size: clamp(18px, 2.4vw, 24px);
-    font-weight: var(--w-head);
-    letter-spacing: -0.02em;
-    white-space: nowrap;
-  }
-
-  @keyframes perk-scroll {
-    from { transform: translateY(0); }
-    to { transform: translateY(-50%); }
-  }
-
-  @media (hover: hover) {
-    .perk { transition: transform var(--dur-fast) var(--ease-out); }
-    .perk__arrow { transition: transform var(--dur-fast) var(--ease-out); }
-    .perk:hover .perk__arrow { transform: translate(3px, -3px); }
   }
 </style>

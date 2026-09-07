@@ -1,0 +1,355 @@
+---
+// ЦВЕТНЫЕ КАРТОЧКИ-ВХОДЫ (главная) — ряд плашек, который листается вбок:
+// сначала два раздела каталога со счётчиками («Площадки», «Подрядчики»),
+// за ними направления подрядчиков поимённо.
+//
+// Референс — экран проектов из мобильного приложения: вертикальные плашки,
+// каждая залита своим тоном; в углу чернильный кружок-иконка и серый
+// кружок со стрелкой; имя набрано крупно и плотно; у низа — капсула того же
+// тона, только гуще, со стопкой круглых фото и числом. Взято оттуда ровно
+// это; тона живут токенами --tint-* (см. global.css), своих цветов
+// у компонента нет.
+//
+// Вёрстка под телефон: ряд — жест, к которому телефон приучен (та же
+// лента, что у чипов фильтра и полосы кадров), и в него влезают не два
+// раздела, а два плюс два десятка направлений. На широком экране ряд
+// просто длиннее — отдельной раскладки под ПК у него нет и не нужно.
+//
+// ЧИСЛА И ФОТО НЕ ПИШУТСЯ РУКАМИ. Счётчики и кадры в капсуле берутся
+// на сборке из тех же данных, из которых собираются каталоги: завели
+// площадку или карточку специалиста — главная подхватила сама.
+import { Image } from 'astro:assets';
+import Icon from './Icon.astro';
+import { VENUES } from '../data/venues';
+import {
+  SPECIALIST_CATEGORIES,
+  SPECIALIST_GROUPS,
+  SPECIALISTS_BY_CATEGORY,
+  type Specialist,
+} from '../data/specialists';
+import { withCount, type PluralForms } from '../lib/plural';
+import { resolveImage, IMG_WIDTHS } from '../lib/images';
+import type { IconName } from '../lib/icons';
+
+/** тон заливки: имя токена --tint-* без префикса */
+type Tint = 'sand' | 'ice' | 'clay' | 'sage' | 'lilac';
+
+interface Card {
+  name: string;
+  href: string;
+  count: number;
+  /** форма слова под числом; без неё в капсуле стоит одно число */
+  noun?: PluralForms;
+  /** кадры для стопки в капсуле: два первых объекта раздела */
+  thumbs: string[];
+  tint: Tint;
+  icon?: IconName;
+  /** раздел каталога: крупнее набором, с кружком-иконкой */
+  lead?: boolean;
+}
+
+/** сколько кружков-фото стоит в капсуле; больше двух — уже не стопка, а ряд */
+const THUMBS = 2;
+
+// Подрядчик, стоящий в двух направлениях сразу (фотограф, который снимает
+// и видео), — это один подрядчик, а не два: считаем по slug'ам, иначе
+// счётчик раздела разойдётся с числом живых карточек.
+const vendors = new Map<string, Specialist>();
+for (const list of Object.values(SPECIALISTS_BY_CATEGORY)) {
+  for (const s of list) vendors.set(s.slug, s);
+}
+
+const portraits = (list: Specialist[]) =>
+  list.slice(0, THUMBS).map((s) => s.photos[0]).filter(Boolean);
+
+// Порядок направлений — из групп (SPECIALIST_GROUPS: источник правды,
+// направления там идут по ходу подготовки свадьбы). Категория, не попавшая
+// ни в одну группу, не теряется — досыпается в конец.
+const grouped = SPECIALIST_GROUPS.flatMap((g) => g.categories);
+const order = [
+  ...grouped,
+  ...SPECIALIST_CATEGORIES.map((c) => c.slug).filter((slug) => !grouped.includes(slug)),
+];
+const labels = new Map(SPECIALIST_CATEGORIES.map((c) => [c.slug, c.label]));
+
+// Тона направлений идут по кругу: соседи в ряду обязаны отличаться,
+// а привязывать тон к смыслу направления нельзя — цвет тогда станет
+// значащим, и каждая новая категория потребует решения «а какого она цвета».
+const TINTS: Tint[] = ['clay', 'sage', 'lilac', 'sand', 'ice'];
+
+const directions: Card[] = order
+  .filter((slug) => labels.has(slug))
+  .map((slug) => {
+    const list = SPECIALISTS_BY_CATEGORY[slug] ?? [];
+    return {
+      name: labels.get(slug)!,
+      href: `/moskva/podryadchiki/${slug}/`,
+      count: list.length,
+      thumbs: portraits(list),
+      tint: 'clay' as Tint,
+    };
+  })
+  // Направления, где карточки уже есть, — в начало ряда: первым, что
+  // человек листает, должен быть живой каталог, а не страница «скоро».
+  // Сортировка стабильная, поэтому внутри обеих половин порядок групп цел.
+  .sort((a, b) => Number(b.count > 0) - Number(a.count > 0))
+  .map((card, i) => ({ ...card, tint: TINTS[i % TINTS.length] }));
+
+const VENDORS: PluralForms = ['подрядчик', 'подрядчика', 'подрядчиков'];
+
+const cards: Card[] = [
+  {
+    name: 'Площадки',
+    href: '/moskva/ploshchadki/',
+    count: VENUES.length,
+    noun: ['площадка', 'площадки', 'площадок'],
+    thumbs: VENUES.slice(0, THUMBS).map((v) => v.hero.portrait),
+    tint: 'sand',
+    icon: 'venue',
+    lead: true,
+  },
+  {
+    // Хаба раздела в проекте нет (см. astro.config.mjs), поэтому ведём
+    // сразу в первый каталог, а не на редирект.
+    name: 'Подрядчики',
+    href: '/moskva/podryadchiki/vedushchie/',
+    count: vendors.size,
+    noun: VENDORS,
+    thumbs: portraits([...vendors.values()]),
+    tint: 'ice',
+    icon: 'vendors',
+    lead: true,
+  },
+  ...directions,
+];
+
+// В капсуле у разделов стоит «13 подрядчиков», у направлений — одно число:
+// слово там повторялось бы на каждой карточке ряда и превращалось в шум,
+// а после соседней карточки «13 подрядчиков» число читается однозначно.
+// Вслух так не выходит, поэтому у ссылки своя подпись — с существительным.
+const view = cards.map((card) => ({
+  ...card,
+  capsule: card.count === 0 ? 'скоро' : card.noun ? withCount(card.count, card.noun) : String(card.count),
+  aria: `${card.name} — ${card.count === 0 ? 'скоро' : withCount(card.count, card.noun ?? VENDORS)}`,
+}));
+---
+
+<section class="entries" aria-label="Разделы каталога">
+  <ul class="entries__rail">
+    {view.map((card, i) => (
+      <li class="entries__item">
+        <a
+          class:list={['ecard', `ecard--${card.tint}`, card.lead && 'ecard--lead']}
+          href={card.href}
+          aria-label={card.aria}
+        >
+          <span class="ecard__top">
+            {card.icon && (
+              <span class="ecard__badge" aria-hidden="true"><Icon name={card.icon} /></span>
+            )}
+            <span class="ecard__go" aria-hidden="true">↗</span>
+          </span>
+
+          <span class="ecard__foot">
+            <span class="ecard__name">{card.name}</span>
+
+            {/* Капсула стоит на каждой карточке, даже на пустой: без неё имя
+                проваливается к самому низу и ряд встаёт по двум разным
+                вертикалям. Кадры внутри — декорация к числу, поэтому без alt
+                и вся капсула скрыта от читалки: ссылка уже подписана целиком. */}
+            <span class:list={['ecard__count', card.thumbs.length > 0 && 'ecard__count--thumbs']} aria-hidden="true">
+              {card.thumbs.length > 0 && (
+                <span class="ecard__stack">
+                  {card.thumbs.map((src) => (
+                    <Image
+                      class="ecard__thumb"
+                      src={resolveImage(src)}
+                      alt=""
+                      widths={IMG_WIDTHS.thumb}
+                      sizes="32px"
+                      loading={i < 2 ? 'eager' : 'lazy'}
+                      decoding="async"
+                    />
+                  ))}
+                </span>
+              )}
+              <span class="ecard__label">{card.capsule}</span>
+            </span>
+          </span>
+        </a>
+      </li>
+    ))}
+  </ul>
+</section>
+
+<style>
+  /* Ряд идёт в край экрана, поля держит сама лента: карточка, обрезанная
+     краем, — единственная честная подсказка, что ряд листается. Стрелок
+     и точек под ним нет сознательно. */
+  .entries {
+    background: var(--bg);
+    padding-block: var(--s-5) var(--s-4);
+  }
+
+  /* touch-action: pan-x — жест на ленте живёт только по горизонтали,
+     без косого свайпа «ряд вбок + страница вверх» (то же у FilterBar
+     и CategoryNav: ленты проекта ведут себя одинаково). */
+  .entries__rail {
+    display: flex;
+    gap: var(--pin-gap);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    padding-inline: var(--home-edge);
+    list-style: none;
+  }
+
+  .entries__rail::-webkit-scrollbar { display: none; }
+
+  .entries__item {
+    flex: none;
+    scroll-snap-align: start;
+  }
+
+  /* Карточка вертикальная, как в референсе: ширина — чуть больше половины
+     экрана, чтобы край второй карточки был виден и звал листать; высота —
+     от ширины, пропорцией. Все карточки одного размера: ряд с рваным низом
+     читается как сбой вёрстки, а не как ритм. */
+  .ecard {
+    --tile: var(--tint-sand);
+    --tile-deep: var(--tint-sand-deep);
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: var(--s-5);
+    width: clamp(210px, 62vw, 250px);
+    aspect-ratio: 3 / 4;
+    padding: var(--s-4);
+    background: var(--tile);
+    color: var(--ink);
+    border-radius: var(--radius-tile-soft);
+    text-decoration: none;
+  }
+
+  .ecard--sand { --tile: var(--tint-sand); --tile-deep: var(--tint-sand-deep); }
+  .ecard--ice { --tile: var(--tint-ice); --tile-deep: var(--tint-ice-deep); }
+  .ecard--clay { --tile: var(--tint-clay); --tile-deep: var(--tint-clay-deep); }
+  .ecard--sage { --tile: var(--tint-sage); --tile-deep: var(--tint-sage-deep); }
+  .ecard--lilac { --tile: var(--tint-lilac); --tile-deep: var(--tint-lilac-deep); }
+
+  .ecard__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-3);
+    min-height: 40px;
+  }
+
+  /* Кружок-иконка: чернильная заливка на тоне. Есть только у разделов
+     каталога — если повесить его и на направления, ряд превращается
+     в набор одинаковых значков и иконка перестаёт что-либо значить. */
+  .ecard__badge {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-pill);
+    background: var(--ink);
+    color: var(--paper);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ecard__badge :global(svg) { width: 20px; height: 20px; }
+
+  /* Стрелка в кружке — обводкой и приглушённая: она служебная, «это
+     ссылка», и рядом с чернильным кружком-иконкой не должна с ним спорить.
+     Приглушение — opacity, а не серый цвет (правило проекта): так кружок
+     остаётся чернильным на любом тоне. */
+  .ecard__go {
+    margin-left: auto;
+    width: 40px;
+    height: 40px;
+    flex: none;
+    border-radius: var(--radius-pill);
+    border: 1.5px solid currentColor;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--fs-small);
+    line-height: 1;
+    opacity: 0.45;
+  }
+
+  .ecard__foot {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--s-3);
+    min-width: 0;
+  }
+
+  /* Имя набрано плотнее обычного заголовка: в референсе именно трекинг
+     держит крупную строку в узкой карточке. */
+  .ecard__name {
+    font-size: clamp(22px, 5.6vw, 26px);
+    font-weight: var(--w-head);
+    line-height: 1.02;
+    letter-spacing: -0.03em;
+  }
+
+  .ecard--lead .ecard__name { font-size: clamp(30px, 8vw, 36px); }
+
+  /* Капсула со счётчиком — «сколько их там» до перехода в каталог.
+     Того же тона, что карточка, только гуще (--tile-deep): белая капсула
+     на тоне читалась заплаткой. Слева — стопка круглых кадров объектов
+     раздела, справа число. */
+  .ecard__count {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-2);
+    padding: 6px 12px;
+    border-radius: var(--radius-pill);
+    background: var(--tile-deep);
+    font-size: var(--fs-caption);
+    font-weight: var(--w-medium);
+    line-height: 1.2;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+
+  /* Со стопкой кадров левое поле уже: у кружков своя граница, им воздух
+     не нужен, а тексту справа — нужен */
+  .ecard__count--thumbs { padding: 4px 12px 4px 4px; }
+
+  .ecard--lead .ecard__count { font-size: var(--fs-small); }
+
+  /* Стопка: кружки лежат внахлёст на треть, каждый с обводкой цвета
+     капсулы, чтобы граница между двумя кадрами читалась */
+  .ecard__stack {
+    display: inline-flex;
+    flex: none;
+  }
+
+  .ecard__thumb {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-pill);
+    object-fit: cover;
+    border: 2px solid var(--tile-deep);
+    background: var(--surface-dim);
+  }
+
+  .ecard__thumb + .ecard__thumb { margin-left: -10px; }
+
+  .ecard__label { min-width: 0; }
+
+  @media (hover: hover) {
+    .ecard__go {
+      transition: transform var(--dur-fast) var(--ease-out), opacity var(--dur-fast) var(--ease-out);
+    }
+    .ecard:hover .ecard__go { transform: translate(3px, -3px); opacity: 1; }
+  }
+</style>
