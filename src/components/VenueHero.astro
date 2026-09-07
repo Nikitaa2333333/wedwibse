@@ -100,19 +100,22 @@ const favorite = await venueFavorite(venue);
   <div class="container container--wide vhero__inner">
     <div class="vhero__bottom" data-reveal-group>
       <div class="vhero__id">
-        {
-          venue.logo && (
-            <span
-              class="vhero__logo"
-              role="img"
-              aria-label={`Логотип площадки «${venue.logo.label}»`}
-              style={`--logo: url('${venue.logo.src}'); --logo-ratio: ${venue.logo.ratio};`}
-            />
-          )
-        }
-
-        <p class="vhero__kicker t-caption">{venue.kicker}</p>
         <h1 class="vhero__title">{venue.title}</h1>
+
+        <div class="vhero__meta">
+          {
+            venue.logo && (
+              <span
+                class="vhero__logo"
+                role="img"
+                aria-label={`Логотип площадки «${venue.logo.label}»`}
+                style={`--logo: url('${venue.logo.src}'); --logo-ratio: ${venue.logo.ratio};`}
+              />
+            )
+          }
+
+          <p class="vhero__kicker t-caption">{venue.kicker}</p>
+        </div>
       </div>
 
       <div class="vhero__pitch">
@@ -150,7 +153,6 @@ const favorite = await venueFavorite(venue);
   .vhero {
     display: flex;
     flex-direction: column;
-    gap: var(--s-5);
     /* Нижний док — position:fixed на любой ширине; без отступа он
        перекрывает низ текста, когда фото у площадки короткое (широкий
        кадр во всю ширину экрана — невысокий сам по себе). */
@@ -201,7 +203,11 @@ const favorite = await venueFavorite(venue);
     display: flex;
     flex-direction: column;
     gap: var(--s-6);
-    padding-top: var(--s-6);
+    /* Единственная ручка отступа фото → текст — раньше тут же добавлял
+       свои var(--s-5) флекс-gap контейнера .vhero, вместе выходило 56px,
+       заметно на глаз. Текст должен читаться продолжением кадра, не
+       отдельным блоком через воздух. */
+    padding-top: var(--s-4);
   }
 
   /* ============ ХАРАКТЕРИСТИКИ КРУПНО ============
@@ -245,26 +251,11 @@ const favorite = await venueFavorite(venue);
     align-items: end;
   }
 
-  /* Знак площадки. Файл белый — красим маской: форма из PNG, заливка
-     из --fg. Пропорции приходят из данных, чтобы кадр не плющило. */
-  .vhero__logo {
-    display: block;
-    height: clamp(22px, 2.4vw, 32px);
-    aspect-ratio: var(--logo-ratio);
-    margin-bottom: var(--s-4);
-    background: var(--fg);
-    -webkit-mask: var(--logo) no-repeat left center / contain;
-    mask: var(--logo) no-repeat left center / contain;
-  }
-
-  .vhero__kicker {
-    font-weight: var(--w-medium);
-    margin-bottom: var(--s-3);
-  }
-
   /* Меры тут нет намеренно: ширину задаёт сама колонка нижнего яруса.
      С --measure-head имя ломалось на четыре строки — 26ch при кегле под
-     сотню пикселей шире колонки, и ограничивала не мера, а колонка. */
+     сотню пикселей шире колонки, и ограничивала не мера, а колонка.
+     Заголовок — первое, что читают после фото; бирка (лого + категория/
+     город) идёт под ним меньше и тише, а не текстовой шапкой перед ним. */
   .vhero__title {
     font-size: clamp(38px, 5vw, 76px);
     font-weight: var(--w-head);
@@ -272,6 +263,27 @@ const favorite = await venueFavorite(venue);
     letter-spacing: var(--ls-display);
     text-wrap: balance;
   }
+
+  .vhero__meta {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    margin-top: var(--s-3);
+  }
+
+  /* Знак площадки. Файл белый — красим маской: форма из PNG, заливка
+     из --fg. Пропорции приходят из данных, чтобы кадр не плющило. */
+  .vhero__logo {
+    display: block;
+    height: 18px;
+    aspect-ratio: var(--logo-ratio);
+    flex: none;
+    background: var(--fg);
+    -webkit-mask: var(--logo) no-repeat left center / contain;
+    mask: var(--logo) no-repeat left center / contain;
+  }
+
+  .vhero__kicker { font-weight: var(--w-medium); }
 
   .vhero__pitch {
     display: flex;
