@@ -124,7 +124,7 @@ const counts = countOptions(VEDUSHCHIE_FILTERS, cards.map((c) => c.filters));
      На ПК — колонка настроек слева, каталог справа; отбивка колонки от
      мозаики — вертикальная структурная линия. */
   .layout {
-    padding-bottom: calc(var(--safe-b) + 120px);
+    padding-bottom: var(--dock-space);
   }
 
   @media (min-width: 1024px) {

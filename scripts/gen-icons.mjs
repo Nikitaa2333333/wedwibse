@@ -31,6 +31,9 @@ const MAP = {
   caretDown: 'alt-arrow-down-bold',
   arrowLeft: 'alt-arrow-left-bold',
   close: 'close-bold',
+  // ролик в ряду «Видео»: запуск и пауза по кнопке, без автозапуска
+  play: 'play-bold',
+  pause: 'pause-bold',
 };
 
 const data = require(`@iconify-json/${SET}/icons.json`);

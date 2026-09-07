@@ -1,8 +1,15 @@
 ---
-// Единое нижнее меню сайта: одно и то же на главной и на страницах каталога.
-// Обычный фиксированный таб-бар во всю ширину, как шапка, только снизу:
-// без капсулы, без сжатия при скролле — всегда на месте, всегда одинаковый.
+// Единая полоса навигации сайта: одна и та же на главной и в каталогах.
 // Четыре раздела; «Чат» убран до появления самого чата.
+//
+// ДВЕ РОЛИ ОДНОЙ ПОЛОСЫ, а не два компонента:
+//   телефон — фиксированный таб-бар снизу во всю ширину, иконка с подписью;
+//   ПК      — вертикальный рельс слева, одни иконки (реф. Pinterest).
+// Разводим по существу, а не «сжимаем то же самое»: на широком экране
+// горизонтальная полоса снизу тратит целую строку экрана ради четырёх
+// ссылок и уводит руку от мыши, а слева она стоит там, где курсор.
+// Место под рельс держит body (--rail-w в global.css) — страницы про
+// полосу не знают, они читают только --dock-space.
 import Icon from './Icon.astro';
 
 interface Props {
@@ -48,6 +55,7 @@ const items = [
     <a
       class:list={['dock__item', { 'is-active': it.key === active }]}
       href={it.href}
+      title={it.label}
       aria-current={it.key === active ? 'page' : undefined}
     >
       <span class="dock__icon-wrap">
@@ -164,8 +172,71 @@ const items = [
     .dock__label { overflow: visible; }
   }
 
+  /* ============ ПК: ПОЛОСА СЛЕВА ============
+     Реф. Pinterest: узкий вертикальный рельс у края экрана, только иконки,
+     без подписей. Это не «сжатый таб-бар»: на широком экране горизонтальная
+     полоса снизу занимает целую строку ради четырёх ссылок, а слева она
+     стоит там, где рука мыши, и не отъедает высоту у каталога.
+     Место под рельс страница не считает сама — его держит padding-left
+     на body (--rail-w в global.css).
+     Подписи скрыты, а не удалены: они остаются доступными для скринридера
+     через сам текст ссылки, а на ховере всплывают в тултипе (title). */
+  @media (min-width: 1024px) {
+    .dock {
+      inset: 0 auto 0 0;
+      width: var(--rail-w);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      gap: var(--s-2);
+      padding: var(--s-5) 0;
+      border-top: none;
+      border-right: 1px solid var(--hairline);
+    }
+
+    /* Ячейка — кружок 48px: на ховере под иконкой проявляется тихая
+       подложка (--surface), активная стоит на ней постоянно. Кружок, а не
+       скруглённый квадрат референса: скругления в проекте запрещены всюду,
+       кроме пилюль и кружков, и круглая кнопка-иконка тут уже есть
+       (.icon-btn) — рельс говорит на её языке. */
+    .dock__item {
+      flex-direction: column;
+      gap: 0;
+      width: 48px;
+      height: 48px;
+      padding: 0;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-pill);
+      transition: opacity var(--dur-fast) var(--ease-out),
+                  background var(--dur-fast) var(--ease-out);
+    }
+
+    .dock__item.is-active { background: var(--surface); }
+
+    .dock__label {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    :global(.dock__icon) { width: 24px; height: 24px; }
+
+    /* Счётчик избранного: в квадратной ячейке без подписи ему просторнее
+       у верхнего правого угла иконки, а не «на плече» строки. */
+    .dock__badge { top: -6px; left: calc(100% - 6px); }
+  }
+
   @media (hover: hover) {
     .dock__item:not(.is-active):hover { opacity: 0.8; }
+  }
+
+  @media (min-width: 1024px) and (hover: hover) {
+    .dock__item:hover { background: var(--surface); }
   }
 </style>
 

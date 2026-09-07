@@ -358,7 +358,11 @@ import Icon from '../../components/Icon.astro';
     background: var(--ink);
     color: var(--white);
     box-shadow: var(--shadow-float);
-    max-width: calc(100vw - var(--s-5) * 2);
+    /* Панель фиксирована, то есть считается от вьюпорта, а не от контента —
+       ширину полосы навигации (на ПК она слева) вычитаем руками, иначе
+       панель встаёт мимо центра каталога и упирается в её край. */
+    max-width: calc(100vw - var(--rail-w) - var(--s-5) * 2);
+    margin-left: calc(var(--rail-w) / 2);
   }
 
   .compare-bar[hidden] { display: none; }

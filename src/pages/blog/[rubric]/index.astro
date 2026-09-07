@@ -103,7 +103,7 @@ const articles = articlesOfRubric(rubric.slug);
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--s-7) clamp(8px, 1vw, 16px);
-    padding-bottom: calc(var(--safe-b) + 120px);
+    padding-bottom: var(--dock-space);
   }
 
   @media (min-width: 900px) {

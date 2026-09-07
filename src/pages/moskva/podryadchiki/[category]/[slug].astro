@@ -242,15 +242,18 @@ const saveData = JSON.stringify({
          Ниже — старый демо-блок постеров (карточки-заглушки прототипа). -->
     <!-- ВИДЕО: свои ролики подрядчика отдельным рядом — рилсы это то, за
          чем к видеографу и приходят, и искать их вперемешку с фотографиями
-         в первом экране человек не станет. Луп играет прямо в ряду; тап
-         открывает ролик в первом экране (тот же кадр, что и по ссылке из
-         доски главной), а не уводит на отдельную страницу. -->
+         в первом экране человек не станет.
+         РОЛИКИ ЗДЕСЬ НЕ АВТОЗАПУСКАЮТСЯ, в отличие от плиток доски: в ряду
+         их сразу несколько в кадре, и одновременно играющие ролики
+         перебивают друг друга — смотреть невозможно. Поэтому кадр стоит
+         постером с кнопкой play, играет ровно тот, который запустили,
+         а запуск соседнего останавливает предыдущий. -->
     {reels.length > 0 && (
       <section class="preels">
         <h2 class="t-h2">Видео</h2>
         <div class="preels__rail">
           {reels.map((reel) => (
-            <a class="preels__item media" href={`#foto-${reel.slug}`} data-reel-jump aria-label={reel.alt}>
+            <button class="preels__item media" type="button" data-reel={reel.src} aria-label={`Смотреть: ${reel.alt}`} aria-pressed="false">
               <Image
                 src={resolveImage(posterOf(reel.src))}
                 alt={reel.alt}
@@ -259,8 +262,11 @@ const saveData = JSON.stringify({
                 loading="lazy"
                 decoding="async"
               />
-              <video class="preels__video" data-video={reel.src} muted loop playsinline preload="none" aria-hidden="true"></video>
-            </a>
+              <video class="preels__video" data-reel-video muted loop playsinline preload="none" aria-hidden="true"></video>
+              <span class="preels__play" aria-hidden="true">
+                <Icon name="play" class="preels__play-icon" />
+              </span>
+            </button>
           ))}
         </div>
       </section>
@@ -332,7 +338,7 @@ const saveData = JSON.stringify({
 
 <style>
   .profile {
-    padding-bottom: calc(var(--safe-b) + 120px);
+    padding-bottom: var(--dock-space);
   }
 
   /* ============ ГЕРОЙ: плашка + карусель встык ============
@@ -589,8 +595,17 @@ const saveData = JSON.stringify({
     background: var(--surface-dim);
   }
 
+  /* Плитка ряда — кнопка: снимаем всё, что браузер рисует кнопке сам */
+  .preels__item {
+    padding: 0;
+    border: 0;
+    background: var(--surface-dim);
+    cursor: pointer;
+    color: inherit;
+  }
+
   /* Ролик поверх своего постера — проявляется, когда реально пошёл:
-     автозапуск заблокирован (энергосбережение на iPhone) — остаётся постер */
+     не запустился (энергосбережение на iPhone) — остаётся постер */
   .preels__video {
     position: absolute;
     inset: 0;
@@ -603,6 +618,36 @@ const saveData = JSON.stringify({
   }
 
   .preels__video.is-playing { opacity: 1; }
+
+  /* Кнопка play — единственное, что лежит НА кадре: правило проекта
+     разрешает поверх фотографии только иконки со своей тенью. */
+  .preels__play {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-pill);
+    background: var(--ink);
+    color: var(--white);
+    box-shadow: var(--shadow-float);
+    transition: opacity var(--dur-fast) var(--ease-out);
+  }
+
+  :global(.preels__play-icon) {
+    width: 20px;
+    height: 20px;
+    /* треугольник в круге смотрится центрированным, когда сдвинут вправо */
+    margin-left: 2px;
+  }
+
+  /* Пошёл ролик — кнопка уходит, кадр остаётся чистым; вернуть паузу
+     можно тапом по самой плитке */
+  .preels__item[aria-pressed='true'] .preels__play { opacity: 0; }
 
   /* ============ ПРЕДЛОЖЕНИЕ-ЦИТАТА ============ */
   .pquote {
@@ -715,39 +760,60 @@ const saveData = JSON.stringify({
 
   // Ролик в первом экране: играет, пока его кадр показан (а не скрыт
   // через [hidden]) и секция в поле зрения — как в герое площадки.
-  const hero = document.querySelector<HTMLElement>('[data-hero-shot]');
-  const heroVideos = Array.from(hero?.querySelectorAll<HTMLVideoElement>('[data-video]') ?? []).map(
-    (video) => {
+  document.querySelectorAll<HTMLElement>('[data-hero-shot]').forEach((hero) => {
+    hero.querySelectorAll<HTMLVideoElement>('[data-video]').forEach((video) => {
       const frame = video.closest<HTMLElement>('[data-frame]');
-      return bindVideo(video, { root: hero!, active: () => !!frame && !frame.hidden });
-    }
-  );
-
-  // Лупы в ряду «Видео» — каждый играет, пока виден на экране
-  document
-    .querySelectorAll<HTMLVideoElement>('.preels__video[data-video]')
-    .forEach((video) => bindVideo(video, { root: video.parentElement ?? undefined }));
-
-  // Тап по ролику в ряду «Видео» открывает его в первом экране — тем же
-  // способом, что ссылка из доски главной, только без перезагрузки:
-  // страница возвращается к первому экрану, кадр подменяется на выбранный.
-  document.querySelectorAll<HTMLAnchorElement>('[data-reel-jump]').forEach((link) => {
-    link.addEventListener('click', (e) => {
-      const id = decodeURIComponent(link.hash.replace('#foto-', ''));
-      const frame = hero?.querySelector<HTMLElement>(`[data-frame="${CSS.escape(id)}"]`);
-      if (!hero || !frame) return; // кадра нет — пусть отработает обычный якорь
-
-      e.preventDefault();
-      hero.querySelectorAll<HTMLElement>('[data-frame]').forEach((f) => {
-        f.hidden = f !== frame;
-      });
-
-      const img = frame.querySelector('img');
-      if (img) img.loading = 'eager';
-
-      history.replaceState(null, '', link.hash);
-      hero.scrollIntoView({ block: 'start' });
-      heroVideos.forEach((handle) => handle.sync());
+      bindVideo(video, { root: hero, active: () => !!frame && !frame.hidden });
     });
   });
+
+  // ============ РЯД «ВИДЕО»: ИГРАЕТ ТОЛЬКО ОДИН ============
+  // Автозапуска тут нет намеренно (в отличие от плиток доски): в ряду
+  // несколько роликов в кадре разом, и играющие одновременно перебивают
+  // друг друга. Запуск соседнего останавливает предыдущий — как в любой
+  // ленте роликов.
+  const tiles = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-reel]'));
+
+  function stopTile(tile: HTMLButtonElement) {
+    const video = tile.querySelector<HTMLVideoElement>('[data-reel-video]');
+    video?.pause();
+    video?.classList.remove('is-playing');
+    tile.setAttribute('aria-pressed', 'false');
+  }
+
+  tiles.forEach((tile) => {
+    tile.addEventListener('click', () => {
+      const video = tile.querySelector<HTMLVideoElement>('[data-reel-video]');
+      if (!video) return;
+
+      if (tile.getAttribute('aria-pressed') === 'true') {
+        stopTile(tile);
+        return;
+      }
+
+      tiles.forEach((other) => other !== tile && stopTile(other));
+
+      // файл подставляем при первом запуске: до нажатия ролик не качается
+      if (!video.src) video.src = tile.dataset.reel!;
+      video
+        .play()
+        .then(() => {
+          video.classList.add('is-playing');
+          tile.setAttribute('aria-pressed', 'true');
+        })
+        .catch(() => {});
+    });
+  });
+
+  // Ушёл ряд с экрана — ролик встаёт на паузу: звука у лупа нет, но
+  // крутить видео за кадром незачем, это батарея телефона.
+  const rail = document.querySelector('.preels__rail');
+  if (rail) {
+    new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) tiles.forEach(stopTile);
+      },
+      { threshold: 0 }
+    ).observe(rail);
+  }
 </script>
