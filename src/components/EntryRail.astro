@@ -201,6 +201,10 @@ const view = cards.map((card) => ({
     overscroll-behavior-x: contain;
     touch-action: pan-x;
     scroll-snap-type: x proximity;
+    /* scroll-padding обязан повторять padding: без него снап прижимает
+       первую карточку к самому краю экрана — поле ленты браузер
+       прокручивает как контент, и первая плашка встаёт в край. */
+    scroll-padding-inline: var(--home-edge);
     scrollbar-width: none;
     padding-inline: var(--home-edge);
     list-style: none;
@@ -230,7 +234,7 @@ const view = cards.map((card) => ({
     padding: var(--s-4);
     background: var(--tile);
     color: var(--ink);
-    border-radius: var(--radius-tile-soft);
+    border-radius: var(--radius-tile);
     text-decoration: none;
   }
 
