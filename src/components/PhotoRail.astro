@@ -32,6 +32,10 @@ interface Props {
   /** рельс держит первый экран: первый кадр грузится сразу и в приоритете
    *  (он же LCP страницы), остальные по-прежнему лениво */
   priority?: boolean;
+  /** кадр во всю ширину экрана (сцены скролл-блока): угол прямой.
+   *  Режим включается пропом, а не переопределением .prail снаружи через
+   *  :global() — см. запрет в AGENTS.md. */
+  bleed?: boolean;
 }
 
 const {
@@ -41,11 +45,12 @@ const {
   sizes,
   widths = [360, 560, 800, 1100],
   priority = false,
+  bleed = false,
 } = Astro.props;
 ---
 
 <div class="prail-wrap" data-prail-host>
-  <div class="prail">
+  <div class:list={['prail', bleed && 'prail--bleed']}>
     <div class="prail__track" data-rail>
       {photos.map((src, n) => {
         const video = isVideo(src);
@@ -120,9 +125,13 @@ const {
     position: relative;
     aspect-ratio: var(--card-ratio, 4 / 5);
     overflow: hidden;
+    border-radius: var(--radius-card);
     background: var(--surface-dim);
     touch-action: pan-y;
   }
+
+  /* Кадр во всю ширину экрана — прямым углом (см. --radius-media) */
+  .prail--bleed { border-radius: var(--radius-media); }
 
   /* Лента кадров. Ширина ленты равна окну, кадры из неё вываливаются
      вправо и обрезаются — поэтому сдвиг ровно на --i окон и есть
