@@ -139,16 +139,21 @@ const { photos, alt, href, sizes, widths = [360, 560, 800, 1100], priority = fal
     padding-top: var(--s-2);
   }
 
+  /* Обе точки серые: активная — плотнее, соседние — светлее. Активная
+     чернилами в полную силу выглядела точкой в конце предложения и тянула
+     взгляд сильнее подписи под кадром. Серый даёт тот же смысл тише.
+     Приглушаем прозрачностью от --fg, а не своим серым цветом: в тёмной
+     секции точки светлеют сами. */
   .prail__dot {
     width: 5px;
     height: 5px;
     border-radius: 50%;
     background: var(--fg);
-    opacity: 0.22;
+    opacity: 0.18;
     transition: opacity var(--dur-fast) var(--ease-out);
   }
 
-  .prail__dot.is-on { opacity: 1; }
+  .prail__dot.is-on { opacity: 0.5; }
 </style>
 
 <script>
