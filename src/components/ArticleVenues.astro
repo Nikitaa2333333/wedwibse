@@ -36,7 +36,7 @@ const items = venues.slice(0, 3);
   <div class="container">
     <h2 class="avenues__title t-h2" id="avenues-title">{title}</h2>
 
-    <div class="avenues__grid" data-reveal-group>
+    <div class="avenues__grid">
       {items.map((venue) => {
         const href = `/moskva/ploshchadki/${venue.slug}/`;
         return (

@@ -206,9 +206,9 @@ const saveData = JSON.stringify({
     {s.offers && (
       <section class="pwhy">
         <h2 class="t-h2">Почему выбирают</h2>
-        <div class="pwhy__grid" data-reveal-group>
+        <div class="pwhy__grid">
           {s.offers.map((offer) => (
-            <article class="pwhy__item" data-reveal>
+            <article class="pwhy__item">
               <h3 class="pwhy__title">{offer.title}</h3>
               <p class="pwhy__text">{offer.text}</p>
             </article>
@@ -240,12 +240,38 @@ const saveData = JSON.stringify({
     <!-- ВИДЕО отдельной секцией у подрядчика с реальными роликами нет:
          они лежат кадрами в первом экране, вперемешку с фотографиями.
          Ниже — старый демо-блок постеров (карточки-заглушки прототипа). -->
+    <!-- ВИДЕО: свои ролики подрядчика отдельным рядом — рилсы это то, за
+         чем к видеографу и приходят, и искать их вперемешку с фотографиями
+         в первом экране человек не станет. Луп играет прямо в ряду; тап
+         открывает ролик в первом экране (тот же кадр, что и по ссылке из
+         доски главной), а не уводит на отдельную страницу. -->
+    {reels.length > 0 && (
+      <section class="preels">
+        <h2 class="t-h2">Видео</h2>
+        <div class="preels__rail">
+          {reels.map((reel) => (
+            <a class="preels__item media" href={`#foto-${reel.slug}`} data-reel-jump aria-label={reel.alt}>
+              <Image
+                src={resolveImage(posterOf(reel.src))}
+                alt={reel.alt}
+                widths={IMG_WIDTHS.card}
+                sizes="(min-width: 1024px) 240px, 48vw"
+                loading="lazy"
+                decoding="async"
+              />
+              <video class="preels__video" data-video={reel.src} muted loop playsinline preload="none" aria-hidden="true"></video>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
     {!reels.length && s.reels && (
       <section class="preels">
         <h2 class="t-h2">Видео</h2>
-        <div class="preels__rail" data-reveal-group>
+        <div class="preels__rail">
           {s.reels.map((reel, n) => (
-            <figure class="preels__item media" data-reveal>
+            <figure class="preels__item media">
               <Image
                 src={resolveImage(reel.poster)}
                 alt={`${s.name} — видео ${n + 1}`}
@@ -275,9 +301,9 @@ const saveData = JSON.stringify({
     {s.reviewsList && (
       <section class="previews" id="otzyvy">
         <h2 class="t-h2">Отзывы</h2>
-        <div class="previews__list" data-reveal-group>
+        <div class="previews__list">
           {s.reviewsList.map((r) => (
-            <article class="preview" data-reveal>
+            <article class="preview">
               <header class="preview__head">
                 <Avatar src={r.photo} name={r.author} size={48} />
                 <div class="preview__who">
@@ -563,6 +589,21 @@ const saveData = JSON.stringify({
     background: var(--surface-dim);
   }
 
+  /* Ролик поверх своего постера — проявляется, когда реально пошёл:
+     автозапуск заблокирован (энергосбережение на iPhone) — остаётся постер */
+  .preels__video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity var(--dur-base) var(--ease-out);
+    pointer-events: none;
+  }
+
+  .preels__video.is-playing { opacity: 1; }
+
   /* ============ ПРЕДЛОЖЕНИЕ-ЦИТАТА ============ */
   .pquote {
     padding: 0 var(--gutter) var(--section-gap-tight);
@@ -674,10 +715,39 @@ const saveData = JSON.stringify({
 
   // Ролик в первом экране: играет, пока его кадр показан (а не скрыт
   // через [hidden]) и секция в поле зрения — как в герое площадки.
-  document.querySelectorAll<HTMLElement>('[data-hero-shot]').forEach((host) => {
-    host.querySelectorAll<HTMLVideoElement>('[data-video]').forEach((video) => {
+  const hero = document.querySelector<HTMLElement>('[data-hero-shot]');
+  const heroVideos = Array.from(hero?.querySelectorAll<HTMLVideoElement>('[data-video]') ?? []).map(
+    (video) => {
       const frame = video.closest<HTMLElement>('[data-frame]');
-      bindVideo(video, { root: host, active: () => !!frame && !frame.hidden });
+      return bindVideo(video, { root: hero!, active: () => !!frame && !frame.hidden });
+    }
+  );
+
+  // Лупы в ряду «Видео» — каждый играет, пока виден на экране
+  document
+    .querySelectorAll<HTMLVideoElement>('.preels__video[data-video]')
+    .forEach((video) => bindVideo(video, { root: video.parentElement ?? undefined }));
+
+  // Тап по ролику в ряду «Видео» открывает его в первом экране — тем же
+  // способом, что ссылка из доски главной, только без перезагрузки:
+  // страница возвращается к первому экрану, кадр подменяется на выбранный.
+  document.querySelectorAll<HTMLAnchorElement>('[data-reel-jump]').forEach((link) => {
+    link.addEventListener('click', (e) => {
+      const id = decodeURIComponent(link.hash.replace('#foto-', ''));
+      const frame = hero?.querySelector<HTMLElement>(`[data-frame="${CSS.escape(id)}"]`);
+      if (!hero || !frame) return; // кадра нет — пусть отработает обычный якорь
+
+      e.preventDefault();
+      hero.querySelectorAll<HTMLElement>('[data-frame]').forEach((f) => {
+        f.hidden = f !== frame;
+      });
+
+      const img = frame.querySelector('img');
+      if (img) img.loading = 'eager';
+
+      history.replaceState(null, '', link.hash);
+      hero.scrollIntoView({ block: 'start' });
+      heroVideos.forEach((handle) => handle.sync());
     });
   });
 </script>

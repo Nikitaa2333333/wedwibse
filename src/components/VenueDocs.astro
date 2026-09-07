@@ -24,7 +24,7 @@ const { kicker, title, lead, docs } = Astro.props;
       {lead && <p class="docs__lead t-lead">{lead}</p>}
     </header>
 
-    <div class="docs__grid" data-reveal-group>
+    <div class="docs__grid">
       {
         docs.map((doc) => (
           <article class="doc">

@@ -54,7 +54,7 @@ const articles = articlesOfRubric(rubric.slug);
 
     <section class="section section--flush-top" aria-label={`Статьи: ${rubric.title}`}>
       <div class="container">
-        <div class="rub__grid" data-reveal-group>
+        <div class="rub__grid">
           {articles.map((article) => <ArticleCard article={article} />)}
         </div>
       </div>

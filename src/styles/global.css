@@ -240,8 +240,6 @@
   --dur-fast: 0.35s;   /* ховеры, мелкий UI */
   --dur-base: 0.8s;    /* появления элементов */
   --dur-slow: 1.4s;    /* крупные экранные перекладки */
-  --reveal-shift: 40px;    /* сдвиг элемента до появления */
-  --reveal-stagger: 90ms;  /* шаг каскада между соседями */
 
   /* ============ СЛОИ ============ */
   --z-nav: 50;
@@ -265,8 +263,6 @@
   :root {
     --dur-base: 0.55s;
     --dur-slow: 0.9s;
-    --reveal-shift: 22px;
-    --reveal-stagger: 60ms;
   }
 }
 
@@ -846,22 +842,8 @@ mark {
   .icon-btn:hover { background: var(--fg); color: var(--bg); }
 }
 
-/* ============ REVEAL: появление при скролле ============
-   Разметка: data-reveal на элементе; data-reveal-group на родителе —
-   дети появляются каскадом с шагом --reveal-stagger.
-   Класс .is-inview ставит скрипт из Layout. */
-[data-reveal] {
-  opacity: 0;
-  transform: translateY(var(--reveal-shift));
-  transition: opacity var(--dur-base) var(--ease-out),
-              transform var(--dur-base) var(--ease-out);
-  transition-delay: calc(var(--reveal-index, 0) * var(--reveal-stagger));
-}
-
-[data-reveal].is-inview {
-  opacity: 1;
-  transform: none;
-}
+/* Появления блоков при скролле (reveal на IntersectionObserver) в проекте
+   нет — сняты намеренно, и на телефоне, и на ПК: см. Layout.astro. */
 
 /* ============ ФОТО-ПРИМИТИВЫ ============ */
 .media {
@@ -1110,5 +1092,4 @@ mark {
     animation: none !important;
     transition: none !important;
   }
-  [data-reveal] { opacity: 1; transform: none; }
 }

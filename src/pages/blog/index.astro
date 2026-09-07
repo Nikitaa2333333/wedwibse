@@ -35,11 +35,11 @@ const [feature, ...rest] = ARTICLES;
 
     <section class="hub__list section section--flush-top" aria-label="Все статьи">
       <div class="container">
-        <div class="hub__feature" data-reveal>
+        <div class="hub__feature">
           <ArticleCard article={feature} feature />
         </div>
 
-        <div class="hub__grid" data-reveal-group>
+        <div class="hub__grid">
           {rest.map((article) => <ArticleCard article={article} />)}
         </div>
       </div>

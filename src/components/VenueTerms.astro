@@ -27,7 +27,7 @@ const { kicker, title, terms, included, extras } = Astro.props;
     <div class="terms__money">
       {
         terms.map((group) => (
-          <div class="group" data-reveal>
+          <div class="group">
             <h3 class="group__name">{group.title}</h3>
             <dl class="rows">
               {group.rows.map((row) => (
@@ -43,7 +43,7 @@ const { kicker, title, terms, included, extras } = Astro.props;
     </div>
 
     <!-- ЧТО ВХОДИТ: чистые перечисления, поэтому колонки читаются легко -->
-    <div class="terms__included" data-reveal-group>
+    <div class="terms__included">
       {
         included.map((group) => (
           <div class="group">
@@ -63,7 +63,7 @@ const { kicker, title, terms, included, extras } = Astro.props;
     <div class="terms__extras">
       {
         extras.map((group) => (
-          <div class="group" data-reveal>
+          <div class="group">
             <h3 class="group__name">{group.title}</h3>
             {group.note && <p class="group__note t-small">{group.note}</p>}
             <dl class="rows">

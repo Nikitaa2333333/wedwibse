@@ -22,7 +22,7 @@ const { kicker, title, items } = Astro.props;
     <div class="faq__grid">
       {
         items.map((item) => (
-          <article class="qa" data-reveal>
+          <article class="qa">
             <h3 class="qa__q">{item.q}</h3>
             {item.a.map((p) => (
               <p class="qa__a">{p}</p>

@@ -98,7 +98,7 @@ const favorite = await venueFavorite(venue);
        от того, что именно на снимке, и на светлом фото читается плохо.
        Здесь фотография остаётся фотографией, текст — текстом. -->
   <div class="container container--wide vhero__inner">
-    <div class="vhero__bottom" data-reveal-group>
+    <div class="vhero__bottom">
       <div class="vhero__id">
         <h1 class="vhero__title">{venue.title}</h1>
 
@@ -131,7 +131,7 @@ const favorite = await venueFavorite(venue);
      ищут глазами, и мелкой строкой оно теряется. -->
 <section class="specs section section--tight">
   <div class="container container--wide">
-    <dl class="specs__grid" data-reveal-group>
+    <dl class="specs__grid">
       {
         venue.meta.map((row) => (
           <div class="spec">

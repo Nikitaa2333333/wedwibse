@@ -44,7 +44,7 @@ const { tiles, sizes, widths = IMG_WIDTHS.tile } = Astro.props;
 const columns = layoutColumns(tiles, 2);
 ---
 
-<!-- Без data-reveal и без параллакса намеренно: доска листается как
+<!-- Без и без параллакса намеренно: доска листается как
      обычная страница, все кадры на месте сразу, ничего не проявляется. -->
 <div class="masonry" data-masonry>
   {
