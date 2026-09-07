@@ -854,6 +854,39 @@ mark {
   white-space: nowrap;
 }
 
+/* ============ СЕРДЦЕ «В ИЗБРАННОЕ» ============
+   Кладётся поверх кадра (в слот PhotoRail или в .media): без подложек
+   и обводок, от фотографии отделяет тень. Жило копией в стилях трёх
+   каталогов — теперь одно на проект, вместе с остальным реестром:
+   карточка площадки стала четвёртым местом, где оно нужно.
+   Разметка везде одна: <button class="save" data-save='{…}'>,
+   оживляет кнопку bindSaveButtons() из lib/save.ts. */
+.save {
+  position: absolute;
+  top: var(--s-3);
+  right: var(--s-3);
+  z-index: 1;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--white);
+  cursor: pointer;
+  filter: drop-shadow(0 1px 8px rgb(0 0 0 / 0.45));
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.save svg { width: 24px; height: 24px; }
+.save:active { transform: scale(0.85); }
+
+/* Сердце Solar: контур — «не в избранном», заливка тем же цветом —
+   «сохранено». Правило бьёт по внутреннему path (у него fill="none"). */
+.save[aria-pressed='true'] svg > * { fill: currentColor; }
+
 /* ============ МЕТКА НА КАРТЕ ============
    Своя метка вместо яндексовской капли: капсула с названием и ценой площадки,
    родня .photo-tag и .pill. Заливка чернильная: подложка карты пёстрая и

@@ -62,11 +62,27 @@ const CAPTION_H = 0.12;
 type Venue = (typeof VENUES)[number];
 type Shot = { src: string; alt: string };
 
+/**
+ * Идентификатор кадра для адреса страницы: имя файла без папок и расширения
+ * (`/venues/river-loft/gal/g4.webp` → `g4`).
+ *
+ * По нему карточка площадки открывается НА ТОМ САМОМ кадре, по которому
+ * человек нажал в доске: нажал на свечи — открылись свечи, а не дежурный
+ * первый экран площадки. Ссылаемся именем файла, а не номером в галерее:
+ * номер поедет при первой же перестановке кадров в venues.ts, имя — нет.
+ */
+export function frameId(src: string): string {
+  return src.split('/').pop()!.replace(/\.[^.]+$/, '');
+}
+
 function makePin(group: Shot[], venue: Venue, ratio: number, caption: string | null): Pin {
   return {
     photos: group.map((g) => g.src),
     alt: group[0].alt,
-    href: `/${venue.citySlug}/${venue.categorySlug}/${venue.slug}/`,
+    // Якорь читает VenueHero на клиенте: сборка статическая, и какой кадр
+    // спросили, на сервере знать неоткуда. Без якоря (или с неизвестным
+    // кадром) карточка открывается как раньше, первым кадром.
+    href: `/${venue.citySlug}/${venue.categorySlug}/${venue.slug}/#foto-${frameId(group[0].src)}`,
     caption,
     ratio: `${ratio.toFixed(3)} / 1`,
     index: 0, // проставится при сборке секций

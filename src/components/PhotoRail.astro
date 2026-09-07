@@ -19,6 +19,7 @@
 // кладёт вызывающая страница через слот, поверх .veil.
 import { Image } from 'astro:assets';
 import { resolveImage } from '../lib/images';
+import { frameId } from '../lib/gallery';
 
 interface Props {
   photos: string[];
@@ -27,9 +28,12 @@ interface Props {
   href?: string;
   sizes: string;
   widths?: number[];
+  /** рельс держит первый экран: первый кадр грузится сразу и в приоритете
+   *  (он же LCP страницы), остальные по-прежнему лениво */
+  priority?: boolean;
 }
 
-const { photos, alt, href, sizes, widths = [360, 560, 800, 1100] } = Astro.props;
+const { photos, alt, href, sizes, widths = [360, 560, 800, 1100], priority = false } = Astro.props;
 ---
 
 <div class="prail-wrap" data-prail-host>
@@ -37,8 +41,18 @@ const { photos, alt, href, sizes, widths = [360, 560, 800, 1100] } = Astro.props
     <div class="prail__track" data-rail>
       {photos.map((src, n) => {
         const frameAlt = photos.length > 1 ? `${alt} — фото ${n + 1}` : alt;
+        const eager = priority && n === 0;
         const image = (
-          <Image src={resolveImage(src)} alt={frameAlt} widths={widths} sizes={sizes} loading="lazy" decoding="async" />
+          <Image
+            src={resolveImage(src)}
+            alt={frameAlt}
+            widths={widths}
+            sizes={sizes}
+            loading={eager ? 'eager' : 'lazy'}
+            fetchpriority={eager ? 'high' : undefined}
+            decoding="async"
+            data-frame={frameId(src)}
+          />
         );
         return href ? (
           <a class="prail__item" href={href} aria-label={alt}>
@@ -145,9 +159,19 @@ const { photos, alt, href, sizes, widths = [360, 560, 800, 1100] } = Astro.props
       index = Math.max(0, Math.min(frames - 1, n));
       track.style.setProperty('--i', String(index));
       dots.forEach((d, k) => d.classList.toggle('is-on', k === index));
+      // Кто рисует своё вместо точек (счётчик на первом экране площадки),
+      // слушает это событие и не лезет внутрь рельса.
+      host.dispatchEvent(new CustomEvent('prail:change', { detail: index }));
     };
 
-    show(0);
+    // Стартовый кадр может задать страница: карточка площадки открывается
+    // на том кадре, по которому нажали в доске (data-start ставит её
+    // инлайновый скрипт ДО этого модуля, чтобы не мигнуть чужим кадром).
+    show(Number(host.dataset.start) || 0);
+
+    // Тем же событием кадр переключают снаружи, не зная внутренностей рельса.
+    host.addEventListener('prail:show', (e) => show((e as CustomEvent<number>).detail));
+
     if (frames < 2) return;
 
     // ============ СВАЙП ============

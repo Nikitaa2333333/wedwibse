@@ -282,31 +282,6 @@ const saveData = JSON.stringify({
 
   .phero__deal .pill { margin-top: var(--s-3); }
 
-  /* Сердечко «в избранное» — поверх кадра карусели, через слот PhotoRail */
-  .save {
-    position: absolute;
-    top: var(--s-3);
-    right: var(--s-3);
-    z-index: 1;
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    border: 0;
-    background: none;
-    color: var(--white);
-    cursor: pointer;
-    filter: drop-shadow(0 1px 8px rgb(0 0 0 / 0.45));
-    transition: transform var(--dur-fast) var(--ease-out);
-  }
-
-  .save :global(svg) { width: 24px; height: 24px; }
-  .save:active { transform: scale(0.85); }
-  /* Сердце Solar: контур — «не в избранном», заливка — «сохранено» */
-  .save[aria-pressed='true'] :global(svg > *) { fill: currentColor; }
-
   @media (min-width: 1024px) {
     .phero {
       grid-template-areas: 'card media';
@@ -514,13 +489,7 @@ const saveData = JSON.stringify({
 </style>
 
 <script>
-  import { toggleFavorite, isFavorited, type FavoriteItem } from '../../../../lib/favorites';
+  import { bindSaveButtons } from '../../../../lib/save';
 
-  document.querySelectorAll<HTMLButtonElement>('[data-save]').forEach((btn) => {
-    const item = JSON.parse(btn.dataset.save!) as FavoriteItem;
-    btn.setAttribute('aria-pressed', String(isFavorited(item.id)));
-    btn.addEventListener('click', () => {
-      btn.setAttribute('aria-pressed', String(toggleFavorite(item)));
-    });
-  });
+  bindSaveButtons();
 </script>

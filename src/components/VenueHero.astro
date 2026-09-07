@@ -3,65 +3,92 @@
 // к его низу. Слева — знак и название, справа — лид и действие.
 // Телефона тут нет: он живёт в шапке и в блоке контактов.
 // Характеристики идут отдельной полосой уже под фотографией.
-import { Image } from 'astro:assets';
+//
+// ПЕРВЫЙ ЭКРАН — ЭТО РЕЛЬС, А НЕ ОДИН КАДР. Доска на главной листается
+// как Pinterest, и нажатие должно открывать ИМЕННО тот кадр, по которому
+// нажали, а не дежурное фото площадки: иначе человек тапает по свечам,
+// а попадает на чужой зал и не понимает, туда ли он пришёл. Кадр из
+// адреса (`#foto-<имя файла>`) выбирает инлайновый скрипт внизу файла:
+// сборка статическая, на сервере про якорь знать неоткуда.
+// Заодно первый экран стал листаемым — вся галерея площадки под пальцем
+// сразу, без прокрутки до блока «Галерея».
 import type { Venue } from '../data/venues';
-import { resolveImage } from '../lib/images';
+import PhotoRail from './PhotoRail.astro';
+import Icon from './Icon.astro';
+import { frameId } from '../lib/gallery';
+import { venueFavorite } from '../lib/favorite-snapshot';
 
 interface Props {
   venue: Venue;
 }
 
 const { venue } = Astro.props;
+
+// Первым идёт дежурный кадр площадки (он же LCP и открытка для тех, кто
+// пришёл без якоря), дальше вся галерея. Повторы убираем: кадр героя
+// нередко лежит и в галерее, и рельс бы дважды показал одно и то же.
+const frames = [...new Set([venue.hero.image, ...venue.gallery.map((shot) => shot.src)])];
+
+// Снимок для «Избранного» — общий с каталогом (см. lib/favorite-snapshot):
+// сердце на карточке площадки и сердце на карточке каталога должны
+// класть в хранилище одну и ту же запись, иначе площадка задвоится.
+const favorite = await venueFavorite(venue);
 ---
 
 <section class="vhero">
-  <!-- Кадр во всю ширину и высоту экрана. Он появляется первым и один
-       держит экран; текст проступает следом (data-reveal-group ниже). -->
-  <figure class="vhero__shot">
-    <Image
-      src={resolveImage(venue.hero.image)}
-      alt={venue.hero.alt}
-      widths={[720, 1200, 1800, 2400]}
-      sizes="100vw"
-      fetchpriority="high"
-    />
-    <div class="veil" aria-hidden="true"></div>
+  <!-- Крошки — над кадром, а не на нём: это навигация, ей место на бумаге -->
+  <nav class="container container--wide crumbs vhero__crumbs t-caption" aria-label="Хлебные крошки">
+    <a href="/">Главная</a>
+    <span aria-hidden="true">/</span>
+    <a href={`/${venue.citySlug}/${venue.categorySlug}/`}>{venue.category}</a>
+    <span aria-hidden="true">/</span>
+    <span>{venue.name}</span>
+  </nav>
+
+  <!-- Кадр во всю ширину экрана, но НЕ во всю высоту: высоту держим так,
+       чтобы под кадром на том же экране помещалось название площадки.
+       Фотография и заголовок — одно сообщение, разносить их прокруткой
+       нельзя. -->
+  <figure class="vhero__shot" data-hero-rail data-frames={JSON.stringify(frames.map(frameId))}>
+    <PhotoRail photos={frames} alt={venue.hero.alt} sizes="100vw" widths={[720, 1400, 2000]} priority>
+      <button
+        class="save"
+        type="button"
+        data-save={JSON.stringify(favorite)}
+        aria-pressed="false"
+        aria-label="В избранное"
+      >
+        <Icon name="heartOutline" />
+      </button>
+
+    </PhotoRail>
   </figure>
 
-  <!-- Текст поверх кадра. Цвет задаём через --fg, а не руками по элементам:
-       .pill внутри сам становится белым, как в .theme-dark. Фон не трогаем —
-       под текстом должна остаться фотография. -->
-  <div class="vhero__over">
-    <div class="container container--wide vhero__inner">
-      <nav class="crumbs t-caption" aria-label="Хлебные крошки">
-        <a href="/">Главная</a>
-        <span aria-hidden="true">/</span>
-        <a href={`/${venue.citySlug}/${venue.categorySlug}/`}>{venue.category}</a>
-        <span aria-hidden="true">/</span>
-        <span>{venue.name}</span>
-      </nav>
+  <!-- Текст живёт НА БУМАГЕ, под кадром, а не поверх него. Подпись поверх
+       фотографии — всегда компромисс: она затемняет кадр вуалью, зависит
+       от того, что именно на снимке, и на светлом фото читается плохо.
+       Здесь фотография остаётся фотографией, текст — текстом. -->
+  <div class="container container--wide vhero__inner">
+    <div class="vhero__bottom" data-reveal-group>
+      <div class="vhero__id">
+        {
+          venue.logo && (
+            <span
+              class="vhero__logo"
+              role="img"
+              aria-label={`Логотип площадки «${venue.logo.label}»`}
+              style={`--logo: url('${venue.logo.src}'); --logo-ratio: ${venue.logo.ratio};`}
+            />
+          )
+        }
 
-      <div class="vhero__bottom" data-reveal-group>
-        <div class="vhero__id">
-          {
-            venue.logo && (
-              <span
-                class="vhero__logo"
-                role="img"
-                aria-label={`Логотип площадки «${venue.logo.label}»`}
-                style={`--logo: url('${venue.logo.src}'); --logo-ratio: ${venue.logo.ratio};`}
-              />
-            )
-          }
+        <p class="vhero__kicker t-caption">{venue.kicker}</p>
+        <h1 class="vhero__title">{venue.title}</h1>
+      </div>
 
-          <p class="vhero__kicker t-caption">{venue.kicker}</p>
-          <h1 class="vhero__title">{venue.title}</h1>
-        </div>
-
-        <div class="vhero__pitch">
-          <p class="vhero__lead t-lead">{venue.lead}</p>
-          <a class="pill pill--lg" href="#zayavka">Забронировать дату</a>
-        </div>
+      <div class="vhero__pitch">
+        <p class="vhero__lead t-lead">{venue.lead}</p>
+        <a class="pill pill--lg" href="#zayavka">Забронировать дату</a>
       </div>
     </div>
   </div>
@@ -86,39 +113,59 @@ const { venue } = Astro.props;
 </section>
 
 <style>
-  /* ============ ПЕРВЫЙ ЭКРАН ============ */
-  /* Высоту экрана задаёт ТЕКСТ, а не картинка: кадр выведен из потока и
-     растянут по всей секции. Иначе на широком мониторе картинка со своей
-     пропорцией (2400×1597) оказывалась выше вьюпорта, секция вырастала
-     под неё, и текст уезжал ниже сгиба — приходилось скроллить. */
+  /* ============ ПЕРВЫЙ ЭКРАН ============
+     Кадр и текст стоят друг под другом, а не слоями. Раньше текст лежал
+     поверх фотографии: приходилось гасить кадр вуалью, читаемость зависела
+     от того, что попало в правый нижний угол снимка, а на светлых кадрах
+     подпись тонула. Теперь фотография ничем не закрыта, текст — на бумаге.
+
+     Высота кадра — не весь экран: под ним на том же экране должно
+     помещаться название. Ручка одна, --vhero-shot; хочется кадр крупнее
+     или мельче — крутится здесь, а не по медиазапросам вразнобой. */
   .vhero {
-    position: relative;
-    min-height: 100svh;
+    --vhero-shot: 54svh;
     display: flex;
+    flex-direction: column;
+    gap: var(--s-5);
+    padding-bottom: var(--section-gap-tight);
+  }
+
+  @media (min-width: 1024px) {
+    .vhero { --vhero-shot: 62svh; }
+  }
+
+  .vhero__crumbs {
+    max-width: none;
+    padding-top: var(--s-5);
   }
 
   .vhero__shot {
-    position: absolute;
-    inset: 0;
+    height: var(--vhero-shot);
     overflow: hidden;
     background: var(--surface-dim);
   }
 
-  .vhero__shot img {
-    width: 100%;
+  /* Рельс внутри первого экрана тянется на всю секцию: своя пропорция
+     (--card-ratio) тут не нужна, высоту диктует экран. Кадры внутри
+     рельс кроет сам (object-fit: cover в PhotoRail). */
+  .vhero__shot :global(.prail-wrap),
+  .vhero__shot :global(.prail) {
     height: 100%;
-    object-fit: cover;
+    aspect-ratio: auto;
   }
 
-  /* Затемнение под текстом — общий .veil из global.css, свой не заводим */
+  /* Ни точек, ни счётчика: первый экран — ОДНА фотография, та, по которой
+     нажали в доске, а не вторая галерея поверх настоящей (она ниже, своим
+     блоком). Рельс здесь работает механизмом подмены кадра, а не листалкой:
+     показывать его органы управления — значит звать листать там, где
+     листать не нужно. Свайп при этом остаётся: он ничего не обещает
+     на глаз и не мешает. */
+  .vhero__shot :global(.prail__dots) { display: none; }
 
-  .vhero__over {
-    position: relative;
-    display: flex;
-    flex: 1;
-    --fg: var(--white);
-    color: var(--fg);
-  }
+  /* Вуаль в первом экране больше не нужна: гасить кадр было нужно только
+     ради текста поверх него, а текст уехал на бумагу. Кадр показываем
+     как есть. */
+  .vhero__shot :global(.veil) { display: none; }
 
   /* max-width снимаем намеренно — тот же приём, что в ScrollyScenes:
      на первом экране текст живёт по полям экрана, а не в центрированной
@@ -129,9 +176,7 @@ const { venue } = Astro.props;
     max-width: none;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
     gap: var(--s-6);
-    padding-block: var(--s-6) var(--section-gap-tight);
   }
 
   /* ============ ХАРАКТЕРИСТИКИ КРУПНО ============
@@ -225,16 +270,13 @@ const { venue } = Astro.props;
   .vhero__lead { max-width: var(--measure-lead); }
 
   /* ============ ТЕЛЕФОН ============
-     Лид на 20px занимал весь экран целиком — кнопка «Забронировать дату»
-     уезжала под нижнее меню, а сам первый экран читался как простыня.
-     Опускаем лид до корпуса, поднимаем затемнение (текста больше, чем
-     помещалось в 62% кадра) и отбиваем низ от плавающего дока. */
+     Лид на 20px занимал весь экран целиком и читался простынёй — опускаем
+     до корпуса. Отбивка низа под плавающий док осталась: кнопка
+     «Забронировать дату» иначе уезжает под нижнее меню. */
   @media (max-width: 767px) {
     .vhero__lead { font-size: var(--fs-body); }
 
-    .vhero__inner { padding-bottom: calc(var(--safe-b) + 96px); }
-
-    .vhero__shot .veil { height: 88%; }
+    .vhero { padding-bottom: calc(var(--safe-b) + 96px); }
   }
 
   /* ============ ПК: имя к левому краю, лид к правому ============
@@ -251,3 +293,35 @@ const { venue } = Astro.props;
     .vhero__pitch { padding-bottom: var(--s-2); }
   }
 </style>
+
+<!-- Якорь разбираем ДО модульных скриптов (те отложены и выполняются после
+     разбора документа): рельс должен сразу встать на нужный кадр, иначе
+     человек на мгновение увидит чужое фото и только потом своё.
+     Здесь же снимаем с целевого кадра ленивую загрузку: он приехал по
+     ссылке, значит нужен сейчас, а не когда до него доскроллят. -->
+<script is:inline>
+  (() => {
+    const host = document.querySelector('[data-hero-rail]');
+    const id = (location.hash.match(/^#foto-(.+)$/) || [])[1];
+    if (!host || !id) return;
+
+    const frames = JSON.parse(host.dataset.frames || '[]');
+    const index = frames.indexOf(decodeURIComponent(id));
+    if (index < 1) return; // 0 и «кадр не найден» — рельс и так стоит на первом
+
+    host.querySelector('[data-prail-host]').dataset.start = String(index);
+    host.querySelector('.prail__track').style.setProperty('--i', String(index));
+
+    const img = host.querySelector(`img[data-frame="${CSS.escape(frames[index])}"]`);
+    if (img) {
+      img.loading = 'eager';
+      img.fetchPriority = 'high';
+    }
+  })();
+</script>
+
+<script>
+  import { bindSaveButtons } from '../lib/save';
+
+  bindSaveButtons();
+</script>
