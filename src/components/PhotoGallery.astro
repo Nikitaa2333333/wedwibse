@@ -3,7 +3,7 @@
 // ляжет в карточку подрядчика и в подборку на посадочной.
 import { Image } from 'astro:assets';
 import type { Venue } from '../data/venues';
-import { resolveImage } from '../lib/images';
+import { resolveImage, IMG_WIDTHS } from '../lib/images';
 import { isVideo, posterOf } from '../lib/media';
 
 interface Props {
@@ -31,7 +31,7 @@ const { kicker, title, items } = Astro.props;
             <Image
               src={resolveImage(isVideo(item.src) ? posterOf(item.src) : item.src)}
               alt={item.alt}
-              widths={item.wide ? [640, 1000, 1600] : [360, 560, 800]}
+              widths={item.wide ? IMG_WIDTHS.wide : IMG_WIDTHS.card}
               sizes={item.wide ? '100vw' : '(min-width: 900px) 33vw, 50vw'}
               loading="lazy"
               decoding="async"

@@ -26,7 +26,7 @@ import { Image } from 'astro:assets';
 import PhotoRail from './PhotoRail.astro';
 import Icon from './Icon.astro';
 import type { SpecialistCard } from '../lib/specialist-card';
-import { resolveImage } from '../lib/images';
+import { resolveImage, IMG_WIDTHS } from '../lib/images';
 import { photosOnly } from '../lib/media';
 
 interface Props {
@@ -61,7 +61,7 @@ const { cards } = Astro.props;
                   <Image
                     src={resolveImage(src)}
                     alt={`${s.name} — фото ${n + 1}`}
-                    widths={[360, 560, 800]}
+                    widths={IMG_WIDTHS.card}
                     sizes={sizes}
                     loading="lazy"
                     decoding="async"
@@ -80,7 +80,7 @@ const { cards } = Astro.props;
             alt={s.name}
             href={href}
             sizes={sizes}
-            widths={[360, 560, 800, 1100]}
+            widths={IMG_WIDTHS.card}
           >
             <button class="save" type="button" data-save={save} aria-pressed="false" aria-label="В избранное">
               <Icon name="heartOutline" />

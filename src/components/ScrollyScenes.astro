@@ -7,7 +7,7 @@
 // дублей в разметке нет — мобильный трафик не удваивается.
 import { Image } from 'astro:assets';
 import type { VenueScene } from '../data/venues';
-import { resolveImage } from '../lib/images';
+import { resolveImage, IMG_WIDTHS } from '../lib/images';
 import PhotoRail from './PhotoRail.astro';
 
 interface Props {
@@ -36,7 +36,7 @@ const { kicker, title, scenes } = Astro.props;
                   photos={scene.images?.length ? scene.images : [scene.image]}
                   alt={scene.alt}
                   sizes="100vw"
-                  widths={[720, 1200, 1800, 2400]}
+                  widths={IMG_WIDTHS.stage}
                 />
               </div>
             ) : (
@@ -44,7 +44,7 @@ const { kicker, title, scenes } = Astro.props;
                 <Image
                   src={resolveImage(scene.image)}
                   alt={scene.alt}
-                  widths={[480, 800, 1200, 1600, 2400]}
+                  widths={IMG_WIDTHS.stage}
                   sizes={scene.layout === 'wide' ? '100vw' : '(min-width: 1024px) 55vw, 100vw'}
                   loading={i === 0 ? 'eager' : 'lazy'}
                   decoding="async"

@@ -12,7 +12,7 @@ import SiteHeader from '../../../components/SiteHeader.astro';
 import BottomDock from '../../../components/BottomDock.astro';
 import ArticleVenues from '../../../components/ArticleVenues.astro';
 import ArticleCard from '../../../components/ArticleCard.astro';
-import { resolveImage } from '../../../lib/images';
+import { resolveImage, IMG_WIDTHS } from '../../../lib/images';
 import { FEED, type FeedVenue } from '../../../data/feed';
 import { ARTICLES, RUBRICS, articleUrl, inlineHtml, type Article } from '../../../data/articles';
 
@@ -73,7 +73,7 @@ const dateLabel = (iso: string) =>
           <Image
             src={resolveImage(article.cover.src)}
             alt={article.cover.alt}
-            widths={[640, 1000, 1600]}
+            widths={IMG_WIDTHS.wide}
             sizes="100vw"
             loading="eager"
             fetchpriority="high"
@@ -103,7 +103,7 @@ const dateLabel = (iso: string) =>
                 <Image
                   src={resolveImage(block.src)}
                   alt={block.alt}
-                  widths={[560, 900, 1400]}
+                  widths={IMG_WIDTHS.wide}
                   sizes="(min-width: 1200px) 1000px, 100vw"
                   loading="lazy"
                   decoding="async"

@@ -15,7 +15,7 @@
 //      с карты.
 import { Image } from 'astro:assets';
 import Icon from './Icon.astro';
-import { resolveImage } from '../lib/images';
+import { resolveImage, IMG_WIDTHS } from '../lib/images';
 import type { MapPoint } from '../lib/map-points';
 
 interface Props {
@@ -49,7 +49,7 @@ const apiKey = import.meta.env.YANDEX_MAPS_API_KEY;
             <Image
               src={resolveImage(point.photo)}
               alt={point.name}
-              widths={[220, 440]}
+              widths={IMG_WIDTHS.thumb}
               sizes="110px"
               loading="lazy"
               decoding="async"

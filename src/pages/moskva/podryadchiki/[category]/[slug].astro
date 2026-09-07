@@ -19,7 +19,7 @@ import Icon from '../../../../components/Icon.astro';
 import BackButton from '../../../../components/BackButton.astro';
 import { SPECIALISTS_BY_CATEGORY, FILTERS_BY_CATEGORY, type Specialist } from '../../../../data/specialists';
 import { reelsOf } from '../../../../data/reels';
-import { resolveImage, favoriteImage } from '../../../../lib/images';
+import { resolveImage, favoriteImage, IMG_WIDTHS } from '../../../../lib/images';
 import { frameId, photosOnly } from '../../../../lib/media';
 
 export function getStaticPaths() {
@@ -132,10 +132,7 @@ const saveData = JSON.stringify({
           photos={frames}
           alt={s.name}
           sizes="(min-width: 1024px) 50vw, 100vw"
-          {/* до 1800, как в геро-кадре площадки: на телефоне кадр идёт во
-              всю ширину, и при DPR 2 ему нужно ~1600-1800 реальных пикселей —
-              с потолком 1200 браузер растягивал кадр и тот заметно мылил */}
-          widths={[480, 800, 1200, 1800]}
+          widths={IMG_WIDTHS.hero}
           priority
         >
           <button class="save" type="button" data-save={saveData} aria-pressed="false" aria-label="В избранное">
@@ -186,7 +183,7 @@ const saveData = JSON.stringify({
             <Image
               src={resolveImage(src)}
               alt={`${s.name} — фото ${n + 1}`}
-              widths={[360, 560, 800, 1100]}
+              widths={IMG_WIDTHS.card}
               sizes="(min-width: 900px) 33vw, 50vw"
               loading="lazy"
               decoding="async"
@@ -208,7 +205,7 @@ const saveData = JSON.stringify({
               <Image
                 src={resolveImage(reel.poster)}
                 alt={`${s.name} — видео ${n + 1}`}
-                widths={[240, 360, 480]}
+                widths={IMG_WIDTHS.thumb}
                 sizes="(min-width: 1024px) 220px, 48vw"
                 loading="lazy"
                 decoding="async"

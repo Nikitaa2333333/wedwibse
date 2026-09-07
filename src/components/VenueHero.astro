@@ -36,7 +36,7 @@ import { Image } from 'astro:assets';
 import Icon from './Icon.astro';
 import BackButton from './BackButton.astro';
 import { frameId, isPortrait, isVideo, posterOf } from '../lib/media';
-import { resolveImage } from '../lib/images';
+import { resolveImage, IMG_WIDTHS } from '../lib/images';
 import { venueFavorite } from '../lib/favorite-snapshot';
 
 interface Props {
@@ -69,7 +69,7 @@ const favorite = await venueFavorite(venue);
           <Image
             src={resolveImage(video ? posterOf(src) : src)}
             alt={n === 0 ? venue.hero.alt : `${venue.name} — фото`}
-            widths={[480, 800, 1200, 1800]}
+            widths={IMG_WIDTHS.hero}
             sizes="100vw"
             loading={eager ? 'eager' : 'lazy'}
             fetchpriority={eager ? 'high' : undefined}

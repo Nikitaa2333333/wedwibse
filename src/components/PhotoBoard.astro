@@ -28,6 +28,7 @@
 // своих полей), просто крупнее и на всю ширину, а не колонка потока.
 import PhotoRail from './PhotoRail.astro';
 import { collectTiles, layoutColumns } from '../lib/gallery';
+import { IMG_WIDTHS } from '../lib/images';
 
 interface Perk {
   kind: 'photo' | 'light';
@@ -61,7 +62,7 @@ const PERK_SIZES = '(min-width: 640px) 50vw, 100vw';
       {perks.map((perk) => (
         <a class:list={['perk', `perk--${perk.kind}`]} href={perk.href}>
           <span class="perk__media">
-            <PhotoRail photos={perk.imgs} alt={perk.alt} sizes={PERK_SIZES} widths={[560, 900, 1400]} />
+            <PhotoRail photos={perk.imgs} alt={perk.alt} sizes={PERK_SIZES} widths={IMG_WIDTHS.wide} />
           </span>
 
           <span class="perk__body">
@@ -112,7 +113,7 @@ const PERK_SIZES = '(min-width: 640px) 50vw, 100vw';
                     alt={tile.alt}
                     href={tile.href ?? undefined}
                     sizes={TILE_SIZES}
-                    widths={[360, 560, 800]}
+                    widths={IMG_WIDTHS.tile}
                   />
 
                   {tile.caption && tile.href && (

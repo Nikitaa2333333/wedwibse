@@ -18,7 +18,7 @@ import PhotoRail from '../../../components/PhotoRail.astro';
 import Icon from '../../../components/Icon.astro';
 import VenueMap from '../../../components/VenueMap.astro';
 import { FEED, VENUE_FILTERS, type FeedVenue } from '../../../data/feed';
-import { resolveImage, favoriteImage } from '../../../lib/images';
+import { resolveImage, favoriteImage, IMG_WIDTHS } from '../../../lib/images';
 import { countOptions } from '../../../lib/filter-counts';
 import { venueMapPoints } from '../../../lib/map-points';
 import { photosOnly } from '../../../lib/media';
@@ -178,7 +178,7 @@ const favImg = new Map(
                         <Image
                           src={resolveImage(src)}
                           alt={`${item.name} — фото ${n + 1}`}
-                          widths={[360, 560, 800]}
+                          widths={IMG_WIDTHS.card}
                           sizes={sizes}
                           loading="lazy"
                           decoding="async"
@@ -197,7 +197,7 @@ const favImg = new Map(
                   alt={item.name}
                   href={`/moskva/ploshchadki/${item.slug}/`}
                   sizes={sizes}
-                  widths={[360, 560, 800, 1100]}
+                  widths={IMG_WIDTHS.card}
                 >
                   <button class="save" type="button" data-save={saveData} aria-pressed="false" aria-label="В избранное">
                     <Icon name="heartOutline" />

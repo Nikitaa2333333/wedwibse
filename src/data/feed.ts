@@ -129,7 +129,7 @@ const venues: FeedVenue[] = [
     avgCheck: 'от 5 800 ₽',
     rating: 4.8,
     reviews: 41,
-    media: [`${RL}/gal/g7.webp`, `${RL}/gal/g13.webp`, `${RL}/welcome/w3.webp`],
+    media: [`${RL}/gal/g7.webp`, `${RL}/gal/g11.webp`, `${RL}/welcome/w3.webp`],
     demo: true,
   },
   {
@@ -144,7 +144,7 @@ const venues: FeedVenue[] = [
     avgCheck: 'от 8 000 ₽',
     rating: 4.9,
     reviews: 63,
-    media: [`${RL}/gal/g13.webp`, `${RL}/gal/g1.webp`],
+    media: [`${RL}/gal/g12.webp`, `${RL}/gal/g1.webp`],
     demo: true,
   },
   {

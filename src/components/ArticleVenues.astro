@@ -9,6 +9,7 @@
 // («похожие площадки») и на карточку площадки — компонент про конкретную
 // страницу ничего не знает, принимает список и подписи.
 import PhotoRail from './PhotoRail.astro';
+import { IMG_WIDTHS } from '../lib/images';
 import type { FeedVenue } from '../data/feed';
 import type { Collection } from '../data/articles';
 
@@ -45,7 +46,7 @@ const items = venues.slice(0, 3);
               alt={venue.name}
               href={href}
               sizes="(min-width: 900px) 33vw, (min-width: 640px) 50vw, 100vw"
-              widths={[360, 560, 800]}
+              widths={IMG_WIDTHS.card}
             />
 
             <!-- Цена и тип — в подписи под кадром, а не плашками на фото:

@@ -3,7 +3,7 @@
 // Форма-анкета появится здесь же — пока ведём на телефон и почту.
 import { Image } from 'astro:assets';
 import type { Venue } from '../data/venues';
-import { resolveImage } from '../lib/images';
+import { resolveImage, IMG_WIDTHS } from '../lib/images';
 
 interface Props {
   venue: Venue;
@@ -49,7 +49,7 @@ const { contacts } = venue;
         <Image
           src={resolveImage(venue.hero.portrait)}
           alt={venue.hero.portraitAlt}
-          widths={[480, 800, 1200, 1600]}
+          widths={IMG_WIDTHS.hero}
           sizes="(min-width: 1024px) 50vw, 100vw"
           loading="lazy"
           decoding="async"

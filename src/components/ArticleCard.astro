@@ -3,7 +3,7 @@
 // площадки — одна и та же плитка. Фото + рубрика + заголовок, без линий
 // и рамок: карточку отбивает кадр, а не бордер.
 import { Image } from 'astro:assets';
-import { resolveImage } from '../lib/images';
+import { resolveImage, IMG_WIDTHS } from '../lib/images';
 import { articleUrl, rubricBySlug, type Article } from '../data/articles';
 
 interface Props {
@@ -22,7 +22,7 @@ const rubric = rubricBySlug(article.rubricSlug);
     <Image
       src={resolveImage(article.cover.src)}
       alt=""
-      widths={feature ? [560, 900, 1400] : [360, 560, 800]}
+      widths={feature ? IMG_WIDTHS.wide : IMG_WIDTHS.card}
       sizes={feature
         ? '(min-width: 900px) 66vw, 100vw'
         : '(min-width: 900px) 33vw, (min-width: 640px) 50vw, 100vw'}
