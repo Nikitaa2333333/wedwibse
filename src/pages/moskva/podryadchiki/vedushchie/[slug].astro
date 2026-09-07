@@ -302,9 +302,12 @@ const saveData = JSON.stringify({
       inset: 0;
     }
 
+    /* Кадр забирает всю свободную высоту, точки под ним — свою строку.
+       С height: 100% точки выпадали за нижний край колонки. */
     .phero__media :global(.prail) {
       aspect-ratio: auto;
-      height: 100%;
+      flex: 1;
+      min-height: 0;
     }
 
     /* Горизонтальный кроп портрета: держим верх кадра — не режем голову */

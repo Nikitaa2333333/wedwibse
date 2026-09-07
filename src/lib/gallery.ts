@@ -59,6 +59,12 @@ const MIN_RATIO = 0.6;
 // не вырастала незаметно; на сам зазор не влияет.
 const CAPTION_H = 0.12;
 
+// Строка точек-индикаторов под кадром (есть только у плиток с несколькими
+// кадрами) в тех же долях ширины колонки: зазор --s-2 плюс сама точка при
+// колонке ~190px. Не учтёшь — колонки с мини-галереями незаметно вырастают
+// и жадная раскладка начинает промахиваться.
+const DOTS_H = 0.07;
+
 type Venue = (typeof VENUES)[number];
 type Shot = { src: string; alt: string };
 
@@ -86,7 +92,7 @@ function makePin(group: Shot[], venue: Venue, ratio: number, caption: string | n
     caption,
     ratio: `${ratio.toFixed(3)} / 1`,
     index: 0, // проставится при сборке секций
-    height: 1 / ratio + (caption ? CAPTION_H : 0),
+    height: 1 / ratio + (caption ? CAPTION_H : 0) + (group.length > 1 ? DOTS_H : 0),
   };
 }
 

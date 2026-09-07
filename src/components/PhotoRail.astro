@@ -79,8 +79,15 @@ const { photos, alt, href, sizes, widths = [360, 560, 800, 1100], priority = fal
 </div>
 
 <style>
+  /* Колонка: кадр, под ним точки. Точки раньше лежали НА фотографии
+     (белые, сверху слева) — то же самое правило, что и с подписями:
+     на кадр ничего не кладём. Флекс-колонка нужна там, где рельсу задают
+     фиксированную высоту: кадр тянется, точки забирают свою строку,
+     а не выпадают за край. */
   .prail-wrap {
     position: relative;
+    display: flex;
+    flex-direction: column;
   }
 
   /* Окно кадра. Прокрутки нет: overflow: hidden — единственная причина,
@@ -120,21 +127,24 @@ const { photos, alt, href, sizes, widths = [360, 560, 800, 1100], priority = fal
     user-select: none;
   }
 
-  /* Точки-индикаторы: сверху слева, кружками — свободное место на кадре */
+  /* Точки-индикаторы — строкой ПОД кадром, по центру и мелко (реф.
+     Яндекс.Маркет). На фотографии им было тесно: белые точки тонули на
+     светлых кадрах, а на тёмных спорили с сердечком в соседнем углу.
+     Цвет берут от места (--fg), поэтому в тёмной секции светлеют сами. */
   .prail__dots {
-    position: absolute;
-    top: var(--s-3);
-    left: var(--s-3);
+    flex: none;
     display: flex;
-    gap: 5px;
+    justify-content: center;
+    gap: 4px;
+    padding-top: var(--s-2);
   }
 
   .prail__dot {
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
     border-radius: 50%;
-    background: var(--white);
-    opacity: 0.4;
+    background: var(--fg);
+    opacity: 0.22;
     transition: opacity var(--dur-fast) var(--ease-out);
   }
 

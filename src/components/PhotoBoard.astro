@@ -183,17 +183,13 @@ const PERK_SIZES = '(min-width: 640px) 50vw, 100vw';
     min-width: 0;
   }
 
-  .perk__media {
-    display: block;
-    aspect-ratio: 4 / 3;
-    overflow: hidden;
-    background: var(--surface-dim);
-  }
+  /* Пропорцию держит сам кадр, а не обёртка: точки-индикаторы идут строкой
+     под кадром и должны попадать в поток, а не обрезаться рамкой медиа. */
+  .perk__media { display: block; }
 
-  .perk :global(.prail-wrap),
   .perk :global(.prail) {
-    aspect-ratio: auto;
-    height: 100%;
+    aspect-ratio: 4 / 3;
+    background: var(--surface-dim);
   }
 
   /* Вуаль в плитке не нужна: гасить кадр было нужно только под текст */
