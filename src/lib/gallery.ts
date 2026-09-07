@@ -54,10 +54,10 @@ const PER_VENUE = 16;
 // на два экрана и рвёт ритм.
 const MIN_RATIO = 0.6;
 
-// Подпись под плиткой в долях ширины колонки (кегль сноски + отступ при
-// колонке ~190px). Нужна жадной раскладке, чтобы колонка с подписями
-// не вырастала незаметно; на сам зазор не влияет.
-const CAPTION_H = 0.12;
+// ВЕТКА-ПРЕВЬЮ: подписи под кадрами сняты (см. PhotoMasonry), поэтому
+// их высота (CAPTION_H) из раскладки убрана — иначе жадный алгоритм
+// резервировал бы место под текст, которого нет, и колонки расходились бы.
+// caption в данных остался: из него берётся имя для «Избранного».
 
 // Строка точек-индикаторов под кадром (есть только у плиток с несколькими
 // кадрами) в тех же долях ширины колонки: зазор --s-2 плюс сама точка при
@@ -79,7 +79,7 @@ function makePin(group: Shot[], venue: Venue, ratio: number, caption: string | n
     caption,
     ratio: `${ratio.toFixed(3)} / 1`,
     index: 0, // проставится при сборке секций
-    height: 1 / ratio + (caption ? CAPTION_H : 0) + (group.length > 1 ? DOTS_H : 0),
+    height: 1 / ratio + (group.length > 1 ? DOTS_H : 0),
   };
 }
 
@@ -149,7 +149,7 @@ function specialistPins(s: Specialist): Pin[] {
       index: 0,
       height:
         1 / Math.max(MIN_RATIO, ratioOf(group[0])) +
-        (group.length > 1 ? CAPTION_H + DOTS_H : 0),
+        (group.length > 1 ? DOTS_H : 0),
     });
   }
 

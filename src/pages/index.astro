@@ -6,7 +6,7 @@ import PhotoBoard from '../components/PhotoBoard.astro';
 import Icon from '../components/Icon.astro';
 ---
 
-<Layout title="Свадебные Секреты — лучшие площадки и специалисты">
+<Layout title="Свадебные Секреты — лучшие площадки и специалисты" theme="dark">
   <div class="page">
     <!-- ГЕРОЙ: шапка (бренд / меню / метка) + крупный заголовок с лидом
          сразу под ней — без пустого экрана, плашки идут следующим блоком. -->
@@ -261,3 +261,11 @@ import Icon from '../components/Icon.astro';
     padding-bottom: var(--s-8);
   }
 </style>
+
+<script>
+  // ВЕТКА-ПРЕВЬЮ: сердце теперь на каждой плитке доски (PhotoMasonry) —
+  // значит и главной нужен обработчик избранного, раньше его тут не было.
+  import { bindSaveButtons } from '../lib/save';
+
+  bindSaveButtons();
+</script>

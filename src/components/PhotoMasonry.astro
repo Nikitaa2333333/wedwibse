@@ -27,8 +27,10 @@
 // пропорции, что кадры вокруг: блог попадается, пока человек листает
 // фотографии. В галерее подрядчика таких плиток просто нет.
 import PhotoRail from './PhotoRail.astro';
+import Icon from './Icon.astro';
 import { layoutColumns, type Tile } from '../lib/gallery';
-import { IMG_WIDTHS } from '../lib/images';
+import { favoriteImage, IMG_WIDTHS } from '../lib/images';
+import { isVideo, posterOf } from '../lib/media';
 
 interface Props {
   tiles: Tile[];
@@ -42,6 +44,34 @@ const { tiles, sizes, widths = IMG_WIDTHS.tile } = Astro.props;
 
 // Раскладка под телефон считается на сервере; шире — перекладывает скрипт.
 const columns = layoutColumns(tiles, 2);
+
+// ВЕТКА-ПРЕВЬЮ: сердце на каждой плитке доски.
+// Подписей под кадрами больше нет (заказчик просил чистый поток кадров),
+// и сохранить понравившийся кадр стало нечем — значит сердце переезжает
+// на саму плитку, как в карточке каталога. Снимок для «Избранного»
+// собираем здесь: URL кадра нужен уже пережатый, путь из данных
+// в localStorage класть нельзя (файл живёт только в src/assets).
+const saves = new Map<number, string>();
+
+for (const tile of tiles) {
+  if (tile.kind !== 'photo' || !tile.href) continue;
+
+  const first = tile.photos[0];
+
+  saves.set(
+    tile.index,
+    JSON.stringify({
+      id: `pin:${tile.href}`,
+      cat: 'board',
+      catLabel: 'Из галереи',
+      name: tile.caption ?? tile.alt,
+      meta: '',
+      price: '',
+      img: await favoriteImage(isVideo(first) ? posterOf(first) : first),
+      href: tile.href,
+    })
+  );
+}
 ---
 
 <!-- Без и без параллакса намеренно: доска листается как
@@ -64,21 +94,25 @@ const columns = layoutColumns(tiles, 2);
                 <span class="pill pill--sm note__cta">Читать</span>
               </a>
             ) : (
-              <>
-                <PhotoRail
-                  photos={tile.photos}
-                  alt={tile.alt}
-                  href={tile.href ?? undefined}
-                  sizes={sizes}
-                  widths={widths}
-                />
-
-                {tile.caption && tile.href && (
-                  <a class="cap t-caption" href={tile.href}>
-                    {tile.caption}
-                  </a>
+              <PhotoRail
+                photos={tile.photos}
+                alt={tile.alt}
+                href={tile.href ?? undefined}
+                sizes={sizes}
+                widths={widths}
+              >
+                {saves.get(tile.index) && (
+                  <button
+                    class="save"
+                    type="button"
+                    data-save={saves.get(tile.index)}
+                    aria-pressed="false"
+                    aria-label="В избранное"
+                  >
+                    <Icon name="heartOutline" />
+                  </button>
                 )}
-              </>
+              </PhotoRail>
             )}
           </article>
         ))}
@@ -110,16 +144,9 @@ const columns = layoutColumns(tiles, 2);
      нём, и градиент только гасит низ фотографии. */
   .masonry :global(.veil) { display: none; }
 
-  /* Подпись прижата к своему кадру по вертикали (--s-1 против --pin-gap
-     до соседнего) — правило внутреннего и внешнего. По горизонтали, наоборот,
-     отступает от краёв кадра (--cap-pad): текст впритык к краю некрасив. */
-  .cap {
-    display: block;
-    padding: var(--s-1) var(--cap-pad) 0;
-    color: var(--ink);
-    font-weight: var(--w-body);
-    text-decoration: none;
-  }
+  /* ВЕТКА-ПРЕВЬЮ: подписи под кадрами (.cap с названием площадки) сняты —
+     доска идёт чистым потоком фотографий, как в Pinterest. Вместе с ними
+     ушла и высота подписи в раскладке (CAPTION_H в lib/gallery). */
 
   /* СТАТЬЯ В ПОТОКЕ — плашка-инверсия той же пропорции, что кадр рядом.
      Рубрика сверху, заголовок в середине, пилюля «Читать» внизу — три

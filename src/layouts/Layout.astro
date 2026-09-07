@@ -6,12 +6,18 @@ interface Props {
   description?: string;
   /** абсолютный или корневой путь к обложке для соцсетей */
   ogImage?: string;
+  /** ВЕТКА-ПРЕВЬЮ (demo/dark-preview): тёмная палитра на этой странице.
+      Ставится не глобально, а постранично — заказчик просил показать
+      тёмными только главную и каталоги подрядчиков, чтобы рядом было
+      с чем сравнить. Сама палитра — в global.css, :root[data-theme]. */
+  theme?: 'dark';
 }
 
 const {
   title,
   description = 'WED Secrets — свадебный онлайн-сервис',
   ogImage,
+  theme,
 } = Astro.props;
 
 const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://wedwed.ru');
@@ -24,11 +30,16 @@ const indexable = process.env.SITE_INDEXABLE === 'true';
 ---
 
 <!doctype html>
-<html lang="ru">
+<html lang="ru" data-theme={theme}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
+    {/* Тёмными должны быть и системные части, которые CSS не красит:
+        подложка под резинкой скролла, встроенные контролы, адресная
+        строка мобильного браузера. */}
+    <meta name="color-scheme" content={theme === 'dark' ? 'dark' : 'light'} />
+    {theme === 'dark' && <meta name="theme-color" content="#1c1815" />}
     {!indexable && <meta name="robots" content="noindex, nofollow" />}
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
