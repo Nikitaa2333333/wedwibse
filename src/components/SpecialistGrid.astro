@@ -24,6 +24,7 @@
 // 3. Каденция: wide — i % 6 === 1, duo — i % 6 === 4.
 import { Image } from 'astro:assets';
 import PhotoRail from './PhotoRail.astro';
+import Avatar from './Avatar.astro';
 import Icon from './Icon.astro';
 import type { SpecialistCard } from '../lib/specialist-card';
 import { resolveImage, IMG_WIDTHS } from '../lib/images';
@@ -97,6 +98,7 @@ const { cards } = Astro.props;
           </p>
           <div class="scard__top">
             <h2 class="scard__name">
+              {s.avatar && <Avatar src={s.avatar} name={s.name} size={30} />}
               <a href={href}>{s.name}</a>
             </h2>
             {s.rating && (
@@ -240,10 +242,20 @@ const { cards } = Astro.props;
   /* На телефоне имя в кегле корпуса: h3 в колонке 190px ломал имена
      на две строки и раздувал подпись. */
   .scard__name {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    min-width: 0;
     font-size: var(--fs-body);
     font-weight: var(--w-head);
     line-height: 1.2;
   }
+
+  /* Аватарка в каталоге появляется ТОЛЬКО с реальным портретом: кружок
+     с инициалами на каждой карточке сетки — шум, а не смысл (на визитке,
+     где карточка одна, он наоборот держит слот). Подложка светлее
+     бумаги каталога, чтобы кружок не спорил с кадром над ним. */
+  .scard__name :global(.avatar) { background: var(--bg); }
 
   .scard__name a { text-decoration: none; }
 

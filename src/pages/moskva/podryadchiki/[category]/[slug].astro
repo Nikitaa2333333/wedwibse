@@ -15,6 +15,7 @@ import Layout from '../../../../layouts/Layout.astro';
 import SiteHeader from '../../../../components/SiteHeader.astro';
 import BottomDock from '../../../../components/BottomDock.astro';
 import PhotoMasonry from '../../../../components/PhotoMasonry.astro';
+import Avatar from '../../../../components/Avatar.astro';
 import Icon from '../../../../components/Icon.astro';
 import BackButton from '../../../../components/BackButton.astro';
 import { SPECIALISTS_BY_CATEGORY, FILTERS_BY_CATEGORY, type Specialist } from '../../../../data/specialists';
@@ -88,16 +89,6 @@ const defaultFrame = frames.find(isPortrait) ?? frames[0];
 const GALLERY_SIZES =
   '(min-width: 1440px) 19vw, (min-width: 1024px) 24vw, (min-width: 640px) 32vw, 48vw';
 
-// Инициалы автора отзыва — для кружка-аватара, пока нет реального фото
-function initials(author: string): string {
-  return author
-    .split(/\s+и\s+|\s+/)
-    .filter((w) => /^[А-ЯЁA-Z]/.test(w))
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join('');
-}
-
 const priceLabel = s.priceFrom ? `от ${priceFmt.format(s.priceFrom)} ₽` : 'Цена по запросу';
 const href = `/moskva/podryadchiki/${s.categorySlug}/${s.slug}/`;
 
@@ -121,12 +112,18 @@ const saveData = JSON.stringify({
   <SiteHeader />
 
   <div class="profile">
-    <!-- ГЕРОЙ: инфо-плашка + крупная фото-карусель встык (реф. Cineteca).
+    <!-- ГЕРОЙ: инфо-плашка + крупный кадр встык (реф. Cineteca).
          Кнопка «назад» — на кадре, не текстовая крошка на плашке: тот же
-         паттерн, что у карточки площадки (см. BackButton.astro). -->
+         паттерн, что у карточки площадки (см. BackButton.astro).
+
+         Аватарка стоит над именем: на визитке фотографа весь экран занят
+         его работами, и портрет автора — единственное место, где видно,
+         с кем человек будет иметь дело. Нет портрета — кружок с
+         инициалами, слот остаётся на месте. -->
     <section class="phero">
       <div class="phero__card theme-accent">
         <div class="phero__top">
+          <Avatar src={s.avatar} name={s.name} size={64} class="phero__avatar" />
           <h1 class="phero__name">{s.name}</h1>
           <p class="t-lead phero__tagline">{s.tagline}</p>
           {s.rating && s.reviews && (
@@ -260,13 +257,7 @@ const saveData = JSON.stringify({
           {s.reviewsList.map((r) => (
             <article class="preview" data-reveal>
               <header class="preview__head">
-                {r.photo ? (
-                  <span class="preview__avatar media">
-                    <Image src={resolveImage(r.photo)} alt={r.author} widths={[96]} sizes="48px" loading="lazy" decoding="async" />
-                  </span>
-                ) : (
-                  <span class="preview__avatar preview__avatar--initials" aria-hidden="true">{initials(r.author)}</span>
-                )}
+                <Avatar src={r.photo} name={r.author} size={48} />
                 <div class="preview__who">
                   <p class="preview__author">{r.author}</p>
                   <p class="preview__date t-caption">{r.date}</p>
@@ -360,6 +351,17 @@ const saveData = JSON.stringify({
     flex-direction: column;
     align-items: flex-start;
     gap: var(--s-4);
+  }
+
+  /* Портрет прижат к имени теснее, чем имя к теглайну: правило
+     внутреннего и внешнего — кружок принадлежит имени, а не блоку. */
+  .phero__avatar { margin-bottom: calc(var(--s-4) * -1 + var(--s-3)); }
+
+  /* В оранжевой плашке кружок с инициалами берёт цвета от неё же:
+     бумажная подложка --surface-dim на акценте выглядит заплаткой. */
+  .phero__card :global(.avatar) {
+    background: color-mix(in srgb, var(--fg) 16%, transparent);
+    color: var(--fg);
   }
 
   /* Имя — главный объект экрана, но без гигантизма: блок держим низким */
@@ -559,23 +561,9 @@ const saveData = JSON.stringify({
     gap: var(--s-3);
   }
 
-  .preview__avatar {
-    width: 48px;
-    height: 48px;
-    flex-shrink: 0;
-    border-radius: 50%;
-    overflow: hidden;
-  }
-
-  /* Пока нет реального фото автора — кружок с инициалами */
-  .preview__avatar--initials {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--bg);
-    font-size: var(--fs-small);
-    font-weight: var(--w-medium);
-  }
+  /* Кружок автора отзыва — общий Avatar; на бумажной карточке отзыва
+     его подложка светлее фона самой карточки. */
+  .preview :global(.avatar) { background: var(--bg); }
 
   .preview__who { flex: 1; min-width: 0; }
 
