@@ -580,8 +580,7 @@ const saveData = JSON.stringify({
     padding-right: var(--gutter);
     overflow-x: auto;
     overscroll-behavior-x: contain;
-    /* жест на рельсе — только по горизонтали, без косого свайпа (см. FilterBar) */
-    touch-action: pan-x;
+    /* touch-action не ставим: ось жеста выбирает браузер (см. DESIGN.md) */
     scroll-snap-type: x mandatory;
     scrollbar-width: none;
   }

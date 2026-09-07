@@ -182,7 +182,7 @@ const { cards } = Astro.props;
     gap: var(--catalog-gap-x); /* тот же зазор, что у колонок сетки */
     overflow-x: auto;
     overscroll-behavior-x: contain;
-    touch-action: pan-x; /* жест только по горизонтали, без косого свайпа (см. FilterBar) */
+    /* touch-action не ставим: ось жеста выбирает браузер (см. DESIGN.md) */
     scroll-snap-type: x mandatory;
     scrollbar-width: none;
   }
