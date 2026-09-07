@@ -32,17 +32,6 @@ interface Props {
   /** рельс держит первый экран: первый кадр грузится сразу и в приоритете
    *  (он же LCP страницы), остальные по-прежнему лениво */
   priority?: boolean;
-  /** true — рельс не диктует свою пропорцию, а заполняет высоту родителя
-   *  (родитель сам должен быть определённой высоты: flex-элемент на весь
-   *  экран и т.п.). Нужно на первом экране площадки — там кадр держит
-   *  доступную высоту секции, а не свои card-ratio.
-   *
-   *  Ручка живёт ЗДЕСЬ, а не переопределением снаружи через :global():
-   *  такое переопределение однажды тихо перебилось другим :global(.prail)
-   *  с другой страницы того же бандла — Astro и минификатор CSS скопом
-   *  внешних :global()-правил друг с другом не считаются. Своя пропорция
-   *  внутри компонента такого конфликта не ловит в принципе. */
-  fill?: boolean;
 }
 
 const {
@@ -52,12 +41,11 @@ const {
   sizes,
   widths = [360, 560, 800, 1100],
   priority = false,
-  fill = false,
 } = Astro.props;
 ---
 
-<div class:list={['prail-wrap', fill && 'prail-wrap--fill']} data-prail-host>
-  <div class:list={['prail', fill && 'prail--fill']}>
+<div class="prail-wrap" data-prail-host>
+  <div class="prail">
     <div class="prail__track" data-rail>
       {photos.map((src, n) => {
         const video = isVideo(src);
@@ -135,11 +123,6 @@ const {
     background: var(--surface-dim);
     touch-action: pan-y;
   }
-
-  /* fill: пропорцию задаёт не card-ratio, а высота родителя (см. проп
-     выше) — родитель обязан быть определённой высоты сам. */
-  .prail-wrap--fill { height: 100%; }
-  .prail--fill { aspect-ratio: auto; height: 100%; }
 
   /* Лента кадров. Ширина ленты равна окну, кадры из неё вываливаются
      вправо и обрезаются — поэтому сдвиг ровно на --i окон и есть

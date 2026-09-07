@@ -24,8 +24,7 @@
 import { VENUES } from '../data/venues';
 import { ARTICLES, articleUrl, rubricBySlug } from '../data/articles';
 import { REELS } from '../data/reels';
-import { resolveImage } from './images';
-import { frameId, isVideo, posterOf } from './media';
+import { frameId, isPortrait, ratioOf } from './media';
 
 export interface Pin {
   /** один кадр — статичная плитка, несколько — мини-галерея с точками */
@@ -49,9 +48,6 @@ const SIZES = [1, 2, 1, 1, 3, 1, 2, 1];
 
 /** сколько кадров берём с одной площадки */
 const PER_VENUE = 16;
-
-/** горизонтальным считаем всё, что шире квадрата: такой кадр в доску не идёт */
-const LANDSCAPE = 1.05;
 
 // Совсем узкую вертикаль («полоску») прижимаем: в колонке она вырастает
 // на два экрана и рвёт ритм.
@@ -86,17 +82,9 @@ function makePin(group: Shot[], venue: Venue, ratio: number, caption: string | n
   };
 }
 
-// Пропорцию видео берём у его постера: файл ролика Astro не читает, а постер
-// лежит тем же путём с расширением .webp (см. lib/media.ts). Ролик готовится
-// под пропорцию колонки заранее — кадр в доске всё равно не кропится.
-function ratioOf(src: string): number {
-  const meta = resolveImage(isVideo(src) ? posterOf(src) : src);
-  return meta.width / meta.height;
-}
-
 /** Вертикальные и квадратные кадры площадки, собранные в плитки колонок */
 function tallPins(venue: Venue): Pin[] {
-  const shots = venue.gallery.slice(0, PER_VENUE).filter((s) => ratioOf(s.src) <= LANDSCAPE);
+  const shots = venue.gallery.slice(0, PER_VENUE).filter((s) => isPortrait(s.src));
   const pins: Pin[] = [];
 
   let i = 0;

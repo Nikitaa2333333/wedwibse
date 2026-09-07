@@ -20,6 +20,8 @@
 // ни Astro, ни nginx.
 // ============================================================
 
+import { resolveImage } from './images';
+
 const VIDEO_EXT = /\.(mp4|webm)$/i;
 
 export function isVideo(src: string): boolean {
@@ -50,4 +52,27 @@ export function photosOnly(media: string[]): string[] {
  */
 export function frameId(src: string): string {
   return src.split('/').pop()!.replace(/\.[^.]+$/, '');
+}
+
+/** width/height кадра — у ролика берётся с постера, файл видео Astro не читает */
+export function ratioOf(src: string): number {
+  const meta = resolveImage(isVideo(src) ? posterOf(src) : src);
+  return meta.width / meta.height;
+}
+
+/**
+ * Порог «это ещё вертикальный/квадратный кадр, а не горизонтальный».
+ * ЕДИНАЯ ГРАНИЦА НА ВЕСЬ ПРОЕКТ — раньше то же число (1.05) жило только
+ * внутри lib/gallery.ts для доски, и первый экран площадки при выборе
+ * дежурного кадра считал вертикальность на свой лад (< 1). Два разных
+ * порога в двух местах — ровно то, что система должна была исключить:
+ * с ростом каталога такие расхождения не отсматриваются, они просто
+ * тихо накапливаются. Немного шире единицы: почти квадратный кадр
+ * (соотношение чуть за 1) в вертикальной колонке/герое всё ещё смотрится
+ * нормально, а вот настоящий горизонтальный — уже нет.
+ */
+export const PORTRAIT_MAX_RATIO = 1.05;
+
+export function isPortrait(src: string): boolean {
+  return ratioOf(src) <= PORTRAIT_MAX_RATIO;
 }
