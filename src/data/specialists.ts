@@ -44,6 +44,13 @@ export interface Specialist {
       Нет портрета — на визитке кружок с инициалами, в каталоге аватарки
       просто нет (кружок с буквами на каждой карточке сетки — шум). */
   avatar?: string;
+  /** ПОЛНЫЙ КАДР ПОРТРЕТА — тот же снимок, что в аватарке, целиком, в блок
+      «О нас»/«О подрядчике». Аватарка это кружок 30–64 px: студийный кадр
+      в полный рост в нём читается пятном, лица не разобрать. Поэтому
+      портрет живёт в двух видах — кроп по головам и плечам в кружок
+      (avatar) и весь кадр рядом с рассказом о себе (portrait). Есть
+      только один из двух — рендерится только он. */
+  portrait?: string;
   /** кадры карточки: [0] — главный; на широкой карточке видно два сразу */
   photos: string[];
   /** одна короткая строка под именем — единственный текст карточки */
@@ -953,6 +960,7 @@ export const VEDUSHCHIE: Specialist[] = [
 //   сроки и формат выдачи, договор, предоплата, минимальный бюджет.
 // Спросить у подрядчика и заполнить — тогда карточка встанет в эти фильтры.
 const LSH = '/specialists/fotografy/leshakovy/gal';
+const AVA_F = '/specialists/fotografy/avatars';
 
 export const FOTOGRAFY: Specialist[] = [
   {
@@ -962,6 +970,8 @@ export const FOTOGRAFY: Specialist[] = [
     // снимают комплексом — карточка стоит и в «Видеографах», визитка одна
     alsoCategories: ['videografy'],
     name: 'Юлия и Леонид Лешаковы',
+    avatar: `${AVA_F}/leshakovy.webp`,
+    portrait: '/specialists/fotografy/leshakovy/portrait.webp',
     photos: [
       `${LSH}/p23.webp`, `${LSH}/p21.webp`, `${LSH}/p36.webp`, `${LSH}/p31.webp`,
       `${LSH}/p16.webp`, `${LSH}/p17.webp`, `${LSH}/p18.webp`, `${LSH}/p19.webp`,

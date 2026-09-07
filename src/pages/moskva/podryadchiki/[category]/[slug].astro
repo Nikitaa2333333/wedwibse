@@ -173,10 +173,32 @@ const saveData = JSON.stringify({
       </div>
     </section>
 
-    <!-- О ПОДРЯДЧИКЕ -->
+    <!-- О ПОДРЯДЧИКЕ: рассказ о себе и портрет автора целиком.
+         В кружок-аватарку идёт кроп по головам и плечам — студийный кадр
+         в полный рост на 30–64 px читается пятном; здесь тот же снимок
+         показан как он снят. Нет портрета — секция просто текстовая,
+         как была. -->
     <section class="pabout">
       <h2 class="t-h2">{s.aboutTitle ?? 'О подрядчике'}</h2>
-      {bioParagraphs.map((p) => <p class="pabout__text">{p}</p>)}
+
+      <div class="pabout__body">
+        {s.portrait && (
+          <figure class="pabout__portrait media">
+            <Image
+              src={resolveImage(s.portrait)}
+              alt={`${s.name} — портрет`}
+              widths={IMG_WIDTHS.card}
+              sizes="(min-width: 900px) 320px, 100vw"
+              loading="lazy"
+              decoding="async"
+            />
+          </figure>
+        )}
+
+        <div class="pabout__story">
+          {bioParagraphs.map((p) => <p class="pabout__text">{p}</p>)}
+        </div>
+      </div>
     </section>
 
     <!-- ПОЧЕМУ ВЫБИРАЮТ: причины формулирует сам подрядчик. Заголовок
@@ -434,10 +456,36 @@ const saveData = JSON.stringify({
     padding: 0 var(--gutter) var(--section-gap-tight);
   }
 
-  .pabout__text {
-    max-width: var(--measure-text);
-    margin-top: var(--s-4);
+  /* Портрет слева, рассказ справа — но только на ПК: на телефоне кадр
+     идёт над текстом во всю ширину колонки. Колонка текста не шире меры
+     чтения, поэтому портрет получает фиксированный столбец, а не долю. */
+  .pabout__body {
+    display: grid;
+    gap: var(--s-5);
+    margin-top: var(--s-5);
   }
+
+  @media (min-width: 900px) {
+    .pabout__body {
+      grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+      align-items: start;
+      gap: var(--s-7);
+    }
+  }
+
+  /* Пропорция кадра своя, из файла: портрет не кропим под общую рамку
+     (то же правило, что на первом экране и в галерее). */
+  .pabout__portrait :global(img) {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .pabout__text { max-width: var(--measure-text); }
+
+  /* Отбивка между абзацами, а не над первым: сверху расстояние уже
+     задал сам блок (--s-5 от заголовка). */
+  .pabout__text + .pabout__text { margin-top: var(--s-4); }
 
   /* ============ ПОЧЕМУ ВЫБИРАЮТ ============
      Две колонки на ПК, одна на телефоне. Ни рамок, ни линий между
