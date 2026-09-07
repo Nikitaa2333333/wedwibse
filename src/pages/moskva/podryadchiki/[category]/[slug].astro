@@ -132,7 +132,10 @@ const saveData = JSON.stringify({
           photos={frames}
           alt={s.name}
           sizes="(min-width: 1024px) 50vw, 100vw"
-          widths={[480, 800, 1200]}
+          {/* до 1800, как в геро-кадре площадки: на телефоне кадр идёт во
+              всю ширину, и при DPR 2 ему нужно ~1600-1800 реальных пикселей —
+              с потолком 1200 браузер растягивал кадр и тот заметно мылил */}
+          widths={[480, 800, 1200, 1800]}
           priority
         >
           <button class="save" type="button" data-save={saveData} aria-pressed="false" aria-label="В избранное">
@@ -183,7 +186,7 @@ const saveData = JSON.stringify({
             <Image
               src={resolveImage(src)}
               alt={`${s.name} — фото ${n + 1}`}
-              widths={[360, 560, 800]}
+              widths={[360, 560, 800, 1100]}
               sizes="(min-width: 900px) 33vw, 50vw"
               loading="lazy"
               decoding="async"
