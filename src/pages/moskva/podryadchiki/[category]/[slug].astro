@@ -17,7 +17,7 @@ import BottomDock from '../../../../components/BottomDock.astro';
 import PhotoMasonry from '../../../../components/PhotoMasonry.astro';
 import Avatar from '../../../../components/Avatar.astro';
 import Icon from '../../../../components/Icon.astro';
-import BackButton from '../../../../components/BackButton.astro';
+import HeroActions from '../../../../components/HeroActions.astro';
 import { SPECIALISTS_BY_CATEGORY, FILTERS_BY_CATEGORY, type Specialist } from '../../../../data/specialists';
 import { reelsOf } from '../../../../data/reels';
 import { photoTiles } from '../../../../lib/gallery';
@@ -114,7 +114,7 @@ const saveData = JSON.stringify({
   <div class="profile">
     <!-- ГЕРОЙ: инфо-плашка + крупный кадр встык (реф. Cineteca).
          Кнопка «назад» — на кадре, не текстовая крошка на плашке: тот же
-         паттерн, что у карточки площадки (см. BackButton.astro).
+         паттерн, что у карточки площадки (см. HeroActions.astro).
 
          Аватарка стоит над именем: на визитке фотографа весь экран занят
          его работами, и портрет автора — единственное место, где видно,
@@ -142,7 +142,11 @@ const saveData = JSON.stringify({
 
       <div class="phero__media">
         <figure class="phero__shot" data-hero-shot>
-          <BackButton href={`/moskva/podryadchiki/${s.categorySlug}/`} label={`К списку «${s.category}»`} />
+          <HeroActions
+            backHref={`/moskva/podryadchiki/${s.categorySlug}/`}
+            backLabel={`К списку «${s.category}»`}
+            save={saveData}
+          />
 
           {frames.map((src, n) => {
             const video = isVideo(src);
@@ -166,9 +170,6 @@ const saveData = JSON.stringify({
             );
           })}
 
-          <button class="save" type="button" data-save={saveData} aria-pressed="false" aria-label="В избранное">
-            <Icon name="heartOutline" />
-          </button>
         </figure>
       </div>
     </section>
