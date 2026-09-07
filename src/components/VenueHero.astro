@@ -36,15 +36,6 @@ const favorite = await venueFavorite(venue);
 ---
 
 <section class="vhero">
-  <!-- Крошки — над кадром, а не на нём: это навигация, ей место на бумаге -->
-  <nav class="container container--wide crumbs vhero__crumbs t-caption" aria-label="Хлебные крошки">
-    <a href="/">Главная</a>
-    <span aria-hidden="true">/</span>
-    <a href={`/${venue.citySlug}/${venue.categorySlug}/`}>{venue.category}</a>
-    <span aria-hidden="true">/</span>
-    <span>{venue.name}</span>
-  </nav>
-
   <!-- Кадр во всю ширину экрана, но НЕ во всю высоту: высоту держим так,
        чтобы под кадром на том же экране помещалось название площадки.
        Фотография и заголовок — одно сообщение, разносить их прокруткой
@@ -69,6 +60,18 @@ const favorite = await venueFavorite(venue);
        от того, что именно на снимке, и на светлом фото читается плохо.
        Здесь фотография остаётся фотографией, текст — текстом. -->
   <div class="container container--wide vhero__inner">
+    <!-- Крошки — ПОД кадром. Наверху они отжимали обложку от края экрана
+         ради строки мелкого служебного текста: первое, что видел человек,
+         была не площадка, а «Главная / Площадки / …». Из разметки их не
+         убираем — это внутренняя перелинковка и хлебная крошка в выдаче. -->
+    <nav class="crumbs vhero__crumbs t-caption" aria-label="Хлебные крошки">
+      <a href="/">Главная</a>
+      <span aria-hidden="true">/</span>
+      <a href={`/${venue.citySlug}/${venue.categorySlug}/`}>{venue.category}</a>
+      <span aria-hidden="true">/</span>
+      <span>{venue.name}</span>
+    </nav>
+
     <div class="vhero__bottom" data-reveal-group>
       <div class="vhero__id">
         {
@@ -134,11 +137,10 @@ const favorite = await venueFavorite(venue);
     .vhero { --vhero-shot: 62svh; }
   }
 
-  .vhero__crumbs {
-    max-width: none;
-    padding-top: var(--s-5);
-  }
+  .vhero__crumbs { opacity: 0.6; }
 
+  /* Обложка начинается от самого верха экрана: ни крошек, ни отступа над
+     ней. Кадр — первое, что человек видит на карточке площадки. */
   .vhero__shot {
     height: var(--vhero-shot);
     overflow: hidden;
