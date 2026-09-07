@@ -23,13 +23,16 @@
 // ============================================================
 import { VENUES } from '../data/venues';
 import { ARTICLES, articleUrl, rubricBySlug } from '../data/articles';
+import { REELS } from '../data/reels';
 import { resolveImage } from './images';
+import { frameId, isVideo, posterOf } from './media';
 
 export interface Pin {
   /** один кадр — статичная плитка, несколько — мини-галерея с точками */
   photos: string[];
   alt: string;
-  href: string;
+  /** ссылка на карточку-источник; у видео-кадра общего потока её нет */
+  href: string | null;
   /** тонкая подпись под кадром; есть не у каждой плитки — так задаётся ритм */
   caption: string | null;
   /** настоящая пропорция кадра для aspect-ratio — кадр не кропится */
@@ -68,19 +71,6 @@ const DOTS_H = 0.07;
 type Venue = (typeof VENUES)[number];
 type Shot = { src: string; alt: string };
 
-/**
- * Идентификатор кадра для адреса страницы: имя файла без папок и расширения
- * (`/venues/river-loft/gal/g4.webp` → `g4`).
- *
- * По нему карточка площадки открывается НА ТОМ САМОМ кадре, по которому
- * человек нажал в доске: нажал на свечи — открылись свечи, а не дежурный
- * первый экран площадки. Ссылаемся именем файла, а не номером в галерее:
- * номер поедет при первой же перестановке кадров в venues.ts, имя — нет.
- */
-export function frameId(src: string): string {
-  return src.split('/').pop()!.replace(/\.[^.]+$/, '');
-}
-
 function makePin(group: Shot[], venue: Venue, ratio: number, caption: string | null): Pin {
   return {
     photos: group.map((g) => g.src),
@@ -96,8 +86,11 @@ function makePin(group: Shot[], venue: Venue, ratio: number, caption: string | n
   };
 }
 
+// Пропорцию видео берём у его постера: файл ролика Astro не читает, а постер
+// лежит тем же путём с расширением .webp (см. lib/media.ts). Ролик готовится
+// под пропорцию колонки заранее — кадр в доске всё равно не кропится.
 function ratioOf(src: string): number {
-  const meta = resolveImage(src);
+  const meta = resolveImage(isVideo(src) ? posterOf(src) : src);
   return meta.width / meta.height;
 }
 
@@ -121,6 +114,22 @@ function tallPins(venue: Venue): Pin[] {
   }
 
   return pins;
+}
+
+/** Видео-кадры общего потока (data/reels.ts): такие же плитки, как фото.
+ *  Ссылки у них нет — плитка ни на что не указывает, пока у ролика не
+ *  появится карточка-источник. Подписи тоже нет: подпись под кадром в доске
+ *  бывает только у мини-галерей. */
+function reelPins(): Pin[] {
+  return REELS.map((reel) => ({
+    photos: [reel.src],
+    alt: reel.alt,
+    href: reel.href ?? null,
+    caption: null,
+    ratio: `${ratioOf(reel.src).toFixed(3)} / 1`,
+    index: 0,
+    height: 1 / ratioOf(reel.src),
+  }));
 }
 
 /** по одной штуке с каждой площадки по кругу — доска не идёт блоками
@@ -176,7 +185,9 @@ function articleTile(article: (typeof ARTICLES)[number]): ArticleTile {
  *  колонки просто идут вниз и заканчиваются на разной высоте, как в ленте.
  *  Каждая ARTICLE_EVERY-я позиция — карточка статьи. */
 export function collectTiles(): Tile[] {
-  const photos = interleave(VENUES.map(tallPins));
+  // Ролики идут отдельной дорожкой в том же interleave — так они
+  // расходятся по всему потоку, а не встают тремя плитками подряд.
+  const photos = interleave([...VENUES.map(tallPins), reelPins()]);
   const articles = ARTICLES.map(articleTile);
   const out: Tile[] = [];
 
