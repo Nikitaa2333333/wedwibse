@@ -12,9 +12,18 @@
 // сборка статическая, на сервере про якорь знать неоткуда.
 // Заодно первый экран стал листаемым — вся галерея площадки под пальцем
 // сразу, без прокрутки до блока «Галерея».
+//
+// ФОТО ЗАНИМАЕТ МАКСИМУМ ЭКРАНА, БЕЗ ФИКСИРОВАННОГО ПРОЦЕНТА. Кадр —
+// flex-элемент, который растягивается на всё, что осталось после текста
+// снизу (см. .vhero__shot { flex: 1 } в стилях): не «фото 54% экрана»
+// цифрой на глаз, а «фото — весь экран минус то, что реально заняла
+// подпись». У всех площадок лид одной длины, поэтому на практике кадр
+// всегда рослый, а название никогда не уезжает за сгиб. Пропорция кадра
+// не страдает — рельс кроет его object-fit: cover (обрезка, не растяжка).
 import type { Venue } from '../data/venues';
 import PhotoRail from './PhotoRail.astro';
 import Icon from './Icon.astro';
+import BackButton from './BackButton.astro';
 import { frameId } from '../lib/media';
 import { venueFavorite } from '../lib/favorite-snapshot';
 
@@ -41,7 +50,9 @@ const favorite = await venueFavorite(venue);
        Фотография и заголовок — одно сообщение, разносить их прокруткой
        нельзя. -->
   <figure class="vhero__shot" data-hero-rail data-frames={JSON.stringify(frames.map(frameId))}>
-    <PhotoRail photos={frames} alt={venue.hero.alt} sizes="100vw" widths={[720, 1400, 2000]} priority>
+    <BackButton href={`/${venue.citySlug}/${venue.categorySlug}/`} label="К списку площадок" />
+
+    <PhotoRail photos={frames} alt={venue.hero.alt} sizes="100vw" widths={[720, 1400, 2000]} priority fill>
       <button
         class="save"
         type="button"
@@ -60,18 +71,6 @@ const favorite = await venueFavorite(venue);
        от того, что именно на снимке, и на светлом фото читается плохо.
        Здесь фотография остаётся фотографией, текст — текстом. -->
   <div class="container container--wide vhero__inner">
-    <!-- Крошки — ПОД кадром. Наверху они отжимали обложку от края экрана
-         ради строки мелкого служебного текста: первое, что видел человек,
-         была не площадка, а «Главная / Площадки / …». Из разметки их не
-         убираем — это внутренняя перелинковка и хлебная крошка в выдаче. -->
-    <nav class="crumbs vhero__crumbs t-caption" aria-label="Хлебные крошки">
-      <a href="/">Главная</a>
-      <span aria-hidden="true">/</span>
-      <a href={`/${venue.citySlug}/${venue.categorySlug}/`}>{venue.category}</a>
-      <span aria-hidden="true">/</span>
-      <span>{venue.name}</span>
-    </nav>
-
     <div class="vhero__bottom" data-reveal-group>
       <div class="vhero__id">
         {
@@ -122,38 +121,45 @@ const favorite = await venueFavorite(venue);
      от того, что попало в правый нижний угол снимка, а на светлых кадрах
      подпись тонула. Теперь фотография ничем не закрыта, текст — на бумаге.
 
-     Высота кадра — не весь экран: под ним на том же экране должно
-     помещаться название. Ручка одна, --vhero-shot; хочется кадр крупнее
-     или мельче — крутится здесь, а не по медиазапросам вразнобой. */
+     Высота кадра НЕ задана процентом экрана. Секция — flex-колонка ровно
+     в 100svh, текстовый блок внизу сидит по своей естественной высоте
+     (flex: none), а кадр — flex: 1 — забирает всё, что осталось. Лид
+     у всех площадок одной длины (пара строк), поэтому на практике кадр
+     всегда рослый, а название никогда не падает за нижний край экрана:
+     на длинном лиде кадр сам подожмётся, а не название уедет со сцены.
+     min-height у кадра — просто пол, чтобы совсем неправдоподобный текст
+     не схлопнул фотографию в ноль. */
   .vhero {
-    --vhero-shot: 54svh;
     display: flex;
     flex-direction: column;
     gap: var(--s-5);
-    padding-bottom: var(--section-gap-tight);
+    min-height: 100svh;
+    /* Нижний док — position:fixed на любой ширине, а не только на
+       телефоне; без отступа он перекрывает низ текста, когда фото
+       забрало большую часть экрана и текст придвинулся к краю. */
+    padding-bottom: calc(var(--safe-b) + 96px);
   }
 
-  @media (min-width: 1024px) {
-    .vhero { --vhero-shot: 62svh; }
-  }
+  /* Кадр — единственное место в системе, где на фото лежит не текст,
+     а иконка со своей тенью (сердце, кнопка «назад») — родня меткам
+     на карте, правило «текст не на фото» это не нарушает.
 
-  .vhero__crumbs { opacity: 0.6; }
-
-  /* Обложка начинается от самого верха экрана: ни крошек, ни отступа над
-     ней. Кадр — первое, что человек видит на карточке площадки. */
+     flex-basis РОВНО 0, не auto — это не стиль, а обход реальной ловушки
+     CSS. Кадр внутри (PhotoRail с fill) хочет height:100% от этой секции.
+     С flex-basis:auto браузер, чтобы посчитать «естественный» размер
+     секции, вынужден сперва посчитать размер кадра — а кадр хочет 100%
+     от ещё не посчитанной секции. Круг браузер рвёт молча: процент внутри
+     на этом шаге читается как auto, кадр падает на свою природную высоту
+     по пропорции фото (эффект — фото маленькое, под ним пустая плашка
+     --surface-dim до конца «якобы выросшей» секции). flex-basis:0 обрывает
+     круг: секция считается ТОЛЬКО через flex-grow, без обращения к
+     содержимому, кадр получает уже точную цифру и корректно её заполняет. */
   .vhero__shot {
-    height: var(--vhero-shot);
+    position: relative;
+    flex: 1 1 0;
+    min-height: 280px;
     overflow: hidden;
     background: var(--surface-dim);
-  }
-
-  /* Рельс внутри первого экрана тянется на всю секцию: своя пропорция
-     (--card-ratio) тут не нужна, высоту диктует экран. Кадры внутри
-     рельс кроет сам (object-fit: cover в PhotoRail). */
-  .vhero__shot :global(.prail-wrap),
-  .vhero__shot :global(.prail) {
-    height: 100%;
-    aspect-ratio: auto;
   }
 
   /* Ни точек, ни счётчика: первый экран — ОДНА фотография, та, по которой
@@ -215,18 +221,6 @@ const favorite = await venueFavorite(venue);
     text-wrap: balance;
   }
 
-  .crumbs {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--s-2);
-  }
-
-  .crumbs a { text-decoration: none; }
-
-  @media (hover: hover) {
-    .crumbs a:hover { text-decoration: underline; }
-  }
-
   /* ============ НИЖНИЙ ЯРУС: имя слева, лид и действие справа ============ */
   .vhero__bottom {
     display: grid;
@@ -277,8 +271,6 @@ const favorite = await venueFavorite(venue);
      «Забронировать дату» иначе уезжает под нижнее меню. */
   @media (max-width: 767px) {
     .vhero__lead { font-size: var(--fs-body); }
-
-    .vhero { padding-bottom: calc(var(--safe-b) + 96px); }
   }
 
   /* ============ ПК: имя к левому краю, лид к правому ============
