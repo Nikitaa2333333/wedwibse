@@ -1,7 +1,12 @@
 ---
-// ЦВЕТНЫЕ КАРТОЧКИ-ВХОДЫ (главная) — ряд плашек, который листается вбок:
-// сначала два раздела каталога со счётчиками («Площадки», «Подрядчики»),
-// за ними направления подрядчиков поимённо.
+// ЦВЕТНЫЕ КАРТОЧКИ-ВХОДЫ (главная) — два раздела каталога со счётчиками:
+// «Площадки» и «Подрядчики». Больше здесь ничего нет.
+//
+// Раньше за ними стояли ещё два десятка направлений подрядчиков поимённо
+// (ведущие, фотографы, декораторы…). Их убрали: у раздела появился свой
+// экран выбора — хаб с шестью группами (pages/moskva/podryadchiki),
+// и длинный хвост направлений на главной стал его дубликатом. Главная
+// отвечает на вопрос «куда я иду», а не «кто именно мне нужен».
 //
 // Референс — экран проектов из мобильного приложения: вертикальные плашки,
 // каждая залита своим тоном; в углу чернильный кружок-иконка и серый
@@ -10,23 +15,13 @@
 // это; тона живут токенами --tint-* (см. global.css), своих цветов
 // у компонента нет.
 //
-// Вёрстка под телефон: ряд — жест, к которому телефон приучен (та же
-// лента, что у чипов фильтра и полосы кадров), и в него влезают не два
-// раздела, а два плюс два десятка направлений. На широком экране ряд
-// просто длиннее — отдельной раскладки под ПК у него нет и не нужно.
-//
 // ЧИСЛА И ФОТО НЕ ПИШУТСЯ РУКАМИ. Счётчики и кадры в капсуле берутся
 // на сборке из тех же данных, из которых собираются каталоги: завели
 // площадку или карточку специалиста — главная подхватила сама.
 import { Image } from 'astro:assets';
 import Icon from './Icon.astro';
 import { VENUES } from '../data/venues';
-import {
-  SPECIALIST_CATEGORIES,
-  SPECIALIST_GROUPS,
-  SPECIALISTS_BY_CATEGORY,
-  type Specialist,
-} from '../data/specialists';
+import { SPECIALISTS_BY_CATEGORY, type Specialist } from '../data/specialists';
 import { withCount, type PluralForms } from '../lib/plural';
 import { resolveImage, IMG_WIDTHS } from '../lib/images';
 import type { IconName } from '../lib/icons';
@@ -62,39 +57,6 @@ for (const list of Object.values(SPECIALISTS_BY_CATEGORY)) {
 const portraits = (list: Specialist[]) =>
   list.slice(0, THUMBS).map((s) => s.photos[0]).filter(Boolean);
 
-// Порядок направлений — из групп (SPECIALIST_GROUPS: источник правды,
-// направления там идут по ходу подготовки свадьбы). Категория, не попавшая
-// ни в одну группу, не теряется — досыпается в конец.
-const grouped = SPECIALIST_GROUPS.flatMap((g) => g.categories);
-const order = [
-  ...grouped,
-  ...SPECIALIST_CATEGORIES.map((c) => c.slug).filter((slug) => !grouped.includes(slug)),
-];
-const labels = new Map(SPECIALIST_CATEGORIES.map((c) => [c.slug, c.label]));
-
-// Тона направлений идут по кругу: соседи в ряду обязаны отличаться,
-// а привязывать тон к смыслу направления нельзя — цвет тогда станет
-// значащим, и каждая новая категория потребует решения «а какого она цвета».
-const TINTS: Tint[] = ['clay', 'sage', 'lilac', 'sand', 'ice'];
-
-const directions: Card[] = order
-  .filter((slug) => labels.has(slug))
-  .map((slug) => {
-    const list = SPECIALISTS_BY_CATEGORY[slug] ?? [];
-    return {
-      name: labels.get(slug)!,
-      href: `/moskva/podryadchiki/${slug}/`,
-      count: list.length,
-      thumbs: portraits(list),
-      tint: 'clay' as Tint,
-    };
-  })
-  // Направления, где карточки уже есть, — в начало ряда: первым, что
-  // человек листает, должен быть живой каталог, а не страница «скоро».
-  // Сортировка стабильная, поэтому внутри обеих половин порядок групп цел.
-  .sort((a, b) => Number(b.count > 0) - Number(a.count > 0))
-  .map((card, i) => ({ ...card, tint: TINTS[i % TINTS.length] }));
-
 const VENDORS: PluralForms = ['подрядчик', 'подрядчика', 'подрядчиков'];
 
 const cards: Card[] = [
@@ -121,7 +83,6 @@ const cards: Card[] = [
     icon: 'vendors',
     lead: true,
   },
-  ...directions,
 ];
 
 // В капсуле у разделов стоит «13 подрядчиков», у направлений — одно число:
@@ -192,39 +153,31 @@ const view = cards.map((card) => ({
     padding-block: var(--s-5) var(--s-4);
   }
 
-  /* touch-action здесь НЕ ставим (см. DESIGN.md, «Жест на лентах»):
-     pan-x запрещает пальцу на ленте вертикальный жест целиком, и страница
-     перестаёт скроллиться с половины первого экрана. Ось выбирает браузер
-     по началу движения: вниз — едет страница, вбок — лента. */
+  /* Две карточки — значит не лента, а две равные колонки: листать нечего,
+     и обрезанный край второй плашки звал бы жестом, которого нет.
+     Ленту (overflow-x, снап, поля-под-скролл) сняли вместе с хвостом
+     направлений — вернутся карточки, вернётся и она. */
   .entries__rail {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--pin-gap);
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scroll-snap-type: x proximity;
-    /* Поле от края экрана = зазору между карточками (--pin-gap): ряд не
-       прилипает к краю, но и не отступает больше, чем карточки друг от
-       друга — воздух вокруг плашек одинаковый со всех сторон.
-       scroll-padding обязан повторять padding: без него снап прижимает
-       первую карточку к самому краю — поле ленты браузер прокручивает
-       как контент, и первая плашка встаёт в край. */
-    scroll-padding-inline: var(--pin-gap);
-    scrollbar-width: none;
     padding-inline: var(--pin-gap);
     list-style: none;
   }
 
-  .entries__rail::-webkit-scrollbar { display: none; }
-
-  .entries__item {
-    flex: none;
-    scroll-snap-align: start;
+  /* От планшета колонки перестают тянуться: две плашки во всю ширину
+     монитора — это две башни в рост экрана. Встают слева, как начало
+     ряда, а не растягиваются по нему. */
+  @media (min-width: 640px) {
+    .entries__rail {
+      grid-template-columns: repeat(2, minmax(0, var(--entry-card-max)));
+      justify-content: start;
+    }
   }
 
-  /* Карточка вертикальная, как в референсе: ширина — чуть больше половины
-     экрана, чтобы край второй карточки был виден и звал листать; высота —
-     от ширины, пропорцией. Все карточки одного размера: ряд с рваным низом
-     читается как сбой вёрстки, а не как ритм. */
+  /* Карточка вертикальная, как в референсе: ширину задаёт колонка, высота —
+     от неё, пропорцией. Обе одного размера: ряд с рваным низом читается
+     как сбой вёрстки, а не как ритм. */
   .ecard {
     --tile: var(--tint-sand);
     --tile-deep: var(--tint-sand-deep);
@@ -233,7 +186,7 @@ const view = cards.map((card) => ({
     flex-direction: column;
     justify-content: space-between;
     gap: var(--s-5);
-    width: clamp(210px, 62vw, 250px);
+    height: 100%;
     aspect-ratio: 3 / 4;
     padding: var(--s-4);
     background: var(--tile);
