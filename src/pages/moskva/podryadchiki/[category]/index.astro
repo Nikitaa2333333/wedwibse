@@ -83,7 +83,6 @@ const counts = filters ? countOptions(filters, cards.map((c) => c.filters)) : un
       ? `Каталог специалистов «${category.label}» в Москве и Московской области: работы, условия и заявка.`
       : `Каталог специалистов «${category.label}» — скоро на WED Secrets.`
   }
-  theme="dark"
 >
   <SiteHeader />
   <CategoryNav categories={SPECIALIST_CATEGORIES} activeSlug={category.slug} />

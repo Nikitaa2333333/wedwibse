@@ -6,18 +6,12 @@ interface Props {
   description?: string;
   /** абсолютный или корневой путь к обложке для соцсетей */
   ogImage?: string;
-  /** ВЕТКА-ПРЕВЬЮ (demo/dark-preview): тёмная палитра на этой странице.
-      Ставится не глобально, а постранично — заказчик просил показать
-      тёмными только главную и каталоги подрядчиков, чтобы рядом было
-      с чем сравнить. Сама палитра — в global.css, :root[data-theme]. */
-  theme?: 'dark';
 }
 
 const {
   title,
   description = 'WED Secrets — свадебный онлайн-сервис',
   ogImage,
-  theme,
 } = Astro.props;
 
 const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://wedwed.ru');
@@ -30,16 +24,17 @@ const indexable = process.env.SITE_INDEXABLE === 'true';
 ---
 
 <!doctype html>
-<html lang="ru" data-theme={theme}>
+<html lang="ru">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
-    {/* Тёмными должны быть и системные части, которые CSS не красит:
-        подложка под резинкой скролла, встроенные контролы, адресная
-        строка мобильного браузера. */}
-    <meta name="color-scheme" content={theme === 'dark' ? 'dark' : 'light'} />
-    {theme === 'dark' && <meta name="theme-color" content="#1c1815" />}
+    {/* Цвет адресной строки мобильного браузера — под тему; правит его
+        applyTheme из lib/theme.ts. Здесь стоит светлый: сборка статическая,
+        и что выбрал человек, сервер знать не может. Системные части,
+        которые CSS не красит (резинка скролла, встроенные контролы),
+        держит color-scheme в global.css — он меняется вместе с палитрой. */}
+    <meta name="theme-color" content="#ffffff" />
     {!indexable && <meta name="robots" content="noindex, nofollow" />}
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -63,6 +58,25 @@ const indexable = process.env.SITE_INDEXABLE === 'true';
       // Стартовые состояния анимации применяются только при живом JS —
       // без него контент виден сразу (защита от «пустой страницы»).
       document.documentElement.classList.add('js');
+
+      // ТЕМА ДО ОТРИСОВКИ. Сборка статическая: HTML уезжает на сервер
+      // светлым, и выбранную тёмную ставит уже браузер. Сделать это надо
+      // здесь, в <head> до <body>, иначе человек с тёмной темой ловит
+      // белую вспышку страницы на каждом переходе.
+      //
+      // Скрипт намеренно самостоятельный (is:inline = не бандлится, импорт
+      // сюда невозможен) — отсюда единственное в проекте дублирование
+      // ключа и цвета: остальное живёт в lib/theme.ts, правим парой.
+      try {
+        if (localStorage.getItem('wed:theme') === 'dark') {
+          document.documentElement.dataset.theme = 'dark';
+          document
+            .querySelector('meta[name="theme-color"]')
+            .setAttribute('content', '#1c1815');
+        }
+      } catch (e) {
+        // приватный режим — едем на светлой, это не повод ронять страницу
+      }
     </script>
   </head>
   <body>

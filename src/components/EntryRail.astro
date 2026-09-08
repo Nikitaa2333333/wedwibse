@@ -236,7 +236,10 @@ const view = cards.map((card) => ({
     aspect-ratio: 3 / 4;
     padding: var(--s-4);
     background: var(--tile);
-    color: var(--ink);
+    /* Плашка несёт свою пару фон/текст и от темы страницы не зависит:
+       тон светлый всегда, поэтому набор поверх — фиксированные чернила
+       (--tint-fg), а не --ink, который в тёмной теме белый. */
+    color: var(--tint-fg);
     border-radius: var(--radius-card);
     text-decoration: none;
   }
@@ -262,8 +265,8 @@ const view = cards.map((card) => ({
     width: 40px;
     height: 40px;
     border-radius: var(--radius-pill);
-    background: var(--ink);
-    color: var(--paper);
+    background: var(--tint-fg);
+    color: var(--white);
     display: inline-flex;
     align-items: center;
     justify-content: center;

@@ -3,24 +3,34 @@ import Layout from '../layouts/Layout.astro';
 import BottomDock from '../components/BottomDock.astro';
 import EntryRail from '../components/EntryRail.astro';
 import PhotoBoard from '../components/PhotoBoard.astro';
+import ThemeToggle from '../components/ThemeToggle.astro';
 import Icon from '../components/Icon.astro';
 ---
 
-<Layout title="Свадебные Секреты — лучшие площадки и специалисты" theme="dark">
+<Layout title="Свадебные Секреты — лучшие площадки и специалисты">
   <div class="page">
     <!-- ГЕРОЙ: шапка (бренд / меню / метка) + крупный заголовок с лидом
          сразу под ней — без пустого экрана, плашки идут следующим блоком. -->
     <section class="hero container--wide">
-      <!-- Шапка главной: только логотип по центру и вход в кабинет.
-           Разделы живут в BottomDock — дублировать их сверху не нужно. -->
+      <!-- Шапка главной: логотип по центру, справа тумблер темы и вход
+           в кабинет. Разделы живут в BottomDock — дублировать их сверху
+           не нужно.
+           Тумблер стоит здесь, а не в доке: док — это разделы сайта,
+           пятая ячейка ужала бы подписи («Специалисты» и сейчас с
+           многоточием). Выбор темы запоминается, поэтому одной точки
+           переключения хватает — на внутренних страницах тема уже стоит. -->
       <header class="hero__bar">
         <a class="hero__brand" href="/" aria-label="WED Secrets — на главную">
           <span class="hero__logo" aria-hidden="true"></span>
         </a>
 
-        <a class="hero__account" href="#" aria-label="Личный кабинет">
-          <Icon name="account" />
-        </a>
+        <div class="hero__actions">
+          <ThemeToggle />
+
+          <a class="icon-btn" href="#" aria-label="Личный кабинет">
+            <Icon name="account" />
+          </a>
+        </div>
       </header>
 
       <div class="hero__intro">
@@ -117,21 +127,16 @@ import Icon from '../components/Icon.astro';
     mask: url('/logo.svg') no-repeat center / contain;
   }
 
-  .hero__account {
+  /* Кружки справа — .icon-btn из реестра (раньше шапка держала свою
+     копию кнопки, на 1.5px обводки: рядом с тумблером разнобой был бы
+     виден). Здесь остаётся только их место в строке. */
+  .hero__actions {
     grid-column: 3;
     justify-self: end;
-    flex-shrink: 0;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    border: 1.5px solid currentColor;
     display: flex;
     align-items: center;
-    justify-content: center;
-    color: inherit;
+    gap: var(--s-2);
   }
-
-  .hero__account svg { width: 18px; height: 18px; }
 
   .hero__intro { padding-top: var(--s-3); text-align: center; }
 
