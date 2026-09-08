@@ -32,12 +32,12 @@ const items = [
     label: 'Площадки',
     icon: 'venue',
   },
-  // Раздел «Специалисты» ведёт сразу в каталог первого направления:
-  // хаба с плитками направлений больше нет, направления переключаются
-  // двухуровневой полосой CategoryNav внутри самого каталога.
+  // Раздел «Специалисты» ведёт на хаб с плитками групп
+  // (pages/moskva/podryadchiki/index.astro); из группы — в каталог,
+  // где направления переключает полоса CategoryNav.
   {
     key: 'vendors',
-    href: '/moskva/podryadchiki/vedushchie/',
+    href: '/moskva/podryadchiki/',
     label: 'Специалисты',
     icon: 'vendors',
   },

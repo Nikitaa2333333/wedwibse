@@ -1,22 +1,36 @@
 ---
 // ИЗБРАННОЕ — раздел «Корзина» из ТЗ (wedwibse-app-scope): копит выбранные
-// площадки и подрядчиков, даёт сравнить их между собой.
+// площадки и подрядчиков, даёт из них отобрать финалистов и сравнить.
 // Персональный экран без бэкенда — источник данных localStorage
-// (см. src/lib/favorites.ts), поэтому вся разметка ниже — пустой каркас,
-// который наполняет клиентский скрипт. SEO это не касается: раздел
-// открывается из BottomDock, а не приходит из поиска.
+// (см. src/lib/favorites.ts, src/lib/shortlist.ts), поэтому вся разметка
+// ниже — пустой каркас, который наполняет клиентский скрипт. SEO это
+// не касается: раздел открывается из BottomDock, а не приходит из поиска.
 //
 // Два уровня, как «Доски» в Pinterest:
 //   1. папки по направлениям (площадки, ведущие, …) — обложка-коллаж из трёх
 //      последних кадров, название, счётчик и давность;
-//   2. внутри папки — сетка карточек и режим сравнения.
+//   2. внутри папки — сетка карточек и вторичный отбор.
 // Уровень задаётся хэшем `#<cat>`, поэтому системный «назад» возвращает к папкам.
+//
+// Вторичный отбор («механика сайтов знакомств», по одной папке за раз):
+//   этап 1 — свайп: карточки по одной во весь экран, влево «мимо»,
+//            вправо «в финал»; на ПК — кнопки и стрелки клавиатуры;
+//   этап 2 — таблица сравнения финалистов (`#<cat>/compare`): колонки —
+//            финалисты, строки — факты из каталога (lib/compare-facts.ts);
+//   финал  — одна кнопка «Отправить заявки» на всех. Бэкенда нет —
+//            шторка-заглушка, см. TODO в скрипте.
 import Layout from '../../layouts/Layout.astro';
 import BottomDock from '../../components/BottomDock.astro';
 import Icon from '../../components/Icon.astro';
+import { compareFacts } from '../../lib/compare-facts';
+
+// Факты для таблицы сравнения собираются на сборке и уезжают на страницу
+// одним JSON — клиент ничего не запрашивает. `</` экранируем: JSON лежит
+// внутри <script>, и «</script>» в значении закрыл бы тег раньше времени.
+const factsJson = JSON.stringify(compareFacts()).replace(/</g, '\\u003c');
 ---
 
-<Layout title="Избранное — WED Secrets" description="Площадки и подрядчики, которые вы сохранили — сравните их между собой.">
+<Layout title="Избранное — WED Secrets" description="Площадки и подрядчики, которые вы сохранили — отберите финалистов и сравните их между собой.">
   <Fragment slot="head">
     <meta name="robots" content="noindex" />
   </Fragment>
@@ -30,15 +44,25 @@ import Icon from '../../components/Icon.astro';
       <h1 class="t-h1" data-title>Избранное</h1>
       <p class="scope__count" data-count hidden></p>
     </div>
-    <div class="scope__tools">
-      <button class="pill pill--sm" type="button" data-compare-toggle hidden>Сравнить</button>
+
+    <!-- Полоса отбора: состояние второго захода и его действия.
+         Видна только внутри папки, где есть из чего выбирать. -->
+    <div class="pickbar" data-pickbar hidden>
+      <p class="pickbar__status t-small" data-pick-status></p>
+      <div class="pickbar__actions">
+        <button class="pill pill--sm" type="button" data-pick-start hidden>Отобрать финалистов</button>
+        <button class="pill pill--sm" type="button" data-pick-continue hidden>Продолжить отбор</button>
+        <a class="pill pill--sm" href="#" data-pick-compare hidden>Сравнить финалистов</a>
+        <a class="pill pill--sm" href="#" data-pick-grid hidden>← К карточкам</a>
+        <button class="pill pill--sm" type="button" data-pick-reset hidden>Заново</button>
+      </div>
     </div>
   </header>
 
   <main class="wrap">
     <p class="empty t-small" data-empty>
       Пока пусто. Добавляйте площадки и подрядчиков сердечком на карточке — они появятся здесь,
-      и их можно будет сравнить между собой.
+      и из них можно будет отобрать финалистов и сравнить их между собой.
     </p>
 
     <div class="boards" data-boards hidden></div>
@@ -48,13 +72,81 @@ import Icon from '../../components/Icon.astro';
     <div class="cmp" data-compare hidden></div>
   </main>
 
-  <div class="compare-bar" data-compare-bar hidden>
-    <span class="t-small" data-compare-count>Выбрано: 0</span>
-    <button class="pill pill--sm" type="button" data-compare-show disabled>Сравнить</button>
-    <button class="icon-btn compare-bar__cancel" type="button" data-compare-cancel aria-label="Отменить сравнение">
-      <Icon name="close" />
-    </button>
+  <!-- Финал: одна заявка на всех финалистов. Парящая капсула над доком. -->
+  <div class="sendbar" data-sendbar hidden>
+    <span class="t-small" data-send-count></span>
+    <button class="pill pill--sm" type="button" data-send>Отправить заявки</button>
   </div>
+
+  <!-- ЭТАП 1 — СВАЙП. Полноэкранная сцена поверх раздела: одна карточка
+       во весь экран, под ней следующая. Жест — lib/swipe.ts, кнопки внизу
+       делают то же мышью, стрелки клавиатуры — то же с клавиатуры. -->
+  <section class="pick" data-pick role="dialog" aria-modal="true" aria-label="Отбор финалистов" hidden>
+    <header class="pick__head">
+      <button class="icon-btn" type="button" data-pick-close aria-label="Закрыть отбор">
+        <Icon name="close" />
+      </button>
+      <div class="pick__title">
+        <span class="pick__cat" data-pick-cat></span>
+        <span class="pick__progress t-caption" data-pick-progress></span>
+      </div>
+      <span class="pick__spacer" aria-hidden="true"></span>
+    </header>
+    <div class="pick__track" aria-hidden="true"><span class="pick__fill" data-pick-fill></span></div>
+
+    <div class="pick__stage" data-pick-stage></div>
+
+    <footer class="pick__foot">
+      <div class="pick__act">
+        <button class="icon-btn icon-btn--lg pick__btn pick__btn--no" type="button" data-pick-no aria-label="Мимо">
+          <Icon name="close" />
+        </button>
+        <span class="t-caption">Мимо</span>
+      </div>
+      <button class="pill pill--sm" type="button" data-pick-undo>Вернуть</button>
+      <div class="pick__act">
+        <button class="icon-btn icon-btn--lg pick__btn pick__btn--yes" type="button" data-pick-yes aria-label="В финал">
+          <Icon name="heart" />
+        </button>
+        <span class="t-caption">В финал</span>
+      </div>
+    </footer>
+
+    <!-- Очередь кончилась: итог и переход к сравнению -->
+    <div class="pick__done" data-pick-done hidden>
+      <h2 class="t-h2" data-done-title></h2>
+      <p class="t-small pick__done-text" data-done-text></p>
+      <div class="pick__done-actions">
+        <button class="pill" type="button" data-done-compare hidden>Сравнить финалистов</button>
+        <button class="pill" type="button" data-done-restart hidden>Пройти заново</button>
+        <button class="pill" type="button" data-pick-close>Закрыть</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ЗАГЛУШКА ОТПРАВКИ. Бэкенда нет: по клику «Отправить заявки» шторка
+       показывает, куда заявка «ушла». Временно до бэкенда — см. TODO в скрипте. -->
+  <div class="sheet" data-sheet="sent">
+    <div class="sheet__backdrop" data-sheet-close></div>
+    <section class="sheet__panel" role="dialog" aria-modal="true" aria-labelledby="sent-title">
+      <header class="sheet__head">
+        <h2 class="sheet__title" id="sent-title" data-sent-title>Заявки отправлены</h2>
+        <button class="icon-btn" type="button" data-sheet-close aria-label="Закрыть">
+          <Icon name="close" />
+        </button>
+      </header>
+      <div class="sheet__body" data-lenis-prevent>
+        <p class="t-small" data-sent-lead></p>
+        <ul class="sent-list" data-sent-list></ul>
+        <p class="t-small sent-note">Ответы соберутся в чате — по одному диалогу на каждого.</p>
+      </div>
+      <footer class="sheet__foot">
+        <button class="pill" type="button" data-sheet-close>Готово</button>
+      </footer>
+    </section>
+  </div>
+
+  <script is:inline type="application/json" data-facts set:html={factsJson}></script>
 
   <BottomDock active="saved" />
 </Layout>
@@ -86,19 +178,29 @@ import Icon from '../../components/Icon.astro';
 
   .scope__count[hidden] { display: none; }
 
-  .scope__tools {
-    display: flex;
-    align-items: center;
-    gap: var(--s-3);
+  /* ============ ПОЛОСА ОТБОРА ============
+     Строка состояния и пилюли действий — на бумаге под заголовком папки,
+     той же строкой, где у каталогов стоят инструменты. */
+  .pickbar {
     flex: 1 0 100%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+    margin-top: var(--s-2);
   }
 
-  .scope__tools:empty,
-  .scope__tools > [hidden] { display: none; }
+  .pickbar[hidden] { display: none; }
 
-  @media (min-width: 640px) {
-    .scope__tools { flex: 0 0 auto; margin-left: auto; }
+  .pickbar__status { max-width: var(--measure-lead); }
+  .pickbar__status:empty { display: none; }
+
+  .pickbar__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
   }
+
+  .pickbar__actions > [hidden] { display: none; }
 
   /* ============ ПУСТОЕ СОСТОЯНИЕ ============ */
   .empty {
@@ -111,147 +213,62 @@ import Icon from '../../components/Icon.astro';
   /* ============ ПАПКИ (доски) ============ */
   .wrap {
     max-width: none;
-    padding: var(--s-4) clamp(8px, 1vw, 16px) calc(var(--safe-b) + 160px);
+    padding: var(--s-4) clamp(8px, 1vw, 16px) calc(var(--dock-space) + var(--s-6));
   }
 
-  /* ============ ПАПКИ: СТОПКА ПЛАШЕК ============
-     Реф. — экран закладок мобильного приложения: крупные карточки лежат
-     стопкой во всю высоту экрана и наезжают друг на друга, как папки
-     в лотке. У накрытой видна шапка (кружок с кадром, имя, счётчик)
-     и верх единственного кадра под ней, нижняя лежит целиком.
-
-     Почему не сетка. Папок в избранном единицы — два-три направления, —
-     и сетка из двух плиток на телефоне читалась списком, а не собранной
-     подборкой. Стопка занимает экран целиком и сразу говорит
-     «это моя стопка папок».
-
-     Внутри плашки один кадр, а не коллаж: коллаж из трёх делал папку
-     похожей на карточку каталога. Кадр вырезан SVG-маской своей формы
-     (сердце, капля, арка, шестиугольник, круг) — форма, как и тон,
-     ничего не значит, она только делает папки непохожими друг на друга.
-
-     Наложение — отрицательный отступ, а не абсолютное позиционирование:
-     плашки остаются в потоке, высота блока считается сама, порядок
-     перекрытия задаёт один --i (следующая лежит ПОВЕРХ предыдущей,
-     как в референсе). Ни скриптов, ни измерений. */
+  /* ============ ПАПКИ: СЕТКА ОБЛОЖЕК (реф. «Доски» Pinterest) ============
+     Спокойный вариант: папка — коллаж из трёх последних кадров на бумаге,
+     под ним имя направления и счётчик. Никаких цветных плашек и масок:
+     обложку делает само фото, тон — только у пустых ячеек (--surface-dim),
+     и в тёмной теме всё инвертируется само через токены.
+     На телефоне две колонки, от планшета три, на ПК четыре. */
   .boards {
-    display: flex;
-    flex-direction: column;
-    /* Лёгкий наклон стопки «вперёд», как у папок в лотке: только
-       transform (моушн-бюджет телефона), точка опоры — низ стопки,
-       чтобы нижняя, полностью видимая папка стояла ровно. */
-    perspective: 1400px;
-    perspective-origin: 50% 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s-6) var(--s-4);
   }
 
   .boards[hidden] { display: none; }
 
+  @media (min-width: 640px) {
+    .boards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+
+  @media (min-width: 1024px) {
+    .boards { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  }
+
   .board {
-    position: relative;
-    z-index: var(--i);
-    display: flex;
-    flex-direction: column;
-    gap: var(--s-4);
-    height: var(--fold-card);
-    padding: var(--s-5) var(--s-4) 0;
-    background: var(--tile);
-    color: var(--ink);
-    border-radius: var(--radius-card);
-    /* Тень отбивает плашку от лежащей под ней: без неё стопка читается
-       как один блок, разрезанный полосами. */
-    box-shadow: var(--shadow-float);
-    text-decoration: none;
-    overflow: hidden;
-    transform: rotateX(2deg);
-    transform-origin: 50% 100%;
-  }
-
-  .board + .board { margin-top: calc(var(--fold-head) - var(--fold-card)); }
-
-  /* Тона — те же, что у ряда входов на главной, и по тому же правилу:
-     цвет не значит ничего, он только разделяет соседей в стопке. */
-  .board--sand { --tile: var(--tint-sand); }
-  .board--ice { --tile: var(--tint-ice); }
-  .board--clay { --tile: var(--tint-clay); }
-  .board--sage { --tile: var(--tint-sage); }
-  .board--lilac { --tile: var(--tint-lilac); }
-
-  /* Формы кадра. Маска — инлайн-SVG в viewBox 100×100, растягивается
-     на весь блок кадра через mask-size: contain. */
-  .board--heart { --mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M50 92C22 70 4 54 4 33A21 21 0 0 1 50 21A21 21 0 0 1 96 33C96 54 78 70 50 92Z'/></svg>"); }
-  .board--drop { --mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M50 4C66 26 92 44 92 66A42 42 0 0 1 8 66C8 44 34 26 50 4Z'/></svg>"); }
-  .board--arch { --mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M8 100V46A42 42 0 0 1 92 46V100Z'/></svg>"); }
-  .board--hex { --mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M50 3L92 27V73L50 97L8 73V27Z'/></svg>"); }
-  .board--round { --mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='46'/></svg>"); }
-
-  /* Шапка — единственное, что видно у накрытой папки */
-  .board__top {
-    display: flex;
-    align-items: center;
-    gap: var(--s-3);
-    min-width: 0;
-  }
-
-  .board__thumb {
-    width: 44px;
-    height: 44px;
-    flex: none;
-    border-radius: var(--radius-pill);
-    overflow: hidden;
-    background: var(--surface-dim);
-  }
-
-  .board__thumb img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 0;
-  }
-
-  .board__text {
-    display: flex;
-    flex-direction: column;
-    gap: var(--s-1);
-    min-width: 0;
-  }
-
-  .board__name {
-    font-size: var(--fs-h3);
-    font-weight: var(--w-head);
-    line-height: 1.1;
-    letter-spacing: -0.02em;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .board__meta {
-    font-size: var(--fs-caption);
-    font-weight: var(--w-medium);
-  }
-
-  /* Единственный кадр папки — последний сохранённый — под маской формы.
-     Стоит по центру и занимает большую часть ширины: у накрытой папки
-     из-под следующей шапки выглядывает верх формы, у нижней она целиком. */
-  .board__pic {
     display: block;
-    width: 72%;
-    margin-inline: auto;
-    flex: 1;
-    min-height: 0;
-    -webkit-mask-image: var(--mask);
-    mask-image: var(--mask);
-    -webkit-mask-size: contain;
-    mask-size: contain;
-    -webkit-mask-repeat: no-repeat;
-    mask-repeat: no-repeat;
-    -webkit-mask-position: top center;
-    mask-position: top center;
-    background: var(--surface-dim);
+    min-width: 0;
+    color: inherit;
+    text-decoration: none;
   }
 
-  .board__pic img {
+  .board > span { display: block; }
+
+  /* Обложка: слева крупный кадр 2/3, справа колонка из двух мелких.
+     Скругление — карточное, зазор между ячейками — тонкий, как у доски. */
+  .board__cover {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 2px;
+    aspect-ratio: 3 / 2;
+    overflow: hidden;
+    border-radius: var(--radius-card);
+  }
+
+  .board__tile {
+    background: var(--surface-dim);
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .board__tile--main { grid-row: 1 / 3; }
+
+  .board__tile img {
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -260,11 +277,26 @@ import Icon from '../../components/Icon.astro';
   }
 
   @media (hover: hover) {
-    .board:hover .board__pic img { transform: scale(1.04); }
+    .board:hover .board__tile img { transform: scale(1.04); }
+  }
+
+  .board__name {
+    margin-top: var(--s-3);
+    font-size: var(--fs-h3);
+    font-weight: var(--w-head);
+    line-height: 1.15;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .board__meta {
+    margin-top: var(--s-1);
+    font-size: var(--fs-caption);
+    font-weight: var(--w-medium);
   }
 
   /* ============ СЕТКА КАРТОЧЕК ============ */
-
   .grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -293,6 +325,7 @@ import Icon from '../../components/Icon.astro';
     position: relative;
     aspect-ratio: 4 / 5;
     overflow: hidden;
+    border-radius: var(--radius-card);
     background: var(--surface-dim);
   }
 
@@ -302,79 +335,17 @@ import Icon from '../../components/Icon.astro';
     width: 100%;
     height: 100%;
     object-fit: cover;
+    border-radius: 0;
   }
 
+  /* «Убрать» — чернильный квадрат из реестра (.hero-btn): на кадре
+     допустима только иконка, и та в языке кнопок первого экрана. */
   .fcard__remove {
     position: absolute;
     top: var(--s-3);
     right: var(--s-3);
     z-index: 1;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    border: 1.5px solid var(--white);
-    border-radius: 50%;
-    background: rgb(0 0 0 / 0.25);
-    color: var(--white);
-    font-size: 18px;
-    line-height: 1;
-    cursor: pointer;
-    filter: drop-shadow(0 1px 8px rgb(0 0 0 / 0.45));
-    transition: transform var(--dur-fast) var(--ease-out);
   }
-
-  .fcard__remove:active { transform: scale(0.85); }
-
-  .fcard__check {
-    position: absolute;
-    top: var(--s-3);
-    left: var(--s-3);
-    z-index: 1;
-    display: none;
-  }
-
-  .grid.is-compare .fcard__check { display: block; }
-  .grid.is-compare .fcard__remove { display: none; }
-
-  .fcard__check input {
-    position: absolute;
-    inset: 0;
-    width: 28px;
-    height: 28px;
-    margin: 0;
-    opacity: 0;
-    cursor: pointer;
-  }
-
-  .fcard__check-mark {
-    display: flex;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    border: 1.5px solid var(--white);
-    background: rgb(0 0 0 / 0.25);
-    filter: drop-shadow(0 1px 8px rgb(0 0 0 / 0.45));
-  }
-
-  .fcard__check input:checked + .fcard__check-mark {
-    background: var(--white);
-    border-color: var(--white);
-  }
-
-  .fcard__check-mark::after {
-    content: '';
-    margin: auto;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: var(--ink);
-    opacity: 0;
-  }
-
-  .fcard__check input:checked + .fcard__check-mark::after { opacity: 1; }
 
   .fcard__top {
     display: flex;
@@ -397,63 +368,234 @@ import Icon from '../../components/Icon.astro';
 
   .fcard__meta { margin-top: 2px; }
 
-  /* ============ ПЛАВАЮЩАЯ ПАНЕЛЬ СРАВНЕНИЯ ============ */
-  .compare-bar {
+  /* Вердикт отбора — строкой на бумаге, не на кадре */
+  .fcard__state {
+    margin-top: var(--s-1);
+    font-size: var(--fs-caption);
+    font-weight: var(--w-medium);
+  }
+
+  .fcard__state--yes { color: var(--accent); }
+
+  /* ============ СЦЕНА СВАЙПА (этап 1) ============
+     Поверх всего раздела, во весь экран, на бумаге. На ПК рельс
+     навигации слева остаётся виден — сцена отступает на его ширину. */
+  .pick {
     position: fixed;
-    left: 50%;
-    bottom: calc(var(--safe-b) + var(--s-5) + 64px);
-    transform: translateX(-50%);
-    z-index: var(--z-nav);
+    inset: 0 0 0 var(--rail-w);
+    z-index: var(--z-overlay);
+    display: flex;
+    flex-direction: column;
+    background: var(--paper);
+    color: var(--ink);
+  }
+
+  .pick[hidden] { display: none; }
+
+  .pick__head {
     display: flex;
     align-items: center;
-    gap: var(--s-4);
-    padding: var(--s-2) var(--s-2) var(--s-2) var(--s-4);
+    gap: var(--s-3);
+    padding: calc(var(--s-4) + env(safe-area-inset-top, 0px)) var(--gutter) var(--s-3);
+  }
+
+  .pick__title {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    text-align: center;
+    min-width: 0;
+  }
+
+  .pick__cat {
+    font-size: var(--fs-small);
+    font-weight: var(--w-medium);
+  }
+
+  .pick__spacer { width: 40px; flex: none; }
+
+  /* Ход отбора: тонкая полоса, заливка — чернила, движение — только scale */
+  .pick__track {
+    height: 3px;
+    margin: 0 var(--gutter);
     border-radius: var(--radius-pill);
+    background: var(--surface-dim);
+    overflow: hidden;
+  }
+
+  .pick__fill {
+    display: block;
+    height: 100%;
     background: var(--ink);
-    color: var(--white);
-    box-shadow: var(--shadow-float);
-    /* Панель фиксирована, то есть считается от вьюпорта, а не от контента —
-       ширину полосы навигации (на ПК она слева) вычитаем руками, иначе
-       панель встаёт мимо центра каталога и упирается в её край. */
-    max-width: calc(100vw - var(--rail-w) - var(--s-5) * 2);
-    margin-left: calc(var(--rail-w) / 2);
+    transform-origin: left center;
+    transform: scaleX(var(--p, 0));
+    transition: transform var(--dur-fast) var(--ease-out);
   }
 
-  .compare-bar[hidden] { display: none; }
-
-  .compare-bar .pill {
-    border-color: var(--white);
-    color: var(--white);
-    white-space: nowrap;
+  .pick__stage {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    margin: var(--s-4) var(--gutter) 0;
   }
 
-  @media (hover: hover) {
-    .compare-bar .pill:hover { background: var(--white); color: var(--ink); }
+  /* Карточка: кадр занимает всё, что осталось от экрана, подпись — под ним
+     на бумаге. Верхняя карточка следует за пальцем через переменные
+     (--dx/--dy/--rot), следующая лежит под ней чуть меньше. */
+  .pick__card {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    max-width: 440px;
+    margin-inline: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    will-change: transform;
+    transform: translate(var(--dx, 0px), var(--dy, 0px)) rotate(var(--rot, 0deg));
   }
 
-  .compare-bar .pill:disabled {
+  .pick__card--top { cursor: grab; }
+  .pick__card--top:active { cursor: grabbing; }
+
+  .pick__card--next {
+    transform: scale(calc(0.94 + 0.06 * var(--reveal, 0))) translateY(calc(12px * (1 - var(--reveal, 0))));
+    transition: transform var(--dur-base) var(--ease-out);
     pointer-events: none;
-    border-color: var(--line-dark);
-    color: var(--line-dark);
   }
 
-  .compare-bar__cancel {
-    border-color: var(--white);
-    color: var(--white);
+  .pick__stage.is-drag .pick__card--next { transition: none; }
+
+  /* Возврат на место и вылет за экран — одна кривая проекта */
+  .pick__card.is-settle {
+    transition: transform var(--dur-base) var(--ease-out);
   }
+
+  .pick__card.is-fly {
+    transition: transform var(--dur-base) var(--ease-out),
+                opacity var(--dur-base) var(--ease-out);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .pick__media {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    border-radius: var(--radius-card);
+    background: var(--surface-dim);
+  }
+
+  .pick__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 0;
+    pointer-events: none;
+  }
+
+  .pick__body {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--s-3);
+  }
+
+  .pick__text { min-width: 0; }
+
+  .pick__name {
+    font-size: var(--fs-h3);
+    font-weight: var(--w-head);
+    line-height: 1.15;
+  }
+
+  .pick__meta { margin-top: 2px; }
+
+  .pick__open { flex: none; }
+
+  /* Кнопки-вердикты: два круга, между ними «Вернуть». Кнопка растёт,
+     пока палец тянет карточку в её сторону (--lift 0…1). */
+  .pick__foot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--s-6);
+    padding: var(--s-4) var(--gutter) calc(var(--s-5) + var(--safe-b));
+  }
+
+  .pick__act {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--s-2);
+  }
+
+  /* «Вернуть» нечего — кнопка гаснет целиком (opacity на элементе, не на тексте) */
+  .pick__foot .pill:disabled {
+    opacity: 0.35;
+    pointer-events: none;
+  }
+
+  /* Круг — из реестра (.icon-btn + .icon-btn--lg в global.css), тут только
+     то, что у этой сцены своё: цвет литералом ink/paper (сцена стоит на
+     бумаге независимо от тумблера темы — см. background у .pick выше, тем
+     же приёмом, не через --fg/--bg) и лифт-анимация под палец. */
+  .pick__btn {
+    border-color: var(--ink);
+    color: var(--ink);
+    transform: scale(calc(1 + 0.18 * var(--lift, 0)));
+    transition: transform var(--dur-fast) var(--ease-out),
+                background var(--dur-fast) var(--ease-out),
+                color var(--dur-fast) var(--ease-out);
+  }
+
+  .pick__btn:active { transform: scale(0.9); }
+
+  /* Единственный цвет проекта — алый — у единственного «да» на экране */
+  .pick__btn--yes {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-fg);
+  }
+
+  .pick__btn--yes svg > * { fill: currentColor; }
 
   @media (hover: hover) {
-    .compare-bar__cancel:hover { background: var(--white); color: var(--ink); }
+    .pick__btn--no:hover { background: var(--ink); color: var(--paper); }
   }
 
-  /* ============ ТАБЛИЦА СРАВНЕНИЯ ============ */
-  .cmp {
-    padding: var(--s-4) clamp(8px, 1vw, 16px) calc(var(--safe-b) + 160px);
+  .pick.is-done .pick__stage,
+  .pick.is-done .pick__foot { display: none; }
+
+  .pick__done {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--s-4);
+    padding: var(--s-6) var(--gutter) calc(var(--s-7) + var(--safe-b));
   }
 
+  .pick__done[hidden] { display: none; }
+
+  .pick__done-text { max-width: var(--measure-lead); }
+
+  .pick__done-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+    margin-top: var(--s-2);
+  }
+
+  .pick__done-actions > [hidden] { display: none; }
+
+  /* ============ ТАБЛИЦА СРАВНЕНИЯ (этап 2) ============ */
   .cmp[hidden] { display: none; }
-
-  .cmp__back { margin: 0 0 var(--s-5); }
 
   .cmp__scroll {
     overflow-x: auto;
@@ -464,7 +606,7 @@ import Icon from '../../components/Icon.astro';
 
   .cmp__table {
     display: grid;
-    grid-template-columns: minmax(110px, 140px) repeat(var(--cols), minmax(160px, 1fr));
+    grid-template-columns: minmax(96px, 128px) repeat(var(--cols), minmax(168px, 1fr));
     border-top: 1px solid var(--hairline);
     min-width: 100%;
     width: max-content;
@@ -472,53 +614,198 @@ import Icon from '../../components/Icon.astro';
 
   .cmp__row { display: contents; }
 
+  /* Линии между строками — структура таблицы, единственное место,
+     где разделители разрешены. */
   .cmp__label,
   .cmp__cell {
-    padding: var(--s-4);
+    padding: var(--s-4) var(--s-3);
     border-bottom: 1px solid var(--hairline);
   }
 
   .cmp__label {
     position: sticky;
     left: 0;
-    font-size: var(--fs-small);
+    z-index: 1;
+    font-size: var(--fs-caption);
     font-weight: var(--w-medium);
     background: var(--bg);
   }
 
-  .cmp__cell { min-width: 0; }
-  .cmp__cell a { text-decoration: none; }
+  .cmp__cell {
+    min-width: 0;
+    font-size: var(--fs-small);
+  }
+
+  .cmp__name {
+    font-size: var(--fs-body);
+    font-weight: var(--w-head);
+    text-decoration: none;
+  }
+
+  .cmp__media {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius-card);
+    background: var(--surface-dim);
+  }
 
   .cmp__img {
     width: 100%;
     aspect-ratio: 4 / 5;
     object-fit: cover;
+    border-radius: 0;
   }
+
+  .cmp__drop {
+    position: absolute;
+    top: var(--s-3);
+    right: var(--s-3);
+    z-index: 1;
+  }
+
+  /* ============ КАПСУЛА «ОТПРАВИТЬ ЗАЯВКИ» ============ */
+  .sendbar {
+    position: fixed;
+    left: 50%;
+    bottom: calc(var(--safe-b) + var(--s-5) + 64px);
+    transform: translateX(-50%);
+    z-index: var(--z-nav);
+    display: flex;
+    align-items: center;
+    gap: var(--s-4);
+    padding: var(--s-2) var(--s-2) var(--s-2) var(--s-4);
+    border-radius: var(--radius-pill);
+    background: var(--invert-bg);
+    color: var(--invert-fg);
+    box-shadow: var(--shadow-float);
+    /* Панель фиксирована, то есть считается от вьюпорта, а не от контента —
+       ширину полосы навигации (на ПК она слева) вычитаем руками, иначе
+       панель встаёт мимо центра каталога и упирается в её край. */
+    max-width: calc(100vw - var(--rail-w) - var(--s-5) * 2);
+    margin-left: calc(var(--rail-w) / 2);
+  }
+
+  .sendbar[hidden] { display: none; }
+
+  .sendbar .pill {
+    border-color: var(--invert-fg);
+    color: var(--invert-fg);
+    white-space: nowrap;
+  }
+
+  @media (hover: hover) {
+    .sendbar .pill:hover { background: var(--invert-fg); color: var(--invert-bg); }
+  }
+
+  .sendbar .pill:active { background: var(--invert-fg); color: var(--invert-bg); }
+
+  @media (min-width: 1024px) {
+    .sendbar { bottom: var(--s-6); }
+  }
+
+  /* ============ ШТОРКА-ЗАГЛУШКА ============ */
+  .sent-list {
+    list-style: none;
+    display: grid;
+    gap: var(--s-3);
+    margin: var(--s-4) 0;
+  }
+
+  .sent-item {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+  }
+
+  .sent-item__pic {
+    width: 44px;
+    height: 44px;
+    flex: none;
+    overflow: hidden;
+    border-radius: var(--radius-card);
+    background: var(--surface-dim);
+  }
+
+  .sent-item__pic img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 0;
+  }
+
+  .sent-item__name { font-weight: var(--w-medium); }
+
+  .sent-note { margin-top: var(--s-4); }
 </style>
 
 <script>
   import { getFavorites, removeFavorite, CHANGE_EVENT, STORAGE_KEY, type FavoriteItem } from '../../lib/favorites';
-  // Склонение при числе — общее правило проекта (см. lib/plural.ts)
-  import { plural } from '../../lib/plural';
+  import {
+    getVerdicts, decide, undoLast, resetShortlist,
+    SHORTLIST_EVENT, SHORTLIST_KEY, type Verdict,
+  } from '../../lib/shortlist';
+  import { bindSwipe } from '../../lib/swipe';
+  import { bindSheet } from '../../lib/sheet';
+  import { bindHistoryOverlay } from '../../lib/viewer';
+  import { withCount } from '../../lib/plural';
+  import { icons, type IconName } from '../../lib/icons';
+  import type { Fact } from '../../lib/compare-facts';
 
-  const emptyEl = document.querySelector<HTMLElement>('[data-empty]');
-  const gridEl = document.querySelector<HTMLElement>('[data-grid]');
-  const boardsEl = document.querySelector<HTMLElement>('[data-boards]');
-  const titleEl = document.querySelector<HTMLElement>('[data-title]');
-  const countEl = document.querySelector<HTMLElement>('[data-count]');
-  const backEl = document.querySelector<HTMLAnchorElement>('[data-back]');
-  const compareToggleBtn = document.querySelector<HTMLButtonElement>('[data-compare-toggle]');
-  const compareBar = document.querySelector<HTMLElement>('[data-compare-bar]');
-  const compareCountEl = document.querySelector<HTMLElement>('[data-compare-count]');
-  const compareShowBtn = document.querySelector<HTMLButtonElement>('[data-compare-show]');
-  const compareCancelBtn = document.querySelector<HTMLButtonElement>('[data-compare-cancel]');
-  const compareEl = document.querySelector<HTMLElement>('[data-compare]');
+  const $ = <T extends HTMLElement>(sel: string) => document.querySelector<T>(sel);
+
+  const emptyEl = $('[data-empty]');
+  const gridEl = $('[data-grid]');
+  const boardsEl = $('[data-boards]');
+  const titleEl = $('[data-title]');
+  const countEl = $('[data-count]');
+  const backEl = $<HTMLAnchorElement>('[data-back]');
+  const compareEl = $('[data-compare]');
+
+  const pickbar = $('[data-pickbar]');
+  const pickStatus = $('[data-pick-status]');
+  const pickStartBtn = $<HTMLButtonElement>('[data-pick-start]');
+  const pickContinueBtn = $<HTMLButtonElement>('[data-pick-continue]');
+  const pickCompareLink = $<HTMLAnchorElement>('[data-pick-compare]');
+  const pickGridLink = $<HTMLAnchorElement>('[data-pick-grid]');
+  const pickResetBtn = $<HTMLButtonElement>('[data-pick-reset]');
+
+  const sendbar = $('[data-sendbar]');
+  const sendCount = $('[data-send-count]');
+  const sendBtn = $<HTMLButtonElement>('[data-send]');
+
+  const pickEl = $('[data-pick]');
+  const pickStage = $('[data-pick-stage]');
+  const pickCat = $('[data-pick-cat]');
+  const pickProgress = $('[data-pick-progress]');
+  const pickFill = $('[data-pick-fill]');
+  const pickNoBtn = $<HTMLButtonElement>('[data-pick-no]');
+  const pickYesBtn = $<HTMLButtonElement>('[data-pick-yes]');
+  const pickUndoBtn = $<HTMLButtonElement>('[data-pick-undo]');
+  const pickDone = $('[data-pick-done]');
+  const doneTitle = $('[data-done-title]');
+  const doneText = $('[data-done-text]');
+  const doneCompareBtn = $<HTMLButtonElement>('[data-done-compare]');
+  const doneRestartBtn = $<HTMLButtonElement>('[data-done-restart]');
+
+  const sentSheetEl = $('[data-sheet="sent"]');
+  const sentTitle = $('[data-sent-title]');
+  const sentLead = $('[data-sent-lead]');
+  const sentList = $('[data-sent-list]');
+
+  /** факты для таблицы — id → строки; собраны на сборке (lib/compare-facts.ts) */
+  const FACTS: Record<string, Fact[]> = JSON.parse($('[data-facts]')?.textContent || '{}');
+
+  /** папки, где отбор не имеет смысла: булавки из галереи — не подрядчики */
+  const NO_PICK = new Set(['board']);
+
+  const CARD_FORMS: [string, string, string] = ['карточка', 'карточки', 'карточек'];
+  const FINALIST_FORMS: [string, string, string] = ['финалист', 'финалиста', 'финалистов'];
 
   let items: FavoriteItem[] = [];
   /** открытая папка (cat) или null — уровень папок; читается из location.hash */
   let activeCat: string | null = null;
-  let compareMode = false;
-  const selected = new Set<string>();
+  /** внутри папки: сетка карточек или таблица сравнения (`#cat/compare`) */
+  let view: 'grid' | 'compare' = 'grid';
 
   function escapeHtml(s: string): string {
     return s.replace(/[&<>"']/g, (c) => (
@@ -526,22 +813,44 @@ import Icon from '../../components/Icon.astro';
     ));
   }
 
-  function catFromHash(): string | null {
+  function iconSvg(name: IconName): string {
+    const { viewBox, body } = icons[name];
+    return `<svg viewBox="${viewBox}" fill="currentColor" aria-hidden="true">${body}</svg>`;
+  }
+
+  function parseHash(): { cat: string | null; view: 'grid' | 'compare' } {
     const h = decodeURIComponent(location.hash.replace(/^#/, ''));
-    return h || null;
+    if (!h) return { cat: null, view: 'grid' };
+    const [cat, sub] = h.split('/');
+    return { cat: cat || null, view: sub === 'compare' ? 'compare' : 'grid' };
+  }
+
+  function catLabelOf(cat: string): string {
+    return items.find((i) => i.cat === cat)?.catLabel ?? cat;
   }
 
   function currentItems(): FavoriteItem[] {
     return activeCat ? items.filter((i) => i.cat === activeCat) : [];
   }
 
-  function updateCompareToggleVisibility() {
-    if (!compareToggleBtn) return;
-    const eligible = !!activeCat && currentItems().length >= 2;
-    compareToggleBtn.hidden = !eligible || compareMode;
+  /** вердикты папки только по карточкам, которые ещё в избранном */
+  function verdictsOf(cat: string): Map<string, Verdict> {
+    const ids = new Set(items.filter((i) => i.cat === cat).map((i) => i.id));
+    const all = getVerdicts(cat);
+    for (const id of all.keys()) if (!ids.has(id)) all.delete(id);
+    return all;
   }
 
-  /** «1 карточка / 2 карточки / 5 карточек» */
+  function finalistsOf(cat: string): FavoriteItem[] {
+    const v = verdictsOf(cat);
+    return items.filter((i) => i.cat === cat && v.get(i.id) === 'yes');
+  }
+
+  function pendingOf(cat: string): FavoriteItem[] {
+    const v = verdictsOf(cat);
+    return items.filter((i) => i.cat === cat && !v.has(i.id));
+  }
+
   /** давность последнего добавления в папку: «сегодня», «3 дн.», «2 нед.», «1 мес.» */
   function ago(ts: number | undefined): string {
     if (!ts) return '';
@@ -553,168 +862,207 @@ import Icon from '../../components/Icon.astro';
     return `${Math.floor(days / 365)} г.`;
   }
 
-  function updateCompareBar() {
-    if (compareCountEl) compareCountEl.textContent = `Выбрано: ${selected.size}`;
-    if (compareShowBtn) compareShowBtn.disabled = selected.size < 2;
-  }
+  /* ---------- уровень папок ---------- */
 
-  function exitCompareMode() {
-    compareMode = false;
-    selected.clear();
-    gridEl?.classList.remove('is-compare');
-    gridEl?.querySelectorAll<HTMLInputElement>('[data-compare-check]').forEach((i) => { i.checked = false; });
-    compareBar?.setAttribute('hidden', '');
-    updateCompareToggleVisibility();
-  }
-
-  /** Тона и формы стопки: ни цвет, ни форма ничего не значат — они
-   *  только делают соседние папки непохожими. Списки разной длины,
-   *  поэтому пары «тон + форма» не повторяются дольше. */
-  const FOLD_TINTS = ['sand', 'ice', 'clay', 'sage', 'lilac'];
-  const FOLD_MASKS = ['heart', 'drop', 'arch', 'hex', 'round'];
-
-  /** Уровень папок: стопка плашек, у накрытой видна шапка и верх кадра */
+  /** Одна доска на направление, обложка — три последних кадра */
   function renderBoards() {
     if (!boardsEl) return;
     const cats = Array.from(new Set(items.map((i) => i.cat)));
 
     boardsEl.innerHTML = cats
-      .map((cat, idx) => {
+      .map((cat) => {
         const list = items.filter((i) => i.cat === cat);
         const label = list[0]?.catLabel ?? cat;
         const recent = [...list].reverse();
-        const cover = recent[0]?.img;
-        const pic = cover
-          ? `<img src="${escapeHtml(cover)}" alt="" loading="lazy" decoding="async" />`
-          : '';
-        // в кружке шапки — предыдущий сохранённый, чтобы не дублировать кадр;
-        // если он один, кружок повторяет его
-        const face = recent[1]?.img ?? cover;
-        const thumb = face
-          ? `<img src="${escapeHtml(face)}" alt="" loading="lazy" decoding="async" />`
-          : '';
+        const tiles = [0, 1, 2].map((n) => {
+          const it = recent[n];
+          const cls = n === 0 ? 'board__tile board__tile--main' : 'board__tile';
+          return it
+            ? `<span class="${cls}"><img src="${escapeHtml(it.img)}" width="240" height="240" alt="" loading="lazy" decoding="async" /></span>`
+            : `<span class="${cls}"></span>`;
+        }).join('');
         const latest = Math.max(0, ...list.map((i) => i.addedAt ?? 0));
         const when = ago(latest || undefined);
-        const count = `${list.length} ${plural(list.length, ['карточка', 'карточки', 'карточек'])}`;
-        const tint = FOLD_TINTS[idx % FOLD_TINTS.length];
-        const mask = FOLD_MASKS[idx % FOLD_MASKS.length];
+        const count = withCount(list.length, CARD_FORMS);
 
-        // --i задаёт порядок перекрытия: следующая папка лежит поверх
-        // предыдущей, как в референсе.
         return `
-          <a class="board board--${tint} board--${mask}" href="#${encodeURIComponent(cat)}" data-board="${escapeHtml(cat)}" style="--i:${idx + 1}">
-            <span class="board__top">
-              <span class="board__thumb" aria-hidden="true">${thumb}</span>
-              <span class="board__text">
-                <span class="board__name">${escapeHtml(label)}</span>
-                <span class="board__meta">${count}${when ? ` · ${when}` : ''}</span>
-              </span>
-            </span>
-            <span class="board__pic" aria-hidden="true">${pic}</span>
+          <a class="board" href="#${encodeURIComponent(cat)}" data-board="${escapeHtml(cat)}">
+            <span class="board__cover" aria-hidden="true">${tiles}</span>
+            <span class="board__name">${escapeHtml(label)}</span>
+            <span class="board__meta">${count}${when ? ` · ${when}` : ''}</span>
           </a>
         `;
       })
       .join('');
   }
 
-  /** Переключение уровня: шапка, видимость блоков */
-  function applyLevel() {
-    const inFolder = !!activeCat;
-    const n = inFolder ? currentItems().length : items.length;
-    if (titleEl) titleEl.textContent = inFolder ? (items.find((i) => i.cat === activeCat)?.catLabel ?? 'Избранное') : 'Избранное';
-    if (countEl) {
-      countEl.textContent = `${n} ${plural(n, ['карточка', 'карточки', 'карточек'])}`;
-      countEl.hidden = n === 0;
-    }
-    if (backEl) backEl.hidden = !inFolder;
-    if (boardsEl) boardsEl.hidden = inFolder;
-    if (gridEl) gridEl.hidden = !inFolder;
-  }
+  /* ---------- внутри папки: сетка ---------- */
 
   function renderGrid() {
-    if (!gridEl) return;
+    if (!gridEl || !activeCat) return;
     const list = currentItems();
+    const verdicts = verdictsOf(activeCat);
 
     gridEl.innerHTML = list
-      .map((it) => `
-        <article class="fcard" data-id="${escapeHtml(it.id)}">
-          <div class="fcard__media">
-            <a class="fcard__link" href="${escapeHtml(it.href)}">
-              <img src="${escapeHtml(it.img)}" alt="${escapeHtml(it.name)}" loading="lazy" decoding="async" />
-            </a>
-            <span class="veil" aria-hidden="true"></span>
-            <label class="fcard__check">
-              <input type="checkbox" data-compare-check value="${escapeHtml(it.id)}" aria-label="Добавить «${escapeHtml(it.name)}» к сравнению" />
-              <span class="fcard__check-mark" aria-hidden="true"></span>
-            </label>
-            <button class="fcard__remove" type="button" data-remove="${escapeHtml(it.id)}" aria-label="Убрать «${escapeHtml(it.name)}» из избранного">&times;</button>
-          </div>
-          <div class="fcard__body">
-            <div class="fcard__top">
-              <h2 class="fcard__name">${escapeHtml(it.name)}</h2>
-              <span class="fcard__rate">★ ${it.rating.toFixed(1)}</span>
+      .map((it) => {
+        const v = verdicts.get(it.id);
+        const state = v === 'yes'
+          ? '<p class="fcard__state fcard__state--yes">В финалистах</p>'
+          : v === 'no' ? '<p class="fcard__state">Мимо</p>' : '';
+        const tail = [it.meta, it.price].filter(Boolean).map(escapeHtml).join(' · ');
+        return `
+          <article class="fcard" data-id="${escapeHtml(it.id)}">
+            <div class="fcard__media">
+              <a class="fcard__link" href="${escapeHtml(it.href)}">
+                <img src="${escapeHtml(it.img)}" width="320" height="400" alt="${escapeHtml(it.name)}" loading="lazy" decoding="async" />
+              </a>
+              <button class="hero-btn fcard__remove" type="button" data-remove="${escapeHtml(it.id)}" aria-label="Убрать «${escapeHtml(it.name)}» из избранного">${iconSvg('close')}</button>
             </div>
-            <p class="fcard__meta t-caption">${escapeHtml(it.meta)} · ${escapeHtml(it.price)}</p>
-          </div>
-        </article>
-      `)
+            <div class="fcard__body">
+              <div class="fcard__top">
+                <h2 class="fcard__name">${escapeHtml(it.name)}</h2>
+                ${it.rating ? `<span class="fcard__rate">★ ${it.rating.toFixed(1)}</span>` : ''}
+              </div>
+              ${tail ? `<p class="fcard__meta t-caption">${tail}</p>` : ''}
+              ${state}
+            </div>
+          </article>
+        `;
+      })
       .join('');
 
     gridEl.querySelectorAll<HTMLButtonElement>('[data-remove]').forEach((btn) => {
       btn.addEventListener('click', () => removeFavorite(btn.dataset.remove!));
     });
+  }
 
-    gridEl.querySelectorAll<HTMLInputElement>('[data-compare-check]').forEach((input) => {
-      input.addEventListener('change', () => {
-        if (input.checked) selected.add(input.value);
-        else selected.delete(input.value);
-        updateCompareBar();
-      });
-    });
+  /* ---------- полоса отбора ---------- */
 
-    gridEl.classList.toggle('is-compare', compareMode);
-    updateCompareToggleVisibility();
+  function renderPickbar() {
+    if (!pickbar) return;
+    const cat = activeCat;
+    const list = currentItems();
+    const eligible = !!cat && !NO_PICK.has(cat) && list.length >= 2;
+    pickbar.hidden = !eligible;
+    if (!eligible || !cat) return;
+
+    const n = list.length;
+    const yes = finalistsOf(cat).length;
+    const pending = pendingOf(cat).length;
+    const decided = n - pending;
+
+    if (pickStatus) {
+      pickStatus.textContent = decided === 0
+        ? `Второй заход: пройдите ${withCount(n, CARD_FORMS)} по одной — кого мимо, кого в финал.`
+        : `Финалисты: ${yes} из ${n}${pending ? ` · не решено ${pending}` : ''}`;
+    }
+
+    if (pickStartBtn) pickStartBtn.hidden = decided !== 0;
+    if (pickContinueBtn) pickContinueBtn.hidden = decided === 0 || pending === 0;
+    if (pickCompareLink) {
+      pickCompareLink.hidden = view === 'compare' || yes === 0;
+      pickCompareLink.href = `#${encodeURIComponent(cat)}/compare`;
+    }
+    if (pickGridLink) {
+      pickGridLink.hidden = view !== 'compare';
+      pickGridLink.href = `#${encodeURIComponent(cat)}`;
+    }
+    if (pickResetBtn) pickResetBtn.hidden = decided === 0;
+  }
+
+  /* ---------- этап 2: таблица сравнения ---------- */
+
+  /** факты карточки: из реестра сборки, иначе — что есть в снимке */
+  function factsOf(it: FavoriteItem): Fact[] {
+    const known = FACTS[it.id];
+    if (known?.length) return known;
+    const out: Fact[] = [];
+    if (it.price) out.push({ label: 'Цена', value: it.price });
+    if (it.meta) out.push({ label: 'Детали', value: it.meta });
+    if (it.rating) out.push({ label: 'Рейтинг', value: `★ ${it.rating.toFixed(1)}` });
+    return out;
   }
 
   function renderCompare() {
-    if (!compareEl) return;
-    const chosen = items.filter((i) => selected.has(i.id));
+    if (!compareEl || !activeCat) return;
+    const cat = activeCat;
+    const chosen = finalistsOf(cat);
 
-    const rows: { label: string; render: (i: FavoriteItem) => string }[] = [
-      { label: 'Фото', render: (i) => `<img class="cmp__img" src="${escapeHtml(i.img)}" alt="${escapeHtml(i.name)}" loading="lazy" decoding="async" />` },
-      { label: 'Название', render: (i) => `<a href="${escapeHtml(i.href)}">${escapeHtml(i.name)}</a>` },
-      { label: 'Рейтинг', render: (i) => `★ ${i.rating.toFixed(1)}` },
-      { label: 'Цена', render: (i) => escapeHtml(i.price) },
-      { label: 'Детали', render: (i) => escapeHtml(i.meta) },
-    ];
+    // строки — объединение подписей фактов всех финалистов, в порядке появления
+    const labels: string[] = [];
+    const byItem = new Map<string, Map<string, string>>();
+    for (const it of chosen) {
+      const m = new Map<string, string>();
+      for (const f of factsOf(it)) {
+        if (!labels.includes(f.label)) labels.push(f.label);
+        m.set(f.label, f.value);
+      }
+      byItem.set(it.id, m);
+    }
 
-    compareEl.innerHTML = `
-      <button class="pill pill--sm cmp__back" type="button" data-compare-back>← К списку</button>
-      <div class="cmp__scroll">
-        <div class="cmp__table" style="--cols:${chosen.length}">
-          ${rows
-            .map((row) => `
-              <div class="cmp__row">
-                <div class="cmp__label">${row.label}</div>
-                ${chosen.map((i) => `<div class="cmp__cell">${row.render(i)}</div>`).join('')}
-              </div>
-            `)
-            .join('')}
-        </div>
+    const head = `
+      <div class="cmp__row">
+        <div class="cmp__label">Фото</div>
+        ${chosen.map((i) => `
+          <div class="cmp__cell">
+            <div class="cmp__media">
+              <img class="cmp__img" src="${escapeHtml(i.img)}" width="320" height="400" alt="${escapeHtml(i.name)}" loading="lazy" decoding="async" />
+              <button class="hero-btn cmp__drop" type="button" data-drop="${escapeHtml(i.id)}" aria-label="Убрать «${escapeHtml(i.name)}» из финалистов">${iconSvg('close')}</button>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="cmp__row">
+        <div class="cmp__label">Название</div>
+        ${chosen.map((i) => `<div class="cmp__cell"><a class="cmp__name" href="${escapeHtml(i.href)}">${escapeHtml(i.name)}</a></div>`).join('')}
       </div>
     `;
 
-    compareEl.querySelector<HTMLButtonElement>('[data-compare-back]')?.addEventListener('click', showGrid);
+    const body = labels.map((label) => `
+      <div class="cmp__row">
+        <div class="cmp__label">${escapeHtml(label)}</div>
+        ${chosen.map((i) => `<div class="cmp__cell">${escapeHtml(byItem.get(i.id)?.get(label) ?? '—')}</div>`).join('')}
+      </div>
+    `).join('');
 
-    compareEl.hidden = false;
-    if (gridEl) gridEl.hidden = true;
-    compareBar?.setAttribute('hidden', '');
+    compareEl.innerHTML = `
+      <div class="cmp__scroll">
+        <div class="cmp__table" style="--cols:${chosen.length}">${head}${body}</div>
+      </div>
+    `;
+
+    compareEl.querySelectorAll<HTMLButtonElement>('[data-drop]').forEach((btn) => {
+      btn.addEventListener('click', () => decide(cat, btn.dataset.drop!, 'no'));
+    });
   }
 
-  function showGrid() {
-    if (compareEl) compareEl.hidden = true;
-    if (gridEl) gridEl.hidden = false;
-    exitCompareMode();
+  function updateSendbar() {
+    if (!sendbar) return;
+    const show = view === 'compare' && !!activeCat && finalistsOf(activeCat).length > 0;
+    sendbar.hidden = !show;
+    if (show && sendCount && activeCat) sendCount.textContent = withCount(finalistsOf(activeCat).length, FINALIST_FORMS);
+  }
+
+  /* ---------- шапка и переключение уровней ---------- */
+
+  function applyLevel() {
+    const inFolder = !!activeCat;
+    const n = inFolder ? currentItems().length : items.length;
+    if (titleEl) titleEl.textContent = inFolder && activeCat ? catLabelOf(activeCat) : 'Избранное';
+    if (countEl) {
+      countEl.textContent = view === 'compare' && activeCat
+        ? withCount(finalistsOf(activeCat).length, FINALIST_FORMS)
+        : withCount(n, CARD_FORMS);
+      countEl.hidden = n === 0;
+    }
+    if (backEl) {
+      backEl.hidden = !inFolder;
+      backEl.textContent = view === 'compare' ? '← К карточкам' : '← Папки';
+      backEl.href = view === 'compare' && activeCat ? `#${encodeURIComponent(activeCat)}` : '/izbrannoe/';
+    }
+    if (boardsEl) boardsEl.hidden = inFolder;
+    if (gridEl) gridEl.hidden = !inFolder || view === 'compare';
+    if (compareEl) compareEl.hidden = !inFolder || view !== 'compare';
   }
 
   function render() {
@@ -722,36 +1070,334 @@ import Icon from '../../components/Icon.astro';
     const empty = items.length === 0;
 
     emptyEl?.toggleAttribute('hidden', !empty);
-    if (compareEl) compareEl.hidden = true;
-    compareMode = false;
-    selected.clear();
-    compareBar?.setAttribute('hidden', '');
 
     // папка, которой больше нет (удалили последнюю карточку) — назад к папкам
-    activeCat = catFromHash();
+    const h = parseHash();
+    activeCat = h.cat;
+    view = h.view;
     if (activeCat && !items.some((i) => i.cat === activeCat)) {
       activeCat = null;
+      view = 'grid';
       history.replaceState(null, '', location.pathname);
+    }
+    // сравнивать некого — назад к сетке папки
+    if (activeCat && view === 'compare' && finalistsOf(activeCat).length === 0) {
+      view = 'grid';
+      history.replaceState(null, '', `${location.pathname}#${encodeURIComponent(activeCat)}`);
     }
 
     if (empty) {
       if (boardsEl) { boardsEl.innerHTML = ''; boardsEl.hidden = true; }
       if (gridEl) gridEl.hidden = true;
+      if (compareEl) compareEl.hidden = true;
       if (titleEl) titleEl.textContent = 'Избранное';
       if (countEl) countEl.hidden = true;
       if (backEl) backEl.hidden = true;
-      compareToggleBtn && (compareToggleBtn.hidden = true);
+      if (pickbar) pickbar.hidden = true;
+      if (sendbar) sendbar.hidden = true;
       return;
     }
 
     renderBoards();
-    renderGrid();
+    if (activeCat) {
+      renderGrid();
+      if (view === 'compare') renderCompare();
+    }
     applyLevel();
+    renderPickbar();
+    updateSendbar();
   }
 
-  // «← Папки»: без перезагрузки, просто снимаем хэш
+  /* ---------- этап 1: свайп ---------- */
+
+  let queue: FavoriteItem[] = [];
+  let pickCatId: string | null = null;
+  let unbindSwipe: (() => void) | null = null;
+  let flying = false;
+
+  function setLift(progress: number) {
+    pickYesBtn?.style.setProperty('--lift', String(Math.max(0, progress)));
+    pickNoBtn?.style.setProperty('--lift', String(Math.max(0, -progress)));
+  }
+
+  function cardHtml(it: FavoriteItem, cls: string): string {
+    const tail = [it.meta, it.price].filter(Boolean).map(escapeHtml).join(' · ');
+    return `
+      <article class="pick__card ${cls}" data-id="${escapeHtml(it.id)}">
+        <div class="pick__media"><img src="${escapeHtml(it.img)}" alt="${escapeHtml(it.name)}" draggable="false" decoding="async" /></div>
+        <div class="pick__body">
+          <div class="pick__text">
+            <h2 class="pick__name">${escapeHtml(it.name)}</h2>
+            ${tail || it.rating ? `<p class="pick__meta t-small">${[tail, it.rating ? `★ ${it.rating.toFixed(1)}` : ''].filter(Boolean).join(' · ')}</p>` : ''}
+          </div>
+          <a class="pill pill--sm pick__open" href="${escapeHtml(it.href)}" target="_blank" rel="noopener">Открыть</a>
+        </div>
+      </article>
+    `;
+  }
+
+  function renderDeck(enterFrom: 'left' | 'right' | null = null) {
+    if (!pickStage || !pickCatId || !pickEl) return;
+    unbindSwipe?.();
+    unbindSwipe = null;
+    flying = false;
+    setLift(0);
+
+    const total = items.filter((i) => i.cat === pickCatId).length;
+    const done = total - queue.length;
+    if (pickCat) pickCat.textContent = catLabelOf(pickCatId);
+    if (pickProgress) pickProgress.textContent = queue.length ? `${done + 1} из ${total}` : `${total} из ${total}`;
+    pickFill?.style.setProperty('--p', String(total ? done / total : 0));
+    if (pickUndoBtn) pickUndoBtn.disabled = done === 0;
+
+    if (queue.length === 0) {
+      pickStage.innerHTML = '';
+      showDone(total);
+      return;
+    }
+
+    pickEl.classList.remove('is-done');
+    if (pickDone) pickDone.hidden = true;
+
+    // следующая — под верхней, поэтому в разметке первой
+    pickStage.innerHTML =
+      (queue[1] ? cardHtml(queue[1], 'pick__card--next') : '') +
+      cardHtml(queue[0], 'pick__card--top');
+
+    const top = pickStage.querySelector<HTMLElement>('.pick__card--top');
+    const next = pickStage.querySelector<HTMLElement>('.pick__card--next');
+    if (!top) return;
+
+    // вернувшаяся карточка въезжает с той стороны, куда улетела
+    if (enterFrom) {
+      const w = pickStage.offsetWidth * 1.5;
+      top.style.setProperty('--dx', `${enterFrom === 'right' ? w : -w}px`);
+      top.style.setProperty('--rot', enterFrom === 'right' ? '18deg' : '-18deg');
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        top.classList.add('is-settle');
+        top.style.setProperty('--dx', '0px');
+        top.style.setProperty('--rot', '0deg');
+        top.addEventListener('transitionend', () => top.classList.remove('is-settle'), { once: true });
+      }));
+    }
+
+    unbindSwipe = bindSwipe(top, {
+      onStart() {
+        top.classList.remove('is-settle');
+        pickStage.classList.add('is-drag');
+      },
+      onMove({ dx, dy, progress }) {
+        top.style.setProperty('--dx', `${dx}px`);
+        top.style.setProperty('--dy', `${dy * 0.2}px`);
+        top.style.setProperty('--rot', `${dx * 0.04}deg`);
+        next?.style.setProperty('--reveal', String(Math.abs(progress)));
+        setLift(progress);
+      },
+      onEnd(verdict) {
+        pickStage.classList.remove('is-drag');
+        if (verdict) { fly(verdict); return; }
+        top.classList.add('is-settle');
+        top.style.setProperty('--dx', '0px');
+        top.style.setProperty('--dy', '0px');
+        top.style.setProperty('--rot', '0deg');
+        next?.style.setProperty('--reveal', '0');
+        setLift(0);
+        top.addEventListener('transitionend', () => top.classList.remove('is-settle'), { once: true });
+      },
+    });
+  }
+
+  /** карточка улетает за экран, вердикт пишется, очередь двигается */
+  function fly(side: 'left' | 'right') {
+    if (flying || !pickStage || !pickCatId) return;
+    const top = pickStage.querySelector<HTMLElement>('.pick__card--top');
+    const next = pickStage.querySelector<HTMLElement>('.pick__card--next');
+    const it = queue[0];
+    if (!top || !it) return;
+    flying = true;
+    pickStage.classList.remove('is-drag');
+    unbindSwipe?.();
+    unbindSwipe = null;
+
+    const w = pickStage.offsetWidth * 1.5;
+    top.classList.remove('is-settle');
+    top.classList.add('is-fly');
+    top.style.setProperty('--dx', `${side === 'right' ? w : -w}px`);
+    top.style.setProperty('--rot', side === 'right' ? '18deg' : '-18deg');
+    next?.style.setProperty('--reveal', '1');
+    setLift(side === 'right' ? 1 : -1);
+
+    const cat = pickCatId;
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      decide(cat, it.id, side === 'right' ? 'yes' : 'no');
+      queue.shift();
+      renderDeck();
+    };
+    top.addEventListener('transitionend', finish, { once: true });
+    // страховка: transitionend может не прийти (reduced-motion, скрытая вкладка)
+    setTimeout(finish, 900);
+  }
+
+  function showDone(total: number) {
+    if (!pickEl || !pickCatId) return;
+    const yes = finalistsOf(pickCatId).length;
+    pickEl.classList.add('is-done');
+    if (pickDone) pickDone.hidden = false;
+    if (doneTitle) doneTitle.textContent = yes ? `${withCount(yes, FINALIST_FORMS)} из ${total}` : 'Никого не оставили';
+    if (doneText) {
+      doneText.textContent = yes
+        ? 'Дальше — таблица: финалисты в колонках, цена, место и рейтинг в строках. Оттуда уходит одна заявка на всех.'
+        : 'Можно пройти папку заново или вернуться к карточкам.';
+    }
+    if (doneCompareBtn) doneCompareBtn.hidden = yes === 0;
+    if (doneRestartBtn) doneRestartBtn.hidden = yes !== 0;
+  }
+
+  // Сцена отбора — полноэкранная, поверх раздела, но открывалась без записи
+  // в историю: системное «назад»/жест на телефоне уводили со страницы вместо
+  // закрытия сцены. Приём — тот же, что у просмотра кадра доски (lib/viewer.ts
+  // bindViewer): открытие кладёт маркер в историю, закрытие — либо явный шаг
+  // назад по нему (кнопка-крестик, Escape), либо popstate снаружи (кнопка
+  // браузера/жест) сам закрывает сцену. afterPickClose — что сделать СРАЗУ
+  // ПОСЛЕ закрытия (переход к сравнению из карточки «Готово»): дожидаемся,
+  // чтобы история не осталась с висящей записью сцены под текущим экраном.
+  let afterPickClose: (() => void) | null = null;
+
+  const pickHistory = bindHistoryOverlay('pick', () => {
+    closePick();
+    const after = afterPickClose;
+    afterPickClose = null;
+    after?.();
+  });
+
+  /** закрыть сцену отбора «изнутри» (крестик, Escape) вместо прямого closePick —
+   *  сцена сама себе положила запись в историю, дозакрывать её нужно тем же
+   *  путём, что и системное «назад», иначе в стеке истории останется висящий
+   *  маркер сцены. after — опциональный переход сразу по закрытии. */
+  function dismissPick(after?: () => void) {
+    afterPickClose = after ?? null;
+    pickHistory.dismiss();
+  }
+
+  function openPick(cat: string) {
+    if (!pickEl) return;
+    pickCatId = cat;
+    queue = pendingOf(cat);
+    pickEl.hidden = false;
+    // страница под сценой не листается — тот же приём, что у шторки (lib/sheet.ts)
+    document.documentElement.style.overflow = 'hidden';
+    pickHistory.push();
+    renderDeck();
+    $<HTMLButtonElement>('[data-pick-close]')?.focus({ preventScroll: true });
+  }
+
+  function closePick() {
+    if (!pickEl || pickEl.hidden) return;
+    unbindSwipe?.();
+    unbindSwipe = null;
+    pickEl.hidden = true;
+    pickEl.classList.remove('is-done');
+    document.documentElement.style.overflow = '';
+    pickCatId = null;
+    queue = [];
+  }
+
+  function undo() {
+    if (!pickCatId || flying) return;
+    const last = undoLast(pickCatId);
+    if (!last) return;
+    const it = items.find((i) => i.id === last.id);
+    if (it) queue.unshift(it);
+    renderDeck(last.verdict === 'yes' ? 'right' : 'left');
+  }
+
+  pickNoBtn?.addEventListener('click', () => fly('left'));
+  pickYesBtn?.addEventListener('click', () => fly('right'));
+  pickUndoBtn?.addEventListener('click', undo);
+  document.querySelectorAll<HTMLButtonElement>('[data-pick-close]').forEach((b) => b.addEventListener('click', () => dismissPick()));
+
+  doneCompareBtn?.addEventListener('click', () => {
+    const cat = pickCatId;
+    dismissPick(() => {
+      if (cat) location.hash = `${encodeURIComponent(cat)}/compare`;
+    });
+  });
+
+  doneRestartBtn?.addEventListener('click', () => {
+    const cat = pickCatId;
+    if (!cat) return;
+    resetShortlist(cat);
+    queue = pendingOf(cat);
+    renderDeck();
+  });
+
+  // ПК: стрелки — вердикт, Backspace — вернуть, Esc — закрыть
+  document.addEventListener('keydown', (e) => {
+    if (!pickEl || pickEl.hidden) return;
+    if (e.key === 'Escape') { dismissPick(); return; }
+    if (queue.length === 0) return;
+    if (e.key === 'ArrowLeft') { e.preventDefault(); fly('left'); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); fly('right'); }
+    else if (e.key === 'Backspace') { e.preventDefault(); undo(); }
+  });
+
+  /* ---------- полоса отбора: действия ---------- */
+
+  pickStartBtn?.addEventListener('click', () => { if (activeCat) openPick(activeCat); });
+  pickContinueBtn?.addEventListener('click', () => { if (activeCat) openPick(activeCat); });
+  pickResetBtn?.addEventListener('click', () => {
+    if (!activeCat) return;
+    resetShortlist(activeCat);
+    if (view === 'compare') location.hash = encodeURIComponent(activeCat);
+  });
+
+  /* ---------- финал: «Отправить заявки» ---------- */
+
+  // TODO(бэкенд): заглушка. Настоящая отправка — один запрос со списком id
+  // финалистов папки; здесь только показываем, куда заявка «ушла».
+  const sentSheet = sentSheetEl ? bindSheet(sentSheetEl) : null;
+
+  sendBtn?.addEventListener('click', () => {
+    if (!activeCat || !sentSheet) return;
+    const chosen = finalistsOf(activeCat);
+    const n = chosen.length;
+    if (sentTitle) {
+      sentTitle.textContent = activeCat === 'venue'
+        ? `Заявка ушла в ${withCount(n, ['место', 'места', 'мест'])}`
+        : `Заявка ушла ${withCount(n, ['адресату', 'адресатам', 'адресатам'])}`;
+    }
+    if (sentLead) sentLead.textContent = `Папка «${catLabelOf(activeCat)}» — ${withCount(n, FINALIST_FORMS)}:`;
+    if (sentList) {
+      sentList.innerHTML = chosen.map((i) => `
+        <li class="sent-item">
+          <span class="sent-item__pic" aria-hidden="true"><img src="${escapeHtml(i.img)}" alt="" loading="lazy" decoding="async" /></span>
+          <span class="sent-item__name">${escapeHtml(i.name)}</span>
+        </li>
+      `).join('');
+    }
+    sentSheet.open(sendBtn);
+  });
+
+  /* ---------- навигация ---------- */
+
+  // Экран сравнения (view === 'compare') отдельного маркера истории не
+  // просит: он не оверлей поверх страницы, а обычный уровень хэш-роутера
+  // (`#cat/compare`, см. parseHash/render выше) — переход туда уже кладёт
+  // настоящую запись в историю сам, тем же образом, что и переход между
+  // папками. Системное «назад» с экрана сравнения уже возвращает к сетке
+  // папки штатно, через 'hashchange' ниже — второй механизм (как у сцены
+  // отбора выше) тут просто не нужен.
+
+  // «← Папки» / «← К карточкам»: без перезагрузки, только хэш
   backEl?.addEventListener('click', (e) => {
     e.preventDefault();
+    if (view === 'compare' && activeCat) {
+      location.hash = encodeURIComponent(activeCat);
+      return;
+    }
     history.pushState(null, '', location.pathname);
     render();
     window.scrollTo({ top: 0 });
@@ -762,20 +1408,11 @@ import Icon from '../../components/Icon.astro';
     window.scrollTo({ top: 0 });
   });
 
-  compareToggleBtn?.addEventListener('click', () => {
-    compareMode = true;
-    selected.clear();
-    gridEl?.classList.add('is-compare');
-    compareToggleBtn.hidden = true;
-    compareBar?.removeAttribute('hidden');
-    updateCompareBar();
-  });
-
-  compareCancelBtn?.addEventListener('click', exitCompareMode);
-  compareShowBtn?.addEventListener('click', renderCompare);
-
   window.addEventListener(CHANGE_EVENT, render);
-  window.addEventListener('storage', (e) => { if (e.key === STORAGE_KEY) render(); });
+  window.addEventListener(SHORTLIST_EVENT, render);
+  window.addEventListener('storage', (e) => {
+    if (e.key === STORAGE_KEY || e.key === SHORTLIST_KEY) render();
+  });
 
   render();
 </script>

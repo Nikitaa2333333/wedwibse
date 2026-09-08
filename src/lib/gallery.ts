@@ -23,11 +23,25 @@
 // ============================================================
 import { VENUES } from '../data/venues';
 import { ARTICLES, articleUrl, rubricBySlug } from '../data/articles';
-import { REELS, reelHref } from '../data/reels';
+import { REELS } from '../data/reels';
+import { FEED } from '../data/feed';
 import { FOTOGRAFY, specialistUrl, type Specialist } from '../data/specialists';
 import { frameId, isPortrait, ratioOf } from './media';
 
+/** ЧЕЙ КАДР — подпись под фотографией в просмотре на весь экран
+ *  (PhotoMasonry → lib/viewer). Ровно тот набор, что уже стоит на карточке
+ *  каталога: имя, строка под именем (город у площадки, tagline у
+ *  специалиста — как в vcard/scard) и звезда рейтинга. Нового не придумываем. */
+export interface PinOwner {
+  name: string;
+  meta: string;
+  /** нет собранных отзывов — нет и звезды (демо-рейтинг рисовать нельзя) */
+  rating: number | null;
+}
+
 export interface Pin {
+  /** источник кадра для подписи в просмотре; у плитки без карточки — null */
+  owner: PinOwner | null;
   /** один кадр — статичная плитка, несколько — мини-галерея с точками */
   photos: string[];
   alt: string;
@@ -68,8 +82,20 @@ const DOTS_H = 0.07;
 type Venue = (typeof VENUES)[number];
 type Shot = { src: string; alt: string };
 
+/** Рейтинг площадки живёт в ленте каталога (data/feed), не в карточке:
+ *  берём оттуда, а у площадки без записи в ленте звезды просто нет. */
+function venueOwner(venue: Venue): PinOwner {
+  const row = FEED.find((f) => f.kind === 'venue' && f.slug === venue.slug);
+  return { name: venue.name, meta: venue.city, rating: row?.kind === 'venue' ? row.rating : null };
+}
+
+function specialistOwner(s: Specialist): PinOwner {
+  return { name: s.name, meta: s.tagline, rating: s.rating ?? null };
+}
+
 function makePin(group: Shot[], venue: Venue, ratio: number, caption: string | null): Pin {
   return {
+    owner: venueOwner(venue),
     photos: group.map((g) => g.src),
     alt: group[0].alt,
     // Якорь читает VenueHero на клиенте: сборка статическая, и какой кадр
@@ -106,14 +132,23 @@ function tallPins(venue: Venue): Pin[] {
 }
 
 /** Видео-кадры общего потока (data/reels.ts): такие же плитки, как фото.
- *  В доске крутится немой луп, а нажатие открывает визитку того, кто снял,
- *  сразу на этом ролике (якорь `#foto-<кадр>` — как у кадров площадки).
- *  Подписи под плиткой нет: она в доске бывает только у мини-галерей. */
+ *  В доске крутится немой луп; нажатие открывает кадр в просмотре на весь
+ *  экран (lib/viewer), как и у фото-плитки.
+ *
+ *  ВЛАДЕЛЬЦА И ССЫЛКИ НА КАРТОЧКУ ТУТ НЕТ НАРОЧНО. Все ролики сейчас числятся
+ *  за карточкой leshakovy только потому, что кто-то должен был отдать материал
+ *  для доски главной, — это демо-набор, ни к кому реально не привязанный
+ *  (см. комментарий в data/reels.ts). Подписывать кадр чужим именем и вести
+ *  на чужую визитку нельзя (CLAUDE.md, раздел «Видео»): кадр открывается в
+ *  просмотре, подписи под ним просто нет. Когда заведут настоящих
+ *  подрядчиков со своими роликами — owner/href тут снова становятся
+ *  specialistOwner(author) и reelHref(reel), как у обычной видео-плитки. */
 function reelPins(): Pin[] {
   return REELS.map((reel) => ({
+    owner: null,
     photos: [reel.src],
     alt: reel.alt,
-    href: reelHref(reel),
+    href: null,
     caption: null,
     ratio: `${ratioOf(reel.src).toFixed(3)} / 1`,
     index: 0,
@@ -140,6 +175,7 @@ function specialistPins(s: Specialist): Pin[] {
     i += size;
 
     pins.push({
+      owner: specialistOwner(s),
       photos: group,
       alt: `${s.name} — свадебная съёмка`,
       // как у площадок: открываем визитку НА ТОМ кадре, по которому нажали
@@ -248,6 +284,7 @@ export function photoTiles(photos: string[], alt: string): Tile[] {
 
     return {
       kind: 'photo',
+      owner: null,
       photos: [src],
       alt: `${alt} — фото ${index + 1}`,
       href: null,

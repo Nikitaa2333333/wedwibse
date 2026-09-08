@@ -18,7 +18,9 @@ const TILE_SIZES =
 ---
 
 <section class="board" aria-label="Фотографии площадок каталога">
-  <PhotoMasonry tiles={collectTiles()} sizes={TILE_SIZES} widths={IMG_WIDTHS.tile} />
+  <!-- viewer: нажатие на плитку открывает кадр на весь экран поверх доски,
+       а не уводит на страницу карточки; на карточку ведёт подпись под ним. -->
+  <PhotoMasonry tiles={collectTiles()} sizes={TILE_SIZES} widths={IMG_WIDTHS.tile} viewer />
 </section>
 
 <style>

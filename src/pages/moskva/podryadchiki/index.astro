@@ -1,0 +1,240 @@
+---
+// ХАБ РАЗДЕЛА «СПЕЦИАЛИСТЫ»: экран с плитками групп перед каталогом.
+// Из нижнего дока человек попадает сюда, выбирает группу («Съёмка»,
+// «Музыка и шоу») и проваливается в каталог её первого направления;
+// дальше направления переключает полоса CategoryNav внутри каталога —
+// второй уровень навигации здесь не дублируем.
+//
+// Группы — из данных (SPECIALIST_GROUPS, источник правды), числа считаются
+// на сборке из SPECIALISTS_BY_CATEGORY: руками ничего не пишется.
+// Плитка говорит на языке .ecard из EntryRail (главная): тон-заливка
+// --tint-*, набор поверх — --tint-fg, капсула гуще того же тона.
+import Layout from '../../../layouts/Layout.astro';
+import SiteHeader from '../../../components/SiteHeader.astro';
+import BottomDock from '../../../components/BottomDock.astro';
+import {
+  SPECIALIST_CATEGORIES,
+  SPECIALIST_GROUPS,
+  SPECIALISTS_BY_CATEGORY,
+} from '../../../data/specialists';
+import { withCount, type PluralForms } from '../../../lib/plural';
+
+type Tint = 'sand' | 'ice' | 'clay' | 'sage' | 'lilac' | 'sky';
+
+// Шесть тонов на шесть групп — каждая плитка своя, соседи не совпадают
+// ни в одной колонке сетки. Тон к смыслу не привязан (см. EntryRail).
+const TINTS: Tint[] = ['sand', 'ice', 'clay', 'sage', 'lilac', 'sky'];
+
+// Одна строка «что внутри» — по ключу группы, чтобы порядок и состав
+// групп менялись в данных, а текст не рассыпался.
+const BLURBS: Record<string, string> = {
+  organizacija: 'Кто соберёт день по плану и проведёт вечер — их бронируют первыми',
+  semka: 'Фото, видео и рилсы — всё, что останется, когда торт съеден',
+  muzyka: 'Диджей, живой звук, танец и номера, после которых гости не сядут',
+  oformlenie: 'Декор зала, цветы, свет и прокат всего, чего нет на площадке',
+  ugoshchenie: 'Выездной кейтеринг и торт, ради которого ждут финала',
+  obraz: 'Стилист на утро невесты и весь день — дальше сюда приедут визаж и причёски',
+};
+
+const VENDORS: PluralForms = ['подрядчик', 'подрядчика', 'подрядчиков'];
+
+const labels = new Map(SPECIALIST_CATEGORIES.map((c) => [c.slug, c.label]));
+
+const tiles = SPECIALIST_GROUPS.map((g, i) => {
+  const cats = g.categories.filter((slug) => labels.has(slug));
+  // Подрядчик в двух направлениях одной группы — один человек, считаем по slug
+  const vendors = new Set<string>();
+  for (const slug of cats) for (const s of SPECIALISTS_BY_CATEGORY[slug] ?? []) vendors.add(s.slug);
+  return {
+    key: g.key,
+    name: g.label,
+    blurb: BLURBS[g.key] ?? '',
+    href: `/moskva/podryadchiki/${cats[0]}/`,
+    count: vendors.size,
+    capsule: vendors.size === 0 ? 'скоро' : withCount(vendors.size, VENDORS),
+    tint: TINTS[i % TINTS.length],
+  };
+});
+---
+
+<Layout
+  title="Свадебные специалисты Москвы и области — WED Secrets"
+  description="Ведущие, фотографы, видеографы, музыканты, декораторы, кейтеринг и стилисты на свадьбу в Москве и Московской области — по группам, с ценами и портфолио."
+>
+  <SiteHeader />
+
+  <main class="hub container">
+    <header class="hub__head">
+      <h1 class="t-h1">Специалисты</h1>
+      <p class="hub__lead">Команда свадьбы по группам: выберите, кто нужен, — внутри направления и фильтры.</p>
+    </header>
+
+    <ul class="hub__grid" aria-label="Группы специалистов">
+      {tiles.map((t) => (
+        <li>
+          <a
+            class:list={['gtile', `gtile--${t.tint}`]}
+            href={t.href}
+            aria-label={`${t.name} — ${t.capsule}`}
+          >
+            <span class="gtile__top">
+              <span class="gtile__go" aria-hidden="true">↗</span>
+            </span>
+
+            {/* Три вещи и всё: имя, строка «что внутри», число подрядчиков.
+                Счётчик направлений и их перечисление отсюда убраны — они
+                повторяли друг друга и описание, и плитка превращалась
+                в четыре текстовых блока подряд. Состав группы человек
+                видит в каталоге полосой CategoryNav, на шаг позже. */}
+            <span class="gtile__body">
+              <span class="gtile__name">{t.name}</span>
+              <span class="gtile__blurb">{t.blurb}</span>
+              <span class="gtile__count" aria-hidden="true">{t.capsule}</span>
+            </span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </main>
+
+  <BottomDock active="vendors" />
+</Layout>
+
+<style>
+  .hub {
+    padding-block: var(--s-6) var(--dock-space);
+  }
+
+  .hub__head {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+    margin-bottom: var(--s-5);
+  }
+
+  /* Мера в ch считается от кегля САМОГО элемента: --measure-lead подобран
+     под крупный лид, а тут кегль мелкий — те же 52ch дали бы колонку
+     заметно уже задуманной. Для текста этого кегля мера текстовая. */
+  .hub__lead {
+    margin: 0;
+    max-width: var(--measure-text);
+    font-size: var(--fs-small);
+  }
+
+  /* Сетка плиток: две колонки уже на телефоне. Одна колонка растягивала
+     плитку в широкую полосу — а плашка-вход в этом проекте вертикальная
+     (см. .ecard на главной), горизонтальная читается баннером.
+     Зазор — тот же, что у плашек-входов на главной (--pin-gap). */
+  .hub__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--pin-gap);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  @media (min-width: 1024px) {
+    .hub__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+
+  /* Плитка — тот же язык, что .ecard на главной: тон-заливка, поверх
+     фиксированные чернила --tint-fg (тон светлый в любой теме, а --ink
+     в тёмной белеет), капсула гуще того же тона. */
+  .gtile {
+    --tile: var(--tint-sand);
+    --tile-deep: var(--tint-sand-deep);
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: var(--s-5);
+    /* Вертикальная, как плашка-вход на главной: та же пропорция 3/4.
+       Жёсткой высоты нет — если описание длиннее обычного, плитка
+       вырастет, а не обрежет строку. */
+    aspect-ratio: 3 / 4;
+    padding: var(--s-4);
+    background: var(--tile);
+    color: var(--tint-fg);
+    border-radius: var(--radius-card);
+    text-decoration: none;
+  }
+
+  .gtile--sand { --tile: var(--tint-sand); --tile-deep: var(--tint-sand-deep); }
+  .gtile--ice { --tile: var(--tint-ice); --tile-deep: var(--tint-ice-deep); }
+  .gtile--clay { --tile: var(--tint-clay); --tile-deep: var(--tint-clay-deep); }
+  .gtile--sage { --tile: var(--tint-sage); --tile-deep: var(--tint-sage-deep); }
+  .gtile--lilac { --tile: var(--tint-lilac); --tile-deep: var(--tint-lilac-deep); }
+  .gtile--sky { --tile: var(--tint-sky); --tile-deep: var(--tint-sky-deep); }
+
+  .gtile__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-3);
+    min-height: 40px;
+  }
+
+  /* Стрелка-ссылка в кружке, как на плашках главной: приглушена opacity,
+     не серым (правило проекта) */
+  .gtile__go {
+    margin-left: auto;
+    width: var(--entry-knob);
+    height: var(--entry-knob);
+    flex: none;
+    border-radius: var(--radius-pill);
+    border: var(--entry-knob-line) solid currentColor;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--fs-small);
+    line-height: 1;
+    opacity: var(--entry-knob-dim);
+  }
+
+  .gtile__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    min-width: 0;
+  }
+
+  /* Кегль от ширины колонки, не экрана: колонок теперь две уже на телефоне,
+     и прежний потолок 30px рвал «Организация и ведение» на четыре строки. */
+  .gtile__name {
+    font-size: clamp(19px, 4.4vw, 26px);
+    font-weight: var(--w-head);
+    line-height: 1.02;
+    letter-spacing: -0.03em;
+  }
+
+  /* Меры тут нет намеренно: ширину описанию задаёт сама плитка, а внутри
+     текстового модуля мера не дублируется (правило проекта). Прежние 40ch
+     были и хардкодом мимо токенов, и лишним ограничением поверх колонки. */
+  .gtile__blurb {
+    font-size: var(--fs-small);
+    line-height: 1.3;
+  }
+
+  /* Капсула со счётчиком — того же тона, что плитка, только гуще
+     (--tile-deep), как на плашках главной. Прижата влево под текстом,
+     а не растянута строкой: перечисления направлений рядом больше нет. */
+  .gtile__count {
+    align-self: flex-start;
+    margin-top: var(--s-2);
+    padding: 6px 12px;
+    border-radius: var(--radius-pill);
+    background: var(--tile-deep);
+    font-size: var(--fs-caption);
+    font-weight: var(--w-medium);
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+
+  @media (hover: hover) {
+    .gtile__go {
+      transition: transform var(--dur-fast) var(--ease-out), opacity var(--dur-fast) var(--ease-out);
+    }
+    .gtile:hover .gtile__go { transform: translate(3px, -3px); opacity: 1; }
+  }
+</style>

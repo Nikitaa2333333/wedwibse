@@ -28,10 +28,6 @@ const MAP = {
   // контурное сердце: состояние «не в избранном» у кнопки на фото
   heartOutline: 'heart-linear',
   account: 'user-bold',
-  // тумблер темы в шапке: стоит рядом с account, значит тот же Bold —
-  // контурная луна рядом с залитым человечком читается разнобоем
-  sun: 'sun-bold',
-  moon: 'moon-bold',
   caretDown: 'alt-arrow-down-bold',
   arrowLeft: 'alt-arrow-left-bold',
   close: 'close-bold',

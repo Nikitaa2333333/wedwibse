@@ -89,6 +89,9 @@ const defaultFrame = frames.find(isPortrait) ?? frames[0];
 const GALLERY_SIZES =
   '(min-width: 1440px) 19vw, (min-width: 1024px) 24vw, (min-width: 640px) 32vw, 48vw';
 
+/** сколько кадров галереи видно сразу, остальные — по кнопке */
+const GALLERY_LIMIT = 10;
+
 const priceLabel = s.priceFrom ? `от ${priceFmt.format(s.priceFrom)} ₽` : 'Цена по запросу';
 const href = `/moskva/podryadchiki/${s.categorySlug}/${s.slug}/`;
 
@@ -235,7 +238,11 @@ const saveData = JSON.stringify({
          не так, как те же кадры в ленте главной. -->
     <section class="pgallery">
       <h2 class="t-h2">Фотографии</h2>
-      <PhotoMasonry tiles={photoTiles(photosOnly(s.photos), s.name)} sizes={GALLERY_SIZES} />
+      <!-- limit: видны первые GALLERY_LIMIT кадров, остальные лежат в HTML
+           скрытыми и досыпаются на месте по кнопке «Показать все N фото» —
+           у подрядчика с 30 кадрами страница иначе превращается в
+           бесконечную полосу прокрутки. -->
+      <PhotoMasonry tiles={photoTiles(photosOnly(s.photos), s.name)} sizes={GALLERY_SIZES} limit={GALLERY_LIMIT} />
     </section>
 
     <!-- ВИДЕО отдельной секцией у подрядчика с реальными роликами нет:

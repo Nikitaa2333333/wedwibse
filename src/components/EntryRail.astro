@@ -109,10 +109,11 @@ const cards: Card[] = [
     lead: true,
   },
   {
-    // Хаба раздела в проекте нет (см. astro.config.mjs), поэтому ведём
-    // сразу в первый каталог, а не на редирект.
+    // Ведём на хаб раздела — экран с плитками шести групп
+    // (pages/moskva/podryadchiki/index.astro), а не сразу в каталог
+    // первого направления: из хаба человек выбирает группу сам.
     name: 'Подрядчики',
-    href: '/moskva/podryadchiki/vedushchie/',
+    href: '/moskva/podryadchiki/',
     count: vendors.size,
     noun: VENDORS,
     thumbs: portraits([...vendors.values()]),
@@ -255,15 +256,15 @@ const view = cards.map((card) => ({
     align-items: center;
     justify-content: space-between;
     gap: var(--s-3);
-    min-height: 40px;
+    min-height: var(--entry-knob);
   }
 
   /* Кружок-иконка: чернильная заливка на тоне. Есть только у разделов
      каталога — если повесить его и на направления, ряд превращается
      в набор одинаковых значков и иконка перестаёт что-либо значить. */
   .ecard__badge {
-    width: 40px;
-    height: 40px;
+    width: var(--entry-knob);
+    height: var(--entry-knob);
     border-radius: var(--radius-pill);
     background: var(--tint-fg);
     color: var(--white);
@@ -280,17 +281,17 @@ const view = cards.map((card) => ({
      остаётся чернильным на любом тоне. */
   .ecard__go {
     margin-left: auto;
-    width: 40px;
-    height: 40px;
+    width: var(--entry-knob);
+    height: var(--entry-knob);
     flex: none;
     border-radius: var(--radius-pill);
-    border: 1.5px solid currentColor;
+    border: var(--entry-knob-line) solid currentColor;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     font-size: var(--fs-small);
     line-height: 1;
-    opacity: 0.45;
+    opacity: var(--entry-knob-dim);
   }
 
   .ecard__foot {

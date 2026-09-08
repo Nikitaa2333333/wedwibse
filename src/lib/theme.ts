@@ -49,11 +49,11 @@ export function applyTheme(theme: Theme): void {
     ?.setAttribute('content', BAR_COLOR[theme]);
 
   // Тумблеров на странице может быть несколько (шапка + будущие места) —
-  // состояние держим на каждом, чтобы иконка и подпись совпадали с темой.
+  // состояние держим на каждом. Это переключатель (role="switch"), поэтому
+  // меняется только aria-checked: подпись у него постоянная, её же читает
+  // и CSS реестра, двигая кружок по [aria-checked='true'].
   document.querySelectorAll<HTMLElement>('[data-theme-toggle]').forEach((btn) => {
-    btn.setAttribute('aria-pressed', String(theme === 'dark'));
-    btn.setAttribute('aria-label', theme === 'dark' ? 'Светлая тема' : 'Тёмная тема');
-    btn.title = theme === 'dark' ? 'Светлая тема' : 'Тёмная тема';
+    btn.setAttribute('aria-checked', String(theme === 'dark'));
   });
 }
 

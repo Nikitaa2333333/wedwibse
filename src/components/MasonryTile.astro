@@ -1,0 +1,134 @@
+---
+// ПЛИТКА ДОСКИ-МАСОНРИ — одна ячейка потока (PhotoMasonry). Вынесена из
+// доски в свой компонент, потому что доска рисует плитки в двух местах:
+// в колонках и в скрытом «хвосте» галереи (первые N кадров видны, остальные
+// досыпаются по кнопке) — одна разметка, а не две копии.
+//
+// Кадр-плитка — PhotoRail (точки, свайп), статья — типографическая плашка.
+// Сердце «в избранное» — на самой плитке, как в карточке каталога.
+//
+// ПРОСМОТР НА ВЕСЬ ЭКРАН (lib/viewer): у плитки с карточкой-источником
+// на article лежат data-view (кадры для просмотра: srcset под роль hero,
+// пропорция, alt) и data-owner (чей кадр — имя, место, рейтинг). Читает их
+// скрипт доски; здесь только данные, никакой своей логики.
+import PhotoRail from './PhotoRail.astro';
+import Icon from './Icon.astro';
+import type { Tile } from '../lib/gallery';
+import type { ViewFrame } from '../lib/viewer';
+import { favoriteImage } from '../lib/images';
+import { isVideo, posterOf } from '../lib/media';
+
+interface Props {
+  tile: Tile;
+  sizes: string;
+  widths: number[];
+  /** кадры для просмотра на весь экран; нет — плитка ведёт по href как обычно */
+  view?: ViewFrame[] | null;
+  /** плитка в скрытом хвосте галереи: есть в HTML, не показана и не грузится */
+  hidden?: boolean;
+}
+
+const { tile, sizes, widths, view = null, hidden = false } = Astro.props;
+
+// Снимок для «Избранного» собираем здесь: URL кадра нужен уже пережатый,
+// путь из данных в localStorage класть нельзя (файл живёт только в src/assets).
+let save: string | null = null;
+
+if (tile.kind === 'photo' && tile.href) {
+  const first = tile.photos[0];
+
+  save = JSON.stringify({
+    id: `pin:${tile.href}`,
+    cat: 'board',
+    catLabel: 'Из галереи',
+    name: tile.caption ?? tile.alt,
+    meta: '',
+    price: '',
+    img: await favoriteImage(isVideo(first) ? posterOf(first) : first),
+    href: tile.href,
+  });
+}
+
+// Данные просмотра — у любого фото/видео-кадра, даже без владельца
+// (демо-ролики общего потока — lib/gallery.ts reelPins): кадр всё равно
+// открывается в просмотре, просто без подписи и без ссылки на карточку —
+// это решает viewer.ts по owner/href, тут только данные.
+const viewable =
+  tile.kind === 'photo' && view && view.length > 0
+    ? { view: JSON.stringify(view), owner: JSON.stringify(tile.owner), href: tile.href ?? '' }
+    : null;
+---
+
+<article
+  class:list={['pin', tile.kind === 'article' && 'pin--article']}
+  style={`--card-ratio:${tile.ratio};`}
+  data-i={tile.index}
+  data-h={tile.height.toFixed(3)}
+  data-view={viewable?.view}
+  data-owner={viewable?.owner}
+  data-href={viewable?.href}
+  hidden={hidden}
+>
+  {tile.kind === 'article' ? (
+    <a class="note theme-dark" href={tile.href}>
+      <span class="note__rubric t-caption">{tile.rubric}</span>
+      <h3 class="note__title">{tile.title}</h3>
+      <span class="pill pill--sm note__cta">Читать</span>
+    </a>
+  ) : (
+    <PhotoRail photos={tile.photos} alt={tile.alt} href={tile.href ?? undefined} sizes={sizes} widths={widths}>
+      {save && (
+        <button class="save" type="button" data-save={save} aria-pressed="false" aria-label="В избранное">
+          <Icon name="heartOutline" />
+        </button>
+      )}
+    </PhotoRail>
+  )}
+</article>
+
+<style>
+  /* СТАТЬЯ В ПОТОКЕ — плашка-инверсия той же пропорции, что кадр рядом.
+     Рубрика сверху, заголовок в середине, пилюля «Читать» внизу — три
+     уровня одной плитки, как у текстового пина. Цвета из .theme-dark:
+     пилюля внутри сама становится белой, руками ничего не красим. */
+  .note {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: var(--s-4);
+    aspect-ratio: var(--card-ratio);
+    padding: var(--s-4);
+    background: var(--bg);
+    color: var(--fg);
+    /* Плитка статьи — не кадр, а залитая плашка, поэтому радиус ей нужен
+       отдельной строкой: у фото-плиток его держит .prail. Форма общая
+       с остальными карточками — --radius-card. */
+    border-radius: var(--radius-card);
+    text-decoration: none;
+  }
+
+  .note__rubric { font-weight: var(--w-medium); }
+
+  /* Кегль от ширины колонки, не экрана: колонка на телефоне ~190px
+     (→ 19px, пять строк), на ПК ~300px (→ 27px) — заголовок держит плашку,
+     а не тонет в ней. Без переносов внутри слова. */
+  .note__title {
+    font-size: clamp(19px, 9cqi, 30px);
+    font-weight: var(--w-head);
+    line-height: var(--lh-heading);
+    letter-spacing: var(--ls-display);
+    hyphens: manual;
+  }
+
+  .note__cta { align-self: flex-start; }
+
+  .pin--article { container-type: inline-size; }
+
+  /* Скрытый хвост галереи: плитка есть в HTML (SEO), но не занимает места
+     и не грузит кадр — lazy-картинка без бокса не пересекает вьюпорт. */
+  .pin[hidden] { display: none; }
+
+  @media (min-width: 1024px) {
+    .note { padding: var(--s-5); }
+  }
+</style>

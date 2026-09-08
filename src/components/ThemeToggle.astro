@@ -1,55 +1,37 @@
 ---
-// ТУМБЛЕР ТЕМЫ — круглая кнопка-иконка, светлая/тёмная палитра сайта.
+// ТУМБЛЕР ТЕМЫ — светлая/тёмная палитра сайта.
 //
-// Форма — готовая .icon-btn из реестра (та же, что у аккаунта рядом):
-// своего кружка не заводим. Не свитч-ползунок: у нас всего два состояния
-// и они читаются самой иконкой — солнце значит «включить светлую»,
-// луна — «включить тёмную», то есть иконка показывает КУДА переключит,
-// а не где стоим. Так же ведёт себя любой тумблер темы, к которому человек
-// привык, и подпись рядом не нужна.
+// Форма — общий элемент .switch из реестра (global.css), своих размеров
+// и цветов компонент не держит: тумблер в проекте не обязан остаться
+// единственным, и вторая настройка возьмёт тот же класс.
 //
-// Обе иконки лежат в разметке, лишняя гасится по data-theme на <html> —
-// это переживает переключение без единой перерисовки и работает сразу,
-// ещё до того как отработает скрипт компонента.
-import Icon from './Icon.astro';
+// Разметка — button role="switch": это переключатель состояния, а не
+// кнопка-действие, поэтому состояние живёт в aria-checked, а подпись
+// («Тёмная тема») постоянная. Прыгающая подпись у переключателя читается
+// скринридером как смена смысла кнопки, хотя смысл один.
+//
+// Механика — lib/theme.ts (выбор помнится в localStorage). Атрибут темы
+// на <html> к этому моменту уже стоит: его ставит inline-скрипт в <head>
+// Layout, иначе на каждом переходе была бы белая вспышка.
 ---
 
 <button
-  class="icon-btn theme-toggle"
+  class="switch"
   type="button"
-  data-theme-toggle
-  aria-pressed="false"
+  role="switch"
+  aria-checked="false"
   aria-label="Тёмная тема"
-  title="Тёмная тема"
+  data-theme-toggle
 >
-  <Icon name="moon" class="theme-toggle__moon" />
-  <Icon name="sun" class="theme-toggle__sun" />
+  <span class="switch__track">
+    <span class="switch__thumb"></span>
+  </span>
 </button>
-
-<style>
-  /* Кружок целиком приходит из .icon-btn (global.css): размер, обводка,
-     ховер-инверсия. Здесь — только показ нужной иконки из двух. */
-  .theme-toggle { position: relative; }
-
-  /* :global — иконку рисует Icon.astro, scoped-селектор этого файла
-     до неё не достаёт (см. комментарий в Icon.astro). */
-  :global(.theme-toggle__sun) { display: none; }
-
-  :global(:root[data-theme='dark']) .theme-toggle :global(.theme-toggle__moon) {
-    display: none;
-  }
-
-  :global(:root[data-theme='dark']) .theme-toggle :global(.theme-toggle__sun) {
-    display: block;
-  }
-</style>
 
 <script>
   import { applyTheme, readTheme, toggleTheme } from '../lib/theme';
 
-  // Стартовое состояние кнопки (aria-pressed, подпись): сам атрибут темы
-  // на <html> к этому моменту уже стоит — его ставит inline-скрипт в
-  // <head>, иначе была бы белая вспышка. Здесь только догоняем разметку.
+  // Догоняем состояние самой кнопки — тема на странице уже применена.
   applyTheme(readTheme());
 
   document.querySelectorAll<HTMLElement>('[data-theme-toggle]').forEach((btn) => {
