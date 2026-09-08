@@ -22,12 +22,17 @@
 import Layout from '../../layouts/Layout.astro';
 import BottomDock from '../../components/BottomDock.astro';
 import Icon from '../../components/Icon.astro';
-import { compareFacts } from '../../lib/compare-facts';
+import { compareCovers, compareFacts } from '../../lib/compare-facts';
 
 // Факты для таблицы сравнения собираются на сборке и уезжают на страницу
 // одним JSON — клиент ничего не запрашивает. `</` экранируем: JSON лежит
 // внутри <script>, и «</script>» в значении закрыл бы тег раньше времени.
 const factsJson = JSON.stringify(compareFacts()).replace(/</g, '\\u003c');
+
+// Обложки для сцены отбора — тем же путём. Кадр из снимка в localStorage
+// для неё не годится: там лежит адрес прошлой сборки, а имена файлов
+// с хешем, и после деплоя ссылка мертва (см. compareCovers).
+const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c');
 ---
 
 <Layout title="Избранное — WED Secrets" description="Площадки и подрядчики, которые вы сохранили — отберите финалистов и сравните их между собой.">
@@ -147,6 +152,7 @@ const factsJson = JSON.stringify(compareFacts()).replace(/</g, '\\u003c');
   </div>
 
   <script is:inline type="application/json" data-facts set:html={factsJson}></script>
+  <script is:inline type="application/json" data-covers set:html={coversJson}></script>
 
   <BottomDock active="saved" />
 </Layout>
@@ -468,6 +474,14 @@ const factsJson = JSON.stringify(compareFacts()).replace(/</g, '\\u003c');
     transition: transform var(--dur-base) var(--ease-out);
     pointer-events: none;
   }
+
+  /* Карточки лежат стопкой друг на друге, и у подписи нет своей заливки —
+     без этого имя, строка и кнопка нижней карточки просвечивали сквозь
+     верхнюю, и на экране стояли два-три имени внахлёст. У нижней карточки
+     подпись не нужна вовсе: из-под верхней видно только край кадра. */
+  .pick__card--next .pick__body { visibility: hidden; }
+
+  .pick__card .pick__body { background: var(--bg); }
 
   .pick__stage.is-drag .pick__card--next { transition: none; }
 
@@ -794,6 +808,11 @@ const factsJson = JSON.stringify(compareFacts()).replace(/</g, '\\u003c');
 
   /** факты для таблицы — id → строки; собраны на сборке (lib/compare-facts.ts) */
   const FACTS: Record<string, Fact[]> = JSON.parse($('[data-facts]')?.textContent || '{}');
+
+  // Обложки текущей сборки. Снимок в localStorage хранит адрес той сборки,
+  // на которой нажали сердце, — после деплоя он ведёт в никуда, поэтому
+  // кадр берём отсюда, а снимок оставляем запасным.
+  const COVERS: Record<string, string> = JSON.parse($('[data-covers]')?.textContent || '{}');
 
   /** папки, где отбор не имеет смысла: булавки из галереи — не подрядчики */
   const NO_PICK = new Set(['board']);
@@ -1124,7 +1143,7 @@ const factsJson = JSON.stringify(compareFacts()).replace(/</g, '\\u003c');
     const tail = [it.meta, it.price].filter(Boolean).map(escapeHtml).join(' · ');
     return `
       <article class="pick__card ${cls}" data-id="${escapeHtml(it.id)}">
-        <div class="pick__media"><img src="${escapeHtml(it.img)}" alt="${escapeHtml(it.name)}" draggable="false" decoding="async" /></div>
+        <div class="pick__media"><img src="${escapeHtml(COVERS[it.id] || it.img)}" alt="${escapeHtml(it.name)}" draggable="false" decoding="async" onerror="this.remove()" /></div>
         <div class="pick__body">
           <div class="pick__text">
             <h2 class="pick__name">${escapeHtml(it.name)}</h2>
