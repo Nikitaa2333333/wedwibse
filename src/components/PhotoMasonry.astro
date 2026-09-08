@@ -161,6 +161,10 @@ for (const tile of tiles) {
     padding: var(--s-4);
     background: var(--bg);
     color: var(--fg);
+    /* Плитка статьи — не кадр, а залитая плашка, поэтому радиус ей нужен
+       отдельной строкой: у фото-плиток его держит .prail. Форма общая
+       с остальными карточками — --radius-card. */
+    border-radius: var(--radius-card);
     text-decoration: none;
   }
 

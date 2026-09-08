@@ -1,0 +1,70 @@
+---
+// ПАНЕЛЬ ПОВЕРХ ПЕРВОГО КАДРА карточки площадки и подрядчика: слева
+// «назад», справа «в избранное» и «поделиться». Одна строка на все
+// карточки — раньше кнопка назад и сердце стояли порознь, по своим
+// координатам, и не сходились по вертикали.
+//
+// ФОРМА. Кружок с полупрозрачной серой заливкой и внешним свечением
+// заменён на чернильный прямоугольник со скруглением карточки: стекло
+// и свечение — чужой проекту язык, а на светлом кадре полупрозрачная
+// подложка ещё и тонула. Чернила читаются на любом фото.
+//
+// НАЗАД — настоящая ссылка на раздел-родитель: работает без JS и это
+// живая внутренняя перелинковка (её раньше давала хлебная крошка).
+// Скрипт поверх подменяет переход на history.back(), если у вкладки есть
+// история этого же сайта — обычный путь «пришли из каталога». Прямой
+// заход (поиск, закладка) истории не даёт — тогда просто едем по href.
+//
+// Ставится там, куда попадают ВГЛУБЬ каталога, а не через нижний док:
+// у раздела из дока («Площадки», «Специалисты», «Избранное») своей
+// кнопки назад нет — он сам корень своей ветки.
+import Icon from './Icon.astro';
+
+interface Props {
+  /** раздел-родитель: куда ведёт «назад» при прямом заходе */
+  backHref: string;
+  backLabel?: string;
+  /** снимок карточки для избранного (lib/favorite-snapshot) — уже в JSON */
+  save: string;
+}
+
+const { backHref, backLabel = 'Назад', save } = Astro.props;
+---
+
+<div class="hero-actions">
+  <a class="hero-btn" href={backHref} data-back-btn aria-label={backLabel}>
+    <Icon name="arrowLeft" />
+  </a>
+
+  <span class="hero-actions__group">
+    <button
+      class="hero-btn"
+      type="button"
+      data-save={save}
+      aria-pressed="false"
+      aria-label="В избранное"
+    >
+      <Icon name="heartOutline" />
+    </button>
+
+    <button class="hero-btn hero-btn--share" type="button" data-share aria-label="Поделиться">
+      <span class="hero-btn__icon hero-btn__icon--idle"><Icon name="share" /></span>
+      <span class="hero-btn__icon hero-btn__icon--done"><Icon name="check" /></span>
+    </button>
+  </span>
+</div>
+
+<script>
+  import { bindShareButtons } from '../lib/share';
+
+  bindShareButtons();
+
+  document.querySelectorAll<HTMLAnchorElement>('[data-back-btn]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      if (window.history.length > 1 && document.referrer.startsWith(location.origin)) {
+        e.preventDefault();
+        history.back();
+      }
+    });
+  });
+</script>

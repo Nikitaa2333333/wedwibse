@@ -38,6 +38,9 @@ const MAP = {
   // ролик в ряду «Видео»: запуск и пауза по кнопке, без автозапуска
   play: 'play-bold',
   pause: 'pause-bold',
+  // панель поверх кадра карточки: поделиться и отметка «ссылка скопирована»
+  share: 'paperclip-rounded-2-linear',
+  check: 'check-read-bold',
 };
 
 const data = require(`@iconify-json/${SET}/icons.json`);
