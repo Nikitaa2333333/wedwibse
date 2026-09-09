@@ -16,7 +16,6 @@
 // экран, а не на её уменьшенную копию с текстом под ней.
 import type { Venue } from '../data/venues';
 import HeroActions from './HeroActions.astro';
-import HeroBar from './HeroBar.astro';
 import HeroStage from './HeroStage.astro';
 import { venueFavorite } from '../lib/favorite-snapshot';
 import { FEED } from '../data/feed';
@@ -67,12 +66,11 @@ const rating = row?.kind === 'venue' ? row.rating : null;
     }
 
     <p class="vhero__kicker t-caption">{venue.kicker}</p>
-  </div>
 
-  <!-- Действия с карточкой: лайк, рейтинг, «поделиться». Кнопки
-       «Отзывы» у площадки пока нет — в данных лежит только их число,
-       самих отзывов и блока под них на странице ещё не завели. -->
-  <HeroBar save={JSON.stringify(favorite)} rating={rating} />
+    {rating !== null && (
+      <span class="vhero__rate">★ {rating.toFixed(1).replace('.', ',')}</span>
+    )}
+  </div>
 </HeroStage>
 
 <section class="vhero">
@@ -206,6 +204,15 @@ const rating = row?.kind === 'venue' ? row.rating : null;
   }
 
   .vhero__kicker { font-weight: var(--w-medium); }
+
+  /* Рейтинг стоит в той же строке, что категория и город, — отдельной
+     кнопки под него не нужно: лайк и «поделиться» и так лежат в панели
+     поверх кадра, а звезда это не действие, а факт о площадке. */
+  .vhero__rate {
+    flex: none;
+    font-size: var(--fs-small);
+    font-weight: var(--w-medium);
+  }
 
   .vhero__pitch {
     display: flex;

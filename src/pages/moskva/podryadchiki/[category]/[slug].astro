@@ -19,7 +19,6 @@ import Avatar from '../../../../components/Avatar.astro';
 import Icon from '../../../../components/Icon.astro';
 import HeroActions from '../../../../components/HeroActions.astro';
 import HeroStage from '../../../../components/HeroStage.astro';
-import HeroBar from '../../../../components/HeroBar.astro';
 import { SPECIALISTS_BY_CATEGORY, FILTERS_BY_CATEGORY, type Specialist } from '../../../../data/specialists';
 import { reelsOf } from '../../../../data/reels';
 import { photoTiles } from '../../../../lib/gallery';
@@ -147,15 +146,9 @@ const saveData = JSON.stringify({
         </div>
       </div>
 
-      <!-- Действия: лайк, рейтинг, отзывы, «поделиться». Строка со
-           звездой отдельным текстом больше не нужна — рейтинг стоит
-           кнопкой в этом же ряду и ведёт в блок отзывов. -->
-      <HeroBar
-        save={saveData}
-        rating={s.rating ?? null}
-        reviews={s.reviews ?? null}
-        reviewsHref={s.reviewsList && s.reviewsList.length > 0 ? '#otzyvy' : null}
-      />
+      {s.rating && s.reviews && (
+        <a class="phero__rate" href="#otzyvy">★ {s.rating.toFixed(1).replace('.', ',')} · {s.reviews}&nbsp;отзывов</a>
+      )}
     </HeroStage>
 
     <section class="phero">
