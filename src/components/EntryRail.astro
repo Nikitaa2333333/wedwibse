@@ -34,6 +34,8 @@ interface Card {
   /** кадры для стопки в капсуле: два первых объекта раздела */
   thumbs: string[];
   icon?: IconName;
+  /** геометрическая фигура на заднем фоне плашки (только у разделов) */
+  figure?: 'dome' | 'clover';
   /** раздел каталога: крупнее набором, с кружком-иконкой */
   lead?: boolean;
 }
@@ -62,6 +64,7 @@ const cards: Card[] = [
     noun: ['площадка', 'площадки', 'площадок'],
     thumbs: VENUES.slice(0, THUMBS).map((v) => v.hero.portrait),
     icon: 'venue',
+    figure: 'dome',
     lead: true,
   },
   {
@@ -74,6 +77,7 @@ const cards: Card[] = [
     noun: VENDORS,
     thumbs: portraits([...vendors.values()]),
     icon: 'vendors',
+    figure: 'clover',
     lead: true,
   },
 ];
@@ -94,10 +98,12 @@ const view = cards.map((card) => ({
     {view.map((card, i) => (
       <li class="entries__item">
         <a
-          class:list={['ecard', card.lead && 'ecard--lead']}
+          class:list={['ecard', card.lead && 'ecard--lead', card.figure && `ecard--${card.figure}`]}
           href={card.href}
           aria-label={card.aria}
         >
+          {card.figure && <span class="ecard__fig" aria-hidden="true" />}
+
           <span class="ecard__top">
             {card.icon && (
               <span class="ecard__badge" aria-hidden="true"><Icon name={card.icon} /></span>
@@ -178,6 +184,9 @@ const view = cards.map((card) => ({
        Вернуть цветность = вернуть сюда --tint-*, разметка не изменится. */
     --tile: var(--surface);
     --tile-deep: var(--surface-dim);
+    /* фигуре на заднем фоне нужен свой слой и обрезка по скруглению */
+    position: relative;
+    overflow: hidden;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
@@ -198,6 +207,52 @@ const view = cards.map((card) => ({
     border-radius: var(--radius-card);
     text-decoration: none;
   }
+
+  /* ФИГУРА НА ЗАДНЕМ ФОНЕ. Тот же приём, что у папок «Избранного»:
+     плашка остаётся плашкой, а внутри неё стоит простая геометрическая
+     форма — маска из data-URI SVG поверх заливки. Отличие от «Избранного»
+     в том, что там под маской фото, а здесь глубокая ступень того же
+     тона (--tile-deep): фигура должна быть фоном, а не картинкой.
+     Цвет плашки с тех пор стал серым (--surface/--surface-dim) — фигура
+     ушла в тон вместе с ним, своих значений у неё по-прежнему нет.
+     Своих цветов и картинок компонент по-прежнему не заводит.
+
+     Держится в средней полосе — между строкой иконок и именем — и НЕ
+     заходит под капсулу: капсула набрана тем же --tile-deep, на фигуре
+     она растворяется (проверено макетом до вёрстки). Размер задаётся
+     высотой, ширина идёт из aspect-ratio: круги клевера обязаны остаться
+     круглыми, растянутая по ширине маска их сплющивает. */
+  .ecard__fig {
+    position: absolute;
+    top: 19%;
+    left: 50%;
+    translate: -50% 0;
+    height: 46%;
+    aspect-ratio: 1;
+    background: var(--tile-deep);
+    -webkit-mask-image: var(--figure);
+    mask-image: var(--figure);
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+  }
+
+  /* Купол — площадки: арка зала, самая «архитектурная» из простых форм. */
+  .ecard--dome .ecard__fig {
+    --figure: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M6 100V50A44 44 0 0 1 94 50V100Z'/></svg>");
+  }
+
+  /* Клевер — подрядчики: четыре круга, каждый сам по себе, вместе одна
+     форма. Маска рисуется четырьмя <circle>, а не путём: объединение
+     кругов альфа-канал делает сам, руками путь сводить не нужно. */
+  .ecard--clover .ecard__fig {
+    --figure: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='33' cy='33' r='28'/><circle cx='67' cy='33' r='28'/><circle cx='33' cy='67' r='28'/><circle cx='67' cy='67' r='28'/></svg>");
+  }
+
+  /* Содержимое — слоем выше фигуры */
+  .ecard__top,
+  .ecard__foot { position: relative; }
 
   .ecard__top {
     display: flex;
