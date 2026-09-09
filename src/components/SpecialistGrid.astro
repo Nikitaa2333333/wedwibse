@@ -70,10 +70,6 @@ const { cards } = Astro.props;
                 </div>
               ))}
             </div>
-
-            <button class="save" type="button" data-save={save} aria-pressed="false" aria-label="В избранное">
-              <Icon name="heartOutline" />
-            </button>
           </div>
         ) : (
           <PhotoRail
@@ -82,11 +78,7 @@ const { cards } = Astro.props;
             href={href}
             sizes={sizes}
             widths={IMG_WIDTHS.card}
-          >
-            <button class="save" type="button" data-save={save} aria-pressed="false" aria-label="В избранное">
-              <Icon name="heartOutline" />
-            </button>
-          </PhotoRail>
+          />
         )}
 
         <!-- Цена и стиль — в подписи под кадром на любой ширине.

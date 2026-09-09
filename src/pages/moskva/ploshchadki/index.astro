@@ -186,10 +186,6 @@ const favImg = new Map(
                       </div>
                     ))}
                   </div>
-
-                  <button class="save" type="button" data-save={saveData} aria-pressed="false" aria-label="В избранное">
-                    <Icon name="heartOutline" />
-                  </button>
                 </div>
               ) : (
                 <PhotoRail
@@ -198,11 +194,7 @@ const favImg = new Map(
                   href={`/moskva/ploshchadki/${item.slug}/`}
                   sizes={sizes}
                   widths={IMG_WIDTHS.card}
-                >
-                  <button class="save" type="button" data-save={saveData} aria-pressed="false" aria-label="В избранное">
-                    <Icon name="heartOutline" />
-                  </button>
-                </PhotoRail>
+                />
               )}
 
               <!-- Подпись по принципу близости: имя и город — одно целое

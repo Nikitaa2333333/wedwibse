@@ -37,6 +37,8 @@ export interface PinOwner {
   meta: string;
   /** нет собранных отзывов — нет и звезды (демо-рейтинг рисовать нельзя) */
   rating: number | null;
+  /** сколько отзывов стоит за рейтингом — рядом со звездой в просмотре */
+  reviews: number | null;
 }
 
 export interface Pin {
@@ -86,11 +88,12 @@ type Shot = { src: string; alt: string };
  *  берём оттуда, а у площадки без записи в ленте звезды просто нет. */
 function venueOwner(venue: Venue): PinOwner {
   const row = FEED.find((f) => f.kind === 'venue' && f.slug === venue.slug);
-  return { name: venue.name, meta: venue.city, rating: row?.kind === 'venue' ? row.rating : null };
+  const known = row?.kind === 'venue' ? row : null;
+  return { name: venue.name, meta: venue.city, rating: known?.rating ?? null, reviews: known?.reviews ?? null };
 }
 
 function specialistOwner(s: Specialist): PinOwner {
-  return { name: s.name, meta: s.tagline, rating: s.rating ?? null };
+  return { name: s.name, meta: s.tagline, rating: s.rating ?? null, reviews: s.reviews ?? null };
 }
 
 function makePin(group: Shot[], venue: Venue, ratio: number, caption: string | null): Pin {
@@ -307,9 +310,21 @@ export function layoutColumns(pins: Tile[], count: number): Tile[][] {
   const cols: Tile[][] = Array.from({ length: count }, () => []);
   const tall = new Array<number>(count).fill(0);
 
+  // Статьи идут по колонкам по кругу — первая слева, вторая справа, дальше
+  // снова слева: плашка-текст не должна копиться на одной вертикали, но и
+  // выбирать ей колонку жадно нельзя — тогда все статьи сваливаются в одну.
+  let article = 0;
+
   for (const p of pins) {
-    let k = 0;
-    for (let j = 1; j < count; j++) if (tall[j] < tall[k]) k = j;
+    let k = article % count;
+
+    if (p.kind === 'article') {
+      article++;
+    } else {
+      k = 0;
+      for (let j = 1; j < count; j++) if (tall[j] < tall[k]) k = j;
+    }
+
     cols[k].push(p);
     tall[k] += p.height;
   }

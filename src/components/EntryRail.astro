@@ -1,5 +1,5 @@
 ---
-// ЦВЕТНЫЕ КАРТОЧКИ-ВХОДЫ (главная) — два раздела каталога со счётчиками:
+// КАРТОЧКИ-ВХОДЫ (главная) — два раздела каталога со счётчиками:
 // «Площадки» и «Подрядчики». Больше здесь ничего нет.
 //
 // Раньше за ними стояли ещё два десятка направлений подрядчиков поимённо
@@ -9,11 +9,10 @@
 // отвечает на вопрос «куда я иду», а не «кто именно мне нужен».
 //
 // Референс — экран проектов из мобильного приложения: вертикальные плашки,
-// каждая залита своим тоном; в углу чернильный кружок-иконка и серый
-// кружок со стрелкой; имя набрано крупно и плотно; у низа — капсула того же
-// тона, только гуще, со стопкой круглых фото и числом. Взято оттуда ровно
-// это; тона живут токенами --tint-* (см. global.css), своих цветов
-// у компонента нет.
+// в углу чернильный кружок-иконка и кружок со стрелкой; имя набрано крупно
+// и плотно; у низа — капсула со стопкой круглых фото и числом. Цвет из
+// референса не взят: плашка залита серой бумагой проекта (--surface),
+// капсула на тон гуще (--surface-dim), своих цветов у компонента нет.
 //
 // ЧИСЛА И ФОТО НЕ ПИШУТСЯ РУКАМИ. Счётчики и кадры в капсуле берутся
 // на сборке из тех же данных, из которых собираются каталоги: завели
@@ -26,9 +25,6 @@ import { withCount, type PluralForms } from '../lib/plural';
 import { resolveImage, IMG_WIDTHS } from '../lib/images';
 import type { IconName } from '../lib/icons';
 
-/** тон заливки: имя токена --tint-* без префикса */
-type Tint = 'sand' | 'ice' | 'clay' | 'sage' | 'lilac';
-
 interface Card {
   name: string;
   href: string;
@@ -37,7 +33,6 @@ interface Card {
   noun?: PluralForms;
   /** кадры для стопки в капсуле: два первых объекта раздела */
   thumbs: string[];
-  tint: Tint;
   icon?: IconName;
   /** раздел каталога: крупнее набором, с кружком-иконкой */
   lead?: boolean;
@@ -66,7 +61,6 @@ const cards: Card[] = [
     count: VENUES.length,
     noun: ['площадка', 'площадки', 'площадок'],
     thumbs: VENUES.slice(0, THUMBS).map((v) => v.hero.portrait),
-    tint: 'sand',
     icon: 'venue',
     lead: true,
   },
@@ -79,19 +73,18 @@ const cards: Card[] = [
     count: vendors.size,
     noun: VENDORS,
     thumbs: portraits([...vendors.values()]),
-    tint: 'ice',
     icon: 'vendors',
     lead: true,
   },
 ];
 
-// В капсуле у разделов стоит «13 подрядчиков», у направлений — одно число:
-// слово там повторялось бы на каждой карточке ряда и превращалось в шум,
-// а после соседней карточки «13 подрядчиков» число читается однозначно.
-// Вслух так не выходит, поэтому у ссылки своя подпись — с существительным.
+// В капсуле — одно число, без существительного: слово («13 подрядчиков»)
+// повторяет имя раздела крупной строкой прямо над капсулой, а в узкой
+// колонке телефона строка не влезала и распирала плашку за её край.
+// Вслух число без слова не читается, поэтому у ссылки своя подпись — с ним.
 const view = cards.map((card) => ({
   ...card,
-  capsule: card.count === 0 ? 'скоро' : card.noun ? withCount(card.count, card.noun) : String(card.count),
+  capsule: card.count === 0 ? 'скоро' : String(card.count),
   aria: `${card.name} — ${card.count === 0 ? 'скоро' : withCount(card.count, card.noun ?? VENDORS)}`,
 }));
 ---
@@ -101,7 +94,7 @@ const view = cards.map((card) => ({
     {view.map((card, i) => (
       <li class="entries__item">
         <a
-          class:list={['ecard', `ecard--${card.tint}`, card.lead && 'ecard--lead']}
+          class:list={['ecard', card.lead && 'ecard--lead']}
           href={card.href}
           aria-label={card.aria}
         >
@@ -145,8 +138,7 @@ const view = cards.map((card) => ({
 </section>
 
 <style>
-  /* Поля до края экрана держит сам ряд (--pin-gap ниже): воздух вокруг
-     плашек одинаковый со всех сторон. */
+  /* Поля до края экрана держит сам ряд (--edge-gap ниже). */
   .entries {
     background: var(--bg);
     padding-block: var(--s-5) var(--s-4);
@@ -160,7 +152,9 @@ const view = cards.map((card) => ({
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--pin-gap);
-    padding-inline: var(--pin-gap);
+    /* От края экрана — волосок (--edge-gap), а не зазор между плашками:
+       ряд стоит вровень с доской кадров под ним. */
+    padding-inline: var(--edge-gap);
     list-style: none;
   }
 
@@ -178,8 +172,12 @@ const view = cards.map((card) => ({
      от неё, пропорцией. Обе одного размера: ряд с рваным низом читается
      как сбой вёрстки, а не как ритм. */
   .ecard {
-    --tile: var(--tint-sand);
-    --tile-deep: var(--tint-sand-deep);
+    /* БЕЗ ЦВЕТА. Тона --tint-* сняты: на главной остаётся палитра проекта —
+       бумага, серая плашка, чернила. Заливка семантическая (--surface),
+       поэтому в тёмной теме плашка темнеет сама, руками ничего не красим.
+       Вернуть цветность = вернуть сюда --tint-*, разметка не изменится. */
+    --tile: var(--surface);
+    --tile-deep: var(--surface-dim);
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
@@ -194,19 +192,12 @@ const view = cards.map((card) => ({
     aspect-ratio: 3 / 4;
     padding: var(--s-4);
     background: var(--tile);
-    /* Плашка несёт свою пару фон/текст и от темы страницы не зависит:
-       тон светлый всегда, поэтому набор поверх — фиксированные чернила
-       (--tint-fg), а не --ink, который в тёмной теме белый. */
-    color: var(--tint-fg);
+    /* Набор — чернила текущей темы: плашка теперь того же семейства, что
+       бумага страницы, и в тёмной теме переворачивается вместе с ней. */
+    color: var(--ink);
     border-radius: var(--radius-card);
     text-decoration: none;
   }
-
-  .ecard--sand { --tile: var(--tint-sand); --tile-deep: var(--tint-sand-deep); }
-  .ecard--ice { --tile: var(--tint-ice); --tile-deep: var(--tint-ice-deep); }
-  .ecard--clay { --tile: var(--tint-clay); --tile-deep: var(--tint-clay-deep); }
-  .ecard--sage { --tile: var(--tint-sage); --tile-deep: var(--tint-sage-deep); }
-  .ecard--lilac { --tile: var(--tint-lilac); --tile-deep: var(--tint-lilac-deep); }
 
   .ecard__top {
     display: flex;
@@ -223,8 +214,8 @@ const view = cards.map((card) => ({
     width: var(--entry-knob);
     height: var(--entry-knob);
     border-radius: var(--radius-pill);
-    background: var(--tint-fg);
-    color: var(--white);
+    background: var(--ink);
+    color: var(--paper);
     display: inline-flex;
     align-items: center;
     justify-content: center;

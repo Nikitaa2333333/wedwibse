@@ -5,7 +5,9 @@
 // досыпаются по кнопке) — одна разметка, а не две копии.
 //
 // Кадр-плитка — PhotoRail (точки, свайп), статья — типографическая плашка.
-// Сердце «в избранное» — на самой плитке, как в карточке каталога.
+// Сердца на плитке нет: на фотографии не лежит ничего. В избранное кадр
+// уходит из просмотра на весь экран — снимок для него (save) считается тут
+// и лежит на article в data-save.
 //
 // ПРОСМОТР НА ВЕСЬ ЭКРАН (lib/viewer): у плитки с карточкой-источником
 // на article лежат data-view (кадры для просмотра: srcset под роль hero,
@@ -67,6 +69,7 @@ const viewable =
   data-view={viewable?.view}
   data-owner={viewable?.owner}
   data-href={viewable?.href}
+  data-save={viewable && save ? save : undefined}
   hidden={hidden}
 >
   {tile.kind === 'article' ? (
@@ -76,13 +79,7 @@ const viewable =
       <span class="pill pill--sm note__cta">Читать</span>
     </a>
   ) : (
-    <PhotoRail photos={tile.photos} alt={tile.alt} href={tile.href ?? undefined} sizes={sizes} widths={widths}>
-      {save && (
-        <button class="save" type="button" data-save={save} aria-pressed="false" aria-label="В избранное">
-          <Icon name="heartOutline" />
-        </button>
-      )}
-    </PhotoRail>
+    <PhotoRail photos={tile.photos} alt={tile.alt} href={tile.href ?? undefined} sizes={sizes} widths={widths} />
   )}
 </article>
 

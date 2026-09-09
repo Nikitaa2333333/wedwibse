@@ -128,16 +128,26 @@ for (const tile of tiles) views.set(tile.index, await viewFrames(tile));
   <!-- ПРОСМОТР НА ВЕСЬ ЭКРАН (viewer). Пустая оболочка: кадр и подпись
        подставляет lib/viewer из data-view/data-owner плитки. Единственный
        <img> без src в проекте — не сырой файл, а слот под srcset, который
-       сервер уже посчитал через getImage (роль hero). Текст на кадре не
-       лежит: подпись — на бумаге под ним, как у карточки каталога. -->
+       сервер уже посчитал через getImage (роль hero).
+
+       ДВА СЛОЯ. Под кадром — он же, растянутый на весь экран и размытый
+       (viewer__bg): так вертикальный и горизонтальный кадр оба заполняют
+       телефон целиком, сам кадр при этом стоит в своей пропорции, ничего
+       не кроится. Внизу — матовая полоса из стекла проекта (viewer__owner,
+       токены --glass-*): размытие того, что под ней, нарастает от нуля
+       у верхней кромки до полного внизу, поэтому границы у полосы нет —
+       кадр плавно уходит в стекло (реф. плитка альбома в iOS). На полосе
+       имя, место, рейтинг с отзывами; вся полоса — ссылка на карточку,
+       строка «Смотреть площадку» говорит, что дальше — сама площадка.
+
+       Сознательное исключение из правила «текст не лежит на фото»:
+       подпись лежит на матовом стекле, а не на кадре — стекло ровняет
+       любой сюжет под собой в один тон, и чернила на нём читаются на
+       любом снимке. Сердце и «поделиться» — наверху, в строке с крестиком,
+       как на первом кадре карточки (HeroActions). -->
   {viewer && (
-    <div class="viewer" data-viewer role="dialog" aria-modal="true" aria-label="Просмотр фотографии">
-      <div class="viewer__bar">
-        <button class="icon-btn" type="button" data-viewer-close aria-label="Закрыть">
-          <Icon name="close" />
-        </button>
-        <span class="viewer__count t-caption" data-viewer-count></span>
-      </div>
+    <div class="viewer theme-dark" data-viewer role="dialog" aria-modal="true" aria-label="Просмотр фотографии">
+      <img class="viewer__bg" alt="" aria-hidden="true" decoding="async" data-viewer-bg />
 
       <div class="viewer__stage" data-viewer-stage>
         <button class="icon-btn viewer__nav viewer__nav--prev" type="button" data-viewer-prev aria-label="Предыдущий кадр">
@@ -150,13 +160,35 @@ for (const tile of tiles) views.set(tile.index, await viewFrames(tile));
         </button>
       </div>
 
-      <!-- Чей кадр: имя + место слева, звезда справа — ровно строка
-           vcard__top/scard__top из каталога. Весь блок — ссылка на карточку. -->
-      <a class="viewer__owner" href="#" data-viewer-owner>
-        <span class="viewer__title">
-          <span class="viewer__name" data-viewer-name></span>
-          <span class="viewer__meta" data-viewer-meta></span>
+      <!-- Строка сверху поверх сцены — та же панель, что на первом кадре
+           карточки (HeroActions): слева крестик и счётчик кадров ЭТОЙ
+           площадки, справа сердце и «поделиться». Сердце не в полосе:
+           действия с кадром — наверху, сведения о площадке — внизу. -->
+      <div class="viewer__bar">
+        <span class="viewer__bar-group">
+          <button class="hero-btn" type="button" data-viewer-close aria-label="Закрыть">
+            <Icon name="close" />
+          </button>
+          <span class="viewer__count t-caption" data-viewer-count></span>
         </span>
+        <span class="viewer__bar-group">
+          <button class="hero-btn" type="button" data-viewer-save aria-pressed="false" aria-label="В избранное">
+            <Icon name="heartOutline" />
+          </button>
+          <button class="hero-btn hero-btn--share" type="button" data-share aria-label="Поделиться">
+            <span class="hero-btn__icon hero-btn__icon--idle"><Icon name="share" /></span>
+            <span class="hero-btn__icon hero-btn__icon--done"><Icon name="check" /></span>
+          </button>
+        </span>
+      </div>
+
+      <!-- Чей кадр: имя + место, под ними звезда с числом отзывов.
+           Весь блок — ссылка на карточку. Кнопки «Смотреть площадку» нет:
+           следующий шаг сценария — прокрутка вниз открывает сведения
+           о площадке прямо здесь (не сделано, см. ответ в чате). -->
+      <a class="viewer__owner" href="#" data-viewer-owner>
+        <span class="viewer__name" data-viewer-name></span>
+        <span class="viewer__meta" data-viewer-meta></span>
         <span class="viewer__rate" data-viewer-rate hidden></span>
       </a>
     </div>
@@ -199,18 +231,20 @@ for (const tile of tiles) views.set(tile.index, await viewFrames(tile));
 
   /* ============ ПРОСМОТР НА ВЕСЬ ЭКРАН ============
      Закрытый невидим и не ловит клики (visibility), открытый проявляется —
-     только opacity, моушн-бюджет телефона. Колонка: строка с крестиком,
-     сцена с кадром, подпись на бумаге. Фон — бумага секции (--bg):
-     в тёмной теме темнеет сама. */
+     только opacity, моушн-бюджет телефона. Сцена всегда тёмная (чернила
+     под размытым кадром), независимо от темы страницы: .theme-dark на
+     корне красит крестик и сердце в белый сам. Колонка: сцена с кадром
+     забирает всё, стеклянная полоса — снизу; строка с крестиком лежит
+     поверх сцены. */
   .viewer {
     position: fixed;
     inset: 0;
     z-index: var(--z-overlay);
     display: flex;
     flex-direction: column;
-    padding-bottom: var(--safe-b);
-    background: var(--bg);
-    color: var(--fg);
+    overflow: hidden;
+    background: var(--black);
+    color: var(--white);
     opacity: 0;
     visibility: hidden;
     transition: opacity var(--dur-fast) var(--ease-out),
@@ -223,29 +257,73 @@ for (const tile of tiles) views.set(tile.index, await viewFrames(tile));
     transition-delay: 0s;
   }
 
+  /* ПОДЛОЖКА: тот же кадр, растянутый на весь экран (cover) и размытый.
+     Заполняет телефон под любую пропорцию — горизонтальный кадр сверху
+     стоит в своём формате, а «пустота» вокруг него того же цвета, что
+     и он. Масштаб чуть больше единицы прячет светлую кромку блюра.
+     Blur статичный, не анимируется — бюджет мобилки соблюдён. */
+  .viewer__bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: blur(var(--viewer-bg-blur));
+    transform: scale(1.2);
+    opacity: var(--viewer-bg-dim);
+    pointer-events: none;
+  }
+
+  .viewer__bg:not([src]) { display: none; }
+
   .viewer__bar {
-    flex: none;
+    position: absolute;
+    z-index: 2;
+    top: calc(var(--s-4) + env(safe-area-inset-top, 0px));
+    left: var(--s-4);
+    right: var(--s-4);
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: var(--s-4);
-    padding: var(--s-3) var(--s-4);
+    /* строка тянется во всю ширину, но свайп по кадру не перехватывает */
+    pointer-events: none;
   }
 
-  /* Сцена забирает всё между строкой и подписью. flex-basis 0, а не auto:
-     проценты высоты у кадра внутри иначе не резолвятся (см. CLAUDE.md,
-     «циклическая процентная высота во flex»). */
-  .viewer__stage {
-    position: relative;
-    flex: 1 1 0;
-    min-height: 0;
+  .viewer__bar-group {
     display: flex;
     align-items: center;
+    gap: var(--s-2);
+  }
+
+  .viewer__bar-group > * { pointer-events: auto; }
+
+  /* Сцена — весь экран: кадр прижат к верху (сразу под строкой с крестиком),
+     снизу его накрывает стеклянная полоса (absolute) — кадр под ней
+     продолжается, а не заканчивается над ней. align-items: center вместо
+     flex-start оставлял размытую подложку видна сверху И снизу кадра
+     равными полосами — дыра по центру читалась как ошибка; прижатый к
+     верху кадр эту дыру убирает, вся лишняя высота уходит вниз, под стекло. */
+  .viewer__stage {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    align-items: flex-start;
     justify-content: center;
+    padding-top: calc(var(--s-4) + env(safe-area-inset-top, 0px) + 40px);
   }
 
   /* Кадр — в своей пропорции, целиком, ничего не кроится: ограничен и
-     шириной, и высотой сцены, масштабируется по меньшей. */
+     шириной, и высотой сцены, масштабируется по меньшей.
+
+     НИЗ КАДРА РАСТВОРЯЕТСЯ В ПОДЛОЖКУ (viewer__bg — та же фотография,
+     но размытая, лежит на всю сцену слоем ниже). Маска гасит альфу
+     самого кадра на высоте --viewer-fade от его низа: резкий снимок сам
+     переходит в свою размытую копию, а не обрывается кромкой на границе
+     со стеклом — приём из референса (плитка альбома с датой в iOS).
+     Стеклянная полоса дальше накладывается уже на РАЗМЫТУЮ область, и
+     backdrop-filter там ничего резкого не блюрит — швов не остаётся. */
   .viewer__img,
   .viewer__video {
     display: block;
@@ -254,7 +332,8 @@ for (const tile of tiles) views.set(tile.index, await viewFrames(tile));
     width: auto;
     height: auto;
     object-fit: contain;
-    background: var(--surface-dim);
+    -webkit-mask-image: linear-gradient(to bottom, black calc(100% - var(--viewer-fade)), transparent);
+    mask-image: linear-gradient(to bottom, black calc(100% - var(--viewer-fade)), transparent);
     -webkit-user-drag: none;
     user-select: none;
   }
@@ -265,14 +344,16 @@ for (const tile of tiles) views.set(tile.index, await viewFrames(tile));
   .viewer__video[hidden] { display: none; }
 
   /* Стрелки — только там, где есть мышь; на тач листают свайпом.
-     Подложка бумаги: кнопка стоит рядом с кадром на поле сцены, а не на
-     фотографии (иконка без тени на снимке бы тонула). */
+     Чернильная подложка, как у кнопок первого экрана карточки: стоят
+     на размытом поле рядом с кадром и читаются на любом тоне. */
   .viewer__nav {
     display: none;
     position: absolute;
+    z-index: 1;
     top: 50%;
     transform: translateY(-50%);
-    background: var(--bg);
+    background: var(--black);
+    border-color: transparent;
   }
 
   .viewer__nav:disabled { visibility: hidden; }
@@ -282,56 +363,74 @@ for (const tile of tiles) views.set(tile.index, await viewFrames(tile));
      до него достаём :global — селектор уникален, схлопывать его не с чем */
   .viewer__nav--next :global(svg) { transform: scaleX(-1); }
 
-  /* Подпись — та же строка, что у карточки каталога (vcard__top): имя и
-     место слева одной группой, рейтинг справа по первой строке имени. */
+  /* ПОДПИСЬ НА МАТОВОМ СТЕКЛЕ. Кадр над ней уже растворился в размытую
+     подложку (маска на .viewer__img выше), под текстом — её же блюр,
+     шва нет. Полоса не темнит, а СВЕТЛЕЕТ: линейный переход из
+     прозрачного в белёсое стекло (--white с прозрачностью --viewer-frost),
+     как низ плитки альбома в iOS — размытый кадр проступает сквозь
+     белое, а не тонет в чёрном; текст на стекле чернильный (--black).
+     Затемнение в чёрный тут и давало «грязь»: тёмное на тёмном блюре
+     превращалось в серую кашу. Полоса целиком ссылка на карточку. */
   .viewer__owner {
-    flex: none;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2;
     display: flex;
+    flex-direction: column;
     align-items: flex-start;
-    justify-content: space-between;
-    gap: var(--s-3);
-    padding: var(--s-3) var(--s-4) var(--s-4);
-    color: inherit;
+    padding: calc(var(--viewer-fade) + var(--s-3)) var(--s-4) calc(var(--s-5) + var(--safe-b));
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      color-mix(in srgb, var(--white) var(--viewer-frost), transparent) var(--viewer-fade),
+      color-mix(in srgb, var(--white) var(--viewer-frost), transparent)
+    );
+    color: var(--black);
     text-decoration: none;
   }
 
-  .viewer__title { min-width: 0; }
-
   .viewer__name {
     display: block;
-    font-size: var(--fs-body);
+    font-size: var(--fs-h3);
     font-weight: var(--w-head);
-    line-height: 1.2;
+    line-height: 1.15;
   }
 
   .viewer__meta {
     display: block;
-    font-size: var(--fs-caption);
+    margin-top: 2px;
+    font-size: var(--fs-small);
     line-height: 1.3;
   }
 
+  /* Рейтинг с числом отзывов — отдельной строкой под местом, как факт
+     карточки (lib/compare-facts): «★ 4.9 · 277 отзывов». */
   .viewer__rate {
-    flex-shrink: 0;
-    padding-top: 0.15em;
-    font-size: var(--fs-caption);
+    display: block;
+    margin-top: var(--s-2);
+    font-size: var(--fs-small);
     font-weight: var(--w-medium);
   }
 
+  /* display выше перебивает браузерное [hidden]: кадр без владельца
+     (демо-ролик) — без полосы, без рейтинга — без строки звезды */
+  .viewer__owner[hidden],
+  .viewer__rate[hidden] { display: none; }
+
   @media (min-width: 640px) {
     .masonry { --board-cols: 3; }
-    .viewer__name { font-size: var(--fs-h3); line-height: 1.15; }
-    .viewer__meta { font-size: var(--fs-small); }
-    .viewer__rate { font-size: var(--fs-small); padding-top: 0.2em; }
   }
 
   @media (min-width: 1024px) {
     .masonry { --board-cols: 4; }
 
-    /* На широком экране подпись не растягивается на всю ширину окна —
-       узкая колонка по центру под кадром, как у шторки (--sheet-max-w). */
+    /* На широком экране полоса остаётся во всю ширину (это слой сцены),
+       а её содержимое — узкой колонкой по центру под кадром, как у шторки
+       (--sheet-max-w). */
     .viewer__owner {
-      width: min(100%, var(--sheet-max-w));
-      margin-inline: auto;
+      padding-inline: max(var(--s-4), calc((100% - var(--sheet-max-w)) / 2));
     }
   }
 
@@ -351,8 +450,8 @@ for (const tile of tiles) views.set(tile.index, await viewFrames(tile));
   // с существующей, чтобы сохранить scoped-атрибут стилей Astro.
   // Скрытый хвост (limit) в раскладке не участвует, пока его не раскрыли:
   // по кнопке плитки получают видимость и перекладываются вместе со всеми.
-  import { bindViewer } from '../lib/viewer';
-
+  // Просмотр подтягивается динамически: доска главной сейчас идёт без него
+  // (см. PhotoBoard), и статический импорт тянул бы его код на страницу зря.
   document.querySelectorAll<HTMLElement>('[data-masonry-host]').forEach((host) => {
     const board = host.querySelector<HTMLElement>('[data-masonry]');
     const proto = board?.firstElementChild as HTMLElement | null;
@@ -372,10 +471,21 @@ for (const tile of tiles) views.set(tile.index, await viewFrames(tile));
       const cols = Array.from({ length: count }, () => proto.cloneNode(false) as HTMLElement);
       const tall = new Array<number>(count).fill(0);
 
+      // та же развилка, что на сервере (layoutColumns): статьи идут по
+      // колонкам по кругу, кадры — жадно в самую короткую
+      let article = 0;
+
       for (const pin of pins) {
         if (pin.hidden) continue;
-        let k = 0;
-        for (let j = 1; j < count; j++) if (tall[j] < tall[k]) k = j;
+        let k = article % count;
+
+        if (pin.classList.contains('pin--article')) {
+          article++;
+        } else {
+          k = 0;
+          for (let j = 1; j < count; j++) if (tall[j] < tall[k]) k = j;
+        }
+
         cols[k].append(pin);
         tall[k] += parseFloat(pin.dataset.h || '1');
       }
@@ -400,6 +510,6 @@ for (const tile of tiles) views.set(tile.index, await viewFrames(tile));
 
     // ============ ПРОСМОТР НА ВЕСЬ ЭКРАН ============
     const viewer = host.querySelector<HTMLElement>('[data-viewer]');
-    if (viewer) bindViewer(host, viewer);
+    if (viewer) import('../lib/viewer').then(({ bindViewer }) => bindViewer(host, viewer));
   });
 </script>
