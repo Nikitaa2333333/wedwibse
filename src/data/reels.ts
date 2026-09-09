@@ -5,9 +5,11 @@
 // Поэтому ролики, не принадлежащие конкретной площадке, живут здесь, а не
 // в gallery карточки: подмешать чужой кадр к площадке — соврать в выдаче.
 //
-// Ролик — немой луп 8 секунд (правила и пайплайн — VIDEO.md): со звуком
-// автозапуск не работает нигде. Файл в public/reels/, постер тем же именем
-// в src/assets/reels/.
+// Ролик — луп 8 секунд (правила и пайплайн — VIDEO.md). ИГРАЕТ ОН ВСЕГДА
+// НЕМЫМ: автозапуск со звуком запрещён во всех браузерах, и это не наше
+// решение. Но если у файла есть дорожка (sound: true), над кадром стоит
+// кнопка звука — нажал, и тот же самый файл зазвучал, ничего дополнительно
+// не загружая. Файл в public/reels/, постер тем же именем в src/assets/reels/.
 //
 // АВТОР У РОЛИКА ОБЯЗАТЕЛЕН (author — slug карточки специалиста).
 // Отдельной страницы у ролика нет и не нужно: нажатие на плитку в доске
@@ -26,14 +28,18 @@ export interface Reel {
   alt: string;
   /** slug карточки специалиста, который это снял */
   author: string;
+  /** у ролика есть звуковая дорожка — значит и кнопка звука над кадром.
+   *  Стоит не у всех: часть демо-набора пришла уже немой, исходников
+   *  со звуком к ним нет (пайплайн — VIDEO.md). */
+  sound?: true;
 }
 
 // Все ролики каталога сняты Лешаковыми (карточка leshakovy) — они же
 // отдали материал для доски главной.
 export const REELS: Reel[] = [
-  { slug: 'stairs', src: '/reels/stairs.mp4', alt: 'Молодожёны на парадной лестнице', author: 'leshakovy' },
-  { slug: 'groom', src: '/reels/groom.mp4', alt: 'Жених перед выходом к церемонии', author: 'leshakovy' },
-  { slug: 'morning', src: '/reels/morning.mp4', alt: 'Утро невесты', author: 'leshakovy' },
+  { slug: 'stairs', src: '/reels/stairs.mp4', alt: 'Молодожёны на парадной лестнице', author: 'leshakovy', sound: true },
+  { slug: 'groom', src: '/reels/groom.mp4', alt: 'Жених перед выходом к церемонии', author: 'leshakovy', sound: true },
+  { slug: 'morning', src: '/reels/morning.mp4', alt: 'Утро невесты', author: 'leshakovy', sound: true },
   { slug: 'rings', src: '/reels/rings.mp4', alt: 'Кольца перед церемонией', author: 'leshakovy' },
   { slug: 'bride-door', src: '/reels/bride-door.mp4', alt: 'Невеста в дверях, чёрно-белый кадр', author: 'leshakovy' },
   { slug: 'ballroom', src: '/reels/ballroom.mp4', alt: 'Невеста в бальном платье в дворцовом зале', author: 'leshakovy' },
@@ -44,6 +50,15 @@ export const REELS: Reel[] = [
   { slug: 'rose', src: '/reels/rose.mp4', alt: 'Букет и украшения невесты крупным планом', author: 'leshakovy' },
   { slug: 'balcony', src: '/reels/balcony.mp4', alt: 'Невеста с букетом на балконе', author: 'leshakovy' },
 ];
+
+/** Есть ли у ролика звук — по пути файла: разметка (PhotoRail, HeroStage,
+ *  ряд «Видео») знает только src кадра, а не всю запись. Кнопку звука
+ *  рисуем ровно там, где дорожка действительно есть. */
+const SOUNDED = new Set(REELS.filter((r) => r.sound).map((r) => r.src));
+
+export function hasSound(src: string): boolean {
+  return SOUNDED.has(src);
+}
 
 /** ролики одного подрядчика — они же кадры первого экрана его визитки */
 export function reelsOf(slug: string): Reel[] {

@@ -1,14 +1,14 @@
 ---
-// ХАБ РАЗДЕЛА «СПЕЦИАЛИСТЫ»: экран с плитками групп перед каталогом.
-// Из нижнего дока человек попадает сюда, выбирает группу («Съёмка»,
-// «Музыка и шоу») и проваливается в каталог её первого направления;
+// ХАБ РАЗДЕЛА «СПЕЦИАЛИСТЫ»: экран с плитками разделов перед каталогом.
+// Из нижнего дока человек попадает сюда, выбирает раздел («Фото и видео»,
+// «Музыка и вокал») и проваливается в каталог его первого направления;
 // дальше направления переключает полоса CategoryNav внутри каталога —
-// второй уровень навигации здесь не дублируем.
+// второй уровень навигации здесь не дублируем. Раздел из одной категории
+// («Ведущие», «Декораторы», «Авто и трансфер») ведёт сразу в каталог,
+// вкладок там нет вовсе (CategoryNav сам не рисует второй ряд).
 //
-// Группы — из данных (SPECIALIST_GROUPS, источник правды), числа считаются
+// Разделы — из данных (SPECIALIST_GROUPS, источник правды), числа считаются
 // на сборке из SPECIALISTS_BY_CATEGORY: руками ничего не пишется.
-// Плитка говорит на языке .ecard из EntryRail (главная): тон-заливка
-// --tint-*, набор поверх — --tint-fg, капсула гуще того же тона.
 import Layout from '../../../layouts/Layout.astro';
 import SiteHeader from '../../../components/SiteHeader.astro';
 import BottomDock from '../../../components/BottomDock.astro';
@@ -19,30 +19,28 @@ import {
 } from '../../../data/specialists';
 import { withCount, type PluralForms } from '../../../lib/plural';
 
-type Tint = 'sand' | 'ice' | 'clay' | 'sage' | 'lilac' | 'sky';
-
-// Шесть тонов на шесть групп — каждая плитка своя, соседи не совпадают
-// ни в одной колонке сетки. Тон к смыслу не привязан (см. EntryRail).
-const TINTS: Tint[] = ['sand', 'ice', 'clay', 'sage', 'lilac', 'sky'];
-
-// Одна строка «что внутри» — по ключу группы, чтобы порядок и состав
-// групп менялись в данных, а текст не рассыпался.
+// Одна строка «что внутри» — по ключу раздела, чтобы порядок и состав
+// разделов менялись в данных, а текст не рассыпался.
 const BLURBS: Record<string, string> = {
-  organizacija: 'Кто соберёт день по плану и проведёт вечер — их бронируют первыми',
-  semka: 'Фото, видео и рилсы — всё, что останется, когда торт съеден',
-  muzyka: 'Диджей, живой звук, танец и номера, после которых гости не сядут',
-  oformlenie: 'Декор зала, цветы, свет и прокат всего, чего нет на площадке',
-  ugoshchenie: 'Выездной кейтеринг и торт, ради которого ждут финала',
-  obraz: 'Стилист на утро невесты и весь день — дальше сюда приедут визаж и причёски',
+  organizacija: 'План дня и человек, который держит его на площадке',
+  vedushchie: 'Тот, кто ведёт вечер и говорит с гостями за вас',
+  dekor: 'Оформление зала, цветы и всё, что видно на фото',
+  'foto-video': 'Фото, видео и рилсы — всё, что останется, когда торт съеден',
+  kuhnya: 'Выездной кейтеринг и торт, ради которого ждут финала',
+  obraz: 'Утро невесты: причёска, макияж и образ на весь день',
+  muzyka: 'Диджей, кавер-группа, вокал и живые инструменты',
+  oborudovanie: 'Звук, свет и спецэффекты, которых нет на площадке',
+  shou: 'Танец, номера и всё, после чего гости не сядут',
+  avto: 'Машина молодых и трансфер гостей между точками',
 };
 
 const VENDORS: PluralForms = ['подрядчик', 'подрядчика', 'подрядчиков'];
 
 const labels = new Map(SPECIALIST_CATEGORIES.map((c) => [c.slug, c.label]));
 
-const tiles = SPECIALIST_GROUPS.map((g, i) => {
+const tiles = SPECIALIST_GROUPS.map((g) => {
   const cats = g.categories.filter((slug) => labels.has(slug));
-  // Подрядчик в двух направлениях одной группы — один человек, считаем по slug
+  // Подрядчик в двух направлениях одного раздела — один человек, считаем по slug
   const vendors = new Set<string>();
   for (const slug of cats) for (const s of SPECIALISTS_BY_CATEGORY[slug] ?? []) vendors.add(s.slug);
   return {
@@ -50,42 +48,31 @@ const tiles = SPECIALIST_GROUPS.map((g, i) => {
     name: g.label,
     blurb: BLURBS[g.key] ?? '',
     href: `/moskva/podryadchiki/${cats[0]}/`,
-    count: vendors.size,
     capsule: vendors.size === 0 ? 'скоро' : withCount(vendors.size, VENDORS),
-    tint: TINTS[i % TINTS.length],
   };
 });
 ---
 
 <Layout
   title="Свадебные специалисты Москвы и области — WED Secrets"
-  description="Ведущие, фотографы, видеографы, музыканты, декораторы, кейтеринг и стилисты на свадьбу в Москве и Московской области — по группам, с ценами и портфолио."
+  description="Организаторы, ведущие, декораторы, фотографы, кейтеринг, музыка, шоу и трансфер на свадьбу в Москве и Московской области — по разделам, с ценами и портфолио."
 >
   <SiteHeader />
 
-  <main class="hub container">
+  <main class="hub">
     <header class="hub__head">
       <h1 class="t-h1">Специалисты</h1>
-      <p class="hub__lead">Команда свадьбы по группам: выберите, кто нужен, — внутри направления и фильтры.</p>
+      <p class="hub__lead">Команда свадьбы по разделам: выберите, кто нужен, — внутри направления и фильтры.</p>
     </header>
 
-    <ul class="hub__grid" aria-label="Группы специалистов">
+    <ul class="hub__grid" aria-label="Разделы специалистов">
       {tiles.map((t) => (
         <li>
-          <a
-            class:list={['gtile', `gtile--${t.tint}`]}
-            href={t.href}
-            aria-label={`${t.name} — ${t.capsule}`}
-          >
+          <a class="gtile" href={t.href} aria-label={`${t.name} — ${t.capsule}`}>
             <span class="gtile__top">
               <span class="gtile__go" aria-hidden="true">↗</span>
             </span>
 
-            {/* Три вещи и всё: имя, строка «что внутри», число подрядчиков.
-                Счётчик направлений и их перечисление отсюда убраны — они
-                повторяли друг друга и описание, и плитка превращалась
-                в четыре текстовых блока подряд. Состав группы человек
-                видит в каталоге полосой CategoryNav, на шаг позже. */}
             <span class="gtile__body">
               <span class="gtile__name">{t.name}</span>
               <span class="gtile__blurb">{t.blurb}</span>
@@ -101,6 +88,8 @@ const tiles = SPECIALIST_GROUPS.map((g, i) => {
 </Layout>
 
 <style>
+  /* Поля до края экрана держит сама сетка (--edge-gap), как у доски
+     кадров: хаб — такая же плиточная поверхность. */
   .hub {
     padding-block: var(--s-6) var(--dock-space);
   }
@@ -110,6 +99,7 @@ const tiles = SPECIALIST_GROUPS.map((g, i) => {
     flex-direction: column;
     gap: var(--s-3);
     margin-bottom: var(--s-5);
+    padding-inline: var(--gutter);
   }
 
   /* Мера в ch считается от кегля САМОГО элемента: --measure-lead подобран
@@ -121,58 +111,56 @@ const tiles = SPECIALIST_GROUPS.map((g, i) => {
     font-size: var(--fs-small);
   }
 
-  /* Сетка плиток: две колонки уже на телефоне. Одна колонка растягивала
-     плитку в широкую полосу — а плашка-вход в этом проекте вертикальная
-     (см. .ecard на главной), горизонтальная читается баннером.
-     Зазор — тот же, что у плашек-входов на главной (--pin-gap). */
+  /* Сетка плиток: зазор и поле от края — те же, что у доски кадров
+     (--pin-gap / --edge-gap), но БЕЗ пинтерестовской череды: колонки
+     равные, ряды выровнены по одной линии. Высоту ряда задаёт самая
+     высокая плитка в нём (grid-auto-rows: 1fr), плитки тянутся до неё —
+     низ ряда всегда прямой, сколько бы строк ни занял заголовок. */
   .hub__grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: 1fr;
     gap: var(--pin-gap);
+    padding-inline: var(--edge-gap);
     list-style: none;
     margin: 0;
-    padding: 0;
   }
 
-  @media (min-width: 1024px) {
+  @media (min-width: 640px) {
     .hub__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   }
 
-  /* Плитка — тот же язык, что .ecard на главной: тон-заливка, поверх
-     фиксированные чернила --tint-fg (тон светлый в любой теме, а --ink
-     в тёмной белеет), капсула гуще того же тона. */
+  @media (min-width: 1024px) {
+    .hub__grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  }
+
+  /* БЕЗ ЦВЕТА. Тона --tint-* сняты вслед за плашками главной: остаётся
+     палитра проекта — светлая плашка (--surface), чернила, капсула
+     на тон гуще. Заливка семантическая, поэтому в тёмной теме плитка
+     темнеет сама, руками ничего не красим. */
   .gtile {
-    --tile: var(--tint-sand);
-    --tile-deep: var(--tint-sand-deep);
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     gap: var(--s-5);
-    /* Вертикальная, как плашка-вход на главной: та же пропорция 3/4.
-       Жёсткой высоты нет — если описание длиннее обычного, плитка
-       вырастет, а не обрежет строку. */
-    aspect-ratio: 3 / 4;
+    /* Жёсткой пропорции нет намеренно: высоту ряда держит 1fr сетки,
+       и aspect-ratio тут с ней спорил бы — плитка вылезала бы из ряда
+       ровно настолько, насколько длиннее её заголовок. */
+    height: 100%;
     padding: var(--s-4);
-    background: var(--tile);
-    color: var(--tint-fg);
+    background: var(--surface);
+    color: var(--ink);
     border-radius: var(--radius-card);
     text-decoration: none;
   }
-
-  .gtile--sand { --tile: var(--tint-sand); --tile-deep: var(--tint-sand-deep); }
-  .gtile--ice { --tile: var(--tint-ice); --tile-deep: var(--tint-ice-deep); }
-  .gtile--clay { --tile: var(--tint-clay); --tile-deep: var(--tint-clay-deep); }
-  .gtile--sage { --tile: var(--tint-sage); --tile-deep: var(--tint-sage-deep); }
-  .gtile--lilac { --tile: var(--tint-lilac); --tile-deep: var(--tint-lilac-deep); }
-  .gtile--sky { --tile: var(--tint-sky); --tile-deep: var(--tint-sky-deep); }
 
   .gtile__top {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: var(--s-3);
-    min-height: 40px;
+    min-height: var(--entry-knob);
   }
 
   /* Стрелка-ссылка в кружке, как на плашках главной: приглушена opacity,
@@ -197,34 +185,35 @@ const tiles = SPECIALIST_GROUPS.map((g, i) => {
     flex-direction: column;
     gap: var(--s-2);
     min-width: 0;
+    /* Набор прижат к низу плитки: ряды выровнены и по верхней линии
+       (стрелка), и по нижней — заголовки соседей стоят на одной высоте. */
+    margin-top: auto;
   }
 
-  /* Кегль от ширины колонки, не экрана: колонок теперь две уже на телефоне,
-     и прежний потолок 30px рвал «Организация и ведение» на четыре строки. */
+  /* Кегль от ширины колонки, не экрана: колонок две уже на телефоне,
+     и прежний потолок 30px рвал длинное имя раздела на четыре строки. */
   .gtile__name {
-    font-size: clamp(19px, 4.4vw, 26px);
+    font-size: clamp(18px, 4.2vw, 24px);
     font-weight: var(--w-head);
-    line-height: 1.02;
+    line-height: 1.04;
     letter-spacing: -0.03em;
   }
 
   /* Меры тут нет намеренно: ширину описанию задаёт сама плитка, а внутри
-     текстового модуля мера не дублируется (правило проекта). Прежние 40ch
-     были и хардкодом мимо токенов, и лишним ограничением поверх колонки. */
+     текстового модуля мера не дублируется (правило проекта). */
   .gtile__blurb {
     font-size: var(--fs-small);
     line-height: 1.3;
   }
 
-  /* Капсула со счётчиком — того же тона, что плитка, только гуще
-     (--tile-deep), как на плашках главной. Прижата влево под текстом,
-     а не растянута строкой: перечисления направлений рядом больше нет. */
+  /* Капсула со счётчиком — плашка на тон гуще самой плитки. Прижата
+     влево под текстом, а не растянута строкой. */
   .gtile__count {
     align-self: flex-start;
     margin-top: var(--s-2);
     padding: 6px 12px;
     border-radius: var(--radius-pill);
-    background: var(--tile-deep);
+    background: var(--surface-dim);
     font-size: var(--fs-caption);
     font-weight: var(--w-medium);
     line-height: 1.2;

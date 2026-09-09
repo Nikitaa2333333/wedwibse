@@ -197,6 +197,10 @@ const popular = groups.flatMap((g) =>
       min-height: 0;
       padding: 0 0 0 calc(16px + var(--s-3));
       background: none;
+      /* Здесь чип перестаёт быть капсулой и становится строкой с кружком:
+         снимаем и заливку, и обводку (--chip-line рисует рамку в тёмной
+         теме — вокруг строки списка она читалась бы полем ввода). */
+      border: 0;
       border-radius: 0;
       white-space: normal;
       text-align: left;

@@ -5,60 +5,22 @@
 // досыпаются по кнопке) — одна разметка, а не две копии.
 //
 // Кадр-плитка — PhotoRail (точки, свайп), статья — типографическая плашка.
-// Сердца на плитке нет: на фотографии не лежит ничего. В избранное кадр
-// уходит из просмотра на весь экран — снимок для него (save) считается тут
-// и лежит на article в data-save.
-//
-// ПРОСМОТР НА ВЕСЬ ЭКРАН (lib/viewer): у плитки с карточкой-источником
-// на article лежат data-view (кадры для просмотра: srcset под роль hero,
-// пропорция, alt) и data-owner (чей кадр — имя, место, рейтинг). Читает их
-// скрипт доски; здесь только данные, никакой своей логики.
+// Сердца на плитке нет: на фотографии не лежит ничего. Нажатие на кадр —
+// обычный переход на карточку по href (с якорем на этот же кадр): оверлея
+// поверх доски больше нет, полноэкранный кадр со стеклом — первый экран
+// самой карточки, и с него человек уходит вниз, к описанию и брони.
 import PhotoRail from './PhotoRail.astro';
-import Icon from './Icon.astro';
 import type { Tile } from '../lib/gallery';
-import type { ViewFrame } from '../lib/viewer';
-import { favoriteImage } from '../lib/images';
-import { isVideo, posterOf } from '../lib/media';
 
 interface Props {
   tile: Tile;
   sizes: string;
   widths: number[];
-  /** кадры для просмотра на весь экран; нет — плитка ведёт по href как обычно */
-  view?: ViewFrame[] | null;
   /** плитка в скрытом хвосте галереи: есть в HTML, не показана и не грузится */
   hidden?: boolean;
 }
 
-const { tile, sizes, widths, view = null, hidden = false } = Astro.props;
-
-// Снимок для «Избранного» собираем здесь: URL кадра нужен уже пережатый,
-// путь из данных в localStorage класть нельзя (файл живёт только в src/assets).
-let save: string | null = null;
-
-if (tile.kind === 'photo' && tile.href) {
-  const first = tile.photos[0];
-
-  save = JSON.stringify({
-    id: `pin:${tile.href}`,
-    cat: 'board',
-    catLabel: 'Из галереи',
-    name: tile.caption ?? tile.alt,
-    meta: '',
-    price: '',
-    img: await favoriteImage(isVideo(first) ? posterOf(first) : first),
-    href: tile.href,
-  });
-}
-
-// Данные просмотра — у любого фото/видео-кадра, даже без владельца
-// (демо-ролики общего потока — lib/gallery.ts reelPins): кадр всё равно
-// открывается в просмотре, просто без подписи и без ссылки на карточку —
-// это решает viewer.ts по owner/href, тут только данные.
-const viewable =
-  tile.kind === 'photo' && view && view.length > 0
-    ? { view: JSON.stringify(view), owner: JSON.stringify(tile.owner), href: tile.href ?? '' }
-    : null;
+const { tile, sizes, widths, hidden = false } = Astro.props;
 ---
 
 <article
@@ -66,10 +28,6 @@ const viewable =
   style={`--card-ratio:${tile.ratio};`}
   data-i={tile.index}
   data-h={tile.height.toFixed(3)}
-  data-view={viewable?.view}
-  data-owner={viewable?.owner}
-  data-href={viewable?.href}
-  data-save={viewable && save ? save : undefined}
   hidden={hidden}
 >
   {tile.kind === 'article' ? (

@@ -115,32 +115,41 @@ export interface SpecialistCategory {
   label: string;
 }
 
+// Порядок здесь — порядок разделов ниже: категории одного раздела идут
+// подряд, чтобы список читался тем же деревом, что и хаб.
 export const SPECIALIST_CATEGORIES: SpecialistCategory[] = [
+  { slug: 'organizatory', label: 'Организаторы' },
+  { slug: 'koordinatory', label: 'Координаторы' },
   { slug: 'vedushchie', label: 'Ведущие' },
-  { slug: 'dj', label: 'Диджеи' },
+  { slug: 'dekoratory', label: 'Декораторы' },
   { slug: 'fotografy', label: 'Фотографы' },
   { slug: 'videografy', label: 'Видеографы' },
-  { slug: 'dekoratory', label: 'Декораторы' },
-  { slug: 'konditery', label: 'Кондитеры' },
+  { slug: 'rils-meikery', label: 'Reels-мейкеры' },
   { slug: 'keitering', label: 'Кейтеринг' },
-  { slug: 'koordinatory', label: 'Координаторы' },
-  { slug: 'organizatory', label: 'Организаторы' },
-  { slug: 'stilisty', label: 'Стилисты' },
-  { slug: 'prokat', label: 'Прокат' },
-  { slug: 'prokatchiki', label: 'Прокатчики' },
-  { slug: 'animatory', label: 'Аниматоры' },
-  { slug: 'horeografy', label: 'Хореографы' },
-  { slug: 'fokusniki', label: 'Фокусники' },
-  { slug: 'speceffekty', label: 'Спецэффекты' },
+  { slug: 'konditery', label: 'Кондитеры' },
+  // Раздел без вкладок: стилист и визажист на свадьбе — один заказ
+  // (утро невесты целиком), поэтому и категория одна.
+  { slug: 'stilisty', label: 'Стилисты и визажисты' },
+  { slug: 'dj', label: 'Диджеи' },
   { slug: 'kaver-gruppy', label: 'Кавер-группы' },
   { slug: 'vokalisty', label: 'Вокалисты' },
-  { slug: 'rils-meikery', label: 'Рилс-мейкеры' },
+  { slug: 'muzykanty', label: 'Музыканты' },
+  { slug: 'speceffekty', label: 'Спецэффекты' },
+  { slug: 'arenda-zvuka', label: 'Аренда звука' },
+  { slug: 'arenda-sveta', label: 'Аренда светомузыки' },
+  { slug: 'horeografy', label: 'Хореографы' },
+  { slug: 'animatory', label: 'Аниматоры' },
+  { slug: 'shou', label: 'Шоу' },
+  { slug: 'fokusniki', label: 'Фокусники и иллюзионисты' },
+  { slug: 'avto', label: 'Авто и трансфер' },
 ];
 
 // ============ СМЫСЛОВЫЕ ГРУППЫ НАПРАВЛЕНИЙ ============
-// 19 категорий подряд человек не читает — он ищет «кто снимает» или
-// «кто оформляет». Группы идут по ходу подготовки свадьбы: сначала те,
-// кого бронируют первыми (организатор, ведущий), в конце — образ.
+// Два десятка категорий подряд человек не читает — он ищет «кто снимает»
+// или «кто оформляет». Группы идут по ходу подготовки свадьбы: сначала те,
+// кого бронируют первыми (организатор, ведущий), в конце — трансфер.
+// Группа из ОДНОЙ категории — это раздел без вкладок: с хаба человек
+// попадает сразу в каталог, второй ряд CategoryNav там не рисуется.
 // Источник правды для хаба раздела; сюда же будет смотреть блок
 // «соберите команду» на карточке специалиста.
 // Категория, не попавшая ни в одну группу, не теряется — хаб собирает
@@ -158,41 +167,63 @@ export interface SpecialistGroup {
 export const SPECIALIST_GROUPS: SpecialistGroup[] = [
   {
     key: 'organizacija',
-    label: 'Организация и ведение',
+    label: 'Организация и координация',
     short: 'Организация',
-    categories: ['organizatory', 'koordinatory', 'vedushchie'],
+    categories: ['organizatory', 'koordinatory'],
   },
   {
-    key: 'semka',
-    label: 'Съёмка',
-    short: 'Съёмка',
+    key: 'vedushchie',
+    label: 'Ведущие',
+    short: 'Ведущие',
+    categories: ['vedushchie'],
+  },
+  {
+    key: 'dekor',
+    label: 'Декораторы',
+    short: 'Декор',
+    categories: ['dekoratory'],
+  },
+  {
+    key: 'foto-video',
+    label: 'Фото и видео',
+    short: 'Фото и видео',
     categories: ['fotografy', 'videografy', 'rils-meikery'],
   },
   {
-    key: 'muzyka',
-    label: 'Музыка и шоу',
-    short: 'Музыка и шоу',
-    categories: ['dj', 'kaver-gruppy', 'vokalisty', 'horeografy', 'animatory', 'fokusniki', 'speceffekty'],
-  },
-  {
-    key: 'oformlenie',
-    label: 'Оформление и аренда',
-    short: 'Оформление',
-    categories: ['dekoratory', 'prokat', 'prokatchiki'],
-  },
-  {
-    key: 'ugoshchenie',
-    label: 'Угощение',
-    short: 'Угощение',
+    key: 'kuhnya',
+    label: 'Кухня и сладости',
+    short: 'Кухня',
     categories: ['keitering', 'konditery'],
   },
   {
-    // пока одна категория, но группа заготовлена под рост: визажисты,
-    // причёски, платья и костюмы приедут именно сюда
     key: 'obraz',
-    label: 'Образ',
+    label: 'Стилисты и визажисты',
     short: 'Образ',
     categories: ['stilisty'],
+  },
+  {
+    key: 'muzyka',
+    label: 'Музыка и вокал',
+    short: 'Музыка',
+    categories: ['dj', 'kaver-gruppy', 'vokalisty', 'muzykanty'],
+  },
+  {
+    key: 'oborudovanie',
+    label: 'Оборудование и спецэффекты',
+    short: 'Оборудование',
+    categories: ['speceffekty', 'arenda-zvuka', 'arenda-sveta'],
+  },
+  {
+    key: 'shou',
+    label: 'Шоу и развлечения',
+    short: 'Шоу',
+    categories: ['horeografy', 'animatory', 'shou', 'fokusniki'],
+  },
+  {
+    key: 'avto',
+    label: 'Авто и трансфер',
+    short: 'Авто',
+    categories: ['avto'],
   },
 ];
 

@@ -212,7 +212,15 @@ const favImg = new Map(
                   </div>
                   <span class="vcard__rate" aria-label={`Рейтинг ${item.rating}`}>★ {item.rating.toFixed(1)}</span>
                 </div>
-                <p class="vcard__price">{item.avgCheck}</p>
+                <div class="vcard__foot">
+                  <p class="vcard__price">{item.avgCheck}</p>
+                  <!-- Сердце в подписи, а не поверх кадра: лайкнуть можно
+                       с любого экрана, но на фотографии по-прежнему ничего
+                       не лежит (см. CLAUDE.md, «Текст НЕ лежит на фото»). -->
+                  <button class="save save--inline" type="button" data-save={saveData} aria-pressed="false" aria-label="В избранное">
+                    <Icon name="heartOutline" />
+                  </button>
+                </div>
               </div>
             </article>
           );
@@ -369,6 +377,15 @@ const favImg = new Map(
     padding-top: 0.15em; /* оптически на строке имени, кегль у него меньше */
     font-size: var(--fs-caption);
     font-weight: var(--w-medium);
+  }
+
+  /* Цена и сердце — одной строкой: цена слева, лайк прижат к правому краю
+     подписи, ровно под рейтингом. */
+  .vcard__foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-3);
   }
 
   /* Цена — крупно, но с минимальным отрывом от группы «имя + город» */

@@ -18,6 +18,7 @@ import PhotoMasonry from '../../../../components/PhotoMasonry.astro';
 import Avatar from '../../../../components/Avatar.astro';
 import Icon from '../../../../components/Icon.astro';
 import HeroActions from '../../../../components/HeroActions.astro';
+import HeroStage from '../../../../components/HeroStage.astro';
 import { SPECIALISTS_BY_CATEGORY, FILTERS_BY_CATEGORY, type Specialist } from '../../../../data/specialists';
 import { reelsOf } from '../../../../data/reels';
 import { photoTiles } from '../../../../lib/gallery';
@@ -56,34 +57,22 @@ const priceFacts = [
   s.gender === 'pair' ? 'фото и видео' : null,
 ].filter(Boolean);
 
-// ПЕРВЫЙ ЭКРАН — ОДИН КАДР, БЕЗ КАРУСЕЛИ. Раньше тут стоял рельс
-// PhotoRail: фиксированное окно 4:5, все кадры внутри кроются под одну
-// пропорцию, под кадром строка из полутора десятков точек, а вуаль рельса
-// (.veil — градиент на нижние 62% обёртки) ложилась НЕ ТОЛЬКО на фото, но
-// и на эту строку, и под снимком висела серая полоса непонятного
-// назначения. Карточка площадки от карусели в первом экране отказалась
-// раньше (см. VenueHero) — визитка подрядчика идёт тем же правилом: кадр
-// в СВОЕЙ пропорции на телефоне, ничем не закрытый.
+// ПЕРВЫЙ ЭКРАН — общий компонент HeroStage, тот же, что у карточки
+// площадки: работа подрядчика во весь экран телефона, на матовом стекле
+// внизу портрет, имя, специальность и рейтинг, поверх кадра — кнопки
+// «назад · в избранное · поделиться». Условия (цена, заявка) идут сразу
+// под ним, при прокрутке.
 //
-// Кадры всё равно рендерятся все: по адресу `#foto-<кадр>` из доски
-// главной открывается именно тот снимок или ролик, по которому нажали
-// (якорь разбирает инлайновый скрипт внизу файла, как в карточке
-// площадки). Лишние кадры скрыты обычным `hidden` — из потока выпадают
-// полностью, высоту блока меряет ровно показанный.
-// Порядок: обложка, ролики, остальные фото. Кадров ровно столько, сколько
-// их уходит в доску главной (PER_SPECIALIST в lib/gallery): любой кадр,
-// по которому там можно нажать, тут есть. Вся съёмка целиком — ниже,
-// в блоке «Фотографии».
+// Кадры отдаём все: по адресу `#foto-<кадр>` из доски главной открывается
+// именно тот снимок или ролик, по которому нажали (якорь разбирает сам
+// HeroStage). Кадров ровно столько, сколько их уходит в доску главной
+// (PER_SPECIALIST в lib/gallery): любой кадр, по которому там можно
+// нажать, тут есть. Вся съёмка целиком — ниже, в блоке «Фотографии».
 const HERO_PHOTOS = 12;
 const reels = reelsOf(s.slug);
 const frames = [
   ...new Set([s.photos[0], ...reels.map((r) => r.src), ...s.photos.slice(1, HERO_PHOTOS)]),
 ];
-
-// Дежурный кадр — первый вертикальный: телефон главный сценарий, и
-// вертикаль полнее заполняет экран. Граница вертикальности одна на весь
-// проект (isPortrait в lib/media). Фолбэк — просто первый кадр.
-const defaultFrame = frames.find(isPortrait) ?? frames[0];
 
 // sizes галереи — те же колонки, что у доски главной (PhotoMasonry)
 const GALLERY_SIZES =
@@ -94,6 +83,24 @@ const GALLERY_LIMIT = 10;
 
 const priceLabel = s.priceFrom ? `от ${priceFmt.format(s.priceFrom)} ₽` : 'Цена по запросу';
 const href = `/moskva/podryadchiki/${s.categorySlug}/${s.slug}/`;
+
+// Лайк у КАЖДОГО ролика: ролик — такая же работа подрядчика, как кадр,
+// и сохранять его человек хочет отдельно. Постер прогоняем через
+// favoriteImage — в хранилище нужен пережатый URL, не путь из данных.
+const reelSaves = new Map(
+  await Promise.all(
+    reels.map(async (r) => [r.src, JSON.stringify({
+      id: `reel:${r.src}`,
+      cat: s.categorySlug,
+      catLabel: 'Видео',
+      name: s.name,
+      meta: r.alt,
+      price: '',
+      img: await favoriteImage(posterOf(r.src)),
+      href: `/moskva/podryadchiki/${s.categorySlug}/${s.slug}/`,
+    })] as const)
+  )
+);
 
 const saveData = JSON.stringify({
   id: `${s.categorySlug}:${s.slug}`,
@@ -123,17 +130,32 @@ const saveData = JSON.stringify({
          его работами, и портрет автора — единственное место, где видно,
          с кем человек будет иметь дело. Нет портрета — кружок с
          инициалами, слот остаётся на месте. -->
+    <!-- ПЕРВЫЙ ЭКРАН — тот же HeroStage, что у площадки: работа подрядчика
+         во весь экран, на стекле внизу портрет, имя, специальность
+         и рейтинг. Условия и заявка идут следом, при прокрутке. -->
+    <HeroStage frames={frames} alt={s.name}>
+      <HeroActions
+        slot="actions"
+        backHref={`/moskva/podryadchiki/${s.categorySlug}/`}
+        backLabel={`К списку «${s.category}»`}
+        save={saveData}
+      />
+
+      <div class="phero__id">
+        <Avatar src={s.avatar} name={s.name} size={44} class="phero__avatar" />
+        <div class="phero__title">
+          <h1 class="phero__name">{s.name}</h1>
+          <p class="phero__tagline">{s.tagline}</p>
+        </div>
+      </div>
+
+      {s.rating && s.reviews && (
+        <a class="phero__rate" href="#otzyvy">★ {s.rating.toFixed(1)} · {s.reviews}&nbsp;отзывов</a>
+      )}
+    </HeroStage>
+
     <section class="phero">
       <div class="phero__card theme-accent">
-        <div class="phero__top">
-          <Avatar src={s.avatar} name={s.name} size={64} class="phero__avatar" />
-          <h1 class="phero__name">{s.name}</h1>
-          <p class="t-lead phero__tagline">{s.tagline}</p>
-          {s.rating && s.reviews && (
-            <a class="pill pill--sm phero__rate" href="#otzyvy">★ {s.rating.toFixed(1)} · {s.reviews}&nbsp;отзывов</a>
-          )}
-        </div>
-
         <div class="phero__deal">
           <p class="phero__price">{priceLabel}</p>
           <p class="t-caption phero__price-note">
@@ -141,39 +163,6 @@ const saveData = JSON.stringify({
           </p>
           <a class="pill pill--lg" href="#zayavka">Оставить заявку</a>
         </div>
-      </div>
-
-      <div class="phero__media">
-        <figure class="phero__shot" data-hero-shot>
-          <HeroActions
-            backHref={`/moskva/podryadchiki/${s.categorySlug}/`}
-            backLabel={`К списку «${s.category}»`}
-            save={saveData}
-          />
-
-          {frames.map((src, n) => {
-            const video = isVideo(src);
-            const eager = src === defaultFrame;
-
-            return (
-              <div class="phero__frame" data-frame={frameId(src)} hidden={src !== defaultFrame}>
-                <Image
-                  src={resolveImage(video ? posterOf(src) : src)}
-                  alt={n === 0 ? s.name : `${s.name} — свадебная съёмка`}
-                  widths={IMG_WIDTHS.hero}
-                  sizes="(min-width: 1024px) 50vw, 100vw"
-                  loading={eager ? 'eager' : 'lazy'}
-                  fetchpriority={eager ? 'high' : undefined}
-                  decoding="async"
-                />
-                {video && (
-                  <video class="phero__video" data-video={src} muted loop playsinline preload="none" aria-hidden="true"></video>
-                )}
-              </div>
-            );
-          })}
-
-        </figure>
       </div>
     </section>
 
@@ -261,20 +250,37 @@ const saveData = JSON.stringify({
         <h2 class="t-h2">Видео</h2>
         <div class="preels__rail">
           {reels.map((reel) => (
-            <button class="preels__item media" type="button" data-reel={reel.src} aria-label={`Смотреть: ${reel.alt}`} aria-pressed="false">
-              <Image
-                src={resolveImage(posterOf(reel.src))}
-                alt={reel.alt}
-                widths={IMG_WIDTHS.card}
-                sizes="(min-width: 1024px) 240px, 48vw"
-                loading="lazy"
-                decoding="async"
-              />
-              <video class="preels__video" data-reel-video muted loop playsinline preload="none" aria-hidden="true"></video>
-              <span class="preels__play" aria-hidden="true">
-                <Icon name="play" class="preels__play-icon" />
-              </span>
-            </button>
+            <div class="preels__cell">
+              <button class="preels__item media" type="button" data-sound-scope data-reel={reel.src} aria-label={`Смотреть: ${reel.alt}`} aria-pressed="false">
+                <Image
+                  src={resolveImage(posterOf(reel.src))}
+                  alt={reel.alt}
+                  widths={IMG_WIDTHS.card}
+                  sizes="(min-width: 1024px) 240px, 48vw"
+                  loading="lazy"
+                  decoding="async"
+                />
+                <video class="preels__video" data-reel-video muted loop playsinline preload="none" aria-hidden="true"></video>
+                <span class="preels__play" aria-hidden="true">
+                  <Icon name="play" class="preels__play-icon" />
+                </span>
+              </button>
+
+              {/* Сердце ПОД роликом, а не на нём: кнопка «в избранное»
+                  внутри кнопки запуска — недопустимая вложенность, да и
+                  правило то же, что у фотографий: на кадре ничего нет. */}
+              <div class="preels__foot">
+                {reel.sound && (
+                  <button class="sound-btn sound-btn--inline" type="button" data-sound={reel.src} aria-pressed="false" aria-label="Звук ролика">
+                    <span class="sound-btn__off"><Icon name="soundOff" /></span>
+                    <span class="sound-btn__on"><Icon name="sound" /></span>
+                  </button>
+                )}
+                <button class="save save--inline" type="button" data-save={reelSaves.get(reel.src)} aria-pressed="false" aria-label="Ролик в избранное">
+                  <Icon name="heartOutline" />
+                </button>
+              </div>
+            </div>
           ))}
         </div>
       </section>
@@ -349,95 +355,60 @@ const saveData = JSON.stringify({
     padding-bottom: var(--dock-space);
   }
 
-  /* ============ ГЕРОЙ: плашка + карусель встык ============
-     Мобилка: фото сверху во всю ширину, плашка под ним.
-     ПК: сплит-полоса в край экрана — плашка слева, карусель справа. */
-  .phero {
-    display: grid;
-    grid-template-areas: 'media' 'card';
-    margin-bottom: var(--section-gap-tight);
+  /* ============ ПОДПИСЬ НА СТЕКЛЕ ПЕРВОГО ЭКРАНА ============
+     Разметка стоит в слоте HeroStage: портрет и имя одной строкой,
+     под ними рейтинг. Кадровой вёрстки (сплит-полоса «плашка + карусель»)
+     тут больше нет — первый экран у подрядчика и у площадки один и тот же
+     компонент, а условия и заявка идут ниже, при прокрутке. */
+  .phero__id {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
   }
 
-  .phero__media { grid-area: media; }
+  .phero__title { min-width: 0; }
 
-  /* Кадр — единственное место в системе, где на фото лежит не текст,
-     а иконка со своей тенью (сердце, кнопка «назад»); position: relative
-     держит их прижатыми к кадру, а не к секции целиком. */
-  .phero__shot {
-    position: relative;
-    background: var(--surface-dim);
+  /* Имя — главный объект экрана, но кегль от прежних 64px опущен:
+     на стеклянной полосе он занимал бы её целиком. */
+  .phero__name {
+    font-size: clamp(24px, 6vw, 36px);
+    font-weight: var(--w-head);
+    line-height: var(--lh-heading);
+    letter-spacing: var(--ls-display);
   }
 
-  /* Показанный кадр — блок во всю ширину, высоту диктует его СОБСТВЕННАЯ
-     пропорция (width/height у Image расставлены Astro'ой из файла):
-     никакого aspect-ratio/object-fit на телефоне тут нет и не должно быть,
-     в этом весь смысл отказа от общего окна карусели. Скрытые кадры —
-     display: none, из потока выпадают полностью. */
-  .phero__frame img,
-  .phero__frame video {
-    display: block;
-    width: 100%;
-    height: auto;
+  .phero__tagline {
+    font-size: var(--fs-small);
+    line-height: 1.3;
   }
 
-  .phero__frame[hidden] { display: none; }
-
-  /* Ролик лежит поверх своего постера и проявляется, когда реально пошёл:
-     заблокировали автозапуск — в кадре просто остаётся постер. */
-  .phero__video {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    opacity: 0;
-    transition: opacity var(--dur-fast) var(--ease-out);
+  /* Кружок на стекле: подложка от чернил, а не бумажная --surface-dim —
+     та на размытом кадре читается заплаткой. */
+  .phero__id :global(.avatar) {
+    flex: none;
+    background: color-mix(in srgb, var(--black) 14%, transparent);
+    color: var(--black);
   }
 
-  .phero__video.is-playing { opacity: 1; }
+  .phero__rate {
+    display: inline-block;
+    margin-top: var(--s-3);
+    font-size: var(--fs-small);
+    font-weight: var(--w-medium);
+    color: inherit;
+    text-decoration: none;
+  }
 
-  /* Якорная композиция: имя с теглайном тяготеют к верху плашки,
-     цена с кнопкой — к низу, середина дышит (space-between). */
+  /* ============ УСЛОВИЯ И ЗАЯВКА (сразу под первым экраном) ============ */
+  .phero { margin-bottom: var(--section-gap-tight); }
+
   .phero__card {
-    grid-area: card;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
     align-items: flex-start;
     gap: var(--s-6);
     padding: var(--s-6) var(--gutter);
   }
-
-  .phero__top {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--s-4);
-  }
-
-  /* Портрет прижат к имени теснее, чем имя к теглайну: правило
-     внутреннего и внешнего — кружок принадлежит имени, а не блоку. */
-  .phero__avatar { margin-bottom: calc(var(--s-4) * -1 + var(--s-3)); }
-
-  /* В оранжевой плашке кружок с инициалами берёт цвета от неё же:
-     бумажная подложка --surface-dim на акценте выглядит заплаткой. */
-  .phero__card :global(.avatar) {
-    background: color-mix(in srgb, var(--fg) 16%, transparent);
-    color: var(--fg);
-  }
-
-  /* Имя — главный объект экрана, но без гигантизма: блок держим низким */
-  .phero__name {
-    font-size: clamp(40px, 5.5vw, 64px);
-    font-weight: var(--w-head);
-    line-height: var(--lh-display);
-    letter-spacing: var(--ls-display);
-    max-width: var(--measure-head);
-  }
-
-  .phero__tagline { max-width: var(--measure-lead); }
-
-  .phero__rate { text-decoration: none; }
 
   .phero__deal {
     display: flex;
@@ -446,7 +417,7 @@ const saveData = JSON.stringify({
     gap: var(--s-2);
   }
 
-  /* Цена — крупно, второй якорь плашки */
+  /* Цена — крупно, якорь плашки */
   .phero__price {
     font-size: var(--fs-h2);
     font-weight: var(--w-medium);
@@ -455,41 +426,6 @@ const saveData = JSON.stringify({
   }
 
   .phero__deal .pill { margin-top: var(--s-3); }
-
-  @media (min-width: 1024px) {
-    .phero {
-      grid-template-areas: 'card media';
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      align-items: stretch;
-      /* Высоту задаёт контент карточки — герой остаётся компактной
-         горизонтальной полосой и целиком влезает в экран с запасом. */
-    }
-
-    .phero__card {
-      padding: var(--s-6) var(--s-7) var(--s-6) var(--gutter);
-    }
-
-    /* Сплит-полоса: высоту задаёт плашка слева, кадр справа растянут по
-       ней абсолютом. Тут кроп неизбежен (два блока стоят полосой в край
-       экрана и обязаны быть одной высоты) — держим верх кадра, чтобы не
-       резать голову. На телефоне, где кадр стоит сам по себе, кропа нет. */
-    .phero__media { position: relative; }
-
-    .phero__shot {
-      position: absolute;
-      inset: 0;
-      overflow: hidden;
-    }
-
-    .phero__frame { height: 100%; }
-
-    .phero__frame img,
-    .phero__frame video {
-      height: 100%;
-      object-fit: cover;
-      object-position: center top;
-    }
-  }
 
   /* ============ О ПОДРЯДЧИКЕ ============ */
   .pabout {
@@ -594,12 +530,28 @@ const saveData = JSON.stringify({
 
   .preels__rail::-webkit-scrollbar { display: none; }
 
+  /* Ячейка ряда: кадр и подпись с сердцем под ним. Ширину держит она,
+     а не сам ролик, — иначе строка с лайком вылезала бы за кадр. */
+  .preels__cell {
+    flex: 0 0 clamp(180px, 48vw, 240px);
+    scroll-snap-align: start;
+  }
+
   .preels__item {
     position: relative;
-    flex: 0 0 clamp(180px, 48vw, 240px);
+    width: 100%;
     aspect-ratio: 2 / 3;
-    scroll-snap-align: start;
     background: var(--surface-dim);
+  }
+
+  /* Строка под роликом: пока в ней только сердце — прижато вправо, как
+     в подписи карточки каталога. */
+  .preels__foot {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--s-2);
+    padding-top: 2px;
   }
 
   /* Плитка ряда — кнопка: снимаем всё, что браузер рисует кнопке сам */
@@ -740,39 +692,14 @@ const saveData = JSON.stringify({
      разбора документа): нужный кадр должен встать сразу, иначе человек,
      нажавший в доске на ролик, на мгновение увидит чужое фото.
      Тот же приём и тот же код, что в VenueHero. -->
-<script is:inline>
-  (() => {
-    const host = document.querySelector('[data-hero-shot]');
-    const id = (location.hash.match(/^#foto-(.+)$/) || [])[1];
-    if (!host || !id) return;
 
-    const frame = host.querySelector(`[data-frame="${CSS.escape(decodeURIComponent(id))}"]`);
-    if (!frame) return; // кадр не найден по ссылке — визитка открывается дежурным
-
-    host.querySelectorAll('[data-frame]').forEach((f) => { f.hidden = f !== frame; });
-
-    const img = frame.querySelector('img');
-    if (img) {
-      img.loading = 'eager';
-      img.fetchPriority = 'high';
-    }
-  })();
-</script>
 
 <script>
   import { bindSaveButtons } from '../../../../lib/save';
   import { bindVideo } from '../../../../lib/video';
 
   bindSaveButtons();
-
-  // Ролик в первом экране: играет, пока его кадр показан (а не скрыт
-  // через [hidden]) и секция в поле зрения — как в герое площадки.
-  document.querySelectorAll<HTMLElement>('[data-hero-shot]').forEach((hero) => {
-    hero.querySelectorAll<HTMLVideoElement>('[data-video]').forEach((video) => {
-      const frame = video.closest<HTMLElement>('[data-frame]');
-      bindVideo(video, { root: hero, active: () => !!frame && !frame.hidden });
-    });
-  });
+  // Ролик первого экрана оживляет сам HeroStage — тут только ряд «Видео».
 
   // ============ РЯД «ВИДЕО»: ИГРАЕТ ТОЛЬКО ОДИН ============
   // Автозапуска тут нет намеренно (в отличие от плиток доски): в ряду

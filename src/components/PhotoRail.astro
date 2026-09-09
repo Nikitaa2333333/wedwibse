@@ -18,8 +18,10 @@
 // Компонент отвечает только за сам просмотр фото — цену/тип/сердечко
 // кладёт вызывающая страница через слот, поверх .veil.
 import { Image } from 'astro:assets';
+import Icon from './Icon.astro';
 import { resolveImage } from '../lib/images';
 import { frameId, isVideo, posterOf } from '../lib/media';
+import { hasSound } from '../data/reels';
 
 interface Props {
   /** кадры карточки: фото и — по желанию — короткие немые лупы (.mp4) */
@@ -47,9 +49,15 @@ const {
   priority = false,
   bleed = false,
 } = Astro.props;
+
+// КНОПКА ЗВУКА — только у одиночного ролика с дорожкой (плитка доски,
+// кадр-ролик в карточке). В карусели из нескольких кадров её нет намеренно:
+// кнопка относилась бы к тому кадру, который сейчас показан, и на каждом
+// листании меняла бы смысл — лишний слой в самом частом месте каталога.
+const soloReel = photos.length === 1 && isVideo(photos[0]) && hasSound(photos[0]) ? photos[0] : null;
 ---
 
-<div class="prail-wrap" data-prail-host>
+<div class="prail-wrap" data-prail-host data-sound-scope>
   <div class:list={['prail', bleed && 'prail--bleed']}>
     <div class="prail__track" data-rail>
       {photos.map((src, n) => {
@@ -91,6 +99,13 @@ const {
       })}
     </div>
   </div>
+
+  {soloReel && (
+    <button class="sound-btn" type="button" data-sound={soloReel} aria-pressed="false" aria-label="Звук ролика">
+      <span class="sound-btn__off"><Icon name="soundOff" /></span>
+      <span class="sound-btn__on"><Icon name="sound" /></span>
+    </button>
+  )}
 
   <div class="veil" aria-hidden="true"></div>
 
@@ -208,9 +223,12 @@ const {
   // Кадр меняется целиком: жест решает только направление, промежуточных
   // положений нет. Автолистание по наведению — там, где есть настоящий
   // ховер (мышь, не тач).
-  import { bindVideo } from '../lib/video';
+  import { bindVideo, bindSoundButtons } from '../lib/video';
 
   const hoverCapable = window.matchMedia('(hover: hover)').matches;
+
+  // Кнопка звука у одиночного ролика (см. soloReel в разметке выше)
+  bindSoundButtons();
 
   document.querySelectorAll<HTMLElement>('[data-prail-host]').forEach((host) => {
     const track = host.querySelector<HTMLElement>('[data-rail]');

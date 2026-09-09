@@ -87,6 +87,11 @@ const { cards } = Astro.props;
           <p class="scard__price">
             {price}
             {styleTag && <span class="scard__style">{styleTag}</span>}
+            <!-- Сердце в подписи, а не поверх кадра: лайкнуть можно прямо
+                 из каталога, но на фотографии ничего не лежит. -->
+            <button class="save save--inline scard__save" type="button" data-save={save} aria-pressed="false" aria-label="В избранное">
+              <Icon name="heartOutline" />
+            </button>
           </p>
           <div class="scard__top">
             <h2 class="scard__name">
@@ -207,6 +212,9 @@ const { cards } = Astro.props;
     font-size: var(--fs-body);
     font-weight: var(--w-medium);
   }
+
+  /* Сердце прижато к правому краю подписи, ценой не двигается */
+  .scard__save { margin-left: auto; }
 
   /* Стиль — вторым планом: приглушение прозрачностью, не цветом.
      На телефоне колонка ~190px, и стиль в строке с ценой переносится

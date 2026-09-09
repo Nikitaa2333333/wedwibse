@@ -28,6 +28,11 @@ const activeGroup = SPECIALIST_GROUPS.find((g) => g.categories.includes(activeSl
 // список, как раньше: лучше длинный ряд, чем пустой
 const rowSlugs = (activeGroup?.categories ?? categories.map((c) => c.slug)).filter((s) => bySlug.has(s));
 
+// Раздел без вкладок (в группе одна категория) — второй ряд не рисуем:
+// одинокая подчёркнутая пилюля повторяла бы заголовок каталога и
+// притворялась переключателем, которому не на что переключать.
+const showCats = rowSlugs.length > 1;
+
 const groups = SPECIALIST_GROUPS.map((g) => {
   const first = g.categories.find((s) => bySlug.has(s));
   return { ...g, href: first ? `${basePath}${first}/` : basePath };
@@ -36,7 +41,7 @@ const groups = SPECIALIST_GROUPS.map((g) => {
 
 <nav class="cat-nav" aria-label="Категории специалистов">
   <!-- РЯД 1: группы направлений -->
-  <div class="cat-nav__scroll cat-nav__scroll--groups">
+  <div class:list={['cat-nav__scroll', 'cat-nav__scroll--groups', !showCats && 'is-only']}>
     {groups.map((g) => (
       <a
         href={g.href}
@@ -47,21 +52,23 @@ const groups = SPECIALIST_GROUPS.map((g) => {
     ))}
   </div>
 
-  <!-- РЯД 2: категории текущей группы -->
-  <div class="cat-nav__scroll">
-    {rowSlugs.map((slug) => {
-      const c = bySlug.get(slug)!;
-      return (
-        <a
-          href={`${basePath}${c.slug}/`}
-          class={`cat-nav__cat${c.slug === activeSlug ? ' is-active' : ''}`}
-          aria-current={c.slug === activeSlug ? 'page' : undefined}
-        >
-          {c.label}
-        </a>
-      );
-    })}
-  </div>
+  <!-- РЯД 2: категории текущей группы (только если их больше одной) -->
+  {showCats && (
+    <div class="cat-nav__scroll">
+      {rowSlugs.map((slug) => {
+        const c = bySlug.get(slug)!;
+        return (
+          <a
+            href={`${basePath}${c.slug}/`}
+            class={`cat-nav__cat${c.slug === activeSlug ? ' is-active' : ''}`}
+            aria-current={c.slug === activeSlug ? 'page' : undefined}
+          >
+            {c.label}
+          </a>
+        );
+      })}
+    </div>
+  )}
 </nav>
 
 <style>
@@ -87,6 +94,10 @@ const groups = SPECIALIST_GROUPS.map((g) => {
 
   /* Два ряда подряд не должны дать двойной воздух на стыке */
   .cat-nav__scroll--groups { padding-bottom: 0; }
+
+  /* Ряда категорий нет — нижнее поле возвращаем ряду групп, иначе
+     полоса прилипает к заголовку каталога */
+  .cat-nav__scroll--groups.is-only { padding-bottom: var(--s-3); }
 
   /* В ряду категорий подложек нет — расстояние держит только зазор,
      поэтому он крупнее, чем между пилюлями групп */
