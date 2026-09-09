@@ -11,11 +11,13 @@ import ScrollyScenes from '../../../components/ScrollyScenes.astro';
 import VenueTerms from '../../../components/VenueTerms.astro';
 import VenueRules from '../../../components/VenueRules.astro';
 import VenueDocs from '../../../components/VenueDocs.astro';
-import PhotoGallery from '../../../components/PhotoGallery.astro';
+import PhotoMasonry from '../../../components/PhotoMasonry.astro';
 import FaqBlock from '../../../components/FaqBlock.astro';
 import VenueContacts from '../../../components/VenueContacts.astro';
 import BottomDock from '../../../components/BottomDock.astro';
 import { VENUES, type Venue } from '../../../data/venues';
+import { photoTiles } from '../../../lib/gallery';
+import { IMG_WIDTHS } from '../../../lib/images';
 
 export function getStaticPaths() {
   return VENUES.map((venue) => ({
@@ -62,7 +64,30 @@ const { venue } = Astro.props;
       )
     }
 
-    <PhotoGallery kicker="Галерея" title="Зал и мероприятия" items={venue.gallery} />
+    <!-- ГАЛЕРЕЯ: ТА ЖЕ ДОСКА, ЧТО НА ГЛАВНОЙ И В ВИЗИТКЕ ПОДРЯДЧИКА
+         (PhotoMasonry) — колонки, каждый кадр в своей настоящей пропорции.
+         Раньше тут стояла своя сетка с жёсткими ячейками: кадры кропились
+         под чужую рамку, и вертикальный портрет соседствовал с обрезанным
+         горизонтальным. Третьей вёрстки галереи в проекте не заводим.
+
+         ВСЕ кадры площадки сразу, без кнопки «показать ещё»: человек
+         пришёл смотреть зал, и прятать половину съёмки незачем. Систему
+         это не грузит — картинки ленивые, браузер качает только те, что
+         дошли до экрана; в HTML лежит лишь разметка. -->
+    <section class="vgal section" id="foto">
+      <div class="container container--wide">
+        <header class="vgal__head">
+          <p class="vgal__kicker t-caption">Галерея</p>
+          <h2 class="vgal__title t-h2">Зал и мероприятия</h2>
+        </header>
+
+        <PhotoMasonry
+          tiles={photoTiles(venue.gallery.map((g) => g.src), venue.name)}
+          sizes="(min-width: 1440px) 19vw, (min-width: 1024px) 24vw, (min-width: 640px) 32vw, 48vw"
+          widths={IMG_WIDTHS.tile}
+        />
+      </div>
+    </section>
 
     <FaqBlock kicker="Вопросы" title="Что спрашивают чаще всего" items={venue.faq} />
 
@@ -71,3 +96,10 @@ const { venue } = Astro.props;
 
   <BottomDock active="venues" />
 </Layout>
+
+<style>
+  /* ГАЛЕРЕЯ ПЛОЩАДКИ: заголовок на бумаге, доска под ним в край экрана */
+  .vgal :global(.container) { max-width: none; padding-inline: 0; }
+  .vgal__head { padding: 0 var(--gutter) var(--s-5); }
+  .vgal__kicker { font-weight: var(--w-medium); }
+</style>

@@ -54,9 +54,10 @@ const defaultFrame = frames.find(isPortrait) ?? frames[0];
         <Image
           src={resolveImage(video ? posterOf(src) : src)}
           alt=""
-          widths={IMG_WIDTHS.card}
+          widths={IMG_WIDTHS.blur}
           sizes="100vw"
           loading={src === defaultFrame ? 'eager' : 'lazy'}
+          fetchpriority={src === defaultFrame ? 'high' : undefined}
           decoding="async"
         />
       </div>
@@ -111,7 +112,11 @@ const defaultFrame = frames.find(isPortrait) ?? frames[0];
     position: relative;
     height: 100svh;
     overflow: hidden;
-    background: var(--black);
+    /* Бумажная подложка, а не чёрное: пока крупный кадр летит по сети,
+       на весь экран стоит именно этот фон — чёрный давал провал в дыру,
+       из которой не понять, грузится страница или сломалась. Тот же
+       --surface-dim, что под всеми фото проекта. */
+    background: var(--surface-dim);
     isolation: isolate;
   }
 
@@ -191,7 +196,11 @@ const defaultFrame = frames.find(isPortrait) ?? frames[0];
     right: 0;
     bottom: 0;
     z-index: 2;
-    padding: calc(var(--viewer-fade) + var(--s-3)) var(--gutter) var(--s-6);
+    /* Снизу — место под нижний док: он фиксированный и перекрывал бирку
+       под именем (город, знак площадки), от подписи оставалась одна
+       строка. Страница читает только --dock-space и не знает, таб-бар
+       там сейчас или боковой рельс. */
+    padding: calc(var(--viewer-fade) + var(--s-3)) var(--gutter) calc(var(--dock-space) - var(--s-3));
     background: linear-gradient(
       to bottom,
       transparent,

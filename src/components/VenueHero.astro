@@ -16,8 +16,10 @@
 // экран, а не на её уменьшенную копию с текстом под ней.
 import type { Venue } from '../data/venues';
 import HeroActions from './HeroActions.astro';
+import HeroBar from './HeroBar.astro';
 import HeroStage from './HeroStage.astro';
 import { venueFavorite } from '../lib/favorite-snapshot';
+import { FEED } from '../data/feed';
 
 interface Props {
   venue: Venue;
@@ -33,6 +35,11 @@ const frames = [...new Set([venue.hero.image, ...venue.gallery.map((shot) => sho
 // сердце на карточке площадки и сердце на карточке каталога должны
 // класть в хранилище одну и ту же запись, иначе площадка задвоится.
 const favorite = await venueFavorite(venue);
+
+// Рейтинг площадки живёт в ленте каталога, а не в карточке (тот же
+// источник, что у доски главной): нет записи в ленте — нет и звезды.
+const row = FEED.find((f) => f.kind === 'venue' && f.slug === venue.slug);
+const rating = row?.kind === 'venue' ? row.rating : null;
 ---
 
 <!-- ПЕРВЫЙ ЭКРАН — кадр во весь экран (HeroStage), на стекле внизу имя
@@ -61,6 +68,11 @@ const favorite = await venueFavorite(venue);
 
     <p class="vhero__kicker t-caption">{venue.kicker}</p>
   </div>
+
+  <!-- Действия с карточкой: лайк, рейтинг, «поделиться». Кнопки
+       «Отзывы» у площадки пока нет — в данных лежит только их число,
+       самих отзывов и блока под них на странице ещё не завели. -->
+  <HeroBar save={JSON.stringify(favorite)} rating={rating} />
 </HeroStage>
 
 <section class="vhero">

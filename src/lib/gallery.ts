@@ -23,7 +23,7 @@
 // ============================================================
 import { VENUES } from '../data/venues';
 import { ARTICLES, articleUrl, rubricBySlug } from '../data/articles';
-import { REELS } from '../data/reels';
+import { REELS, reelHref } from '../data/reels';
 import { FEED } from '../data/feed';
 import { FOTOGRAFY, specialistUrl, type Specialist } from '../data/specialists';
 import { frameId, isPortrait, ratioOf } from './media';
@@ -134,24 +134,23 @@ function tallPins(venue: Venue): Pin[] {
   return pins;
 }
 
-/** Видео-кадры общего потока (data/reels.ts): такие же плитки, как фото.
- *  В доске крутится немой луп; нажатие открывает кадр в просмотре на весь
- *  экран (lib/viewer), как и у фото-плитки.
+/** Видео-кадры общего потока (data/reels.ts): такие же плитки, как фото,
+ *  и ведут туда же — на визитку автора, открытую НА ЭТОМ РОЛИКЕ (якорь
+ *  #foto-<slug>, его разбирает HeroStage).
  *
- *  ВЛАДЕЛЬЦА И ССЫЛКИ НА КАРТОЧКУ ТУТ НЕТ НАРОЧНО. Все ролики сейчас числятся
- *  за карточкой leshakovy только потому, что кто-то должен был отдать материал
- *  для доски главной, — это демо-набор, ни к кому реально не привязанный
- *  (см. комментарий в data/reels.ts). Подписывать кадр чужим именем и вести
- *  на чужую визитку нельзя (CLAUDE.md, раздел «Видео»): кадр открывается в
- *  просмотре, подписи под ним просто нет. Когда заведут настоящих
- *  подрядчиков со своими роликами — owner/href тут снова становятся
- *  specialistOwner(author) и reelHref(reel), как у обычной видео-плитки. */
+ *  Ролик без ссылки был тупиком: человек жмёт на кадр, а тот не отвечает —
+ *  единственная плитка доски, которая никуда не ведёт. Автор у каждого
+ *  ролика проставлен честно (author в data/reels.ts: весь нынешний набор
+ *  снят Лешаковыми, они же его и отдали), так что вести на его визитку —
+ *  не подделка выдачи, а ровно то, чем ролик является: работой подрядчика.
+ *  Появится ролик без автора — reelHref вернёт null, и плитка снова будет
+ *  просто кадром без перехода. */
 function reelPins(): Pin[] {
   return REELS.map((reel) => ({
     owner: null,
     photos: [reel.src],
     alt: reel.alt,
-    href: null,
+    href: reelHref(reel),
     caption: null,
     ratio: `${ratioOf(reel.src).toFixed(3)} / 1`,
     index: 0,
