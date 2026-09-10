@@ -128,25 +128,9 @@ const facts = rating !== null && rating !== undefined;
     <div class="stage__text">
       <h1 class="stage__title">{title}</h1>
       {kicker && <p class="stage__kicker">{kicker}</p>}
-    </div>
 
-    {
-      avatar ? (
-        <Avatar src={avatar} name={title} size={44} class="stage__badge" />
-      ) : logo ? (
-        <span
-          class="stage__badge stage__logo"
-          role="img"
-          aria-label={`Логотип «${logo.label}»`}
-          style={`--logo: url('${logo.src}'); --logo-ratio: ${logo.ratio};`}
-        />
-      ) : null
-    }
-
-    <!-- Строка фактов: слева оценка и отзывы, справа счётчик кадров.
-         Счётчик стоял отдельной строкой над именем и забирал её впустую —
-         здесь он делит строку с фактами. -->
-    <p class="stage__facts">
+      <!-- Оценка и отзывы — сразу под биркой, без своей строки-этажа:
+           это подпись к имени, а не отдельный блок. -->
       {
         facts && (
           <a class="stage__rate" href={reviewsHref ?? '#otzyvy'}>
@@ -163,11 +147,31 @@ const facts = rating !== null && rating !== undefined;
           </a>
         )
       }
+    </div>
 
+    <!-- Правый край первой строки: счётчик кадров и бейдж (знак площадки
+         или портрет подрядчика). СЧЁТЧИК СТОИТ ИМЕННО ЗДЕСЬ — на одной
+         линии с именем, вплотную под кадром: число относится к
+         фотографиям, и отбитое вниз, в строку рейтинга, оно читалось
+         цифрой неизвестно о чём. -->
+    <div class="stage__aside">
       {frames.length > 1 && (
         <span class="stage__count" data-stage-count>1 / {frames.length}</span>
       )}
-    </p>
+
+      {
+        avatar ? (
+          <Avatar src={avatar} name={title} size={44} class="stage__badge" />
+        ) : logo ? (
+          <span
+            class="stage__badge stage__logo"
+            role="img"
+            aria-label={`Логотип «${logo.label}»`}
+            style={`--logo: url('${logo.src}'); --logo-ratio: ${logo.ratio};`}
+          />
+        ) : null
+      }
+    </div>
   </div>
 </section>
 
@@ -184,11 +188,17 @@ const facts = rating !== null && rating !== undefined;
      Пропорция постоянная, обрезка по краям. Бумажная подложка держит
      место, пока кадр летит по сети, и она же остаётся полями у
      горизонтального кадра, вписанного целиком. */
+  /* ШОВ ПОД ОКНОМ. Высота окна дробная (ширина экрана ÷ пропорция), и
+     кадр внутри округляется вниз — снизу оставался волосок подложки
+     --surface-dim, читавшийся линией между фотографией и бумагой.
+     Лечится нахлёстом: окно заходит на пиксель под подпись, подпись
+     стоит выше и со своим фоном. */
   .stage__window {
     position: relative;
     aspect-ratio: var(--stage-ratio);
     overflow: hidden;
     background: var(--surface-dim);
+    margin-bottom: -1px;
   }
 
   .stage__frame {
@@ -256,18 +266,35 @@ const facts = rating !== null && rating !== undefined;
   }
 
   /* ============ ПОДПИСЬ ============
-     Две колонки: текст тянется, бейдж по содержимому. minmax(0, 1fr)
-     обязателен — без него длинное имя распирает колонку и выдавливает
-     бейдж за край. */
+     Две колонки: текст тянется, справа счётчик кадров и бейдж.
+     minmax(0, 1fr) обязателен — без него длинное имя распирает колонку
+     и выдавливает бейдж за край.
+     ПЛОТНО, одним блоком: имя, бирка и рейтинг — одна смысловая группа,
+     и внутри неё расстояния меньше, чем от группы до кадра сверху и до
+     текста страницы снизу (внутреннее меньше внешнего). Раньше каждая
+     строка стояла своим этажом через --s-2 и подпись читалась тремя
+     отдельными блоками. Фон — свой: он же закрывает шов под окном. */
   .stage__cap {
+    position: relative;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: start;
-    gap: var(--s-2) var(--s-4);
-    padding: var(--s-4) var(--gutter) 0;
+    gap: 0 var(--s-4);
+    padding: var(--s-3) var(--gutter) 0;
+    background: var(--paper);
   }
 
   .stage__text { min-width: 0; }
+
+  /* Правая колонка первой строки: счётчик и бейдж по центру друг друга,
+     вровень с первой строкой имени. */
+  .stage__aside {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    font-size: var(--fs-caption);
+    font-weight: var(--w-medium);
+  }
 
   /* Имя — ровно две строки. Кламп тут не украшение, а предохранитель:
      длина имени приходит из данных, а высота подписи меняться не должна.
@@ -290,7 +317,7 @@ const facts = rating !== null && rating !== undefined;
      Быково») в подписи первого экрана не живёт: там тип и один топоним,
      остальное ждёт человека в характеристиках ниже. */
   .stage__kicker {
-    margin-top: var(--s-2);
+    margin-top: 2px;
     font-size: var(--fs-small);
     white-space: nowrap;
     overflow: hidden;
@@ -317,30 +344,20 @@ const facts = rating !== null && rating !== undefined;
     max-width: calc(var(--stage-badge) * 3);
     aspect-ratio: var(--logo-ratio);
     max-height: var(--stage-badge);
-    align-self: start;
-    margin-top: var(--s-1);
     background: var(--fg);
     -webkit-mask: var(--logo) no-repeat center / contain;
     mask: var(--logo) no-repeat center / contain;
   }
 
-  /* Строка фактов идёт под обеими колонками — оценка слева, счётчик
-     кадров справа. */
-  .stage__facts {
-    grid-column: 1 / -1;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--s-3);
-    margin-top: var(--s-2);
-    font-size: var(--fs-caption);
-    font-weight: var(--w-medium);
-  }
-
+  /* Оценка с отзывами — третья строка той же группы, тем же плотным
+     шагом. Ссылка ведёт в блок отзывов ниже по странице. */
   .stage__rate {
     display: inline-flex;
     align-items: center;
     gap: var(--s-3);
+    margin-top: var(--s-2);
+    font-size: var(--fs-caption);
+    font-weight: var(--w-medium);
     color: inherit;
     text-decoration: none;
   }
@@ -356,10 +373,10 @@ const facts = rating !== null && rating !== undefined;
     height: 14px;
   }
 
-  /* Счётчик кадров — тихая строка, не кнопка. Приглушение opacity,
+  /* Счётчик кадров — тихая метка, не кнопка. Приглушение opacity,
      а не серой краской (правило проекта). */
   .stage__count {
-    margin-left: auto;
+    white-space: nowrap;
     opacity: 0.6;
   }
 

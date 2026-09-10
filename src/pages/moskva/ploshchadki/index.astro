@@ -15,10 +15,9 @@ import FilterBar from '../../../components/FilterBar.astro';
 import FilterSheet from '../../../components/FilterSheet.astro';
 import ScopePicker from '../../../components/ScopePicker.astro';
 import PhotoRail from '../../../components/PhotoRail.astro';
-import Icon from '../../../components/Icon.astro';
 import VenueMap from '../../../components/VenueMap.astro';
 import { FEED, VENUE_FILTERS, type FeedVenue } from '../../../data/feed';
-import { resolveImage, favoriteImage, IMG_WIDTHS } from '../../../lib/images';
+import { resolveImage, IMG_WIDTHS } from '../../../lib/images';
 import { countOptions } from '../../../lib/filter-counts';
 import { venueMapPoints } from '../../../lib/map-points';
 import { photosOnly } from '../../../lib/media';
@@ -78,11 +77,6 @@ const counts = countOptions(VENUE_FILTERS, venues.map(filtersOf));
 // Точки для карты: только площадки, которым проставлены координаты
 const mapPoints = venueMapPoints();
 
-// Кадр для снимка в избранном — уже пережатый URL, не путь из данных.
-// Только фото: в media может стоять видео, а в избранном нужен статичный кадр.
-const favImg = new Map(
-  await Promise.all(venues.map(async (v) => [v.name, await favoriteImage(photosOnly(v.media)[0])] as const))
-);
 ---
 
 <Layout
@@ -149,17 +143,6 @@ const favImg = new Map(
               ? '(min-width: 1440px) 50vw, (min-width: 640px) 66vw, 100vw'
               : '(min-width: 1440px) 25vw, (min-width: 640px) 33vw, 50vw';
 
-          const saveData = JSON.stringify({
-            id: `venue:${item.name}`,
-            cat: 'venue',
-            catLabel: 'Площадки',
-            name: item.name,
-            meta: item.city,
-            price: item.avgCheck,
-            rating: item.rating,
-            img: favImg.get(item.name),
-            href: `/moskva/ploshchadki/${item.slug}/`,
-          });
 
           return (
             <article
@@ -212,15 +195,10 @@ const favImg = new Map(
                   </div>
                   <span class="vcard__rate" aria-label={`Рейтинг ${item.rating}`}>★ {item.rating.toFixed(1)}</span>
                 </div>
-                <div class="vcard__foot">
-                  <p class="vcard__price">{item.avgCheck}</p>
-                  <!-- Сердце в подписи, а не поверх кадра: лайкнуть можно
-                       с любого экрана, но на фотографии по-прежнему ничего
-                       не лежит (см. CLAUDE.md, «Текст НЕ лежит на фото»). -->
-                  <button class="save save--inline" type="button" data-save={saveData} aria-pressed="false" aria-label="В избранное">
-                    <Icon name="heartOutline" />
-                  </button>
-                </div>
+                <!-- Сердца в подписи НЕТ: лайк в каталоге снят (правило
+                     проекта — знака «в избранное» на карточке выдачи не
+                     держим, он есть только в самой карточке). -->
+                <p class="vcard__price">{item.avgCheck}</p>
               </div>
             </article>
           );
@@ -379,15 +357,6 @@ const favImg = new Map(
     font-weight: var(--w-medium);
   }
 
-  /* Цена и сердце — одной строкой: цена слева, лайк прижат к правому краю
-     подписи, ровно под рейтингом. */
-  .vcard__foot {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--s-3);
-  }
-
   /* Цена — крупно, но с минимальным отрывом от группы «имя + город» */
   .vcard__price {
     margin-top: 4px;
@@ -433,11 +402,8 @@ const favImg = new Map(
 </style>
 
 <script>
-  import { bindSaveButtons } from '../../../lib/save';
-
   // Фильтрация и шторка — внутри FilterSheet.astro, сортировка — в
   // FilterBar.astro; точки-индикаторы и автолистание — в PhotoRail.astro.
-  // Здесь только избранное.
 
   // Вид «На карте»: карта подменяет мозаику, фильтры и сортировка остаются
   // на месте и продолжают работать — карта повторяет выдачу (см. VenueMap).
@@ -455,7 +421,4 @@ const favImg = new Map(
       if (showMap) mapView.querySelector('[data-venue-map]')?.dispatchEvent(new Event('vmap:show'));
     });
   }
-
-  // Избранное: сохраняется в общее хранилище, читается разделом «Избранное»
-  bindSaveButtons();
 </script>

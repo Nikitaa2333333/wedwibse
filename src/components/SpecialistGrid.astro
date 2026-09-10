@@ -25,7 +25,6 @@
 import { Image } from 'astro:assets';
 import PhotoRail from './PhotoRail.astro';
 import Avatar from './Avatar.astro';
-import Icon from './Icon.astro';
 import type { SpecialistCard } from '../lib/specialist-card';
 import { resolveImage, IMG_WIDTHS } from '../lib/images';
 import { photosOnly } from '../lib/media';
@@ -41,7 +40,7 @@ const { cards } = Astro.props;
      каталог листается спокойно, карточки стоят на месте. -->
 <main class="wrap">
   <div class="vgrid" data-sort-grid>
-    {cards.map(({ s, variant, styleTag, filters, sortKey, price, href, save }) => {
+    {cards.map(({ s, variant, styleTag, filters, sortKey, price, href }) => {
       const sizes =
         variant === 'scard--wide' || variant === 'scard--duo'
           ? '(min-width: 1440px) 50vw, (min-width: 640px) 66vw, 100vw'
@@ -87,11 +86,6 @@ const { cards } = Astro.props;
           <p class="scard__price">
             {price}
             {styleTag && <span class="scard__style">{styleTag}</span>}
-            <!-- Сердце в подписи, а не поверх кадра: лайкнуть можно прямо
-                 из каталога, но на фотографии ничего не лежит. -->
-            <button class="save save--inline scard__save" type="button" data-save={save} aria-pressed="false" aria-label="В избранное">
-              <Icon name="heartOutline" />
-            </button>
           </p>
           <div class="scard__top">
             <h2 class="scard__name">
@@ -213,9 +207,6 @@ const { cards } = Astro.props;
     font-weight: var(--w-medium);
   }
 
-  /* Сердце прижато к правому краю подписи, ценой не двигается */
-  .scard__save { margin-left: auto; }
-
   /* Стиль — вторым планом: приглушение прозрачностью, не цветом.
      На телефоне колонка ~190px, и стиль в строке с ценой переносится
      и рвёт подпись — там его нет. */
@@ -228,8 +219,8 @@ const { cards } = Astro.props;
     .scard__style { display: inline; }
   }
 
-  /* Вуаль не нужна: под кадром больше нет текста, на фото осталось
-     только сердце, а у него своя тень. */
+  /* Вуаль не нужна: на кадре в каталоге нет ничего — ни текста,
+     ни знака «в избранное». */
   .scard :global(.veil) { display: none; }
 
   .scard__top {

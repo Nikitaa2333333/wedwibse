@@ -82,24 +82,6 @@ const GALLERY_SIZES =
 const priceLabel = s.priceFrom ? `от ${priceFmt.format(s.priceFrom)} ₽` : 'Цена по запросу';
 const href = `/moskva/podryadchiki/${s.categorySlug}/${s.slug}/`;
 
-// Лайк у КАЖДОГО ролика: ролик — такая же работа подрядчика, как кадр,
-// и сохранять его человек хочет отдельно. Постер прогоняем через
-// favoriteImage — в хранилище нужен пережатый URL, не путь из данных.
-const reelSaves = new Map(
-  await Promise.all(
-    reels.map(async (r) => [r.src, JSON.stringify({
-      id: `reel:${r.src}`,
-      cat: s.categorySlug,
-      catLabel: 'Видео',
-      name: s.name,
-      meta: r.alt,
-      price: '',
-      img: await favoriteImage(posterOf(r.src)),
-      href: `/moskva/podryadchiki/${s.categorySlug}/${s.slug}/`,
-    })] as const)
-  )
-);
-
 const saveData = JSON.stringify({
   id: `${s.categorySlug}:${s.slug}`,
   cat: s.categorySlug,
@@ -150,7 +132,7 @@ const saveData = JSON.stringify({
     </HeroStage>
 
     <section class="phero">
-      <div class="phero__card theme-accent">
+      <div class="phero__card">
         <div class="phero__deal">
           <p class="phero__price">{priceLabel}</p>
           <p class="t-caption phero__price-note">
@@ -261,20 +243,16 @@ const saveData = JSON.stringify({
                 </span>
               </button>
 
-              {/* Сердце ПОД роликом, а не на нём: кнопка «в избранное»
-                  внутри кнопки запуска — недопустимая вложенность, да и
-                  правило то же, что у фотографий: на кадре ничего нет. */}
-              <div class="preels__foot">
-                {reel.sound && (
+              {/* Под роликом — только звук: знака «в избранное» у ролика
+                  нет, как и у карточки в каталоге. */}
+              {reel.sound && (
+                <div class="preels__foot">
                   <button class="sound-btn sound-btn--inline" type="button" data-sound={reel.src} aria-pressed="false" aria-label="Звук ролика">
                     <span class="sound-btn__off"><Icon name="soundOff" /></span>
                     <span class="sound-btn__on"><Icon name="sound" /></span>
                   </button>
-                )}
-                <button class="save save--inline" type="button" data-save={reelSaves.get(reel.src)} aria-pressed="false" aria-label="Ролик в избранное">
-                  <Icon name="heartOutline" />
-                </button>
-              </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -320,7 +298,7 @@ const saveData = JSON.stringify({
     )}
 
     <!-- ЗАЯВКА -->
-    <section class="pcta theme-accent" id="zayavka">
+    <section class="pcta" id="zayavka">
       <h2 class="t-h2">Забронировать на свою свадьбу</h2>
       <p class="t-small pcta__note">Оставьте заявку — менеджер свяжется и уточнит дату и детали.</p>
       <a class="pill pill--lg" href="#">Оставить заявку</a>
@@ -340,7 +318,12 @@ const saveData = JSON.stringify({
      месте и была причиной разнобоя — у площадки, у подрядчика и у
      третьей карточки один компонент выглядел по-разному. */
 
-  /* ============ УСЛОВИЯ И ЗАЯВКА (сразу под первым экраном) ============ */
+  /* ============ УСЛОВИЯ И ЗАЯВКА (сразу под первым экраном) ============
+     ЗАЛИВКИ ЦВЕТОМ ЗДЕСЬ БОЛЬШЕ НЕТ. Была алая плашка (.theme-accent):
+     на телефоне она шла сразу под подписью первого экрана и била в глаз
+     раньше самой работы подрядчика — цветной прямоугольник в проекте,
+     где всё остальное живёт на бумаге. Цена и кнопка стоят на бумаге,
+     как и весь остальной текст; вес им даёт кегль, а не краска. */
   .phero { margin-bottom: var(--section-gap-tight); }
 
   .phero__card {
@@ -348,7 +331,7 @@ const saveData = JSON.stringify({
     flex-direction: column;
     align-items: flex-start;
     gap: var(--s-6);
-    padding: var(--s-6) var(--gutter);
+    padding: var(--s-5) var(--gutter) 0;
   }
 
   .phero__deal {

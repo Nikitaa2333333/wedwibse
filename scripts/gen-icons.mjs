@@ -36,7 +36,9 @@ const MAP = {
   pause: 'pause-bold',
   // строка фактов первого экрана: оценка и число отзывов
   star: 'star-bold',
-  chat: 'chat-round-line-linear',
+  // Заливная, не контурная: рядом со звездой (star-bold) контур читался
+  // другим набором — знаки одной строки фактов должны быть одного веса.
+  chat: 'chat-round-bold',
   // звук ролика: кнопка на кадре переключает эти два состояния
   sound: 'volume-loud-bold',
   soundOff: 'muted-bold',
