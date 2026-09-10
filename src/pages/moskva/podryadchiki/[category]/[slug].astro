@@ -131,16 +131,13 @@ const saveData = JSON.stringify({
       />
     </HeroStage>
 
+    <!-- УСЛОВИЯ — ровно та же логика, что у площадки (VenueHero): строка
+         продолжает подпись первого экрана прямо на бумаге, под ней одна
+         пилюля-действие. Ни плашки, ни заливки, ни своей карточки. -->
     <section class="phero">
-      <div class="phero__card">
-        <div class="phero__deal">
-          <p class="phero__price">{priceLabel}</p>
-          <p class="t-caption phero__price-note">
-            {priceFacts.join(' · ')}
-          </p>
-          <a class="pill pill--lg" href="#zayavka">Оставить заявку</a>
-        </div>
-      </div>
+      <p class="phero__price">{priceLabel}</p>
+      <p class="t-caption phero__price-note">{priceFacts.join(' · ')}</p>
+      <a class="pill pill--lg" href="#zayavka">Оставить заявку</a>
     </section>
 
     <!-- О ПОДРЯДЧИКЕ: рассказ о себе и портрет автора целиком.
@@ -319,29 +316,23 @@ const saveData = JSON.stringify({
      третьей карточки один компонент выглядел по-разному. */
 
   /* ============ УСЛОВИЯ И ЗАЯВКА (сразу под первым экраном) ============
-     ЗАЛИВКИ ЦВЕТОМ ЗДЕСЬ БОЛЬШЕ НЕТ. Была алая плашка (.theme-accent):
-     на телефоне она шла сразу под подписью первого экрана и била в глаз
-     раньше самой работы подрядчика — цветной прямоугольник в проекте,
-     где всё остальное живёт на бумаге. Цена и кнопка стоят на бумаге,
-     как и весь остальной текст; вес им даёт кегль, а не краска. */
-  .phero { margin-bottom: var(--section-gap-tight); }
-
-  .phero__card {
+     ЗАЛИВКИ ЦВЕТОМ ЗДЕСЬ БОЛЬШЕ НЕТ, и плашки тоже. Была алая карточка
+     (.theme-accent): на телефоне она шла сразу под подписью первого
+     экрана и била в глаз раньше самой работы подрядчика — цветной
+     прямоугольник в проекте, где всё остальное живёт на бумаге.
+     Устройство теперь ровно как у площадки (VenueHero): текст-продолжение
+     подписи по полям --gutter и одна пилюля под ним. Вес даёт кегль. */
+  .phero {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: var(--s-6);
-    padding: var(--s-5) var(--gutter) 0;
+    padding: var(--s-4) var(--gutter) 0;
+    margin-bottom: var(--section-gap-tight);
   }
 
-  .phero__deal {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--s-2);
-  }
+  .phero .pill { margin-top: var(--s-5); }
 
-  /* Цена — крупно, якорь плашки */
+  /* Цена — крупно: якорь блока условий */
   .phero__price {
     font-size: var(--fs-h2);
     font-weight: var(--w-medium);
@@ -349,7 +340,9 @@ const saveData = JSON.stringify({
     letter-spacing: var(--ls-display);
   }
 
-  .phero__deal .pill { margin-top: var(--s-3); }
+  /* Строка фактов — вплотную под ценой: одна группа (внутреннее меньше
+     внешнего), воздух остаётся только перед пилюлей. */
+  .phero__price-note { margin-top: var(--s-1); }
 
   /* ============ О ПОДРЯДЧИКЕ ============ */
   .pabout {
