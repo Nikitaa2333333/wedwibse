@@ -35,42 +35,30 @@ const frames = [...new Set([venue.hero.image, ...venue.gallery.map((shot) => sho
 // класть в хранилище одну и ту же запись, иначе площадка задвоится.
 const favorite = await venueFavorite(venue);
 
-// Рейтинг площадки живёт в ленте каталога, а не в карточке (тот же
+// Рейтинг и число отзывов живут в ленте каталога, а не в карточке (тот же
 // источник, что у доски главной): нет записи в ленте — нет и звезды.
 const row = FEED.find((f) => f.kind === 'venue' && f.slug === venue.slug);
 const rating = row?.kind === 'venue' ? row.rating : null;
+const reviews = row?.kind === 'venue' ? row.reviews : null;
 ---
 
 <!-- ПЕРВЫЙ ЭКРАН — кадр во весь экран (HeroStage), на стекле внизу имя
      и город. Дальше страница продолжается: лид, характеристики, бронь. -->
-<HeroStage frames={frames} alt={venue.hero.alt}>
+<HeroStage
+  frames={frames}
+  alt={venue.hero.alt}
+  title={venue.name}
+  kicker={venue.kicker}
+  rating={rating}
+  reviews={reviews}
+  logo={venue.logo}
+>
   <HeroActions
     slot="actions"
     backHref={`/${venue.citySlug}/${venue.categorySlug}/`}
     backLabel="К списку площадок"
     save={JSON.stringify(favorite)}
   />
-
-  <h1 class="vhero__title">{venue.title}</h1>
-
-  <div class="vhero__meta">
-    {
-      venue.logo && (
-        <span
-          class="vhero__logo"
-          role="img"
-          aria-label={`Логотип площадки «${venue.logo.label}»`}
-          style={`--logo: url('${venue.logo.src}'); --logo-ratio: ${venue.logo.ratio};`}
-        />
-      )
-    }
-
-    <p class="vhero__kicker t-caption">{venue.kicker}</p>
-
-    {rating !== null && (
-      <span class="vhero__rate">★ {rating.toFixed(1).replace('.', ',')}</span>
-    )}
-  </div>
 </HeroStage>
 
 <section class="vhero">
@@ -169,49 +157,6 @@ const rating = row?.kind === 'venue' ? row.rating : null;
     display: grid;
     gap: var(--s-6);
     align-items: end;
-  }
-
-  /* Имя стоит на стекле первого экрана, а не на бумаге во всю ширину —
-     поэтому кегль от прежних 76px опущен: там он занимал бы половину
-     стеклянной полосы. Бирка (лого + категория/город) идёт под ним
-     меньше и тише, а не текстовой шапкой перед ним. */
-  .vhero__title {
-    font-size: clamp(28px, 7vw, 44px);
-    font-weight: var(--w-head);
-    line-height: var(--lh-heading);
-    letter-spacing: var(--ls-display);
-    text-wrap: balance;
-  }
-
-  .vhero__meta {
-    display: flex;
-    align-items: center;
-    gap: var(--s-3);
-    margin-top: var(--s-3);
-  }
-
-  /* Знак площадки. Файл белый — красим маской: форма из PNG, заливка
-     чернильная. Не --fg: знак лежит на белёсом стекле первого экрана,
-     а --fg в тёмной теме белый — на стекле он бы исчез. */
-  .vhero__logo {
-    display: block;
-    height: 18px;
-    aspect-ratio: var(--logo-ratio);
-    flex: none;
-    background: var(--black);
-    -webkit-mask: var(--logo) no-repeat left center / contain;
-    mask: var(--logo) no-repeat left center / contain;
-  }
-
-  .vhero__kicker { font-weight: var(--w-medium); }
-
-  /* Рейтинг стоит в той же строке, что категория и город, — отдельной
-     кнопки под него не нужно: лайк и «поделиться» и так лежат в панели
-     поверх кадра, а звезда это не действие, а факт о площадке. */
-  .vhero__rate {
-    flex: none;
-    font-size: var(--fs-small);
-    font-weight: var(--w-medium);
   }
 
   .vhero__pitch {

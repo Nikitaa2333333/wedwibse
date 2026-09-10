@@ -127,28 +127,25 @@ const saveData = JSON.stringify({
          его работами, и портрет автора — единственное место, где видно,
          с кем человек будет иметь дело. Нет портрета — кружок с
          инициалами, слот остаётся на месте. -->
-    <!-- ПЕРВЫЙ ЭКРАН — тот же HeroStage, что у площадки: работа подрядчика
-         во весь экран, на стекле внизу портрет, имя, специальность
-         и рейтинг. Условия и заявка идут следом, при прокрутке. -->
-    <HeroStage frames={frames} alt={s.name}>
+    <!-- ПЕРВЫЙ ЭКРАН — тот же HeroStage, что у площадки, и теперь не только
+         кадром: подпись он собирает сам из пропов. Здесь карточка отдаёт
+         имя, специальность, рейтинг и портрет — где у площадки стоит её
+         знак, у подрядчика стоит он сам. Условия и заявка идут следом. -->
+    <HeroStage
+      frames={frames}
+      alt={s.name}
+      title={s.name}
+      kicker={s.tagline}
+      rating={s.rating}
+      reviews={s.reviews}
+      avatar={s.avatar}
+    >
       <HeroActions
         slot="actions"
         backHref={`/moskva/podryadchiki/${s.categorySlug}/`}
         backLabel={`К списку «${s.category}»`}
         save={saveData}
       />
-
-      <div class="phero__id">
-        <Avatar src={s.avatar} name={s.name} size={44} class="phero__avatar" />
-        <div class="phero__title">
-          <h1 class="phero__name">{s.name}</h1>
-          <p class="phero__tagline">{s.tagline}</p>
-        </div>
-      </div>
-
-      {s.rating && s.reviews && (
-        <a class="phero__rate" href="#otzyvy">★ {s.rating.toFixed(1).replace('.', ',')} · {s.reviews}&nbsp;отзывов</a>
-      )}
     </HeroStage>
 
     <section class="phero">
@@ -352,49 +349,10 @@ const saveData = JSON.stringify({
     padding-bottom: var(--dock-space);
   }
 
-  /* ============ ПОДПИСЬ НА СТЕКЛЕ ПЕРВОГО ЭКРАНА ============
-     Разметка стоит в слоте HeroStage: портрет и имя одной строкой,
-     под ними рейтинг. Кадровой вёрстки (сплит-полоса «плашка + карусель»)
-     тут больше нет — первый экран у подрядчика и у площадки один и тот же
-     компонент, а условия и заявка идут ниже, при прокрутке. */
-  .phero__id {
-    display: flex;
-    align-items: center;
-    gap: var(--s-3);
-  }
-
-  .phero__title { min-width: 0; }
-
-  /* Имя — главный объект экрана, но кегль от прежних 64px опущен:
-     на стеклянной полосе он занимал бы её целиком. */
-  .phero__name {
-    font-size: clamp(24px, 6vw, 36px);
-    font-weight: var(--w-head);
-    line-height: var(--lh-heading);
-    letter-spacing: var(--ls-display);
-  }
-
-  .phero__tagline {
-    font-size: var(--fs-small);
-    line-height: 1.3;
-  }
-
-  /* Кружок на стекле: подложка от чернил, а не бумажная --surface-dim —
-     та на размытом кадре читается заплаткой. */
-  .phero__id :global(.avatar) {
-    flex: none;
-    background: color-mix(in srgb, var(--black) 14%, transparent);
-    color: var(--black);
-  }
-
-  .phero__rate {
-    display: inline-block;
-    margin-top: var(--s-3);
-    font-size: var(--fs-small);
-    font-weight: var(--w-medium);
-    color: inherit;
-    text-decoration: none;
-  }
+  /* Подписи первого экрана здесь больше нет: имя, специальность, рейтинг
+     и портрет собирает сам HeroStage из пропов. Своя верстка на этом
+     месте и была причиной разнобоя — у площадки, у подрядчика и у
+     третьей карточки один компонент выглядел по-разному. */
 
   /* ============ УСЛОВИЯ И ЗАЯВКА (сразу под первым экраном) ============ */
   .phero { margin-bottom: var(--section-gap-tight); }

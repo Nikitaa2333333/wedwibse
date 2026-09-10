@@ -1,32 +1,41 @@
 ---
-// ПЕРВЫЙ ЭКРАН КАРТОЧКИ — фотография во весь экран телефона, под ней
-// продолжается страница. Один компонент на площадку и на подрядчика:
-// кадр открывается одинаково, чья это карточка — решает подпись в слоте.
+// ПЕРВЫЙ ЭКРАН КАРТОЧКИ — окно кадра постоянной пропорции, под ним на
+// бумаге подпись: имя, бирка, рейтинг с отзывами. Один компонент на
+// площадку и на подрядчика, и не только разметкой — подпись собирает он
+// сам из пропов. Раньше её печатала каждая страница в общий слот, и на
+// одном компоненте выросло три разных верстки: у площадки лого + город +
+// звезда одной флекс-строкой (город в четыре строки, звезда уезжала
+// вправо), у подрядчика портрет + имя + тэглайн и рейтинг ссылкой ниже,
+// у третьей карточки — снова своя. Пропы вместо слота эту развилку
+// закрывают: страница отдаёт данные, вид у всех один.
 //
-// Отсюда начинается сценарий «пришёл из доски»: нажал кадр на главной —
-// попал на страницу этой площадки, кадром вперёд; листнул вниз — описание,
-// условия, бронь. Раньше то же самое показывал оверлей поверх доски
-// (lib/viewer, снят): вид был тот же, но из него некуда было идти дальше.
+// ОКНО ПОСТОЯННОЙ ПРОПОРЦИИ (--stage-ratio) — главное решение экрана.
+// Кадр в своей настоящей высоте означал, что от карточки к карточке
+// разъезжается всё: имя, бирка, счётчик кадров каждый раз на новой
+// высоте, и человек, листающий каталог, ищет их заново. Окно постоянное:
+//   • портрет и квадрат заполняют его целиком (cover);
+//   • горизонтальный кадр вписывается ЦЕЛИКОМ (contain) на бумагу —
+//     высота окна от этого не меняется. Именно этот случай и запрещало
+//     правило «не кроить в общее окно»: студийную горизонталь однажды
+//     срезало по сюжету пополам. Кроп остаётся только у вертикали,
+//     которой окно почти впору.
+// Низ кадра уходит в бумагу мягким свечением (--stage-glow) — шва между
+// фотографией и подписью нет.
 //
-// ДВА СЛОЯ, чтобы кадр любой пропорции заполнял экран целиком и при этом
-// не кроился:
-//   1) подложка — тот же кадр, растянутый cover и размытый: горизонтальный
-//      снимок стоит в своём формате, а поле вокруг него того же цвета;
-//   2) сам кадр — прижат к верху, в своей настоящей пропорции.
-// Низ кадра гасится маской на высоте --viewer-fade и растворяется в эту
-// подложку, а поверх растворённого лежит матовое стекло с подписью —
-// границы у полосы нет (реф. плитка альбома в iOS).
-//
-// Сознательное исключение из правила «текст не лежит на фото»: подпись
-// лежит на матовом стекле поверх РАЗМЫТОГО, а не на самом кадре — стекло
-// ровняет любой сюжет под собой, и чернила на нём читаются на любом снимке.
+// ЧЕГО ЗДЕСЬ БОЛЬШЕ НЕТ И ПОЧЕМУ. Ушли размытая подложка-дубль кадра
+// (второй <Image> на КАЖДЫЙ кадр карточки: у площадки с 19 кадрами это
+// 19 лишних тегов и целый composite-слой с blur + scale), матовое стекло
+// с backdrop-filter и две mask-image. Всё это обслуживало подпись,
+// лежавшую на фотографии; подпись стоит на бумаге — и не нужно ничего
+// из этого. Заодно ушла причина «вспышки» при открытии: слоёв, которые
+// браузер досчитывает после первой отрисовки, на экране не осталось.
 //
 // Кадр выбирает якорь `#foto-<имя файла>` (см. скрипт внизу): нажали
 // в доске на свечи — открылась именно эта фотография. Без якоря берётся
-// первый вертикальный кадр: мобилка — главный сценарий, вертикаль полнее
-// заполняет экран телефона.
+// первый вертикальный кадр: мобилка — главный сценарий.
 import { Image } from 'astro:assets';
 import Icon from './Icon.astro';
+import Avatar from './Avatar.astro';
 import { frameId, isPortrait, isVideo, posterOf } from '../lib/media';
 import { resolveImage, IMG_WIDTHS } from '../lib/images';
 import { hasSound } from '../data/reels';
@@ -35,58 +44,61 @@ interface Props {
   /** кадры карточки: первый показанный выбирается якорем или вертикальностью */
   frames: string[];
   alt: string;
+  /** имя карточки — ровно две строки, дальше обрезается */
+  title: string;
+  /** бирка одной строкой: «Оранжерея · Быково», тэглайн подрядчика */
+  kicker?: string;
+  rating?: number | null;
+  reviews?: number | null;
+  /** якорь к отзывам на этой же странице — рейтинг становится ссылкой */
+  reviewsHref?: string;
+  /** портрет подрядчика (файл) — рисует общий Avatar */
+  avatar?: string;
+  /** знак площадки: белый файл, красится маской */
+  logo?: { src: string; ratio: number; label: string } | null;
   /** класс на секцию — чтобы страница могла добавить своё (редко) */
   class?: string;
 }
 
-const { frames, alt, class: extra } = Astro.props;
+const {
+  frames,
+  alt,
+  title,
+  kicker,
+  rating = null,
+  reviews = null,
+  reviewsHref,
+  avatar,
+  logo = null,
+  class: extra,
+} = Astro.props;
 
 const defaultFrame = frames.find(isPortrait) ?? frames[0];
+
+// Рейтинг и число отзывов идут ОДНОЙ строкой фактов и всегда вместе:
+// звезда без отзывов — цифра, взявшаяся ниоткуда.
+const facts = rating !== null && rating !== undefined;
 ---
 
-<section class:list={['stage', extra]} data-hero-shot data-sound-scope data-frames={JSON.stringify(frames.map(frameId))}>
-  <!-- Подложка: тот же кадр под блюром. Своего <img> у неё нет — это
-       копия показанного кадра, поэтому браузер берёт файл из кэша. -->
-  {frames.map((src) => {
-    const video = isVideo(src);
-    return (
-      <div class="stage__bg" data-bg={frameId(src)} hidden={src !== defaultFrame} aria-hidden="true">
-        <Image
-          src={resolveImage(video ? posterOf(src) : src)}
-          alt=""
-          widths={IMG_WIDTHS.blur}
-          sizes="100vw"
-          loading={src === defaultFrame ? 'eager' : 'lazy'}
-          fetchpriority={src === defaultFrame ? 'high' : undefined}
-          decoding="async"
-        />
-      </div>
-    );
-  })}
-
-  <div class="stage__frames">
+<section class:list={['stage', extra]} data-hero-shot data-sound-scope>
+  <div class="stage__window">
     {frames.map((src, n) => {
       const video = isVideo(src);
       const eager = src === defaultFrame;
       return (
         <div class="stage__frame" data-frame={frameId(src)} hidden={src !== defaultFrame}>
-          {/* Маска низа — на самой медиа, не на кадре целиком: иначе она
-              гасит вместе с фотографией и кнопку звука, та уходила
-              в градиент полупрозрачным пятном. */}
-          <div class="stage__media">
-            <Image
-              src={resolveImage(video ? posterOf(src) : src)}
-              alt={n === 0 ? alt : `${alt} — фото`}
-              widths={IMG_WIDTHS.hero}
-              sizes="100vw"
-              loading={eager ? 'eager' : 'lazy'}
-              fetchpriority={eager ? 'high' : undefined}
-              decoding="async"
-            />
-            {video && (
-              <video class="stage__video" data-video={src} muted loop playsinline preload="none" aria-hidden="true"></video>
-            )}
-          </div>
+          <Image
+            src={resolveImage(video ? posterOf(src) : src)}
+            alt={n === 0 ? alt : `${alt} — фото`}
+            widths={IMG_WIDTHS.hero}
+            sizes="100vw"
+            loading={eager ? 'eager' : 'lazy'}
+            fetchpriority={eager ? 'high' : undefined}
+            decoding="async"
+          />
+          {video && (
+            <video class="stage__video" data-video={src} muted loop playsinline preload="none" aria-hidden="true"></video>
+          )}
 
           {/* Кнопка звука — у своего кадра: скрытый кадр уносит её с собой,
               и на экране всегда ровно одна, от показанного ролика. */}
@@ -99,163 +111,279 @@ const defaultFrame = frames.find(isPortrait) ?? frames[0];
         </div>
       );
     })}
+
+    {/* Свечение: бумага заходит на низ кадра и растворяет кромку.
+        Лежит в окне, а не на кадре, — иначе уходило бы вместе
+        со скрытым кадром при листании. */}
+    <span class="stage__glow" aria-hidden="true"></span>
+
+    <!-- Кнопки поверх кадра (назад · избранное · поделиться) -->
+    <slot name="actions" />
   </div>
 
-  <!-- Кнопки поверх кадра (назад · избранное · поделиться) -->
-  <slot name="actions" />
+  <!-- ПОДПИСЬ НА БУМАГЕ. Правая колонка — бейдж (знак площадки или
+       портрет подрядчика); нет ни того ни другого — колонка схлопывается
+       в ноль, и высота подписи от этого не меняется. -->
+  <div class="stage__cap">
+    <div class="stage__text">
+      <h1 class="stage__title">{title}</h1>
+      {kicker && <p class="stage__kicker">{kicker}</p>}
+    </div>
 
-  <!-- Подпись на матовом стекле: имя, место, рейтинг — что именно, решает
-       страница. Стекло рисует .stage__glass, содержимое приходит слотом.
-       Счётчик кадров — над подписью: он один на любую карточку и говорит,
-       что кадр не один и их можно листать. -->
-  <div class="stage__glass">
-    {frames.length > 1 && (
-      <span class="stage__count t-caption" data-stage-count>1 / {frames.length}</span>
-    )}
-    <slot />
+    {
+      avatar ? (
+        <Avatar src={avatar} name={title} size={44} class="stage__badge" />
+      ) : logo ? (
+        <span
+          class="stage__badge stage__logo"
+          role="img"
+          aria-label={`Логотип «${logo.label}»`}
+          style={`--logo: url('${logo.src}'); --logo-ratio: ${logo.ratio};`}
+        />
+      ) : null
+    }
+
+    <!-- Строка фактов: слева оценка и отзывы, справа счётчик кадров.
+         Счётчик стоял отдельной строкой над именем и забирал её впустую —
+         здесь он делит строку с фактами. -->
+    <p class="stage__facts">
+      {
+        facts && (
+          <a class="stage__rate" href={reviewsHref ?? '#otzyvy'}>
+            <span class="stage__fact">
+              <Icon name="star" />
+              {rating!.toFixed(1).replace('.', ',')}
+            </span>
+            {reviews ? (
+              <span class="stage__fact">
+                <Icon name="chat" />
+                {reviews}
+              </span>
+            ) : null}
+          </a>
+        )
+      }
+
+      {frames.length > 1 && (
+        <span class="stage__count" data-stage-count>1 / {frames.length}</span>
+      )}
+    </p>
   </div>
 </section>
 
 <style>
-  /* Высота — весь экран телефона (svh, а не vh: с vh низ уезжает под
-     адресную строку Safari). Ниже сразу продолжается страница. */
+  /* Секция больше не 100svh: высоту задают окно кадра и подпись под ним,
+     и обе величины известны заранее — экран не пересобирается по факту
+     того, какая фотография доехала. */
   .stage {
     position: relative;
-    height: 100svh;
+    background: var(--paper);
+  }
+
+  /* ============ ОКНО КАДРА ============
+     Пропорция постоянная, обрезка по краям. Бумажная подложка держит
+     место, пока кадр летит по сети, и она же остаётся полями у
+     горизонтального кадра, вписанного целиком. */
+  .stage__window {
+    position: relative;
+    aspect-ratio: var(--stage-ratio);
     overflow: hidden;
-    /* Бумажная подложка, а не чёрное: пока крупный кадр летит по сети,
-       на весь экран стоит именно этот фон — чёрный давал провал в дыру,
-       из которой не понять, грузится страница или сломалась. Тот же
-       --surface-dim, что под всеми фото проекта. */
     background: var(--surface-dim);
-    isolation: isolate;
-  }
-
-  .stage__bg {
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-  }
-
-  .stage__bg img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    /* Масштаб чуть больше единицы прячет светлую кромку блюра по краям */
-    filter: blur(var(--viewer-bg-blur));
-    transform: scale(1.2);
-  }
-
-  .stage__frames {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
   }
 
   .stage__frame {
-    position: relative;
-    max-height: 100%;
+    position: absolute;
+    inset: 0;
   }
 
-  /* Низ кадра растворяется в размытую подложку. Маска висит здесь, на
-     слое с медиа, — всё, что должно остаться видимым поверх (кнопка
-     звука), лежит рядом, а не внутри. */
-  .stage__media {
-    -webkit-mask-image: linear-gradient(to bottom, black calc(100% - var(--viewer-fade)), transparent);
-    mask-image: linear-gradient(to bottom, black calc(100% - var(--viewer-fade)), transparent);
-  }
+  .stage__frame[hidden] { display: none; }
 
-  .stage__frame[hidden],
-  .stage__bg[hidden] { display: none; }
-
-  /* Кнопка звука — над стеклом и вне маски: полная непрозрачность,
-     чернильный кружок читается на любом кадре. */
-  .stage__frame .sound-btn {
-    bottom: calc(var(--viewer-fade) + var(--s-5));
-    z-index: 3;
-  }
-
-  /* Кадр в своей настоящей пропорции: ширина по экрану, высота от неё.
-     Ограничение по высоте экрана — чтобы отвесная вертикаль не уезжала
-     за первый экран целиком. */
-  .stage__media img,
-  .stage__media video {
+  /* Портрет и квадрат заполняют окно, горизонталь вписывается целиком:
+     решает сам браузер по пропорции файла. object-fit тут один на всех
+     (cover), а горизонталь ловит правило ниже — по aspect-ratio кадра
+     CSS не спросишь, поэтому режим ставит скрипт классом. */
+  .stage__frame img,
+  .stage__video {
     display: block;
     width: 100%;
-    height: auto;
-    max-height: 100svh;
+    height: 100%;
     object-fit: cover;
+    object-position: center;
   }
+
+  /* Горизонтальный кадр: целиком, на бумаге. Класс ставит скрипт по
+     настоящей пропорции файла (naturalWidth/naturalHeight). */
+  .stage__frame.is-wide img,
+  .stage__frame.is-wide .stage__video { object-fit: contain; }
 
   .stage__video {
     position: absolute;
     inset: 0;
-    width: 100%;
-    height: 100%;
     opacity: 0;
     transition: opacity var(--dur-fast) var(--ease-out);
   }
 
   .stage__video.is-playing { opacity: 1; }
 
-  /* МАТОВОЕ СТЕКЛО — настоящее, с размытием того, что под полосой
-     (backdrop-filter), а не одной заливкой: без него это был просто
-     градиент в белое, стеклом там и не пахло. Шва на кромке нет,
-     потому что кадр НАД полосой уже растворён маской в размытую
-     подложку — блюр стекла попадает на размытое, а не на резкий край.
-     Заливка не темнит, а светлеет: --viewer-frost поверх блюра.
-     Затемнение в чёрный давало грязь на тёмном кадре. */
-  .stage__glass {
+  /* ============ СВЕЧЕНИЕ ВМЕСТО СТЕКЛА ============
+     Три стопа, а не два: на тёмном кадре двухстопный градиент даёт
+     видимую кромку в месте, где начинается заливка. Нижний стоп — тот же
+     --paper, что и у подписи под окном, поэтому шва между ними нет.
+     Ни backdrop-filter, ни маски: текста на фотографии больше нет,
+     и размывать под ним нечего. */
+  .stage__glow {
     position: absolute;
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 2;
-    /* Снизу — место под нижний док: он фиксированный и перекрывал бирку
-       под именем (город, знак площадки), от подписи оставалась одна
-       строка. Страница читает только --dock-space и не знает, таб-бар
-       там сейчас или боковой рельс. */
-    padding: calc(var(--viewer-fade) + var(--s-3)) var(--gutter) calc(var(--dock-space) - var(--s-3));
+    height: var(--stage-glow);
+    pointer-events: none;
     background: linear-gradient(
-      to bottom,
-      transparent,
-      color-mix(in srgb, var(--white) var(--viewer-frost), transparent) var(--viewer-fade),
-      color-mix(in srgb, var(--white) var(--viewer-frost), transparent)
+      to top,
+      var(--paper) 0%,
+      color-mix(in srgb, var(--paper) 55%, transparent) 40%,
+      transparent 100%
     );
-    -webkit-backdrop-filter: var(--glass-blur);
-    backdrop-filter: var(--glass-blur);
-    -webkit-mask-image: linear-gradient(to bottom, transparent, black var(--viewer-fade));
-    mask-image: linear-gradient(to bottom, transparent, black var(--viewer-fade));
-    color: var(--black);
   }
 
-  /* Счётчик кадров: тихая строка над именем, не кнопка. Приглушение —
-     opacity, а не серый краской (правило проекта). */
-  .stage__count {
+  /* Кнопка звука — над свечением, справа: слева под кадром начинается
+     имя, и знак над первой строкой сбивал бы взгляд. */
+  .stage__frame .sound-btn {
+    left: auto;
+    right: var(--gutter);
+    bottom: calc(var(--stage-glow) + var(--s-3));
+    z-index: 2;
+  }
+
+  /* ============ ПОДПИСЬ ============
+     Две колонки: текст тянется, бейдж по содержимому. minmax(0, 1fr)
+     обязателен — без него длинное имя распирает колонку и выдавливает
+     бейдж за край. */
+  .stage__cap {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: var(--s-2) var(--s-4);
+    padding: var(--s-4) var(--gutter) 0;
+  }
+
+  .stage__text { min-width: 0; }
+
+  /* Имя — ровно две строки. Кламп тут не украшение, а предохранитель:
+     длина имени приходит из данных, а высота подписи меняться не должна.
+     Данные при этом держим короткими (см. --stage-title в SPACING.md):
+     обрезка многоточием — аварийный случай, а не норма. */
+  .stage__title {
+    font-size: var(--fs-stage-title);
+    font-weight: var(--w-head-lg);
+    line-height: var(--lh-heading);
+    letter-spacing: var(--ls-display);
+    text-wrap: balance;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+  }
+
+  /* Бирка — одна строка. Длинный адрес («Подольский район, посёлок
+     Быково») в подписи первого экрана не живёт: там тип и один топоним,
+     остальное ждёт человека в характеристиках ниже. */
+  .stage__kicker {
+    margin-top: var(--s-2);
+    font-size: var(--fs-small);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .stage__badge {
+    width: var(--stage-badge);
+    height: var(--stage-badge);
+    flex: none;
+  }
+
+  /* Знак площадки. Файл белый — красим маской: форма из PNG, заливка
+     чернильная (не --black: в тёмной теме подпись стоит на тёмной бумаге).
+     Знаки приходят разной формы — от квадратной эмблемы до вордмарка
+     8:1, — поэтому размер задан рамкой, а не стороной: высота не больше
+     бейджа, ширина не больше трёх его сторон, внутри рамки знак сам
+     садится по своей пропорции (contain). Отсюда и align-self: узкий
+     вордмарк прижимается к верху, вровень с первой строкой имени. */
+  .stage__logo {
     display: block;
-    margin-bottom: var(--s-2);
+    width: auto;
+    height: auto;
+    max-width: calc(var(--stage-badge) * 3);
+    aspect-ratio: var(--logo-ratio);
+    max-height: var(--stage-badge);
+    align-self: start;
+    margin-top: var(--s-1);
+    background: var(--fg);
+    -webkit-mask: var(--logo) no-repeat center / contain;
+    mask: var(--logo) no-repeat center / contain;
+  }
+
+  /* Строка фактов идёт под обеими колонками — оценка слева, счётчик
+     кадров справа. */
+  .stage__facts {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-3);
+    margin-top: var(--s-2);
+    font-size: var(--fs-caption);
     font-weight: var(--w-medium);
+  }
+
+  .stage__rate {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-3);
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .stage__fact {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-1);
+  }
+
+  .stage__fact :global(svg) {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* Счётчик кадров — тихая строка, не кнопка. Приглушение opacity,
+     а не серой краской (правило проекта). */
+  .stage__count {
+    margin-left: auto;
     opacity: 0.6;
   }
 
-  /* На широком экране кадр не растягивается на весь монитор (вертикаль
-     превратилась бы в отвесную полосу): держим его колонкой по центру,
-     подложка вокруг остаётся размытой — как открытая карточка Pinterest. */
+  /* ============ ПК ============
+     Окно кадра колонкой по центру: во всю ширину монитора портрет
+     превращается в отвесную полосу. Подпись встаёт под ним, по той же
+     колонке, а не по краям экрана. */
   @media (min-width: 1024px) {
-    .stage__frame { max-width: var(--stage-max-w); }
-
-    .stage__glass {
-      padding-inline: max(var(--gutter), calc((100% - var(--stage-max-w)) / 2 + var(--s-4)));
+    .stage__window,
+    .stage__cap {
+      max-width: var(--stage-max-w);
+      margin-inline: auto;
     }
+
+    .stage__cap { padding-inline: 0; }
   }
 </style>
 
 <!-- Якорь разбираем ДО модульных скриптов (те отложены и выполняются после
      разбора документа): нужный кадр должен встать сразу, иначе человек на
-     мгновение увидит чужое фото и только потом своё. -->
+     мгновение увидит чужое фото и только потом своё. Приоритет загрузки
+     переставляем здесь же: в HTML eager стоит на дежурном кадре, и без
+     этой перестановки браузер сперва тянет и красит дежурный, а нужный
+     доезжает следом — та самая «вспышка» при открытии. -->
 <script is:inline>
   (() => {
     const host = document.querySelector('[data-hero-shot]');
@@ -267,44 +395,69 @@ const defaultFrame = frames.find(isPortrait) ?? frames[0];
     if (!frame) return; // кадр не найден по ссылке — карточка открывается дежурным
 
     host.querySelectorAll('[data-frame]').forEach((f) => { f.hidden = f !== frame; });
-    host.querySelectorAll('[data-bg]').forEach((b) => { b.hidden = b.dataset.bg !== target; });
 
-    host.querySelectorAll(`[data-frame="${CSS.escape(target)}"] img, [data-bg="${CSS.escape(target)}"] img`)
-      .forEach((img) => {
-        img.loading = 'eager';
-        img.fetchPriority = 'high';
-      });
+    // Дежурный кадр уже не показывается — снимаем с него высокий приоритет,
+    // иначе он продолжает занимать канал перед тем, который человек ждёт.
+    host.querySelectorAll('img').forEach((img) => {
+      const mine = img.closest('[data-frame]') === frame;
+      img.loading = mine ? 'eager' : 'lazy';
+      img.fetchPriority = mine ? 'high' : 'auto';
+    });
   })();
 </script>
 
 <script>
   import { bindVideo, bindSoundButtons } from '../lib/video';
+  import type { VideoHandle } from '../lib/video';
+  import { PORTRAIT_MAX_RATIO } from '../lib/media';
 
   bindSoundButtons();
 
-  // ============ ЛИСТАНИЕ КАДРОВ ПРЯМО НА ПЕРВОМ ЭКРАНЕ ============
-  // Вся съёмка карточки листается свайпом вбок, не уходя со страницы:
-  // человек пришёл из доски на конкретный кадр и дальше смотрит остальные
-  // тут же. Кадры уже все в HTML (их печатает разметка выше), меняется
-  // только видимость — ни перезагрузки, ни перерисовки.
-  //
-  // Арифметика жеста — та же, что в PhotoRail: порог 36px, косой жест
-  // (больше вниз, чем вбок) не считается, чтобы не мешать прокрутке
-  // страницы вниз, к описанию и брони.
   document.querySelectorAll<HTMLElement>('[data-hero-shot]').forEach((stage) => {
     const shots = Array.from(stage.querySelectorAll<HTMLElement>('[data-frame]'));
-    const bgs = Array.from(stage.querySelectorAll<HTMLElement>('[data-bg]'));
     const count = stage.querySelector<HTMLElement>('[data-stage-count]');
+
+    // ============ РЕЖИМ КАДРА: ЗАПОЛНИТЬ ИЛИ ВПИСАТЬ ============
+    // Пропорцию файла CSS не спросишь, поэтому режим ставим по факту
+    // загрузки. Горизонталь вписывается целиком — резать её по сюжету
+    // общим окном нельзя (см. правило в шапке компонента).
+    const fit = (img: HTMLImageElement) => {
+      if (!img.naturalWidth || !img.naturalHeight) return;
+      const wide = img.naturalWidth / img.naturalHeight > PORTRAIT_MAX_RATIO;
+      img.closest('[data-frame]')?.classList.toggle('is-wide', wide);
+    };
+
+    stage.querySelectorAll('img').forEach((img) => {
+      if (img.complete) fit(img);
+      else img.addEventListener('load', () => fit(img), { once: true });
+    });
+
+    // ============ РОЛИКИ ============
+    // Ручка sync() у каждого кадра: автозапуск завязан на видимость
+    // секции, а при листании секция с экрана не уходит — без явного
+    // вызова ролик, на который пролистали, оставался на постере
+    // и запускался только ручным тапом.
+    const handles = new Map<HTMLElement, VideoHandle>();
+
+    stage.querySelectorAll<HTMLVideoElement>('[data-video]').forEach((video) => {
+      const frame = video.closest<HTMLElement>('[data-frame]');
+      if (!frame) return;
+      handles.set(frame, bindVideo(video, { root: stage, active: () => !frame.hidden }));
+    });
+
     if (shots.length < 2) return;
 
+    // ============ ЛИСТАНИЕ КАДРОВ ============
+    // Вся съёмка карточки листается свайпом вбок, не уходя со страницы.
+    // Кадры уже в HTML — меняется только видимость.
+    // Арифметика жеста та же, что в PhotoRail: порог 36px, косой жест
+    // (больше вниз, чем вбок) не считается, чтобы не мешать прокрутке.
     let index = Math.max(0, shots.findIndex((f) => !f.hidden));
 
     const show = (n: number) => {
       index = (n + shots.length) % shots.length;
-      const id = shots[index].dataset.frame;
 
       shots.forEach((f, k) => { f.hidden = k !== index; });
-      bgs.forEach((b) => { b.hidden = b.dataset.bg !== id; });
       if (count) count.textContent = `${index + 1} / ${shots.length}`;
 
       // соседний кадр подтягиваем заранее — листание не показывает пустоту
@@ -312,6 +465,9 @@ const defaultFrame = frames.find(isPortrait) ?? frames[0];
         const near = shots[(k + shots.length) % shots.length];
         near?.querySelectorAll('img').forEach((img) => { img.loading = 'eager'; });
       });
+
+      // пролистали на ролик — он должен пойти сам, как в ленте на главной
+      handles.forEach((handle) => handle.sync());
     };
 
     show(index);
@@ -339,30 +495,6 @@ const defaultFrame = frames.find(isPortrait) ?? frames[0];
       const box = stage.getBoundingClientRect();
       if (box.bottom < 120 || box.top > window.innerHeight) return;
       show(index + (e.key === 'ArrowRight' ? 1 : -1));
-    });
-
-    // ============ РОЛИК ПО НАЖАТИЮ ============
-    // Автозапуск может не сработать (энергосбережение на iPhone, отказ
-    // браузера) — тогда в кадре висит постер и нажатие ничего не делало.
-    // Тап по самому ролику запускает его руками, повторный — ставит паузу.
-    stage.querySelectorAll<HTMLVideoElement>('[data-video]').forEach((video) => {
-      video.parentElement?.addEventListener('click', () => {
-        if (video.paused) {
-          if (!video.src) video.src = video.dataset.video!;
-          video.play().then(() => video.classList.add('is-playing')).catch(() => {});
-        } else {
-          video.pause();
-        }
-      });
-    });
-  });
-
-  // Ролик в первом экране: тот же принцип, что в PhotoRail — играет,
-  // пока его кадр показан (а не скрыт через [hidden]).
-  document.querySelectorAll<HTMLElement>('[data-hero-shot]').forEach((host) => {
-    host.querySelectorAll<HTMLVideoElement>('[data-video]').forEach((video) => {
-      const frame = video.closest<HTMLElement>('[data-frame]');
-      bindVideo(video, { root: host, active: () => !!frame && !frame.hidden });
     });
   });
 </script>
