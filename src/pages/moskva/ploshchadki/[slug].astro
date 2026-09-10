@@ -14,8 +14,10 @@ import VenueDocs from '../../../components/VenueDocs.astro';
 import PhotoMasonry from '../../../components/PhotoMasonry.astro';
 import FaqBlock from '../../../components/FaqBlock.astro';
 import VenueContacts from '../../../components/VenueContacts.astro';
+import Reviews from '../../../components/Reviews.astro';
 import BottomDock from '../../../components/BottomDock.astro';
 import { VENUES, type Venue } from '../../../data/venues';
+import { venueReviews } from '../../../data/venue-reviews';
 import { photoTiles } from '../../../lib/gallery';
 import { IMG_WIDTHS } from '../../../lib/images';
 
@@ -31,6 +33,10 @@ interface Props {
 }
 
 const { venue } = Astro.props;
+
+// Отзывы есть не у каждой площадки — блок и строка фактов в первом
+// экране появляются только там, где им есть что показать.
+const reviews = venueReviews(venue.slug);
 ---
 
 <Layout title={venue.seo.title} description={venue.seo.description} ogImage={venue.seo.ogImage}>
@@ -88,6 +94,18 @@ const { venue } = Astro.props;
         />
       </div>
     </section>
+
+    <!-- ОТЗЫВЫ — после фотографий и до вопросов: человек сначала смотрит
+         место, потом читает, что о нём говорят, и только потом идёт
+         разбираться в условиях. Блок тот же, что на карточке подрядчика. -->
+    {reviews && (
+      <Reviews
+        reviews={reviews.items}
+        rating={reviews.rating}
+        ratings={reviews.ratings}
+        total={reviews.total}
+      />
+    )}
 
     <FaqBlock kicker="Вопросы" title="Что спрашивают чаще всего" items={venue.faq} />
 

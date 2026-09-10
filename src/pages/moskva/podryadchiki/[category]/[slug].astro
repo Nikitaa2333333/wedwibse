@@ -16,6 +16,7 @@ import SiteHeader from '../../../../components/SiteHeader.astro';
 import BottomDock from '../../../../components/BottomDock.astro';
 import PhotoMasonry from '../../../../components/PhotoMasonry.astro';
 import Avatar from '../../../../components/Avatar.astro';
+import Reviews from '../../../../components/Reviews.astro';
 import Icon from '../../../../components/Icon.astro';
 import HeroActions from '../../../../components/HeroActions.astro';
 import HeroStage from '../../../../components/HeroStage.astro';
@@ -311,26 +312,11 @@ const saveData = JSON.stringify({
       </section>
     )}
 
-    <!-- ОТЗЫВЫ: вертикально, один в ряд, с автором и датой -->
+    <!-- ОТЗЫВЫ — общий компонент с карточкой площадки. Своя верстка тут
+         была ровно такой же, и держать её второй копией значило дождаться,
+         пока две копии разойдутся: так уже случилось с первым экраном. -->
     {s.reviewsList && (
-      <section class="previews" id="otzyvy">
-        <h2 class="t-h2">Отзывы</h2>
-        <div class="previews__list">
-          {s.reviewsList.map((r) => (
-            <article class="preview">
-              <header class="preview__head">
-                <Avatar src={r.photo} name={r.author} size={48} />
-                <div class="preview__who">
-                  <p class="preview__author">{r.author}</p>
-                  <p class="preview__date t-caption">{r.date}</p>
-                </div>
-                <p class="preview__rate" aria-label={`Оценка ${r.rating} из 5`}>{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</p>
-              </header>
-              <p class="preview__text">«{r.text}»</p>
-            </article>
-          ))}
-        </div>
-      </section>
+      <Reviews reviews={s.reviewsList} rating={s.rating} total={s.reviews} />
     )}
 
     <!-- ЗАЯВКА -->
@@ -585,48 +571,8 @@ const saveData = JSON.stringify({
     font-weight: var(--w-medium);
   }
 
-  /* ============ ОТЗЫВЫ: вертикальный список ============ */
-  .previews {
-    padding: 0 var(--gutter) var(--section-gap-tight);
-  }
-
-  .previews__list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--s-3);
-    margin-top: var(--s-5);
-  }
-
-  .preview {
-    max-width: var(--measure-prose);
-    padding: var(--s-5);
-    background: var(--surface-dim);
-  }
-
-  .preview__head {
-    display: flex;
-    align-items: center;
-    gap: var(--s-3);
-  }
-
-  /* Кружок автора отзыва — общий Avatar; на бумажной карточке отзыва
-     его подложка светлее фона самой карточки. */
-  .preview :global(.avatar) { background: var(--bg); }
-
-  .preview__who { flex: 1; min-width: 0; }
-
-  .preview__author { font-weight: var(--w-medium); }
-
-  .preview__rate {
-    font-size: var(--fs-small);
-    letter-spacing: 2px;
-    flex-shrink: 0;
-  }
-
-  .preview__text {
-    margin-top: var(--s-4);
-    max-width: var(--measure-text);
-  }
+  /* Стили отзывов уехали в Reviews.astro — блок общий с карточкой
+     площадки, и вид у него должен быть один. */
 
   /* ============ ЗАЯВКА ============ */
   .pcta {

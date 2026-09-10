@@ -1,0 +1,183 @@
+---
+// ОТЗЫВЫ — один блок на карточку площадки и карточку подрядчика.
+// Вид у отзыва один и тот же независимо от того, о ком он: шапка
+// (кружок автора, имя, дата, оценка) и текст под ней. Разметка выросла
+// из блока на карточке подрядчика; вынесена в компонент сразу, чтобы
+// на второй карточке не завелась вторая верстка того же — так уже
+// разошёлся первый экран, и сводить обратно пришлось отдельным заходом.
+//
+// Шапка блока показывает агрегат: крупная оценка, под ней — из скольких
+// оценок она сложилась и сколько отзывов с текстом. Это разные числа,
+// и подменять одно другим нельзя: оценку ставят молча гораздо чаще,
+// чем пишут текст.
+//
+// Линий между отзывами нет (правило проекта): пункт от пункта отделяет
+// подложка карточки, а не полоска.
+import Avatar from './Avatar.astro';
+import Icon from './Icon.astro';
+import { plural } from '../lib/plural';
+
+interface Review {
+  author: string;
+  date: string;
+  rating: number;
+  text: string;
+  /** портрет автора, если он есть; нет — Avatar сам поставит инициалы */
+  photo?: string;
+}
+
+interface Props {
+  reviews: Review[];
+  /** средняя оценка: не считаем её из показанных — показаны не все */
+  rating?: number | null;
+  /** сколько всего оценок (с текстом и без) */
+  ratings?: number | null;
+  /** сколько всего отзывов с текстом */
+  total?: number | null;
+  id?: string;
+  title?: string;
+}
+
+const { reviews, rating = null, ratings = null, total = null, id = 'otzyvy', title = 'Отзывы' } = Astro.props;
+
+const shown = reviews.length;
+---
+
+<section class="reviews section section--tight" id={id}>
+  <div class="container container--wide">
+    <header class="reviews__head">
+      <h2 class="t-h2">{title}</h2>
+
+      {
+        rating !== null && (
+          <p class="reviews__agg">
+            <span class="reviews__score">
+              <Icon name="star" />
+              {rating.toFixed(1).replace('.', ',')}
+            </span>
+            <span class="reviews__count t-small">
+              {ratings !== null && <>{ratings}&nbsp;{plural(ratings, ['оценка', 'оценки', 'оценок'])}</>}
+              {ratings !== null && total !== null && ' · '}
+              {total !== null && <>{total}&nbsp;{plural(total, ['отзыв', 'отзыва', 'отзывов'])}</>}
+            </span>
+          </p>
+        )
+      }
+    </header>
+
+    <div class="reviews__list">
+      {
+        reviews.map((r) => (
+          <article class="review">
+            <header class="review__head">
+              <Avatar src={r.photo} name={r.author} size={44} />
+              <div class="review__who">
+                <p class="review__author">{r.author}</p>
+                <p class="review__date t-caption">{r.date}</p>
+              </div>
+              <p class="review__rate" aria-label={`Оценка ${r.rating} из 5`}>
+                {'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}
+              </p>
+            </header>
+            <p class="review__text">{r.text}</p>
+          </article>
+        ))
+      }
+    </div>
+
+    {
+      total !== null && total > shown && (
+        <p class="reviews__more t-small">
+          Показаны {shown} из {total} {plural(total, ['отзыва', 'отзывов', 'отзывов'])}
+        </p>
+      )
+    }
+  </div>
+</section>
+
+<style>
+  .reviews :global(.container) { max-width: none; }
+
+  .reviews__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--s-2) var(--s-4);
+  }
+
+  /* Агрегат прижат к правому краю заголовка: это факт о площадке,
+     а не второй заголовок, и в столбик под h2 он читался бы как
+     ещё одна строка названия. */
+  .reviews__agg {
+    display: flex;
+    align-items: baseline;
+    gap: var(--s-3);
+  }
+
+  .reviews__score {
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--s-1);
+    font-size: var(--fs-h3);
+    font-weight: var(--w-head);
+    letter-spacing: var(--ls-display);
+  }
+
+  /* Звезда садится на базовую линию цифры: у inline-flex по умолчанию
+     она бы висела серединой строки и уезжала вверх. */
+  .reviews__score :global(svg) {
+    width: 0.72em;
+    height: 0.72em;
+    align-self: center;
+  }
+
+  .reviews__count { opacity: 0.6; }
+
+  .reviews__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+    margin-top: var(--s-5);
+  }
+
+  /* Отзыв — карточка на подложке. Мера строки здесь не токеном: ширину
+     задаёт сам модуль, текст внутри уже в узкой колонке. */
+  .review {
+    max-width: var(--measure-prose);
+    padding: var(--s-5);
+    background: var(--surface-dim);
+    border-radius: var(--radius-card);
+  }
+
+  .review__head {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+  }
+
+  /* Кружок автора светлее подложки карточки, иначе он на ней теряется. */
+  .review :global(.avatar) { background: var(--bg); }
+
+  .review__who { flex: 1; min-width: 0; }
+
+  .review__author { font-weight: var(--w-medium); }
+
+  .review__date { opacity: 0.6; }
+
+  /* Звёзды строкой символов, а не иконками: пять иконок в ряд на карточке
+     отзыва весят больше, чем сам факт оценки. */
+  .review__rate {
+    flex: none;
+    font-size: var(--fs-small);
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+
+  .review__text { margin-top: var(--s-4); }
+
+  .reviews__more {
+    margin-top: var(--s-4);
+    opacity: 0.6;
+  }
+</style>

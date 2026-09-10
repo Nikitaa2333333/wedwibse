@@ -19,6 +19,7 @@ import HeroActions from './HeroActions.astro';
 import HeroStage from './HeroStage.astro';
 import { venueFavorite } from '../lib/favorite-snapshot';
 import { FEED } from '../data/feed';
+import { venueReviews } from '../data/venue-reviews';
 
 interface Props {
   venue: Venue;
@@ -35,11 +36,20 @@ const frames = [...new Set([venue.hero.image, ...venue.gallery.map((shot) => sho
 // класть в хранилище одну и ту же запись, иначе площадка задвоится.
 const favorite = await venueFavorite(venue);
 
-// Рейтинг и число отзывов живут в ленте каталога, а не в карточке (тот же
-// источник, что у доски главной): нет записи в ленте — нет и звезды.
+// Оценка и число отзывов: если у площадки есть свой блок отзывов, цифры
+// в первом экране берём оттуда — иначе на кадре стоит одно число, а
+// в блоке ниже другое, и это первое, что человек замечает. Нет блока —
+// падаем на ленту каталога (тот же источник, что у доски главной);
+// нет и её — звезды в подписи просто не будет.
+// Рядом с оценкой стоит число отзывов С ТЕКСТОМ, а не число оценок:
+// «5,0 · 279» под значком сообщения обещает 279 прочитываемых мнений.
 const row = FEED.find((f) => f.kind === 'venue' && f.slug === venue.slug);
-const rating = row?.kind === 'venue' ? row.rating : null;
-const reviews = row?.kind === 'venue' ? row.reviews : null;
+const feedRating = row?.kind === 'venue' ? row.rating : null;
+const feedReviews = row?.kind === 'venue' ? row.reviews : null;
+
+const block = venueReviews(venue.slug);
+const rating = block?.rating ?? feedRating;
+const reviews = block?.total ?? feedReviews;
 ---
 
 <!-- ПЕРВЫЙ ЭКРАН — кадр во весь экран (HeroStage), на стекле внизу имя
