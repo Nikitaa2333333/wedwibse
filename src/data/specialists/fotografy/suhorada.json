@@ -1,0 +1,101 @@
+{
+  "slug": "suhorada",
+  "categorySlug": "fotografy",
+  "category": "Фотографы",
+  "name": "Алексей Сухорада",
+  "photos": [
+    "/specialists/fotografy/suhorada/gal/p09.webp",
+    "/specialists/fotografy/suhorada/gal/p23.webp",
+    "/specialists/fotografy/suhorada/gal/p03.webp",
+    "/specialists/fotografy/suhorada/gal/p14.webp",
+    "/specialists/fotografy/suhorada/gal/p13.webp",
+    "/specialists/fotografy/suhorada/gal/p19.webp",
+    "/specialists/fotografy/suhorada/gal/p22.webp",
+    "/specialists/fotografy/suhorada/gal/p33.webp",
+    "/specialists/fotografy/suhorada/gal/p34.webp",
+    "/specialists/fotografy/suhorada/gal/p35.webp",
+    "/specialists/fotografy/suhorada/gal/p24.webp",
+    "/specialists/fotografy/suhorada/gal/p29.webp",
+    "/specialists/fotografy/suhorada/gal/p18.webp",
+    "/specialists/fotografy/suhorada/gal/p20.webp",
+    "/specialists/fotografy/suhorada/gal/p21.webp",
+    "/specialists/fotografy/suhorada/gal/p16.webp",
+    "/specialists/fotografy/suhorada/gal/p17.webp",
+    "/specialists/fotografy/suhorada/gal/p15.webp",
+    "/specialists/fotografy/suhorada/gal/p32.webp",
+    "/specialists/fotografy/suhorada/gal/p07.webp",
+    "/specialists/fotografy/suhorada/gal/p08.webp",
+    "/specialists/fotografy/suhorada/gal/p10.webp",
+    "/specialists/fotografy/suhorada/gal/p01.webp",
+    "/specialists/fotografy/suhorada/gal/p02.webp",
+    "/specialists/fotografy/suhorada/gal/p04.webp",
+    "/specialists/fotografy/suhorada/gal/p05.webp",
+    "/specialists/fotografy/suhorada/gal/p06.webp",
+    "/specialists/fotografy/suhorada/gal/p11.webp",
+    "/specialists/fotografy/suhorada/gal/p12.webp",
+    "/specialists/fotografy/suhorada/gal/p25.webp",
+    "/specialists/fotografy/suhorada/gal/p26.webp",
+    "/specialists/fotografy/suhorada/gal/p27.webp",
+    "/specialists/fotografy/suhorada/gal/p28.webp",
+    "/specialists/fotografy/suhorada/gal/p30.webp",
+    "/specialists/fotografy/suhorada/gal/p31.webp"
+  ],
+  "tagline": "Фотографии, которые захочется пересматривать",
+  "bio": "Меня зовут Алексей. Я люблю сохранять моменты в картинках — на них улыбки, радость, смех, наши чувства. Уже 17 лет это моё главное и любимое дело. Каждый год обновляю парк техники и учусь дополнительно, чтобы создавать актуальные образы и надёжно фиксировать события в цифре.\n\nДля каждого ищу свой подход и стараюсь поймать самые искренние эмоции. Если понадобится, всегда подскажу, как лучше позировать, чтобы выглядеть в кадре естественно.\n\nЧто определяет наше самосознание? Наша память. Если помнишь счастливые моменты — значит, счастлив. Фотография помогает нам быть счастливее. Всё просто.",
+  "gender": "м",
+  "priceFrom": 40000,
+  "priceNote": "От 8 000 ₽ за час съёмки; свадебные тарифы — 40 000 и 80 000 ₽",
+  "experienceYears": 17,
+  "aboutTitle": "Обо мне",
+  "filters": {
+    "gender": "м",
+    "priceHour": "8-10",
+    "city": ["цао", "сао", "свао", "вао", "юво", "юао", "юзао", "зао", "сзао", "mo"],
+    "experience": "15+",
+    "style": ["reportage", "staged", "artistic", "bw"],
+    "serviceType": ["full-day", "partial", "express"],
+    "minBudget": "30-60",
+    "deliveryTime": "1-2w",
+    "deliveryFormat": ["photobook"]
+  },
+  "packageIncludes": [
+    "Съёмка от 1 часа: репортаж, небольшая свадьба или полный день",
+    "Не менее 300 фотографий за 5 часов и не менее 600 за полный день",
+    "Авторская обработка всех фотографий, цветокоррекция",
+    "Срок сдачи фотографий — до 10 дней",
+    "Полиграфическая фотокнига 30×30 см в подарок при заказе полного дня",
+    "Резервное хранение материала 1 год",
+    "Подсказки по позированию на съёмке"
+  ],
+  "quote": "Стоимость — от 8 000 ₽ за час съёмки, при заказе 10 часов и более большая фотокнига в подарок. Напишите, какая съёмка вам нужна, — свяжусь с вами и обсудим место проведения, сроки и бюджет.",
+  "offers": [
+    {
+      "title": "Небольшая свадьба — 40 000 ₽",
+      "text": "5 часов съёмки и не менее 300 фотографий с авторской обработкой. Сдача — до 10 дней."
+    },
+    {
+      "title": "Свадебный день — 80 000 ₽",
+      "text": "До 10 часов съёмки и не менее 600 фотографий. Полиграфическая фотокнига 30×30 см в подарок."
+    },
+    {
+      "title": "Репортаж от 8 000 ₽ за час",
+      "text": "Формат для регистрации, вечера или части дня: от 1 часа, не менее 50 фотографий за час с обработкой."
+    },
+    {
+      "title": "Фотокниги и минибуки",
+      "text": "Полиграфическая фотокнига от 7 000 ₽, премиум от 10 000 ₽, минибуки для родителей от 5 000 ₽."
+    },
+    {
+      "title": "Ретушь по желанию",
+      "text": "Цветокоррекция входит во все тарифы, ретушь отдельных кадров — от 200 ₽ за фотографию."
+    },
+    {
+      "title": "Подскажу, как позировать",
+      "text": "Ищу свой подход к каждому и ловлю искренние эмоции; если нужно, покажу, как встать, чтобы выглядеть естественно."
+    },
+    {
+      "title": "Техника обновляется каждый год",
+      "text": "Парк техники и обучение — ежегодно, чтобы образы были актуальными, а материал надёжно сохранён в цифре."
+    }
+  ]
+}

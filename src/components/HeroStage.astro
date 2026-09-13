@@ -208,6 +208,27 @@ const facts = rating !== null && rating !== undefined;
 
   .stage__frame[hidden] { display: none; }
 
+  /* ============ ПОДСКАЗКА «МОЖНО ЛИСТАТЬ» ============
+     Стрелок на кадре нет (текст и знаки на фото запрещены), поэтому
+     сам кадр один раз чуть уезжает влево, показывая край следующего,
+     и возвращается. Ставится скриптом классом is-peek на видимый кадр,
+     следующий на это время открывается под ним (is-under). Только тач,
+     только один раз за визит и только пока человек сам не свайпнул;
+     reduced-motion гасится глобальным guard в global.css. */
+  .stage__frame[hidden].is-under { display: block; }
+
+  .stage__frame.is-peek {
+    z-index: 1;
+    animation: stage-peek var(--dur-slow) var(--ease-inout) 1 both;
+  }
+
+  @keyframes stage-peek {
+    0%   { transform: translateX(0); }
+    40%  { transform: translateX(-14%); }
+    55%  { transform: translateX(-14%); }
+    100% { transform: translateX(0); }
+  }
+
   /* Портрет и квадрат заполняют окно, горизонталь вписывается целиком:
      решает сам браузер по пропорции файла. object-fit тут один на всех
      (cover), а горизонталь ловит правило ниже — по aspect-ratio кадра
@@ -489,6 +510,34 @@ const facts = rating !== null && rating !== undefined;
 
     show(index);
 
+    // ============ ПОДСКАЗКА ЛИСТАНИЯ ============
+    // Первый кадр чуть уезжает влево и возвращается, приоткрывая край
+    // следующего. Один раз за сессию вкладки (sessionStorage), только на
+    // тач-экране (на ПК есть клавиши и курсор), и отменяется, если человек
+    // успел свайпнуть сам. Стартует через паузу, когда кадр уже виден.
+    let swiped = false;
+    const coarse = matchMedia('(pointer: coarse)').matches;
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const PEEK_KEY = 'stage-peek-shown';
+    let peeked = false;
+    try { peeked = sessionStorage.getItem(PEEK_KEY) === '1'; } catch {}
+
+    if (coarse && !reduced && !peeked) {
+      setTimeout(() => {
+        if (swiped || document.hidden) return;
+        const cur = shots[index];
+        const next = shots[(index + 1) % shots.length];
+        if (!cur || !next || cur === next) return;
+        next.classList.add('is-under');
+        cur.classList.add('is-peek');
+        cur.addEventListener('animationend', () => {
+          cur.classList.remove('is-peek');
+          next.classList.remove('is-under');
+        }, { once: true });
+        try { sessionStorage.setItem(PEEK_KEY, '1'); } catch {}
+      }, 900);
+    }
+
     let x0 = 0;
     let y0 = 0;
 
@@ -503,6 +552,9 @@ const facts = rating !== null && rating !== undefined;
       const dx = t.clientX - x0;
       const dy = t.clientY - y0;
       if (Math.abs(dx) < 36 || Math.abs(dx) <= Math.abs(dy)) return;
+      swiped = true;
+      // свайп во время подсказки — снимаем её сразу, кадр не должен «догонять»
+      shots.forEach((f) => f.classList.remove('is-peek', 'is-under'));
       show(index + (dx < 0 ? 1 : -1));
     }, { passive: true });
 

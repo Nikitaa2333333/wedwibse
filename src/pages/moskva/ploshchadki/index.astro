@@ -199,7 +199,12 @@ const mapPoints = venueMapPoints();
                 <!-- Сердца в подписи НЕТ: лайк в каталоге снят (правило
                      проекта — знака «в избранное» на карточке выдачи не
                      держим, он есть только в самой карточке). -->
-                <p class="vcard__price">{item.avgCheck}</p>
+                {item.checkFrom ? (
+                  <p class="vcard__price">{item.avgCheck}</p>
+                ) : (
+                  /* без прайса: не цифра — значит не кегль цены, а метка */
+                  <p class="vcard__tag"><span class="chip chip--tag">{item.avgCheck}</span></p>
+                )}
               </div>
             </article>
           );
@@ -340,7 +345,7 @@ const mapPoints = venueMapPoints();
   .vcard__name {
     font-size: var(--fs-body);
     font-weight: var(--w-head);
-    line-height: 1.2;
+    line-height: 1.1;
   }
 
   .vcard__name a { text-decoration: none; }
@@ -348,7 +353,7 @@ const mapPoints = venueMapPoints();
   /* Город вплотную под именем — одна смысловая группа, зазор нулевой */
   .vcard__meta {
     font-size: var(--fs-caption);
-    line-height: 1.3;
+    line-height: 1.15;
   }
 
   .vcard__rate {
@@ -360,18 +365,21 @@ const mapPoints = venueMapPoints();
 
   /* Цена — крупно, но с минимальным отрывом от группы «имя + город» */
   .vcard__price {
-    margin-top: 4px;
+    margin-top: 2px;
     font-size: var(--fs-h3);
     font-weight: var(--w-head);
-    line-height: 1.1;
+    line-height: 1;
     letter-spacing: -0.01em;
   }
 
+  .vcard__tag { margin-top: 4px; }
+
   @media (min-width: 640px) {
-    .vcard__name { font-size: var(--fs-h3); line-height: 1.15; }
-    .vcard__meta { font-size: var(--fs-small); }
+    .vcard__name { font-size: var(--fs-h3); line-height: 1.05; }
+    .vcard__meta { font-size: var(--fs-small); line-height: 1.1; }
     .vcard__rate { font-size: var(--fs-small); padding-top: 0.2em; }
-    .vcard__price { font-size: var(--fs-h2); }
+    /* цена сразу под городом, без отрыва: крупный кегль сам даёт воздух */
+    .vcard__price { font-size: var(--fs-h2); margin-top: 0; }
   }
 
   /* ============ РЕКЛАМНАЯ КАРТОЧКА: во всю ширину ============ */
