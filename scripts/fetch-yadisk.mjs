@@ -1,11 +1,14 @@
 // Скачивает публичную папку Яндекс.Диска целиком (рекурсивно) без токена.
-// Использование: node scripts/fetch-yadisk.mjs <public_url> <out_dir>
-// Картинки и видео кладутся плоско в out_dir с префиксом подпапки.
+// Использование: node scripts/fetch-yadisk.mjs <public_url> <out_dir> [--only=video|photo]
+// Картинки и видео кладутся плоско в out_dir с префиксом подпапки
+// (подпапки обходятся рекурсивно: «ВИДЕО ЛЕСНАЯ РОСА» внутри выборки
+// попадает как ВИДЕО_ЛЕСНАЯ_РОСА__IMG_0311.mov). --only фильтрует по типу.
 // Часть конвейера venue-page (см. .claude/skills/venue-page/SKILL.md).
 import { mkdir, writeFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 
-const [publicUrl, outDir] = process.argv.slice(2);
+const [publicUrl, outDir, ...flags] = process.argv.slice(2);
+const only = flags.find((f) => f.startsWith('--only='))?.slice(7);
 if (!publicUrl || !outDir) {
   console.error('usage: node scripts/fetch-yadisk.mjs <public_url> <out_dir>');
   process.exit(1);
@@ -46,7 +49,8 @@ async function list(path = '') {
 }
 
 await mkdir(outDir, { recursive: true });
-const items = (await list()).filter((i) => KEEP.test(i.name));
+const TYPE = { video: /\.(mp4|mov)$/i, photo: /\.(jpe?g|png|webp|heic)$/i };
+const items = (await list()).filter((i) => KEEP.test(i.name) && (!only || TYPE[only]?.test(i.name)));
 console.log(`files: ${items.length}`);
 let n = 0;
 for (const it of items) {

@@ -87,6 +87,27 @@ node scripts/prep-photos.mjs <slug>                          # → photos/ + pho
 `prep-photos` сам отбрасывает битые файлы (`magick identify` падает) и
 помечает их `broken: true` — на такие ссылаться нельзя.
 
+### Видео (обязательный шаг, не «потом»)
+
+Ролики площадки — такие же материалы, как фото; без них карточка
+неполная. Где искать: подпапки диска («ВИДЕО …» внутри выборки —
+`fetch-yadisk` обходит их рекурсивно, `--only=video` качает только их),
+вторая ссылка на диск, видеопрезентация в Google Drive (`gdown "https://drive.google.com/uc?id=<id>"`).
+
+1. Кадр из каждого ролика одним листом: `ffmpeg -ss 3 -i <файл> -frames:v 1
+   -vf scale=240:-2 vid/vNN.jpg` → `magick montage … -tile 7x`. Один Read.
+2. Берём **рилсы как есть**, с плашками и текстом — это живой контент
+   площадки. Не берём: переписку в чате, скриншоты карт, чужую рекламу.
+3. `node scripts/prep-video.mjs <slug> public/venues/<slug> src/assets/venues/<slug> <src1>@<сек> …`
+   → `reel-NN.mp4` (720×1080, 8 с, звук) в public и постер `reel-NN.webp`
+   в src/assets. Горизонтальный исходник кропится по центру.
+4. В `src/data/reels.ts` — запись на каждый ролик с `venue: '<slug>'`,
+   `sound: true` (если дорожка есть) и `alt`. Плитка на доске главной
+   ведёт на карточку площадки сама.
+5. В JSON площадки: 1–2 ролика вторым и пятым кадром `gallery` (первый
+   экран их играет), блок `{ "type": "reels", "title": "Видео" }` после
+   `gallery`. В доску галереи ролики не попадают — страница их отфильтрует.
+
 ## Фаза 1 — исследование (Haiku)
 
 1. `firecrawl_map` по сайту площадки → список URL. Берём страницы про зал,
@@ -184,6 +205,7 @@ node scripts/prep-photos.mjs <slug>                          # → photos/ + pho
 | `docs` | PDF для подрядчиков (файл в public/docs/) | VenueDocs |
 | `gallery` | доска всех кадров; без `photos` берёт `venue.gallery` | PhotoMasonry |
 | `reviews` | отзывы из venue-reviews.ts; нет — блок пропадает сам | Reviews |
+| `reels` | ряд роликов площадки из data/reels.ts (venue = slug); нет роликов — не рисуется | ReelsRow |
 | `faq` | 4–7 вопросов, ответы только из фактов | FaqBlock |
 
 Сцена (`VenueScene`): `layout` `split` (по умолчанию, кадр 4:5 → портрет),
