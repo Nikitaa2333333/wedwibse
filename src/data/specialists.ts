@@ -1082,11 +1082,25 @@ export const FOTOGRAFY: Specialist[] = [
 // Пара снимает и фото, и видео — в обеих категориях стоит одна и та же
 // карточка, поэтому и массив здесь один. Ключ добавляется автоматически
 // по alsoCategories: заводить руками второй список — способ их рассинхронить.
+// ============================================================
+// ПОДРЯДЧИКИ ИЗ JSON — результат конвейера specialist-page
+// (.claude/skills/specialist-page): файл src/data/specialists/<категория>/<slug>.json,
+// фото в src/assets/specialists/<категория>/<slug>/, портрет в
+// src/assets/specialists/<категория>/avatars/<slug>.webp. Формат — тот же
+// Specialist; категория берётся из самого файла (categorySlug), папка —
+// только для порядка. Новый файл = карточка в каталоге и визитка, код
+// не трогаем. Позже эти JSON станут записями коллекции specialists.
+// ============================================================
+const jsonSpecialists = Object.values(
+  import.meta.glob<Specialist>('./specialists/*/*.json', { eager: true, import: 'default' })
+);
+
 export const SPECIALISTS_BY_CATEGORY: Record<string, Specialist[]> = (() => {
   const map: Record<string, Specialist[]> = {
-    vedushchie: VEDUSHCHIE,
-    fotografy: FOTOGRAFY,
+    vedushchie: [...VEDUSHCHIE],
+    fotografy: [...FOTOGRAFY],
   };
+  for (const s of jsonSpecialists) (map[s.categorySlug] ??= []).push(s);
 
   for (const list of Object.values({ ...map })) {
     for (const s of list) {

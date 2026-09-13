@@ -1,6 +1,7 @@
 // Готовит скачанные фото площадки к укладке в src/assets:
-//   node scripts/prep-photos.mjs <slug> [raw_dir...]
-// Берёт research/<slug>/raw* (или указанные папки), пережимает в webp
+//   node scripts/prep-photos.mjs <slug|research/путь> [raw_dir...]
+// Берёт research/<slug>/raw* (или указанные папки); для подрядчиков —
+// передать путь целиком: research/specialists/<slug>, пережимает в webp
 // по правилу CLAUDE.md (длинная сторона 2400–3000 px, quality 88,
 // ориентация по EXIF), проверяет каждый файл magick identify и пишет
 // research/<slug>/photos.json: имя, пропорция, portrait/landscape/square,
@@ -14,7 +15,7 @@ import { execFileSync } from 'node:child_process';
 const [slug, ...dirs] = process.argv.slice(2);
 if (!slug) { console.error('usage: node scripts/prep-photos.mjs <slug> [raw_dir...]'); process.exit(1); }
 
-const base = join('research', slug);
+const base = slug.includes('/') ? slug : join('research', slug);
 const rawDirs = dirs.length ? dirs : (await readdir(base)).filter((d) => d.startsWith('raw')).map((d) => join(base, d));
 const outDir = join(base, 'photos');
 await mkdir(outDir, { recursive: true });

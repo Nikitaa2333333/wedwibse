@@ -166,6 +166,10 @@ JSON подхватывается автоматически. Сырьё леж�
 Скрипты: `fetch-yadisk`, `fetch-urls`, `prep-photos`, `verify-venue`, `place-photos`
 в `scripts/`. Что сломалось в прогоне — дописывать в конец скилла, а не чинить молча.
 
+Подрядчики — тем же путём, скилл `.claude/skills/specialist-page/SKILL.md`:
+один заход оркестратора без субагентов, JSON в `src/data/specialists/<категория>/<slug>.json`,
+проверка `verify-specialist`, раскладка `place-specialist-photos`.
+
 ## Видео
 
 Ролики в проекте есть и лежат в ленте (`data/reels.ts`, `public/reels/*.mp4`,
