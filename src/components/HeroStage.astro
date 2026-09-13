@@ -61,7 +61,7 @@ interface Props {
 }
 
 const {
-  frames,
+  frames: framesProp,
   alt,
   title,
   kicker,
@@ -73,7 +73,11 @@ const {
   class: extra,
 } = Astro.props;
 
-const defaultFrame = frames.find(isPortrait) ?? frames[0];
+// Дежурный кадр — первый вертикальный — переставляется В НАЧАЛО стопки:
+// иначе счётчик после старта скрипта прыгал с «1 / 20» на «3 / 20» при
+// той же картинке (дежурный стоял третьим), и листание шло с середины.
+const defaultFrame = framesProp.find(isPortrait) ?? framesProp[0];
+const frames = [defaultFrame, ...framesProp.filter((f) => f !== defaultFrame)];
 
 // Рейтинг и число отзывов идут ОДНОЙ строкой фактов и всегда вместе:
 // звезда без отзывов — цифра, взявшаяся ниоткуда.
@@ -491,11 +495,17 @@ const facts = rating !== null && rating !== undefined;
     // Арифметика жеста та же, что в PhotoRail: порог 36px, косой жест
     // (больше вниз, чем вбок) не считается, чтобы не мешать прокрутке.
     let index = Math.max(0, shots.findIndex((f) => !f.hidden));
+    let swiped = false;
 
     const show = (n: number) => {
       index = (n + shots.length) % shots.length;
 
-      shots.forEach((f, k) => { f.hidden = k !== index; });
+      // подсказка листания, если шла, снимается: её классы держат
+      // соседний кадр видимым и поднимают текущий над остальными
+      shots.forEach((f, k) => {
+        f.classList.remove('is-peek', 'is-under');
+        f.hidden = k !== index;
+      });
       if (count) count.textContent = `${index + 1} / ${shots.length}`;
 
       // соседний кадр подтягиваем заранее — листание не показывает пустоту
@@ -515,7 +525,6 @@ const facts = rating !== null && rating !== undefined;
     // следующего. Один раз за сессию вкладки (sessionStorage), только на
     // тач-экране (на ПК есть клавиши и курсор), и отменяется, если человек
     // успел свайпнуть сам. Стартует через паузу, когда кадр уже виден.
-    let swiped = false;
     const coarse = matchMedia('(pointer: coarse)').matches;
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const PEEK_KEY = 'stage-peek-shown';
@@ -553,8 +562,6 @@ const facts = rating !== null && rating !== undefined;
       const dy = t.clientY - y0;
       if (Math.abs(dx) < 36 || Math.abs(dx) <= Math.abs(dy)) return;
       swiped = true;
-      // свайп во время подсказки — снимаем её сразу, кадр не должен «догонять»
-      shots.forEach((f) => f.classList.remove('is-peek', 'is-under'));
       show(index + (dx < 0 ? 1 : -1));
     }, { passive: true });
 
