@@ -42,12 +42,15 @@ const { kicker, title, scenes } = Astro.props;
               </div>
             ) : (
               <figure class="scene__shot media media--bleed">
+                {/* Все кадры ленивые, первый тоже: сцены стоят ниже первого
+                    экрана, а eager у первой (2560 px, sizes 100vw) качал её
+                    вместе с дежурным кадром карточки и делил с ним канал. */}
                 <Image
                   src={resolveImage(scene.image)}
                   alt={scene.alt}
                   widths={IMG_WIDTHS.stage}
                   sizes={scene.layout === 'wide' ? '100vw' : '(min-width: 1024px) 55vw, 100vw'}
-                  loading={i === 0 ? 'eager' : 'lazy'}
+                  loading="lazy"
                   decoding="async"
                 />
               </figure>

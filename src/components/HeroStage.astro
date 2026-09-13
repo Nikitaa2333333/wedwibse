@@ -76,8 +76,13 @@ const {
 // Дежурный кадр — первый вертикальный — переставляется В НАЧАЛО стопки:
 // иначе счётчик после старта скрипта прыгал с «1 / 20» на «3 / 20» при
 // той же картинке (дежурный стоял третьим), и листание шло с середины.
+// Дальше стопка идёт вертикалями и квадратами, горизонтали — в хвост:
+// в данных площадки первыми часто стоят именно широкие кадры, и вторым
+// после дежурного всегда открывалась горизонталь на полях — подсказка
+// листания приоткрывала не кадр, а бумагу над и под ним.
 const defaultFrame = framesProp.find(isPortrait) ?? framesProp[0];
-const frames = [defaultFrame, ...framesProp.filter((f) => f !== defaultFrame)];
+const rest = framesProp.filter((f) => f !== defaultFrame);
+const frames = [defaultFrame, ...rest.filter(isPortrait), ...rest.filter((f) => !isPortrait(f))];
 
 // Рейтинг и число отзывов идут ОДНОЙ строкой фактов и всегда вместе:
 // звезда без отзывов — цифра, взявшаяся ниоткуда.
@@ -89,8 +94,15 @@ const facts = rating !== null && rating !== undefined;
     {frames.map((src, n) => {
       const video = isVideo(src);
       const eager = src === defaultFrame;
+      // Режим кадра (заполнить/вписать) ставится ЗДЕСЬ, на сборке: пропорция
+      // файла известна реестру. Раньше класс вешал скрипт по факту загрузки,
+      // и горизонталь на мгновение открывалась обрезанной, а потом прыгала.
       return (
-        <div class="stage__frame" data-frame={frameId(src)} hidden={src !== defaultFrame}>
+        <div
+          class:list={['stage__frame', !isPortrait(src) && 'is-wide']}
+          data-frame={frameId(src)}
+          hidden={src !== defaultFrame}
+        >
           <Image
             src={resolveImage(video ? posterOf(src) : src)}
             alt={n === 0 ? alt : `${alt} — фото`}
@@ -226,6 +238,12 @@ const facts = rating !== null && rating !== undefined;
     animation: stage-peek var(--dur-slow) var(--ease-inout) 1 both;
   }
 
+  /* Приоткрытый край соседа — всегда заливкой, даже у горизонтали:
+     в полоске в 14% ширины вписанный кадр показывал не фото, а поля
+     подложки над и под ним. Кроп тут не режет сюжет — это намёк, а не
+     показ; при настоящем листании кадр встанет по своему правилу. */
+  .stage__frame.is-under img { object-fit: cover; }
+
   @keyframes stage-peek {
     0%   { transform: translateX(0); }
     40%  { transform: translateX(-14%); }
@@ -268,6 +286,9 @@ const facts = rating !== null && rating !== undefined;
      и размывать под ним нечего. */
   .stage__glow {
     position: absolute;
+    /* Выше кадра-подсказки (is-peek поднимает его на z-index: 1): иначе
+       на время анимации свечение уходило под фото и возвращалось рывком. */
+    z-index: 2;
     left: 0;
     right: 0;
     bottom: 0;
@@ -287,7 +308,7 @@ const facts = rating !== null && rating !== undefined;
     left: auto;
     right: var(--gutter);
     bottom: calc(var(--stage-glow) + var(--s-3));
-    z-index: 2;
+    z-index: 3;
   }
 
   /* ============ ПОДПИСЬ ============
@@ -451,28 +472,20 @@ const facts = rating !== null && rating !== undefined;
 <script>
   import { bindVideo, bindSoundButtons } from '../lib/video';
   import type { VideoHandle } from '../lib/video';
-  import { PORTRAIT_MAX_RATIO } from '../lib/media';
 
   bindSoundButtons();
+
+  // Кадр доехал? — и ручка «сделай, когда доедет» (сразу, если уже есть).
+  const loaded = (img: HTMLImageElement) => img.complete && img.naturalWidth > 0;
+  const whenLoaded = (img: HTMLImageElement | null, cb: () => void) => {
+    if (!img || loaded(img)) cb();
+    else img.addEventListener('load', cb, { once: true });
+  };
 
   document.querySelectorAll<HTMLElement>('[data-hero-shot]').forEach((stage) => {
     const shots = Array.from(stage.querySelectorAll<HTMLElement>('[data-frame]'));
     const count = stage.querySelector<HTMLElement>('[data-stage-count]');
-
-    // ============ РЕЖИМ КАДРА: ЗАПОЛНИТЬ ИЛИ ВПИСАТЬ ============
-    // Пропорцию файла CSS не спросишь, поэтому режим ставим по факту
-    // загрузки. Горизонталь вписывается целиком — резать её по сюжету
-    // общим окном нельзя (см. правило в шапке компонента).
-    const fit = (img: HTMLImageElement) => {
-      if (!img.naturalWidth || !img.naturalHeight) return;
-      const wide = img.naturalWidth / img.naturalHeight > PORTRAIT_MAX_RATIO;
-      img.closest('[data-frame]')?.classList.toggle('is-wide', wide);
-    };
-
-    stage.querySelectorAll('img').forEach((img) => {
-      if (img.complete) fit(img);
-      else img.addEventListener('load', () => fit(img), { once: true });
-    });
+    const imgOf = (frame: HTMLElement | undefined) => frame?.querySelector('img') ?? null;
 
     // ============ РОЛИКИ ============
     // Ручка sync() у каждого кадра: автозапуск завязан на видимость
@@ -508,10 +521,16 @@ const facts = rating !== null && rating !== undefined;
       });
       if (count) count.textContent = `${index + 1} / ${shots.length}`;
 
-      // соседний кадр подтягиваем заранее — листание не показывает пустоту
-      [index + 1, index - 1].forEach((k) => {
-        const near = shots[(k + shots.length) % shots.length];
-        near?.querySelectorAll('img').forEach((img) => { img.loading = 'eager'; });
+      // Соседние кадры подтягиваем заранее — листание не показывает
+      // пустоту. Но ТОЛЬКО когда показанный кадр уже доехал: на открытии
+      // карточки два соседа шли по сети вместе с дежурным и делили с ним
+      // канал — первый экран стоял пустой подложкой, пока качались три
+      // фотографии сразу.
+      whenLoaded(imgOf(shots[index]), () => {
+        [index + 1, index - 1].forEach((k) => {
+          const near = shots[(k + shots.length) % shots.length];
+          near?.querySelectorAll('img').forEach((img) => { img.loading = 'eager'; });
+        });
       });
 
       // пролистали на ролик — он должен пойти сам, как в ленте на главной
@@ -525,7 +544,9 @@ const facts = rating !== null && rating !== undefined;
     // следующего. Один раз на карточку за сессию вкладки (sessionStorage
     // с путём страницы), на любом указателе — на ПК стрелок тоже нет, и
     // курсор сам по себе не говорит, что кадры листаются. Отменяется,
-    // если человек успел свайпнуть сам. Стартует через паузу.
+    // если человек успел свайпнуть сам. Стартует через паузу — и не раньше,
+    // чем доехал сосед: приоткрывать пустую подложку вместо фото — та же
+    // «кривизна», что и горизонталь на полях.
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const PEEK_KEY = 'stage-peek:' + location.pathname;
     let peeked = false;
@@ -533,17 +554,19 @@ const facts = rating !== null && rating !== undefined;
 
     if (!reduced && !peeked) {
       setTimeout(() => {
-        if (swiped || document.hidden) return;
         const cur = shots[index];
         const next = shots[(index + 1) % shots.length];
         if (!cur || !next || cur === next) return;
-        next.classList.add('is-under');
-        cur.classList.add('is-peek');
-        cur.addEventListener('animationend', () => {
-          cur.classList.remove('is-peek');
-          next.classList.remove('is-under');
-        }, { once: true });
-        try { sessionStorage.setItem(PEEK_KEY, '1'); } catch {}
+        whenLoaded(imgOf(next), () => {
+          if (swiped || document.hidden || shots[index] !== cur) return;
+          next.classList.add('is-under');
+          cur.classList.add('is-peek');
+          cur.addEventListener('animationend', () => {
+            cur.classList.remove('is-peek');
+            next.classList.remove('is-under');
+          }, { once: true });
+          try { sessionStorage.setItem(PEEK_KEY, '1'); } catch {}
+        });
       }, 900);
     }
 
