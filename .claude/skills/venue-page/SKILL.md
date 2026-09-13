@@ -233,3 +233,14 @@ Haiku-проверка после скрипта: прочитать `venue.json
   `photos.json`.
 - 2026-09-13: Firecrawl на Картах с `formats: ["json"]` + промпт вернул
   мусор (2 отзыва с кракозябрами) — извлекать только из `html` скриптом.
+- 2026-09-13: Sonnet может отдать 403 (лимит аккаунта) — тогда фазу 3 пишет
+  оркестратор сам. Выбор кадров без просмотра каждого файла: контактный лист
+  `magick montage research/<slug>/photos/p*.webp -thumbnail 200x200 -set label
+  '%t' -tile 10x -geometry +4+4 research/_sheets/<slug>.jpg` и один Read.
+- 2026-09-13: новая площадка должна попасть и в `src/data/feed.ts` (лента
+  каталога строится из него, не из VENUES) — с рейтингом из reviews и без
+  `checkFrom`, если прайса нет. Подборки в `articles.ts` ссылаются на
+  площадки по имени — проверять после переименований.
+- 2026-09-13: `seo.ogImage` → `/venues/<slug>/og-cover.jpg`, файл нужен и в
+  `public/` (og:image через `new URL`), и в `src/assets/` (verify/place ищут
+  все пути JSON). Делать `magick <hero> -resize 1200x1200\> -quality 85`.
