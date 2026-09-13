@@ -33,6 +33,50 @@ export interface VenueRow {
   value: string;
 }
 
+// ============================================================
+// БЛОКИ СТРАНИЦЫ. Тело карточки между первым экраном и контактами —
+// это список блоков, и ПОРЯДОК задают данные, а не шаблон: у одной
+// площадки главное — кухня и веранда, у другой — прайс по дням недели,
+// и страницы не обязаны совпадать по структуре. Каждый блок рисует уже
+// существующий компонент; новый тип блока = новый компонент в реестре
+// (см. lib/venue-blocks.ts и DESIGN.md). Позже это же поле станет
+// jsonb-колонкой записи площадки в базе.
+// Площадка без `blocks` собирается по прежней последовательности
+// из своих полей (scenes → terms → rules → docs → gallery → reviews → faq).
+// ============================================================
+export type VenueBlock =
+  /** полоса крупных цифр */
+  | { type: 'stats'; items: { value: string; label: string }[] }
+  /** группа сцен «текст + кадр»; групп может быть несколько, каждая со своим заголовком */
+  | { type: 'scenes'; kicker?: string; title: string; scenes: VenueScene[] }
+  /** утверждение на бумаге без кадра: заголовок, абзацы, факты; dark — инверсия */
+  | {
+      type: 'statement';
+      kicker?: string;
+      title: string;
+      body: string[];
+      facts?: VenueRow[];
+      dark?: boolean;
+    }
+  /** прайс / что входит / за доплату */
+  | {
+      type: 'terms';
+      kicker?: string;
+      title?: string;
+      terms: Venue['terms'];
+      included: Venue['included'];
+      extras: Venue['extras'];
+    }
+  /** ограничения площадки, тёмная секция */
+  | { type: 'rules'; kicker?: string; title?: string; rules: Venue['rules'] }
+  /** документы для подрядчиков */
+  | { type: 'docs'; kicker?: string; title?: string; lead?: string; docs: NonNullable<Venue['docs']> }
+  /** доска фото; без photos берётся venue.gallery */
+  | { type: 'gallery'; kicker?: string; title?: string; photos?: Venue['gallery'] }
+  /** отзывы из venue-reviews.ts — блок сам пропадает, если их нет */
+  | { type: 'reviews' }
+  | { type: 'faq'; kicker?: string; title?: string; items: Venue['faq'] };
+
 export interface Venue {
   slug: string;
   /** города каталога: /moskva/ploshchadki/... */
@@ -66,6 +110,11 @@ export interface Venue {
 
   /** крупные цифры-факты полосой */
   stats: { value: string; label: string }[];
+
+  /** Тело страницы блоками — см. VenueBlock. Если задано, поля scenes /
+   *  terms / rules / docs / faq ниже страница НЕ читает (но они остаются
+   *  источником для каталога, сравнения и разметки), контент живёт в блоках. */
+  blocks?: VenueBlock[];
 
   scenes: VenueScene[];
 
@@ -582,7 +631,7 @@ export const forestDew: Venue = {
     { value: '150', label: 'м² стеклянная оранжерея' },
     { value: '70', label: 'гостей на банкете' },
     { value: '14', label: 'км от МКАД' },
-    { value: '5,0', label: 'рейтинг · 277 отзывов' },
+    { value: '5,0', label: 'рейтинг · 279 отзывов' },
   ],
 
   scenes: [
@@ -1832,4 +1881,15 @@ export const ledOrangery: Venue = {
   },
 };
 
-export const VENUES: Venue[] = [riverLoft, forestDew, sparkHall, ledOrangery];
+// ============================================================
+// ПЛОЩАДКИ ИЗ JSON — результат конвейера venue-page
+// (.claude/skills/venue-page): один файл src/data/venues/<slug>.json на
+// площадку, фото в src/assets/venues/<slug>/. Формат тот же Venue, тело
+// страницы — в `blocks`. Новый файл в папке = новая страница, код не трогаем.
+// Именно эти JSON позже станут записями таблицы venues в базе.
+// ============================================================
+const jsonVenues = Object.values(
+  import.meta.glob<Venue>('./venues/*.json', { eager: true, import: 'default' })
+);
+
+export const VENUES: Venue[] = [riverLoft, forestDew, sparkHall, ledOrangery, ...jsonVenues];

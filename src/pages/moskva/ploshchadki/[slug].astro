@@ -1,13 +1,17 @@
 ---
 // ШАБЛОН КАРТОЧКИ ПОДРЯДЧИКА (площадки).
 // URL зафиксирован SEO-фундаментом: /moskva/ploshchadki/nazvanie/
-// Страница ничего не знает про конкретную площадку — только про тип Venue,
-// поэтому новая площадка = новый объект в src/data/venues.ts.
+// Страница ничего не знает про конкретную площадку — только про тип Venue.
+// Между первым экраном и контактами тело страницы — СПИСОК БЛОКОВ
+// (lib/venue-blocks.ts): порядок и набор секций задают данные площадки,
+// а не этот файл. Новая площадка = объект в src/data/venues.ts или JSON
+// в src/data/venues/ (см. .claude/skills/venue-page).
 import Layout from '../../../layouts/Layout.astro';
 import SiteHeader from '../../../components/SiteHeader.astro';
 import VenueHero from '../../../components/VenueHero.astro';
 import StatsStrip from '../../../components/StatsStrip.astro';
 import ScrollyScenes from '../../../components/ScrollyScenes.astro';
+import VenueStatement from '../../../components/VenueStatement.astro';
 import VenueTerms from '../../../components/VenueTerms.astro';
 import VenueRules from '../../../components/VenueRules.astro';
 import VenueDocs from '../../../components/VenueDocs.astro';
@@ -18,6 +22,7 @@ import Reviews from '../../../components/Reviews.astro';
 import BottomDock from '../../../components/BottomDock.astro';
 import { VENUES, type Venue } from '../../../data/venues';
 import { venueReviews } from '../../../data/venue-reviews';
+import { venueBlocks } from '../../../lib/venue-blocks';
 import { photoTiles } from '../../../lib/gallery';
 import { IMG_WIDTHS } from '../../../lib/images';
 
@@ -37,6 +42,8 @@ const { venue } = Astro.props;
 // Отзывы есть не у каждой площадки — блок и строка фактов в первом
 // экране появляются только там, где им есть что показать.
 const reviews = venueReviews(venue.slug);
+
+const blocks = venueBlocks(venue);
 ---
 
 <Layout title={venue.seo.title} description={venue.seo.description} ogImage={venue.seo.ogImage}>
@@ -45,69 +52,110 @@ const reviews = venueReviews(venue.slug);
   <main>
     <VenueHero venue={venue} />
 
-    <StatsStrip items={venue.stats} />
-
-    <ScrollyScenes kicker="Сцены" title="Как устроена площадка" scenes={venue.scenes} />
-
-    <VenueTerms
-      kicker="Условия"
-      title={venue.termsTitle ?? 'Сколько стоит и как забронировать'}
-      terms={venue.terms}
-      included={venue.included}
-      extras={venue.extras}
-    />
-
-    <VenueRules kicker="Ограничения" title="Что важно знать заранее" rules={venue.rules} />
-
     {
-      venue.docs && venue.docs.length > 0 && (
-        <VenueDocs
-          kicker="Документы"
-          title="Техническое сопровождение"
-          lead="Спецификации площадки одним файлом: что за оборудование стоит в зале, какой свет и звук уже есть и что подрядчикам нужно привезти с собой. Пригодится ведущему, диджею и техдиректору при подготовке."
-          docs={venue.docs}
-        />
-      )
+      blocks.map((block) => {
+        switch (block.type) {
+          case 'stats':
+            return <StatsStrip items={block.items} />;
+
+          case 'scenes':
+            return (
+              <ScrollyScenes kicker={block.kicker ?? 'Сцены'} title={block.title} scenes={block.scenes} />
+            );
+
+          case 'statement':
+            return (
+              <VenueStatement
+                kicker={block.kicker}
+                title={block.title}
+                body={block.body}
+                facts={block.facts}
+                dark={block.dark}
+              />
+            );
+
+          case 'terms':
+            return (
+              <VenueTerms
+                kicker={block.kicker ?? 'Условия'}
+                title={block.title ?? 'Сколько стоит и как забронировать'}
+                terms={block.terms}
+                included={block.included}
+                extras={block.extras}
+              />
+            );
+
+          case 'rules':
+            return (
+              <VenueRules
+                kicker={block.kicker ?? 'Ограничения'}
+                title={block.title ?? 'Что важно знать заранее'}
+                rules={block.rules}
+              />
+            );
+
+          case 'docs':
+            return (
+              <VenueDocs
+                kicker={block.kicker ?? 'Документы'}
+                title={block.title ?? 'Техническое сопровождение'}
+                lead={
+                  block.lead ??
+                  'Спецификации площадки одним файлом: что за оборудование стоит в зале, какой свет и звук уже есть и что подрядчикам нужно привезти с собой. Пригодится ведущему, диджею и техдиректору при подготовке.'
+                }
+                docs={block.docs}
+              />
+            );
+
+          // ГАЛЕРЕЯ: та же доска, что на главной и в визитке подрядчика
+          // (PhotoMasonry) — колонки, каждый кадр в своей настоящей пропорции.
+          // Все кадры сразу, без «показать ещё»: картинки ленивые, браузер
+          // качает только те, что дошли до экрана.
+          case 'gallery': {
+            const photos = block.photos ?? venue.gallery;
+            return (
+              <section class="vgal section" id="foto">
+                <div class="container container--wide">
+                  <header class="vgal__head">
+                    <p class="vgal__kicker t-caption">{block.kicker ?? 'Галерея'}</p>
+                    <h2 class="vgal__title t-h2">{block.title ?? 'Зал и мероприятия'}</h2>
+                  </header>
+
+                  <PhotoMasonry
+                    tiles={photoTiles(photos.map((g) => g.src), venue.name)}
+                    sizes="(min-width: 1440px) 19vw, (min-width: 1024px) 24vw, (min-width: 640px) 32vw, 48vw"
+                    widths={IMG_WIDTHS.tile}
+                  />
+                </div>
+              </section>
+            );
+          }
+
+          // ОТЗЫВЫ — блок тот же, что на карточке подрядчика; без отзывов
+          // в venue-reviews.ts секция просто не рисуется.
+          case 'reviews':
+            return (
+              reviews && (
+                <Reviews
+                  reviews={reviews.items}
+                  rating={reviews.rating}
+                  ratings={reviews.ratings}
+                  total={reviews.total}
+                />
+              )
+            );
+
+          case 'faq':
+            return (
+              <FaqBlock
+                kicker={block.kicker ?? 'Вопросы'}
+                title={block.title ?? 'Что спрашивают чаще всего'}
+                items={block.items}
+              />
+            );
+        }
+      })
     }
-
-    <!-- ГАЛЕРЕЯ: ТА ЖЕ ДОСКА, ЧТО НА ГЛАВНОЙ И В ВИЗИТКЕ ПОДРЯДЧИКА
-         (PhotoMasonry) — колонки, каждый кадр в своей настоящей пропорции.
-         Раньше тут стояла своя сетка с жёсткими ячейками: кадры кропились
-         под чужую рамку, и вертикальный портрет соседствовал с обрезанным
-         горизонтальным. Третьей вёрстки галереи в проекте не заводим.
-
-         ВСЕ кадры площадки сразу, без кнопки «показать ещё»: человек
-         пришёл смотреть зал, и прятать половину съёмки незачем. Систему
-         это не грузит — картинки ленивые, браузер качает только те, что
-         дошли до экрана; в HTML лежит лишь разметка. -->
-    <section class="vgal section" id="foto">
-      <div class="container container--wide">
-        <header class="vgal__head">
-          <p class="vgal__kicker t-caption">Галерея</p>
-          <h2 class="vgal__title t-h2">Зал и мероприятия</h2>
-        </header>
-
-        <PhotoMasonry
-          tiles={photoTiles(venue.gallery.map((g) => g.src), venue.name)}
-          sizes="(min-width: 1440px) 19vw, (min-width: 1024px) 24vw, (min-width: 640px) 32vw, 48vw"
-          widths={IMG_WIDTHS.tile}
-        />
-      </div>
-    </section>
-
-    <!-- ОТЗЫВЫ — после фотографий и до вопросов: человек сначала смотрит
-         место, потом читает, что о нём говорят, и только потом идёт
-         разбираться в условиях. Блок тот же, что на карточке подрядчика. -->
-    {reviews && (
-      <Reviews
-        reviews={reviews.items}
-        rating={reviews.rating}
-        ratings={reviews.ratings}
-        total={reviews.total}
-      />
-    )}
-
-    <FaqBlock kicker="Вопросы" title="Что спрашивают чаще всего" items={venue.faq} />
 
     <VenueContacts venue={venue} />
   </main>

@@ -1,0 +1,83 @@
+---
+// УТВЕРЖДЕНИЕ НА БУМАГЕ — текстовый блок карточки без кадра.
+// Нужен, когда у площадки есть мысль, которую не хочется прятать под
+// фото: формат работы («только под закрытие»), устройство прайса,
+// история места. Заголовок + абзацы + строки фактов; dark — инверсия
+// секции (тон, не цвет — см. правило .theme-dark в CLAUDE.md).
+import type { VenueRow } from '../data/venues';
+
+interface Props {
+  kicker?: string;
+  title: string;
+  body: string[];
+  facts?: VenueRow[];
+  dark?: boolean;
+}
+
+const { kicker, title, body, facts, dark = false } = Astro.props;
+---
+
+<section class:list={['statement', 'section', { 'theme-dark': dark }]}>
+  <div class="container container--wide">
+    <header class="statement__head">
+      {kicker && <p class="statement__kicker t-caption">{kicker}</p>}
+      <h2 class="statement__title">{title}</h2>
+    </header>
+
+    <div class="statement__body">
+      <div class="statement__text">
+        {body.map((p) => <p class="statement__p">{p}</p>)}
+      </div>
+
+      {
+        facts && facts.length > 0 && (
+          <dl class="rows statement__facts">
+            {facts.map((fact) => (
+              <div class="rows__row">
+                <dt class="rows__label">{fact.label}</dt>
+                <dd class="rows__value">{fact.value}</dd>
+              </div>
+            ))}
+          </dl>
+        )
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  /* По полям страницы, как сцены и правила */
+  .statement :global(.container) { max-width: none; }
+
+  .statement__head { margin-bottom: var(--section-gap-tight); }
+
+  .statement__kicker {
+    font-weight: var(--w-medium);
+    margin-bottom: var(--s-3);
+  }
+
+  .statement__title {
+    font-size: var(--fs-h1);
+    font-weight: var(--w-head-lg);
+    line-height: var(--lh-display);
+    letter-spacing: var(--ls-display);
+    max-width: var(--measure-head);
+  }
+
+  .statement__body {
+    display: grid;
+    gap: var(--s-7) var(--s-8);
+  }
+
+  .statement__p {
+    font-size: var(--fs-lead);
+    line-height: var(--lh-body);
+    max-width: var(--measure-lead);
+  }
+
+  .statement__p + .statement__p { margin-top: var(--s-4); }
+
+  @media (min-width: 900px) {
+    .statement__body { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); align-items: start; }
+  }
+</style>

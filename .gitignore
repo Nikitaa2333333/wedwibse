@@ -33,3 +33,8 @@ scripts/wordstat-out/regions-tree.json
 # исходные выборки фото от площадок: в репозиторий едут только
 # пережатые кадры из src/assets, оригиналы храним локально
 /ВЫБОРКА*/
+research/
+pb/pocketbase.exe
+pb/pb_data/
+pb/CHANGELOG.md
+pb/LICENSE.md

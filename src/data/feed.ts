@@ -53,8 +53,8 @@ const venues: FeedVenue[] = [
     capacity: 'до 100 гостей',
     checkFrom: 4000,
     avgCheck: 'от 4 000 ₽',
-    rating: 4.9,
-    reviews: 37,
+    rating: 5,
+    reviews: 151,
     media: [`${RL}/gal/g8.webp`, `${RL}/gal/g2.webp`, `${RL}/gal/g5.webp`, `${RL}/welcome/w1.webp`],
   },
   {
@@ -69,7 +69,7 @@ const venues: FeedVenue[] = [
     checkFrom: 9000,
     avgCheck: 'от 9 000 ₽',
     rating: 5,
-    reviews: 277,
+    reviews: 279,
     media: [`${FD}/gal/g1.webp`, `${FD}/s2-hall.webp`, `${FD}/gal/g6.webp`, `${FD}/gal/g3.webp`],
   },
   {
