@@ -162,7 +162,7 @@ export const ARTICLES: Article[] = [
       { label: 'От 120 гостей', href: FROM_120 },
       { label: 'Подмосковье', href: REGION },
     ],
-    venues: ['Ривер Лофт', 'Белый зал', 'Загородный клуб «Пахра»'],
+    venues: ['Ривер Лофт', 'Spark Hall', 'Fish Point'],
     seo: {
       title: 'Как выбрать площадку на 100 гостей — метраж, техника, бюджет · WED Secrets',
       description:
@@ -226,7 +226,7 @@ export const ARTICLES: Article[] = [
       { label: 'Площадки Подмосковья', href: REGION },
       { label: 'До 80 гостей', href: UP_TO_80 },
     ],
-    venues: ['Загородный клуб «Пахра»', 'Усадьба Дубровицы', 'Ривер Лофт'],
+    venues: ['Fish Point', 'Лесная Роса', 'Отражение'],
     seo: {
       title: 'Свадьба на природе в Подмосковье — как выбрать площадку у воды · WED Secrets',
       description:
@@ -305,7 +305,7 @@ export const ARTICLES: Article[] = [
       { label: 'Лофты', href: LOFTS },
       { label: 'До 5 000 ₽ на гостя', href: BUDGET },
     ],
-    venues: ['Белый зал', 'Панорама Холл', 'Лофт 1905'],
+    venues: ['Spark Hall', 'Fish Point', 'Ривер Лофт'],
     seo: {
       title: 'Шесть ошибок при выборе банкетного зала на свадьбу · WED Secrets',
       description:
@@ -370,7 +370,7 @@ export const ARTICLES: Article[] = [
       { label: 'Лофты', href: LOFTS },
       { label: 'Усадьбы', href: MANORS },
     ],
-    venues: ['Ривер Лофт', 'Усадьба Дубровицы', 'Терраса 21'],
+    venues: ['Лесная Роса', 'Из-за любви', 'Отражение'],
     seo: {
       title: 'Выездная регистрация: тайминг свадебного дня · WED Secrets',
       description:

@@ -57,7 +57,8 @@ async function slurp(dir) {
 }
 await slurp(base);
 const norm = (s) => s.replace(/[\s ]/g, '');
-const corpusN = norm(corpus);
+// телефоны в сырье бывают «+7 (495) 755-39-43», у нас «+7 495 755 39 43»: сверяем по голым цифрам
+const corpusN = norm(corpus) + '\n' + corpus.replace(/[^\d\n]/g, '');
 const strings = [];
 (function walk(v) {
   if (typeof v === 'string') strings.push(v);
@@ -72,7 +73,8 @@ for (const s of strings) {
     if (n.length < 2 || /^(19|20)\d\d$/.test(n)) continue; // одиночные цифры и годы не проверяем
     if (seen.has(n)) continue;
     seen.add(n);
-    if (!corpusN.includes(n)) errors.push(`число «${m[0].trim()}» не найдено в сырье: «${s.slice(0, 80)}…»`);
+    const digits = n.replace(/\D/g, '');
+    if (!corpusN.includes(n) && !(digits.length >= 10 && corpusN.includes(digits))) errors.push(`число «${m[0].trim()}» не найдено в сырье: «${s.slice(0, 80)}…»`);
   }
 }
 

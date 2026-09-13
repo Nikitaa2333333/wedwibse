@@ -66,7 +66,8 @@ const filtersOf = (item: FeedVenue) => ({
   type: item.type,
   city: item.city,
   capacity: capacityBucket(item.capacityMax),
-  avgCheck: checkBucket(item.checkFrom),
+  // без открытого прайса карточка в бакеты чека не попадает
+  avgCheck: item.checkFrom ? checkBucket(item.checkFrom) : '',
 });
 
 let venueIndex = 0;
@@ -136,7 +137,7 @@ const mapPoints = venueMapPoints();
           const cardVariant = variant(venueIndex);
           venueIndex += 1;
           const filters = filtersOf(item);
-          const sortKey = { price: item.checkFrom, rating: item.rating };
+          const sortKey = { price: item.checkFrom ?? Number.MAX_SAFE_INTEGER, rating: item.rating };
 
           const sizes =
             cardVariant === 'vcard--wide' || cardVariant === 'vcard--duo'

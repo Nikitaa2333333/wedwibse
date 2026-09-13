@@ -91,6 +91,12 @@ node scripts/prep-photos.mjs <slug>                          # → photos/ + pho
    страницы, целиком с Карт.
 4. Если у площадки нет своей точки на Картах (LЁD живёт под карточкой
    «Спарк» оператора) — берём файл оператора под slug площадки.
+5. **Координаты — из того же HTML**, ничего не искать и не геокодировать:
+   `grep -o 'data-coordinates=\\"[0-9.]*,[0-9.]*'` даёт `lon,lat` метки
+   организации. Записать в `facts.json → location.geo {lat, lon}` ДО фазы 3,
+   агент написания просто переносит в `contacts.geo`. Координаты из
+   параметра `ll=` короткой ссылки не брать: при `mode=search` это центр
+   выдачи, а не точка.
 
 Страница читает `src/data/reviews/*.json` через `venue-reviews.ts`; первый
 экран и лента берут рейтинг оттуда же. Тот же файл — будущая запись
@@ -188,8 +194,10 @@ categorySlug: "ploshchadki", name, kicker, title, lead, hero, meta (4 строк
 Вместимость · Площадь · Форматы · Кухня), stats, scenes, terms, included,
 extras, rules, gallery, faq, contacts (address, addressNote, geo, phone,
 phoneHref, email, hours, routes, links), seo`.
-Что лежит в блоках, дублируем в плоские поля тем же содержимым (это одни и те
-же массивы: `scenes` = все сцены всех групп подряд, `faq` = items блока faq).
+Поля `scenes, terms, included, extras, rules, faq` при наличии `blocks`
+страница не читает — оставляем их пустыми массивами `[]`, дублировать
+содержимое блоков туда не нужно. Живыми остаются `stats`, `gallery`, `meta`,
+`contacts`, `hero`: их читают каталог, карта, сравнение и первый экран.
 `contacts.geo` — координаты точки, взять из карт/сайта; без них площадка
 не попадёт на карту каталога.
 
