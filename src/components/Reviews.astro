@@ -41,6 +41,9 @@ interface Props {
 const { reviews, rating = null, ratings = null, total = null, id = 'otzyvy', title = 'Отзывы' } = Astro.props;
 
 const shown = reviews.length;
+
+// сворачиваем только действительно большие отзывы: средние читаются целиком
+const LONG = 900;
 ---
 
 <section class="reviews section section--tight" id={id}>
@@ -79,7 +82,14 @@ const shown = reviews.length;
                 {'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}
               </p>
             </header>
-            <p class="review__text">{r.text}</p>
+            {/* Длинный отзыв свёрнут до нескольких строк, как на самих Картах:
+                простыня на 5 000 знаков посреди карточки перебивает соседей.
+                Порог — по длине текста на сборке; кнопка раскрывает, без JS
+                текст виден целиком (clamp снимается классом, не разметкой). */}
+            <p class:list={['review__text', { 'is-clamped': r.text.length > LONG }]}>{r.text}</p>
+            {r.text.length > LONG && (
+              <button class="review__more pill pill--sm" type="button" data-review-more aria-expanded="false">Читать целиком</button>
+            )}
           </article>
         ))
       }
@@ -176,8 +186,30 @@ const shown = reviews.length;
 
   .review__text { margin-top: var(--s-4); }
 
+  /* свёрнутый большой отзыв: 8 строк, дальше обрез многоточием */
+  .review__text.is-clamped {
+    display: -webkit-box;
+    -webkit-line-clamp: 8;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .review__more { margin-top: var(--s-3); }
+
   .reviews__more {
     margin-top: var(--s-4);
     opacity: 0.6;
   }
 </style>
+
+<script>
+  // «Читать целиком»: снимает обрез с текста своего отзыва и прячется —
+  // обратно сворачивать незачем, человек уже прочитал
+  document.querySelectorAll<HTMLButtonElement>('[data-review-more]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      btn.previousElementSibling?.classList.remove('is-clamped');
+      btn.setAttribute('aria-expanded', 'true');
+      btn.hidden = true;
+    });
+  });
+</script>
