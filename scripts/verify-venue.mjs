@@ -21,7 +21,7 @@ for (const k of ['slug', 'citySlug', 'city', 'category', 'categorySlug', 'name',
   if (!(k in venue)) errors.push(`нет поля ${k}`);
 }
 if (venue.slug !== slug) errors.push(`slug в файле (${venue.slug}) не совпадает с именем файла`);
-const TYPES = new Set(['stats', 'scenes', 'statement', 'terms', 'rules', 'docs', 'gallery', 'reviews', 'faq']);
+const TYPES = new Set(['stats', 'scenes', 'statement', 'terms', 'rules', 'docs', 'gallery', 'reviews', 'reels', 'faq']);
 for (const [i, b] of (venue.blocks ?? []).entries()) {
   if (!TYPES.has(b.type)) errors.push(`blocks[${i}]: неизвестный тип ${b.type}`);
   if (b.type === 'scenes') for (const s of b.scenes) {

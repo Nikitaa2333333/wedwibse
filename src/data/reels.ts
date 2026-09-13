@@ -26,8 +26,13 @@ export interface Reel {
   /** немой луп для доски; постер — тот же путь с расширением .webp */
   src: string;
   alt: string;
-  /** slug карточки специалиста, который это снял */
+  /** slug карточки специалиста, который это снял; у роликов площадки —
+   *  пусто, автор там сама площадка (см. venue) */
   author: string;
+  /** slug площадки: ролик из её материалов, плитка ведёт на её карточку.
+   *  Ролики площадок лежат в public/venues/<slug>/reel-NN.mp4, постеры
+   *  рядом с фото в src/assets/venues/<slug>/ (пайплайн — scripts/prep-video.mjs) */
+  venue?: string;
   /** у ролика есть звуковая дорожка — значит и кнопка звука над кадром.
    *  Стоит не у всех: часть демо-набора пришла уже немой, исходников
    *  со звуком к ним нет (пайплайн — VIDEO.md). */
@@ -49,6 +54,20 @@ export const REELS: Reel[] = [
   { slug: 'suite', src: '/reels/suite.mp4', alt: 'Утро пары в номере', author: 'leshakovy' },
   { slug: 'rose', src: '/reels/rose.mp4', alt: 'Букет и украшения невесты крупным планом', author: 'leshakovy' },
   { slug: 'balcony', src: '/reels/balcony.mp4', alt: 'Невеста с букетом на балконе', author: 'leshakovy' },
+  // ---- ролики площадок (материалы самих площадок, см. venue) ----
+  { slug: 'reel-01', src: '/venues/due-to-love/reel-01.mp4', alt: 'Чёрная оранжерея «Из-за любви» в лесу, два свадебных сезона', author: '', venue: 'due-to-love', sound: true },
+  { slug: 'reel-02', src: '/venues/due-to-love/reel-02.mp4', alt: 'Схемы и макеты рассадки в оранжерее', author: '', venue: 'due-to-love', sound: true },
+  { slug: 'reel-03', src: '/venues/due-to-love/reel-03.mp4', alt: 'Драпировки и люстра над столами', author: '', venue: 'due-to-love', sound: true },
+  { slug: 'reel-04', src: '/venues/due-to-love/reel-04.mp4', alt: 'Молодожёны с бокалами в оранжерее', author: '', venue: 'due-to-love', sound: true },
+  { slug: 'reel-05', src: '/venues/due-to-love/reel-05.mp4', alt: 'Официант с подносом на банкете', author: '', venue: 'due-to-love', sound: true },
+  { slug: 'reel-06', src: '/venues/due-to-love/reel-06.mp4', alt: 'Подача закусок и напитков', author: '', venue: 'due-to-love', sound: true },
+  { slug: 'reel-07', src: '/venues/due-to-love/reel-07.mp4', alt: 'Невеста в платье в оранжерее', author: '', venue: 'due-to-love', sound: true },
+  { slug: 'reel-08', src: '/venues/due-to-love/reel-08.mp4', alt: 'Оранжерея ночью в огнях гирлянд', author: '', venue: 'due-to-love', sound: true },
+  { slug: 'reel-09', src: '/venues/due-to-love/reel-09.mp4', alt: 'Пара у фонтана в лесу', author: '', venue: 'due-to-love', sound: true },
+  { slug: 'reel-10', src: '/venues/due-to-love/reel-10.mp4', alt: 'Сервировка с зеленью под драпировками', author: '', venue: 'due-to-love', sound: true },
+  { slug: 'reel-11', src: '/venues/due-to-love/reel-11.mp4', alt: 'Молодожёны под зонтом в лесу', author: '', venue: 'due-to-love', sound: true },
+  { slug: 'reel-12', src: '/venues/due-to-love/reel-12.mp4', alt: 'Невеста в кружевной фате', author: '', venue: 'due-to-love', sound: true },
+  { slug: 'reel-01', src: '/venues/fish-point/reel-01.mp4', alt: 'Банкетный зал Fish Point в берёзовой роще с высоты', author: '', venue: 'fish-point', sound: true },
 ];
 
 /** Есть ли у ролика звук — по пути файла: разметка (PhotoRail, HeroStage,
@@ -60,6 +79,11 @@ export function hasSound(src: string): boolean {
   return SOUNDED.has(src);
 }
 
+/** ролики площадки — ряд «Видео» на её карточке (блок reels) */
+export function reelsOfVenue(slug: string): Reel[] {
+  return REELS.filter((r) => r.venue === slug);
+}
+
 /** ролики одного подрядчика — они же кадры первого экрана его визитки */
 export function reelsOf(slug: string): Reel[] {
   return REELS.filter((r) => r.author === slug);
@@ -68,6 +92,7 @@ export function reelsOf(slug: string): Reel[] {
 /** Куда ведёт плитка ролика из доски: визитка автора, открытая НА ЭТОМ
  *  ролике. Якорь тот же, что у кадров площадки, — `#foto-<имя файла>`. */
 export function reelHref(reel: Reel): string | null {
+  if (reel.venue) return `/moskva/ploshchadki/${reel.venue}/#foto-${reel.slug}`;
   const author = findSpecialist(reel.author);
   return author ? `${specialistUrl(author)}#foto-${reel.slug}` : null;
 }

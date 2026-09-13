@@ -19,9 +19,11 @@ import PhotoMasonry from '../../../components/PhotoMasonry.astro';
 import FaqBlock from '../../../components/FaqBlock.astro';
 import VenueContacts from '../../../components/VenueContacts.astro';
 import Reviews from '../../../components/Reviews.astro';
+import ReelsRow from '../../../components/ReelsRow.astro';
 import BottomDock from '../../../components/BottomDock.astro';
 import { VENUES, type Venue } from '../../../data/venues';
 import { venueReviews } from '../../../data/venue-reviews';
+import { reelsOfVenue } from '../../../data/reels';
 import { venueBlocks } from '../../../lib/venue-blocks';
 import { photoTiles } from '../../../lib/gallery';
 import { IMG_WIDTHS } from '../../../lib/images';
@@ -44,6 +46,7 @@ const { venue } = Astro.props;
 const reviews = venueReviews(venue.slug);
 
 const blocks = venueBlocks(venue);
+const reels = reelsOfVenue(venue.slug);
 ---
 
 <Layout title={venue.seo.title} description={venue.seo.description} ogImage={venue.seo.ogImage}>
@@ -110,9 +113,10 @@ const blocks = venueBlocks(venue);
           // ГАЛЕРЕЯ: та же доска, что на главной и в визитке подрядчика
           // (PhotoMasonry) — колонки, каждый кадр в своей настоящей пропорции.
           // Все кадры сразу, без «показать ещё»: картинки ленивые, браузер
-          // качает только те, что дошли до экрана.
+          // качает только те, что дошли до экрана. Ролики в доску не идут —
+          // плитка их не играет, у них свой ряд (блок reels).
           case 'gallery': {
-            const photos = block.photos ?? venue.gallery;
+            const photos = (block.photos ?? venue.gallery).filter((g) => !g.src.endsWith('.mp4'));
             return (
               <section class="vgal section" id="foto">
                 <div class="container container--wide">
@@ -144,6 +148,9 @@ const blocks = venueBlocks(venue);
                 />
               )
             );
+
+          case 'reels':
+            return <ReelsRow reels={reels} title={block.title} section />;
 
           case 'faq':
             return (

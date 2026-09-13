@@ -171,8 +171,19 @@ const facts = rating !== null && rating !== undefined;
          фотографиям, и отбитое вниз, в строку рейтинга, оно читалось
          цифрой неизвестно о чём. -->
     <div class="stage__aside">
+      {/* Листалка: стрелки по бокам счётчика, на бумаге (знаков на фото
+          нет). Свайп на телефоне остаётся главным жестом, стрелки —
+          явная подсказка, что кадров больше, и единственная ручка на ПК. */}
       {frames.length > 1 && (
-        <span class="stage__count" data-stage-count>1 / {frames.length}</span>
+        <span class="stage__pager">
+          <button class="stage__arrow" type="button" data-stage-prev aria-label="Предыдущий кадр">
+            <Icon name="arrowLeft" />
+          </button>
+          <span class="stage__count" data-stage-count>1 / {frames.length}</span>
+          <button class="stage__arrow" type="button" data-stage-next aria-label="Следующий кадр">
+            <Icon name="arrowRight" />
+          </button>
+        </span>
       )}
 
       {
@@ -224,32 +235,9 @@ const facts = rating !== null && rating !== undefined;
 
   .stage__frame[hidden] { display: none; }
 
-  /* ============ ПОДСКАЗКА «МОЖНО ЛИСТАТЬ» ============
-     Стрелок на кадре нет (текст и знаки на фото запрещены), поэтому
-     сам кадр один раз чуть уезжает влево, показывая край следующего,
-     и возвращается. Ставится скриптом классом is-peek на видимый кадр,
-     следующий на это время открывается под ним (is-under). Один раз
-     на карточку за визит и только пока человек сам не свайпнул;
-     reduced-motion гасится глобальным guard в global.css. */
-  .stage__frame[hidden].is-under { display: block; }
-
-  .stage__frame.is-peek {
-    z-index: 1;
-    animation: stage-peek var(--dur-slow) var(--ease-inout) 1 both;
-  }
-
-  /* Приоткрытый край соседа — всегда заливкой, даже у горизонтали:
-     в полоске в 14% ширины вписанный кадр показывал не фото, а поля
-     подложки над и под ним. Кроп тут не режет сюжет — это намёк, а не
-     показ; при настоящем листании кадр встанет по своему правилу. */
-  .stage__frame.is-under img { object-fit: cover; }
-
-  @keyframes stage-peek {
-    0%   { transform: translateX(0); }
-    40%  { transform: translateX(-14%); }
-    55%  { transform: translateX(-14%); }
-    100% { transform: translateX(0); }
-  }
+  /* Подсказки «кадр уезжает, показывая край соседа» больше нет: с
+     горизонталью в соседях она открывала поля, а не фото, и уносила
+     свечение под кадр. Листание объявляют стрелки у счётчика на бумаге. */
 
   /* Портрет и квадрат заполняют окно, горизонталь вписывается целиком:
      решает сам браузер по пропорции файла. object-fit тут один на всех
@@ -286,8 +274,6 @@ const facts = rating !== null && rating !== undefined;
      и размывать под ним нечего. */
   .stage__glow {
     position: absolute;
-    /* Выше кадра-подсказки (is-peek поднимает его на z-index: 1): иначе
-       на время анимации свечение уходило под фото и возвращалось рывком. */
     z-index: 2;
     left: 0;
     right: 0;
@@ -419,11 +405,44 @@ const facts = rating !== null && rating !== undefined;
     height: 14px;
   }
 
-  /* Счётчик кадров — тихая метка, не кнопка. Приглушение opacity,
-     а не серой краской (правило проекта). */
+  /* Листалка: стрелка · счётчик · стрелка одной строкой, без рамок —
+     служебная строка подписи, а не панель управления. Счётчик — тихая
+     метка, приглушение opacity, а не серой краской (правило проекта). */
+  .stage__pager {
+    display: inline-flex;
+    align-items: center;
+  }
+
   .stage__count {
     white-space: nowrap;
     opacity: 0.6;
+    /* цифры не «дышат» по ширине при листании — стрелки стоят на месте */
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Стрелка: знак 16px внутри зоны нажатия --tap; стрелки вплотную к
+     счётчику визуально, зона нажатия — за счёт отрицательных полей. */
+  .stage__arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--tap);
+    height: var(--tap);
+    margin: calc((var(--tap) - 16px) / -2) 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--fg);
+    cursor: pointer;
+  }
+
+  .stage__arrow :global(svg) {
+    width: 16px;
+    height: 16px;
+  }
+
+  @media (hover: hover) {
+    .stage__arrow:hover { color: var(--accent); }
   }
 
   /* ============ ПК ============
@@ -508,17 +527,10 @@ const facts = rating !== null && rating !== undefined;
     // Арифметика жеста та же, что в PhotoRail: порог 36px, косой жест
     // (больше вниз, чем вбок) не считается, чтобы не мешать прокрутке.
     let index = Math.max(0, shots.findIndex((f) => !f.hidden));
-    let swiped = false;
 
     const show = (n: number) => {
       index = (n + shots.length) % shots.length;
-
-      // подсказка листания, если шла, снимается: её классы держат
-      // соседний кадр видимым и поднимают текущий над остальными
-      shots.forEach((f, k) => {
-        f.classList.remove('is-peek', 'is-under');
-        f.hidden = k !== index;
-      });
+      shots.forEach((f, k) => { f.hidden = k !== index; });
       if (count) count.textContent = `${index + 1} / ${shots.length}`;
 
       // Соседние кадры подтягиваем заранее — листание не показывает
@@ -539,36 +551,9 @@ const facts = rating !== null && rating !== undefined;
 
     show(index);
 
-    // ============ ПОДСКАЗКА ЛИСТАНИЯ ============
-    // Первый кадр чуть уезжает влево и возвращается, приоткрывая край
-    // следующего. Один раз на карточку за сессию вкладки (sessionStorage
-    // с путём страницы), на любом указателе — на ПК стрелок тоже нет, и
-    // курсор сам по себе не говорит, что кадры листаются. Отменяется,
-    // если человек успел свайпнуть сам. Стартует через паузу — и не раньше,
-    // чем доехал сосед: приоткрывать пустую подложку вместо фото — та же
-    // «кривизна», что и горизонталь на полях.
-    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const PEEK_KEY = 'stage-peek:' + location.pathname;
-    let peeked = false;
-    try { peeked = sessionStorage.getItem(PEEK_KEY) === '1'; } catch {}
-
-    if (!reduced && !peeked) {
-      setTimeout(() => {
-        const cur = shots[index];
-        const next = shots[(index + 1) % shots.length];
-        if (!cur || !next || cur === next) return;
-        whenLoaded(imgOf(next), () => {
-          if (swiped || document.hidden || shots[index] !== cur) return;
-          next.classList.add('is-under');
-          cur.classList.add('is-peek');
-          cur.addEventListener('animationend', () => {
-            cur.classList.remove('is-peek');
-            next.classList.remove('is-under');
-          }, { once: true });
-          try { sessionStorage.setItem(PEEK_KEY, '1'); } catch {}
-        });
-      }, 900);
-    }
+    // Стрелки у счётчика — тот же show(), что и свайп
+    stage.querySelector('[data-stage-prev]')?.addEventListener('click', () => show(index - 1));
+    stage.querySelector('[data-stage-next]')?.addEventListener('click', () => show(index + 1));
 
     let x0 = 0;
     let y0 = 0;
@@ -584,7 +569,6 @@ const facts = rating !== null && rating !== undefined;
       const dx = t.clientX - x0;
       const dy = t.clientY - y0;
       if (Math.abs(dx) < 36 || Math.abs(dx) <= Math.abs(dy)) return;
-      swiped = true;
       show(index + (dx < 0 ? 1 : -1));
     }, { passive: true });
 

@@ -75,6 +75,9 @@ export type VenueBlock =
   | { type: 'gallery'; kicker?: string; title?: string; photos?: Venue['gallery'] }
   /** отзывы из venue-reviews.ts — блок сам пропадает, если их нет */
   | { type: 'reviews' }
+  /** ряд роликов площадки (ReelsRow): берутся из data/reels.ts по venue = slug,
+   *  без роликов блок не рисуется. Ролики в первом экране — отдельно, кадрами gallery */
+  | { type: 'reels'; title?: string }
   | { type: 'faq'; kicker?: string; title?: string; items: Venue['faq'] };
 
 export interface Venue {
