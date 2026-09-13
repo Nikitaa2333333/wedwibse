@@ -216,8 +216,8 @@ const facts = rating !== null && rating !== undefined;
      Стрелок на кадре нет (текст и знаки на фото запрещены), поэтому
      сам кадр один раз чуть уезжает влево, показывая край следующего,
      и возвращается. Ставится скриптом классом is-peek на видимый кадр,
-     следующий на это время открывается под ним (is-under). Только тач,
-     только один раз за визит и только пока человек сам не свайпнул;
+     следующий на это время открывается под ним (is-under). Один раз
+     на карточку за визит и только пока человек сам не свайпнул;
      reduced-motion гасится глобальным guard в global.css. */
   .stage__frame[hidden].is-under { display: block; }
 
@@ -522,16 +522,16 @@ const facts = rating !== null && rating !== undefined;
 
     // ============ ПОДСКАЗКА ЛИСТАНИЯ ============
     // Первый кадр чуть уезжает влево и возвращается, приоткрывая край
-    // следующего. Один раз за сессию вкладки (sessionStorage), только на
-    // тач-экране (на ПК есть клавиши и курсор), и отменяется, если человек
-    // успел свайпнуть сам. Стартует через паузу, когда кадр уже виден.
-    const coarse = matchMedia('(pointer: coarse)').matches;
+    // следующего. Один раз на карточку за сессию вкладки (sessionStorage
+    // с путём страницы), на любом указателе — на ПК стрелок тоже нет, и
+    // курсор сам по себе не говорит, что кадры листаются. Отменяется,
+    // если человек успел свайпнуть сам. Стартует через паузу.
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const PEEK_KEY = 'stage-peek-shown';
+    const PEEK_KEY = 'stage-peek:' + location.pathname;
     let peeked = false;
     try { peeked = sessionStorage.getItem(PEEK_KEY) === '1'; } catch {}
 
-    if (coarse && !reduced && !peeked) {
+    if (!reduced && !peeked) {
       setTimeout(() => {
         if (swiped || document.hidden) return;
         const cur = shots[index];
