@@ -14,7 +14,7 @@ import FilterSheet from '../../../../components/FilterSheet.astro';
 import CategoryNav from '../../../../components/CategoryNav.astro';
 import ScopePicker from '../../../../components/ScopePicker.astro';
 import SpecialistGrid from '../../../../components/SpecialistGrid.astro';
-import { VEDUSHCHIE, VEDUSHCHIE_FILTERS, SPECIALIST_CATEGORIES, specialistUrl } from '../../../../data/specialists';
+import { SPECIALISTS_BY_CATEGORY, VEDUSHCHIE_FILTERS, SPECIALIST_CATEGORIES, specialistUrl } from '../../../../data/specialists';
 import { favoriteImage } from '../../../../lib/images';
 import { countOptions } from '../../../../lib/filter-counts';
 import { variantOf, type SpecialistCard } from '../../../../lib/specialist-card';
@@ -42,17 +42,20 @@ const styleLabels = new Map(
 
 const priceFmt = new Intl.NumberFormat('ru-RU');
 
+// Демо-ведущие из массива VEDUSHCHIE и реальные из JSON (см. загрузчик
+// в data/specialists.ts) — один список; у JSON-карточки значения фильтров
+// уже лежат готовой картой s.filters, у демо раскладываются по бакетам здесь.
 const cards: SpecialistCard[] = await Promise.all(
-  VEDUSHCHIE.map(async (s, i) => {
-    const price = `от ${priceFmt.format(s.priceFrom!)} ₽`;
+  (SPECIALISTS_BY_CATEGORY.vedushchie ?? []).map(async (s, i) => {
+    const price = s.priceFrom ? `от ${priceFmt.format(s.priceFrom)} ₽` : 'Цена по запросу';
     const href = specialistUrl(s);
-    const styleTag = styleLabels.get(s.styles![0]) ?? '';
+    const styleTag = styleLabels.get(s.styles?.[0] ?? '') ?? '';
 
     return {
       s,
       variant: variantOf(i),
       styleTag,
-      filters: {
+      filters: s.filters ?? {
         gender: s.gender!,
         price: priceBucket(s.priceFrom!),
         city: s.cities!,
@@ -65,7 +68,7 @@ const cards: SpecialistCard[] = await Promise.all(
         ceremonyMaster: s.ceremonyMaster ? 'yes' : 'no',
         equipment: s.hasEquipment ? 'yes' : 'no',
       },
-      sortKey: { price: s.priceFrom!, rating: s.rating ?? 0 },
+      sortKey: { price: s.priceFrom ?? 0, rating: s.rating ?? 0 },
       price,
       href,
       // Кадр для снимка в избранном — уже пережатый URL, не путь из данных

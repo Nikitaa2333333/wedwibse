@@ -1,0 +1,109 @@
+{
+  "slug": "galkin",
+  "categorySlug": "vedushchie",
+  "category": "Ведущие",
+  "name": "Михаил Галкин",
+  "avatar": "/specialists/vedushchie/avatars/galkin.webp",
+  "portrait": "/specialists/vedushchie/galkin/portrait.webp",
+  "photos": [
+    "/specialists/vedushchie/galkin/gal/p15.webp",
+    "/specialists/vedushchie/galkin/gal/p14.webp",
+    "/specialists/vedushchie/galkin/gal/p10.webp",
+    "/specialists/vedushchie/galkin/gal/p11.webp",
+    "/specialists/vedushchie/galkin/gal/p20.webp",
+    "/specialists/vedushchie/galkin/gal/p23.webp",
+    "/specialists/vedushchie/galkin/gal/p06.webp",
+    "/specialists/vedushchie/galkin/gal/p08.webp",
+    "/specialists/vedushchie/galkin/gal/p13.webp",
+    "/specialists/vedushchie/galkin/gal/p22.webp",
+    "/specialists/vedushchie/galkin/gal/p05.webp",
+    "/specialists/vedushchie/galkin/gal/p07.webp",
+    "/specialists/vedushchie/galkin/gal/p09.webp",
+    "/specialists/vedushchie/galkin/gal/p17.webp",
+    "/specialists/vedushchie/galkin/gal/p19.webp",
+    "/specialists/vedushchie/galkin/gal/p21.webp",
+    "/specialists/vedushchie/galkin/gal/p28.webp",
+    "/specialists/vedushchie/galkin/gal/p18.webp",
+    "/specialists/vedushchie/galkin/gal/p30.webp",
+    "/specialists/vedushchie/galkin/gal/p31.webp",
+    "/specialists/vedushchie/galkin/gal/p32.webp",
+    "/specialists/vedushchie/galkin/gal/p33.webp",
+    "/specialists/vedushchie/galkin/gal/p34.webp",
+    "/specialists/vedushchie/galkin/gal/p35.webp",
+    "/specialists/vedushchie/galkin/gal/p36.webp",
+    "/specialists/vedushchie/galkin/gal/p29.webp",
+    "/specialists/vedushchie/galkin/gal/p01.webp",
+    "/specialists/vedushchie/galkin/gal/p03.webp",
+    "/specialists/vedushchie/galkin/gal/p16.webp",
+    "/specialists/vedushchie/galkin/gal/p25.webp",
+    "/specialists/vedushchie/galkin/gal/p02.webp",
+    "/specialists/vedushchie/galkin/gal/p04.webp"
+  ],
+  "tagline": "Ведущий, а не тамада: без конкурсов из 90-х",
+  "bio": "Меня зовут Михаил Галкин, или Mc Wolume. Я ведущий праздничных событий, не тамада. Первую дискотеку провёл в 2002 году, первую свадьбу — в 2005; за плечами 24 года работы на самых разных площадках Москвы и Московской области. Веду свадьбы и выездные регистрации как церемониймейстер, юбилеи, корпоративы и выпускные — как в ресторане, так и на природе с генератором.\n\nЕсли вы хотите праздник, который запомнится не потому, что на нём были заезженные конкурсы из 90-х и 00-х, — вам ко мне. Программа только современного направления, подход к каждому гостю от 5 до 95 лет. Я не навязываю свои конкурсы, а даю выбрать их самостоятельно.\n\nСобственное звуковое и световое оборудование: решу любой вопрос с аудио- и видеотехникой, вплоть до райдера поп-звезды. Мне 38, женат, не пью и не курю, всегда на автомобиле. Мой неизменный принцип — качество работы.",
+  "gender": "м",
+  "priceNote": "Стоимость зависит от формата и площадки — по запросу",
+  "age": "35–50",
+  "experienceYears": 24,
+  "hasOwnDJ": true,
+  "ceremonyMaster": true,
+  "hasEquipment": true,
+  "cities": ["цао", "сао", "свао", "вао", "юво", "юао", "юзао", "зао", "сзао", "mo"],
+  "styles": ["modern", "interactive", "humor", "show"],
+  "formats": ["medium", "large", "ceremony", "anniversary"],
+  "languages": ["ru"],
+  "aboutTitle": "Обо мне",
+  "filters": {
+    "gender": "м",
+    "city": ["цао", "сао", "свао", "вао", "юво", "юао", "юзао", "зао", "сзао", "mo"],
+    "style": ["modern", "interactive", "humor", "show"],
+    "age": "35–50",
+    "experience": "15+",
+    "ownDJ": "yes",
+    "formats": ["medium", "large", "ceremony", "anniversary"],
+    "languages": ["ru"],
+    "ceremonyMaster": "yes",
+    "equipment": "yes"
+  },
+  "packageIncludes": [
+    "Ведение свадьбы, выездной регистрации, юбилея или корпоратива",
+    "Собственный звук и свет — вплоть до райдера поп-звезды",
+    "Программа современного направления, конкурсы выбираете сами",
+    "Нейрофильмы и нейрокаверы про виновников торжества",
+    "Музыкальное лото, «Угадай мелодию» с кнопками, квизы и кино-викторины",
+    "Караоке-баттлы: эмодзи-караоке, «неправильное» и скоростное караоке",
+    "Танцевальный баттл поколений и баттл М против Ж",
+    "Рекомендации фото, видео, декора, кавер-группы и других подрядчиков"
+  ],
+  "quote": "Обращайтесь — с радостью помогу. Могу быть вашим бесплатным организатором: дам рекомендации по фотографам, видеографам, оформителям, кавер-группе, пиротехникам и кондитерам. Контактами делюсь после заключения договора на мои услуги.",
+  "offers": [
+    {
+      "title": "Никаких конкурсов из 90-х",
+      "text": "Новая программа только современного направления: заинтересую и взрослых, и молодёжь. Конкурсы не навязываю — вы выбираете их сами."
+    },
+    {
+      "title": "Свой звук и свет",
+      "text": "Собственное звуковое и световое оборудование. Любой вопрос с аудио- и видеотехникой решаю сам, вплоть до райдера поп-звезды."
+    },
+    {
+      "title": "Церемониймейстер на выездной",
+      "text": "Провожу выездную регистрацию как церемониймейстер — в ресторане или на природе с генератором."
+    },
+    {
+      "title": "Нейрофильмы и нейрокаверы",
+      "text": "Ролики и песни про виновников торжества, «Где логика?», шоу-импровизация и квиз «Кто лучше всех знает молодожёнов»."
+    },
+    {
+      "title": "Караоке в новом исполнении",
+      "text": "Эмодзи-караоке, «что вижу, то и пою», караоке наоборот, скоростное, цветное и по условиям, хит сезона — игра «Меломан»."
+    },
+    {
+      "title": "Fun box «Кажется, нащупал»",
+      "text": "Загадочный ящик с предметами для гостей — стоимость ящика обсуждается отдельно."
+    },
+    {
+      "title": "Бесплатный организатор",
+      "text": "Порекомендую проверенных фотографов, видеографов, декораторов, кавер-группу, пиротехников и кондитеров — контакты после договора."
+    }
+  ]
+}

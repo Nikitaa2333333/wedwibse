@@ -73,10 +73,14 @@ await slurp(base);
 const norm = (t) => t.replace(/[\s ]/g, '');
 const corpusN = norm(corpus) + '\n' + corpus.replace(/[^\d\n]/g, '');
 const strings = [];
-(function walk(v) {
+// Значения фильтров и бакеты («35–50», «15+») — ключи закрытых списков,
+// а не текст подрядчика: их в сырье не ищем. Проверяются пунктом 2.
+const ENUM_KEYS = new Set(['filters', 'age', 'cities', 'styles', 'formats', 'languages']);
+(function walk(v, key) {
+  if (ENUM_KEYS.has(key)) return;
   if (typeof v === 'string') strings.push(v);
-  else if (Array.isArray(v)) v.forEach(walk);
-  else if (v && typeof v === 'object') Object.values(v).forEach(walk);
+  else if (Array.isArray(v)) v.forEach((x) => walk(x));
+  else if (v && typeof v === 'object') Object.entries(v).forEach(([k, x]) => walk(x, k));
 })(s);
 const seen = new Set();
 for (const t of strings) {
