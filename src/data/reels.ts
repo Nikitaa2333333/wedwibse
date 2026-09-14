@@ -42,6 +42,14 @@ export interface Reel {
 // Все ролики каталога сняты Лешаковыми (карточка leshakovy) — они же
 // отдали материал для доски главной.
 export const REELS: Reel[] = [
+  // Реальные подрядчики (диски заказчика, лупы по VIDEO.md)
+  { slug: 'suhorada-bikers', src: '/reels/suhorada-bikers.mp4', alt: 'Пара в кожаных куртках на мотоцикле у кирпичного завода', author: 'suhorada', sound: true },
+  { slug: 'suhorada-palace', src: '/reels/suhorada-palace.mp4', alt: 'Молодожёны у дворцовой лестницы', author: 'suhorada', sound: true },
+  { slug: 'suhorada-hotel', src: '/reels/suhorada-hotel.mp4', alt: 'Утро невесты в номере: платье и лепестки', author: 'suhorada', sound: true },
+  { slug: 'galkin-hall', src: '/reels/galkin-hall.mp4', alt: 'Михаил Галкин ведёт банкет в зале', author: 'galkin', sound: true },
+  { slug: 'galkin-mic', src: '/reels/galkin-mic.mp4', alt: 'Ведущий с микрофоном на танцполе', author: 'galkin', sound: true },
+  { slug: 'galkin-suit', src: '/reels/galkin-suit.mp4', alt: 'Михаил Галкин у фотозоны выездной регистрации', author: 'galkin', sound: true },
+  { slug: 'galkin-ceremony', src: '/reels/galkin-ceremony.mp4', alt: 'Выездная регистрация: гости встречают пару', author: 'galkin', sound: true },
   { slug: 'stairs', src: '/reels/stairs.mp4', alt: 'Молодожёны на парадной лестнице', author: 'leshakovy', sound: true },
   { slug: 'groom', src: '/reels/groom.mp4', alt: 'Жених перед выходом к церемонии', author: 'leshakovy', sound: true },
   { slug: 'morning', src: '/reels/morning.mp4', alt: 'Утро невесты', author: 'leshakovy', sound: true },
