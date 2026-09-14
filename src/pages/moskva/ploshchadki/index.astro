@@ -141,6 +141,9 @@ const mapPoints = venueMapPoints();
           }
 
           const cardVariant = variant(venueIndex);
+          // Первый ряд (2 колонки на телефоне) — LCP каталога: первый кадр
+          // без lazy и с fetchpriority="high", как у доски главной.
+          const firstRow = venueIndex < 2;
           venueIndex += 1;
           const filters = filtersOf(item);
           const sortKey = { price: item.checkFrom ?? Number.MAX_SAFE_INTEGER, rating: item.rating };
@@ -184,6 +187,7 @@ const mapPoints = venueMapPoints();
                   href={`/moskva/ploshchadki/${item.slug}/`}
                   sizes={sizes}
                   widths={IMG_WIDTHS.card}
+                  priority={firstRow}
                 />
               )}
 

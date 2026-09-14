@@ -40,7 +40,10 @@ const { cards } = Astro.props;
      каталог листается спокойно, карточки стоят на месте. -->
 <main class="wrap">
   <div class="vgrid" data-sort-grid>
-    {cards.map(({ s, variant, styleTag, filters, sortKey, price, href }) => {
+    {cards.map(({ s, variant, styleTag, filters, sortKey, price, href }, i) => {
+      // Первый ряд — LCP каталога: первый кадр без lazy и с
+      // fetchpriority="high", как у доски главной и каталога площадок.
+      const firstRow = i < 2;
       const sizes =
         variant === 'scard--wide' || variant === 'scard--duo'
           ? '(min-width: 1440px) 50vw, (min-width: 640px) 66vw, 100vw'
@@ -77,6 +80,7 @@ const { cards } = Astro.props;
             href={href}
             sizes={sizes}
             widths={IMG_WIDTHS.card}
+            priority={firstRow}
           />
         )}
 
