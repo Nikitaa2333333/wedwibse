@@ -42,6 +42,12 @@ Timeweb. Здесь — локальный экземпляр для разра�
 подтянет. Сайт собирается и без базы: без `PB_URL` pull пропускается,
 и в дело идут файлы, лежащие в репозитории.
 
+Подрядчики идут тем же кругом: `skill specialist-page` →
+`src/data/specialists/<кат>/<slug>.json` + фото/аватар в `src/assets/specialists/…`
++ ролики в `public/reels/` → `node scripts/pb-seed-specialists.mjs [slug] [--publish]`
+→ коллекция `specialists` (`page`, `filters`, файлы `photos`/`avatar`/`reels`,
+`photoIndex`) → тот же `pb-pull` возвращает всё в `src/` и `public/reels/`.
+
 Четыре площадки, записанные объектами в `src/data/venues.ts`
 (River Loft, Лесная Роса, Spark Hall, LЁD), заливаются
 `pb-seed --legacy`; обратно pull их не пишет, чтобы не задвоить страницу.
