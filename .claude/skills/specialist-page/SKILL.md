@@ -167,3 +167,20 @@ npx astro build      # визитка /moskva/podryadchiki/<кат>/<slug>/ и �
   в `data/reels.ts` с `author: <slug>`, файл `public/reels/<slug>-<что>.mp4`,
   постер `src/assets/reels/…webp` из оригинала. Проверка `verify-video`.
   Гигабайтные файлы («Выездная регистрация» у Галкина) не качать.
+- (14.09, Исаева) Ссылка вида `share.icloud.com/photos/<id>` — не общий
+  альбом (sharedstreams отвечает 404 на всех партициях), а CloudKit-шара из
+  «Фото». Без браузера не берётся: `public/records/resolve` отдаёт зону
+  и число кадров, но `shared/records/query` требует `publicAccessAuthToken`,
+  который выдаёт только веб-приложение. Рабочий путь: открыть ссылку в
+  локальном Chrome (chrome-devtools MCP), взять из перехваченного запроса
+  URL с токеном, выполнить в странице запросы
+  `CPLAssetAndMasterByAssetDateWithoutHiddenOrDeleted` с `startRank` от
+  N−1 вниз **шагом 16** (в ответе на 32 записи — 16 пар asset+master),
+  собрать `resJPEGMedRes` (превью для листа) и `resOriginalRes`
+  (оригинал, `${f}` → `public.jpeg`/`public.heic`). Ссылки живут ~сутки.
+  Скрипты — `research/specialists/family-dekor/{icloud,getmed,getorig}.mjs`.
+  Firecrawl страницу не рендерит («problem loading iCloud Photos»).
+- Владелец шары виден в `share.participants[owner].userIdentity` — так
+  нашлось имя студии, которого в тексте не было. Почту оттуда не брать.
+- В альбоме с телефона попадаются `.jpg`, которые на деле TIFF —
+  `prep-photos` помечает `broken`, просто не брать.
