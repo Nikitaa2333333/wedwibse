@@ -15,7 +15,7 @@ import VenueStatement from '../../../components/VenueStatement.astro';
 import VenueTerms from '../../../components/VenueTerms.astro';
 import VenueRules from '../../../components/VenueRules.astro';
 import VenueDocs from '../../../components/VenueDocs.astro';
-import PhotoMasonry from '../../../components/PhotoMasonry.astro';
+import PhotoGallery from '../../../components/PhotoGallery.astro';
 import FaqBlock from '../../../components/FaqBlock.astro';
 import VenueContacts from '../../../components/VenueContacts.astro';
 import Reviews from '../../../components/Reviews.astro';
@@ -26,7 +26,6 @@ import { venueReviews } from '../../../data/venue-reviews';
 import { reelsOfVenue } from '../../../data/reels';
 import { venueBlocks } from '../../../lib/venue-blocks';
 import { photoTiles } from '../../../lib/gallery';
-import { IMG_WIDTHS } from '../../../lib/images';
 
 export function getStaticPaths() {
   return VENUES.map((venue) => ({
@@ -112,28 +111,20 @@ const reels = reelsOfVenue(venue.slug);
               />
             );
 
-          // ГАЛЕРЕЯ: та же доска, что на главной и в визитке подрядчика
-          // (PhotoMasonry) — колонки, каждый кадр в своей настоящей пропорции.
-          // Все кадры сразу, без «показать ещё»: картинки ленивые, браузер
-          // качает только те, что дошли до экрана. Ролики в доску не идут —
-          // плитка их не играет, у них свой ряд (блок reels).
+          // ГАЛЕРЕЯ: общая секция с визиткой подрядчика (PhotoGallery поверх
+          // доски PhotoMasonry) — колонки, каждый кадр в своей настоящей
+          // пропорции. Все кадры сразу, без «показать ещё»: картинки ленивые,
+          // браузер качает только те, что дошли до экрана. Ролики в доску
+          // не идут — плитка их не играет, у них свой ряд (блок reels).
           case 'gallery': {
             const photos = (block.photos ?? venue.gallery).filter((g) => !g.src.endsWith('.mp4'));
             return (
-              <section class="vgal section" id="foto">
-                <div class="container container--wide">
-                  <header class="vgal__head">
-                    <p class="vgal__kicker t-caption">{block.kicker ?? 'Галерея'}</p>
-                    <h2 class="vgal__title t-h2">{block.title ?? 'Зал и мероприятия'}</h2>
-                  </header>
-
-                  <PhotoMasonry
-                    tiles={photoTiles(photos.map((g) => g.src), venue.name)}
-                    sizes="(min-width: 1440px) 19vw, (min-width: 1024px) 24vw, (min-width: 640px) 32vw, 48vw"
-                    widths={IMG_WIDTHS.tile}
-                  />
-                </div>
-              </section>
+              <PhotoGallery
+                id="foto"
+                kicker={block.kicker ?? 'Галерея'}
+                title={block.title ?? 'Зал и мероприятия'}
+                tiles={photoTiles(photos.map((g) => g.src), venue.name)}
+              />
             );
           }
 
@@ -171,13 +162,6 @@ const reels = reelsOfVenue(venue.slug);
 
   <BottomDock active="venues" />
 </Layout>
-
-<style>
-  /* ГАЛЕРЕЯ ПЛОЩАДКИ: заголовок на бумаге, доска под ним в край экрана */
-  .vgal :global(.container) { max-width: none; padding-inline: 0; }
-  .vgal__head { padding: 0 var(--gutter) var(--s-5); }
-  .vgal__kicker { font-weight: var(--w-medium); }
-</style>
 
 <script>
   // ОТМЕТКА «УЖЕ СМОТРЕЛ» — открыли карточку, значит на карте её метка

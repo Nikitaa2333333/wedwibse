@@ -37,9 +37,7 @@ const TILE_SIZES =
     display: flex;
     flex-direction: column;
     gap: var(--pin-gap);
-    /* От края экрана — волосок (--edge-gap): кадр не упирается в стекло,
-       но полей у доски по-прежнему нет. Зазор доски и поле подписи —
-       общие ручки проекта (--pin-gap, --cap-pad в global.css). */
-    padding-inline: var(--edge-gap);
+    /* Поле от края экрана (--edge-gap) здесь не пишем: его держит сама
+       доска (PhotoMasonry), одно на главную и галереи карточек. */
   }
 </style>

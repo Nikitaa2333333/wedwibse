@@ -1,0 +1,57 @@
+---
+// ГАЛЕРЕЯ КАРТОЧКИ — секция «кикер + заголовок + доска» одна на площадку
+// и на подрядчика. Сама доска (PhotoMasonry) и так была общей, а обвязка
+// вокруг неё у каждой страницы своя: у площадки — секция с кикером
+// «Галерея», заголовком и полями, у подрядчика — голый h2 и доска без
+// поля от края. Две визитки с одной доской выглядели по-разному; здесь
+// обвязка одна, страницы отдают только кадры и слова.
+//
+// Заголовок на бумаге по полям --gutter, доска — во всю ширину экрана
+// с волоском --edge-gap (его держит сама доска, см. PhotoMasonry).
+import PhotoMasonry from './PhotoMasonry.astro';
+import type { Tile } from '../lib/gallery';
+import { IMG_WIDTHS } from '../lib/images';
+
+interface Props {
+  tiles: Tile[];
+  /** строка над заголовком: «Галерея», «Портфолио» */
+  kicker: string;
+  title: string;
+  /** якорь секции (площадка: #foto) */
+  id?: string;
+  /** те же колонки, что у доски главной */
+  sizes?: string;
+  widths?: number[];
+  /** отбивка секции: обычная (площадка) или поджатая (подрядчик) */
+  tight?: boolean;
+}
+
+const {
+  tiles,
+  kicker,
+  title,
+  id,
+  sizes = '(min-width: 1440px) 19vw, (min-width: 1024px) 24vw, (min-width: 640px) 32vw, 48vw',
+  widths = IMG_WIDTHS.tile,
+  tight = false,
+} = Astro.props;
+---
+
+<section class:list={['gallery', tight && 'gallery--tight']} id={id}>
+  <header class="gallery__head">
+    <p class="gallery__kicker t-caption">{kicker}</p>
+    <h2 class="gallery__title t-h2">{title}</h2>
+  </header>
+
+  <PhotoMasonry tiles={tiles} sizes={sizes} widths={widths} />
+</section>
+
+<style>
+  /* Заголовок на бумаге, доска под ним в край экрана. Отбивки — ручки
+     секций из global.css, своих чисел нет. */
+  .gallery { padding-block: var(--section-gap); }
+  .gallery--tight { padding-block: 0 var(--section-gap-tight); }
+
+  .gallery__head { padding: 0 var(--gutter) var(--s-5); }
+  .gallery__kicker { font-weight: var(--w-medium); }
+</style>

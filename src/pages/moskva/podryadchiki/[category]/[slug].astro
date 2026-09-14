@@ -14,7 +14,7 @@ import { Image } from 'astro:assets';
 import Layout from '../../../../layouts/Layout.astro';
 import SiteHeader from '../../../../components/SiteHeader.astro';
 import BottomDock from '../../../../components/BottomDock.astro';
-import PhotoMasonry from '../../../../components/PhotoMasonry.astro';
+import PhotoGallery from '../../../../components/PhotoGallery.astro';
 import Avatar from '../../../../components/Avatar.astro';
 import Reviews from '../../../../components/Reviews.astro';
 import Icon from '../../../../components/Icon.astro';
@@ -75,10 +75,6 @@ const reels = reelsOf(s.slug);
 const frames = [
   ...new Set([s.photos[0], ...reels.map((r) => r.src), ...s.photos.slice(1, HERO_PHOTOS)]),
 ];
-
-// sizes галереи — те же колонки, что у доски главной (PhotoMasonry)
-const GALLERY_SIZES =
-  '(min-width: 1440px) 19vw, (min-width: 1024px) 24vw, (min-width: 640px) 32vw, 48vw';
 
 const priceLabel = s.priceFrom ? `от ${priceFmt.format(s.priceFrom)} ₽` : 'Цена по запросу';
 const href = `/moskva/podryadchiki/${s.categorySlug}/${s.slug}/`;
@@ -195,19 +191,21 @@ const saveData = JSON.stringify({
       </section>
     )}
 
-    <!-- ГАЛЕРЕЯ: ТА ЖЕ ДОСКА, ЧТО НА ГЛАВНОЙ (PhotoMasonry) — колонки
-         одной ширины, каждый кадр в своей настоящей пропорции. Раньше тут
-         стояла своя сетка с жёстким aspect-ratio 3/4: каждый снимок
-         кропился под чужую рамку, и портфолио подрядчика показывалось
-         не так, как те же кадры в ленте главной. -->
-    <section class="pgallery">
-      <h2 class="t-h2">Фотографии</h2>
-      <!-- ВСЯ съёмка сразу, без кнопки «показать ещё»: человек пришёл
-           смотреть работы, и прятать половину портфолио незачем. Систему
-           это не грузит — картинки ленивые, браузер качает только те, что
-           дошли до экрана, в HTML лежит одна разметка. -->
-      <PhotoMasonry tiles={photoTiles(photosOnly(s.photos), s.name)} sizes={GALLERY_SIZES} />
-    </section>
+    <!-- ГАЛЕРЕЯ: ТА ЖЕ СЕКЦИЯ, ЧТО У ПЛОЩАДКИ (PhotoGallery поверх доски
+         PhotoMasonry) — кикер, заголовок, колонки одной ширины, каждый
+         кадр в своей настоящей пропорции. Раньше тут стоял голый h2 и
+         доска без поля от края: та же доска у площадки и подрядчика
+         выглядела по-разному.
+         ВСЯ съёмка сразу, без кнопки «показать ещё»: человек пришёл
+         смотреть работы, и прятать половину портфолио незачем. Систему
+         это не грузит — картинки ленивые, браузер качает только те, что
+         дошли до экрана, в HTML лежит одна разметка. -->
+    <PhotoGallery
+      kicker="Портфолио"
+      title="Фотографии"
+      tiles={photoTiles(photosOnly(s.photos), s.name)}
+      tight
+    />
 
     <!-- ВИДЕО: свои ролики подрядчика отдельным рядом (ReelsRow, тот же
          компонент, что у площадки): рилсы это то, за чем к видеографу и
@@ -383,16 +381,7 @@ const saveData = JSON.stringify({
 
   .ppack__list { margin-top: var(--s-5); }
 
-  /* ============ ГАЛЕРЕЯ ============
-     Доска идёт в край экрана, как на главной: боковых полей у неё нет,
-     в них остаётся только заголовок секции. */
-  .pgallery {
-    padding-bottom: var(--section-gap-tight);
-  }
-
-  .pgallery h2 { padding: 0 var(--gutter); }
-
-  .pgallery :global(.masonry) { margin-top: var(--s-5); }
+  /* Стили галереи уехали в PhotoGallery.astro — секция общая с площадкой. */
 
   /* Демо-ряд постеров-заглушек (s.reels) — только рамка, ролики не играют */
   .preels { padding: 0 0 var(--section-gap-tight) var(--gutter); }
