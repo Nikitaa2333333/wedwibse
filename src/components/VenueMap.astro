@@ -98,6 +98,8 @@ const apiKey = import.meta.env.YANDEX_MAPS_API_KEY;
     coords: [number, number];
     href: string;
     price: string;
+    /** цена в том виде, в каком она влезает в метку (см. lib/map-points) */
+    label: string;
   }
 
   // Скрипт Яндекса один на страницу и грузится по первому показу карты
@@ -127,14 +129,12 @@ const apiKey = import.meta.env.YANDEX_MAPS_API_KEY;
 
       // Метка не ссылка: у неё задан iconShape, и клики забирает слой карты —
       // нажатие ловим событием метки ниже.
-      // Подпись метки — название площадки плюс цена: по одной цене метки
-      // неразличимы («от 9 000 ₽» встречается у нескольких площадок), а имя
-      // сразу говорит, куда ведёт тап. Цена остаётся, но вторым планом.
+      // Подпись метки — ТОЛЬКО ЦЕНА (см. .map-pin в global.css): название
+      // с карты снято, оно живёт в title метки и в карточке, которая
+      // поднимается по клику.
       const PinLayout = ymaps.templateLayoutFactory.createClass(
         '<span class="map-pin $[properties.pinState]" title="$[properties.pinTitle]">' +
-          '<span class="map-pin__dot"></span>' +
-          '<span class="map-pin__name">$[properties.pinName]</span>' +
-          '{% if properties.pinPrice %}<span class="map-pin__price">$[properties.pinPrice]</span>{% endif %}' +
+          '<span class="map-pin__price">$[properties.pinPrice]</span>' +
           '</span>'
       );
 
@@ -147,17 +147,16 @@ const apiKey = import.meta.env.YANDEX_MAPS_API_KEY;
           new ymaps.Placemark(
             point.coords,
             {
-              pinName: point.name,
-              pinPrice: point.price,
+              pinPrice: point.label,
               pinTitle: point.price ? `${point.name} — ${point.price}` : point.name,
               pinState: '',
             },
             {
               iconLayout: PinLayout,
               // активная область: капсула стоит над точкой, ширина зависит
-              // от подписи — берём с запасом (длинное имя обрезается в CSS,
-              // так что шире этого капсула не станет)
-              iconShape: { type: 'Rectangle', coordinates: [[-130, -46], [130, 2]] },
+              // от подписи — берём с запасом под самую длинную цену
+              // (в CSS она всё равно ограничена 16ch)
+              iconShape: { type: 'Rectangle', coordinates: [[-70, -38], [70, 4]] },
               hasBalloon: false,
             }
           )

@@ -1113,6 +1113,27 @@ export const SPECIALISTS_BY_CATEGORY: Record<string, Specialist[]> = (() => {
   return map;
 })();
 
+/** ВСЕ ЖИВЫЕ КАРТОЧКИ ПОДРЯДЧИКОВ ОДНИМ СПИСКОМ — источник для общих
+ *  потоков (доска главной). Дубли по slug сняты: карточка, стоящая в двух
+ *  категориях (alsoCategories), — одна и та же карточка, и её кадры не
+ *  должны попадать в ленту дважды. Демо-заглушки (demo: true) исключены
+ *  намеренно: у них в photos стоковые кадры, и в ленте они выдавали бы
+ *  чужую съёмку за работу конкретного подрядчика. */
+export const REAL_SPECIALISTS: Specialist[] = (() => {
+  const seen = new Set<string>();
+  const out: Specialist[] = [];
+
+  for (const list of Object.values(SPECIALISTS_BY_CATEGORY)) {
+    for (const s of list) {
+      if (s.demo || seen.has(s.slug)) continue;
+      seen.add(s.slug);
+      out.push(s);
+    }
+  }
+
+  return out;
+})();
+
 export const FILTERS_BY_CATEGORY: Record<string, FilterGroup[]> = {
   vedushchie: VEDUSHCHIE_FILTERS,
   fotografy: FOTOGRAFY_FILTERS,
