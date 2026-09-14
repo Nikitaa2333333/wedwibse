@@ -34,12 +34,13 @@ for (const rec of res.items) {
   await mkdir(dir, { recursive: true });
   let got = 0;
   const index = rec.photoIndex ?? {};
-  for (const name of rec.photos ?? []) {
+  for (const name of [...(rec.photos ?? []), ...(rec.reels ?? [])]) {
     const ref = index[name];
     if (!ref) { console.error(`  ${v.slug}: ${name} нет в photoIndex — залит мимо pb-seed, пропуск`); continue; }
     const local = ref.slice(`/venues/${v.slug}/`.length);
-    const dest = join(dir, local);
-    await mkdir(join(dir, local.includes('/') ? local.split('/')[0] : ''), { recursive: true });
+    // ролик — сырым файлом в public (Astro видео не пережимает), фото — в src/assets
+    const dest = ref.endsWith('.mp4') ? join('public', ref) : join(dir, local);
+    await mkdir(join(dest, '..'), { recursive: true });
     const r = await api.fetch(`/api/files/${rec.collectionId}/${rec.id}/${name}`);
     if (!r.ok) { console.error(`  ${v.slug}/${local}: ${r.status}`); continue; }
     const len = Number(r.headers.get('content-length') ?? 0);
@@ -47,7 +48,7 @@ for (const rec of res.items) {
     await writeFile(dest, Buffer.from(await r.arrayBuffer()));
     got++;
   }
-  console.log(`  ${v.slug}: JSON записан, фото скачано ${got}/${(rec.photos ?? []).length}`);
+  console.log(`  ${v.slug}: JSON записан, файлов скачано ${got}/${(rec.photos ?? []).length + (rec.reels ?? []).length}`);
 }
 
 // ---------- подрядчики (зеркало площадок, залиты pb-seed-specialists) ----------

@@ -45,9 +45,22 @@ function flat(v) {
   const buffet = num(cap.split('·')[1]);
   const k = `${v.kicker ?? ''} ${v.name ?? ''} ${v.title ?? ''}`.toLowerCase();
   const type = TYPE_BY_WORD.find(([w]) => k.includes(w))?.[1] ?? 'drugoe';
-  const allRows = [...(v.terms ?? []).flatMap((t) => t.rows), ...(v.scenes ?? []).flatMap((s) => s.facts ?? [])];
-  const menu = allRows.find((r) => /^меню/i.test(r.label) && /₽/.test(r.value));
-  const rent = allRows.find((r) => /аренда/i.test(r.label) && /₽/.test(r.value));
+  // Цены: у legacy-площадок terms/scenes лежат сверху, у JSON конвейера —
+  // блоками в blocks. Ряд «аренда» узнаём и по заголовку группы (в блоках
+  // строки называются днями недели, а «Аренда оранжереи» — это title группы).
+  const blocks = v.blocks ?? [];
+  const termGroups = [...(v.terms ?? []), ...blocks.filter((b) => b.type === 'terms').flatMap((b) => b.terms ?? [])];
+  const sceneFacts = [...(v.scenes ?? []), ...blocks.filter((b) => b.type === 'scenes').flatMap((b) => b.scenes ?? [])].flatMap((s) => s.facts ?? []);
+  const allRows = [
+    ...termGroups.flatMap((t) => (t.rows ?? []).map((r) => ({ ...r, group: t.title ?? '' }))),
+    ...sceneFacts.map((r) => ({ ...r, group: '' })),
+  ].filter((r) => /₽/.test(r.value ?? ''));
+  const minOf = (rows) => rows.length ? rows.reduce((m, r) => Math.min(m, num(r.value) ?? m), Infinity) : null;
+  const rentRows = allRows.filter((r) => /аренда/i.test(`${r.label} ${r.group}`));
+  // строка с «аренда» в подписи — аренда, даже если группа называется «Депозит и сервис»
+  const menuRows = allRows.filter((r) => !/аренда/i.test(r.label) && /^меню|чек|на гостя|с человека|депозит|минимальн/i.test(`${r.label} ${r.group}`));
+  const menu = menuRows.length ? { value: String(minOf(menuRows)) } : null;
+  const rent = rentRows.length ? { value: String(minOf(rentRows)) } : null;
   const km = num(v.contacts?.routes?.find((r) => /мкад/i.test(r.label))?.value);
   const text = JSON.stringify(v).toLowerCase();
   const features = [];
@@ -71,6 +84,14 @@ function flat(v) {
   };
 }
 
+// ролики площадки — из data/reels.ts без сборки (чистый TS, читаем регуляркой)
+const reelsSrc = await readFile('src/data/reels.ts', 'utf8').catch(() => '');
+function reelsOf(slug) {
+  const out = [];
+  for (const m of reelsSrc.matchAll(/src:\s*'([^']+)'[^}]*venue:\s*'([^']*)'/g)) if (m[2] === slug) out.push(m[1]);
+  return out;
+}
+
 // ---------- upsert ----------
 for (const v of todo) {
   const existing = await api.first('venues', `citySlug = "${v.citySlug}" && slug = "${v.slug}"`);
@@ -84,7 +105,8 @@ for (const v of todo) {
   // путь» держим в photoIndex; уже залитое — не повторяем.
   const refs = [...new Set(JSON.stringify(v).match(new RegExp(`/venues/${v.slug}/[\\w./-]+\\.(webp|jpg)`, 'g')) ?? [])];
   const index = { ...(rec.photoIndex ?? {}) };
-  for (const k of Object.keys(index)) if (!(rec.photos ?? []).includes(k)) delete index[k]; // файл удалили в админке
+  const present = new Set([...(rec.photos ?? []), ...(rec.reels ?? [])]);
+  for (const k of Object.keys(index)) if (!present.has(k)) delete index[k]; // файл удалили в админке
   const have = new Set(Object.values(index));
   const form = new FormData();
   const queued = [];
@@ -97,14 +119,26 @@ for (const v of todo) {
       queued.push(ref);
     } catch { console.error(`  нет файла ${file}`); }
   }
-  if (queued.length) {
-    const before = rec.photos ?? [];
+  // ролики (public/venues/<slug>/reel-NN.mp4) — в поле reels, индекс общий с фото
+  const queuedReels = [];
+  for (const ref of reelsOf(v.slug)) {
+    if (have.has(ref)) continue;
+    try {
+      const buf = await readFile(join('public', ref));
+      form.append('reels+', new Blob([buf], { type: 'video/mp4' }), ref.split('/').pop());
+      queuedReels.push(ref);
+    } catch { console.error(`  нет ролика public${ref}`); }
+  }
+  if (queued.length || queuedReels.length) {
+    const before = { photos: rec.photos ?? [], reels: rec.reels ?? [] };
     const after = await api.update('venues', rec.id, form);
     // PB дописывает новые файлы в конец в порядке загрузки
-    const fresh = after.photos.filter((n) => !before.includes(n));
-    if (fresh.length !== queued.length) console.error(`  ${v.slug}: залито ${fresh.length}, ожидалось ${queued.length} — индекс может разойтись`);
+    const fresh = after.photos.filter((n) => !before.photos.includes(n));
+    const freshReels = (after.reels ?? []).filter((n) => !before.reels.includes(n));
+    if (fresh.length !== queued.length || freshReels.length !== queuedReels.length) console.error(`  ${v.slug}: залито ${fresh.length}+${freshReels.length}, ожидалось ${queued.length}+${queuedReels.length} — индекс может разойтись`);
     fresh.forEach((n, i) => { if (queued[i]) index[n] = queued[i]; });
+    freshReels.forEach((n, i) => { if (queuedReels[i]) index[n] = queuedReels[i]; });
     await api.update('venues', rec.id, { photoIndex: index });
   }
-  console.log(`${existing ? '↻' : '+'} ${v.slug}: ${data.type}, банкет ${data.capacityBanquet ?? '—'}, чек ${data.checkFrom ?? '—'}, фото +${queued.length} (всего ${have.size + queued.length})`);
+  console.log(`${existing ? '↻' : '+'} ${v.slug}: ${data.type}, банкет ${data.capacityBanquet ?? '—'}, чек ${data.checkFrom ?? '—'}, аренда ${data.rentFrom ?? '—'}, фото +${queued.length}, ролики +${queuedReels.length} (в индексе ${Object.keys(index).length})`);
 }
