@@ -50,9 +50,11 @@ const reels = reelsOfVenue(venue.slug);
 ---
 
 <Layout title={venue.seo.title} description={venue.seo.description} ogImage={venue.seo.ogImage}>
-  <SiteHeader phone={venue.contacts.phone} phoneHref={venue.contacts.phoneHref} />
+  {/* Шапка без телефона площадки: контактов партнёра на странице нет
+      совсем (см. VenueContacts) — заявка идёт через нас. */}
+  <SiteHeader />
 
-  <main>
+  <main data-venue-slug={venue.slug}>
     <VenueHero venue={venue} />
 
     {
@@ -176,3 +178,15 @@ const reels = reelsOfVenue(venue.slug);
   .vgal__head { padding: 0 var(--gutter) var(--s-5); }
   .vgal__kicker { font-weight: var(--w-medium); }
 </style>
+
+<script>
+  // ОТМЕТКА «УЖЕ СМОТРЕЛ» — открыли карточку, значит на карте её метка
+  // дальше идёт погасшей (реф. ЦИАН, см. lib/seen и VenueMap).
+  // Ставится на самой странице площадки, а не по клику на метке: клик
+  // по метке на ПК только поднимает карточку-превью поверх карты —
+  // это ещё не «смотрел».
+  import { markSeen, seenId } from '../../../lib/seen';
+
+  const slug = document.querySelector<HTMLElement>('[data-venue-slug]')?.dataset.venueSlug;
+  if (slug) markSeen(seenId('venue', slug));
+</script>

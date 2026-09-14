@@ -18,11 +18,27 @@ export interface MapPoint {
   address: string;
   href: string;
   price: string;
+  /** цена в том виде, в каком она стоит НА МЕТКЕ (см. pinLabel) */
+  label: string;
   city: string;
   capacity: string;
   rating: number | null;
   /** путь к фото строкой — прогоняется через resolveImage на выводе */
   photo: string;
+}
+
+/** ПОДПИСЬ МЕТКИ — только цена (см. .map-pin в global.css), а метка это
+ *  капсула шириной в пару слов. Цифра («от 9 000 ₽») влезает как есть,
+ *  а служебные формулировки каталога режем до сути: «цена по запросу»
+ *  превращается в «по запросу», «депозитная система» — в «депозит».
+ *  Сокращаем здесь, а не многоточием в CSS: обрезанное «депозитная сис…»
+ *  на карте выглядит поломкой, а не короткой подписью. Площадка вообще
+ *  без цены получает то же «по запросу» — пустая метка не читается
+ *  как метка. */
+function pinLabel(price: string): string {
+  if (!price) return 'по запросу';
+  if (/депозит/i.test(price)) return 'депозит';
+  return price.replace(/^цена\s+/i, '');
 }
 
 export function venueMapPoints(): MapPoint[] {
@@ -39,6 +55,7 @@ export function venueMapPoints(): MapPoint[] {
       address: venue.contacts.address,
       href: `/${venue.citySlug}/${venue.categorySlug}/${venue.slug}/`,
       price: card?.avgCheck ?? '',
+      label: pinLabel(card?.avgCheck ?? ''),
       city: card?.city ?? venue.city,
       capacity: card?.capacity ?? '',
       rating: card?.rating ?? null,

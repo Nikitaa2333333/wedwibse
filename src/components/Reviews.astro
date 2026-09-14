@@ -16,6 +16,7 @@
 import Avatar from './Avatar.astro';
 import Icon from './Icon.astro';
 import { plural } from '../lib/plural';
+import { showcaseReviews } from '../data/venue-reviews';
 
 interface Review {
   author: string;
@@ -40,7 +41,14 @@ interface Props {
 
 const { reviews, rating = null, ratings = null, total = null, id = 'otzyvy', title = 'Отзывы' } = Astro.props;
 
-const shown = reviews.length;
+// ЧТО ИМЕННО ПОКАЗЫВАЕМ — решает одно правило на весь проект
+// (showcaseReviews в data/venue-reviews): последние десять с оценкой
+// 4 и выше. Фильтруем здесь, а не на каждой странице: блок общий для
+// площадки и подрядчика, и страница, которая забыла бы фильтр, молча
+// выставила бы на витрину единицы.
+const items = showcaseReviews(reviews);
+
+const shown = items.length;
 
 // сворачиваем только действительно большие отзывы: средние читаются целиком
 const LONG = 900;
@@ -70,7 +78,7 @@ const LONG = 900;
 
     <div class="reviews__list">
       {
-        reviews.map((r) => (
+        items.map((r) => (
           <article class="review">
             <header class="review__head">
               <Avatar src={r.photo} name={r.author} size={44} />

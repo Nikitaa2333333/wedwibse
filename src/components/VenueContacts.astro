@@ -1,9 +1,27 @@
 ---
-// Финальный экран: призыв + контакты площадки + как добраться.
-// Форма-анкета появится здесь же — пока ведём на телефон и почту.
+// Финальный экран карточки: призыв, две кнопки и как добраться.
+//
+// КОНТАКТОВ ПАРТНЁРА НА СТРАНИЦЕ НЕТ (решение заказчика 14.09.2026).
+// Ни телефона, ни почты, ни ссылок на сайт и соцсети: мы агрегатор, и
+// заявка должна идти через нас, а не мимо. Страница с чужим номером
+// телефона — это витрина, с которой уходят, не оставив следа; по такой
+// карточке нельзя ни посчитать обращения, ни взять за них деньги.
+// Данные остаются в `venue.contacts` (они нужны нам самим — менеджеру,
+// который повезёт заявку площадке), просто не рендерятся.
+//
+// ОСТАЛИСЬ ДВЕ КНОПКИ: «В избранное» и «Заказать». Первая — та же
+// механика, что у сердца поверх первого кадра (lib/save.ts, data-save),
+// только здесь она подписана словами: человек дочитал карточку до конца,
+// и сердечко в шапке уже давно за экраном. Вторая пока ведёт на заглушку
+// формы — сама форма-анкета появится на этом же месте.
+//
+// Адрес и «как добраться» — НЕ контакты, а сведения о месте: по ним
+// выбирают площадку (сколько ехать от МКАД, есть ли парковка), они же
+// работают на поиск. Остаются.
 import { Image } from 'astro:assets';
 import type { Venue } from '../data/venues';
 import { resolveImage, IMG_WIDTHS } from '../lib/images';
+import { venueFavorite } from '../lib/favorite-snapshot';
 
 interface Props {
   venue: Venue;
@@ -11,6 +29,12 @@ interface Props {
 
 const { venue } = Astro.props;
 const { contacts } = venue;
+
+// Снимок карточки для «Избранного» — ТОТ ЖЕ, что у сердца в первом экране
+// (lib/favorite-snapshot): две кнопки на одной странице обязаны класть
+// в хранилище одну запись, иначе площадка задвоится в разделе.
+const favorite = await venueFavorite(venue);
+const saveData = JSON.stringify(favorite);
 ---
 
 <section class="cta section theme-dark" id="zayavka">
@@ -24,9 +48,17 @@ const { contacts } = venue;
         </p>
 
         <div class="cta__actions">
-          <a class="pill pill--lg" href={contacts.phoneHref}>{contacts.phone}</a>
-          {/* почта есть не у всех площадок — у части связь идёт только по телефону и в мессенджере */}
-          {contacts.email && <a class="cta__mail" href={`mailto:${contacts.email}`}>{contacts.email}</a>}
+          {/* ЗАГЛУШКА: форма-анкета встанет на это же место (фаза дизайна).
+              Пока кнопка никуда не ведёт — телефон партнёра с карточки снят
+              намеренно, подставлять его обратно нельзя. */}
+          <a class="pill pill--lg" href="#">Заказать</a>
+          {/* Та же кнопка «в избранное», что сердце в первом экране:
+              одна привязка на проект (bindSaveButtons по data-save),
+              подпись меняется сама по aria-pressed. */}
+          <button class="pill pill--lg cta__save" type="button" data-save={saveData} aria-pressed="false">
+            <span class="cta__save-off">В избранное</span>
+            <span class="cta__save-on">В избранном</span>
+          </button>
         </div>
 
         <dl class="rows cta__rows">
@@ -37,10 +69,6 @@ const { contacts } = venue;
           <div class="rows__row">
             <dt class="rows__label">Рядом</dt>
             <dd class="rows__value">{contacts.addressNote}</dd>
-          </div>
-          <div class="rows__row">
-            <dt class="rows__label">Режим работы</dt>
-            <dd class="rows__value">{contacts.hours}</dd>
           </div>
         </dl>
       </div>
@@ -72,20 +100,6 @@ const { contacts } = venue;
         </dl>
       </div>
 
-      <div>
-        <h3 class="cta__sub">Ссылки</h3>
-        <ul class="list cta__links">
-          {
-            contacts.links.map((link) => (
-              <li>
-                <a href={link.href} rel="noopener" target="_blank">
-                  {link.label}
-                </a>
-              </li>
-            ))
-          }
-        </ul>
-      </div>
     </div>
   </div>
 </section>
@@ -119,10 +133,11 @@ const { contacts } = venue;
     margin-bottom: var(--s-7);
   }
 
-  .cta__mail {
-    font-weight: var(--w-medium);
-    text-decoration: none;
-  }
+  /* Подпись кнопки меняется по состоянию, а не иконка: слово «В избранном»
+     на бумаге читается без догадок, в отличие от закрашенного сердца. */
+  .cta__save-on { display: none; }
+  .cta__save[aria-pressed='true'] .cta__save-on { display: inline; }
+  .cta__save[aria-pressed='true'] .cta__save-off { display: none; }
 
   /* на мобилке кадр тоже уходит в край страницы */
   .cta__shot {
@@ -141,13 +156,6 @@ const { contacts } = venue;
     margin-bottom: var(--s-4);
   }
 
-  .cta__links a { text-decoration: none; }
-
-  @media (hover: hover) {
-    .cta__mail:hover,
-    .cta__links a:hover { color: var(--accent); }
-  }
-
   @media (min-width: 900px) {
     .cta__top { grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr); }
     .cta__bottom { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -161,3 +169,12 @@ const { contacts } = venue;
     }
   }
 </style>
+
+<script>
+  // Кнопка «В избранное» на бумаге — та же привязка, что у сердца поверх
+  // кадра. Зовём здесь, а не полагаемся на скрипт первого экрана: блок
+  // может встать на странице, где того первого экрана нет.
+  import { bindSaveButtons } from '../lib/save';
+
+  bindSaveButtons();
+</script>

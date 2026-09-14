@@ -138,7 +138,7 @@ const saveData = JSON.stringify({
     <section class="phero">
       <p class="phero__price">{priceLabel}</p>
       <p class="t-caption phero__price-note">{priceFacts.join(' · ')}</p>
-      <a class="pill pill--lg" href="#zayavka">Оставить заявку</a>
+      <a class="pill pill--lg" href="#zayavka">Заказать</a>
     </section>
 
     <!-- О ПОДРЯДЧИКЕ: рассказ о себе и портрет автора целиком.
@@ -252,11 +252,21 @@ const saveData = JSON.stringify({
       <Reviews reviews={s.reviewsList} rating={s.rating} total={s.reviews} />
     )}
 
-    <!-- ЗАЯВКА -->
+    <!-- ЗАЯВКА. Две кнопки и ничего больше: контактов подрядчика на
+         странице нет (то же правило, что у площадки — см. VenueContacts).
+         «В избранное» здесь подписана словами: сердце стоит в первом
+         экране, а он к этому месту давно за экраном. -->
     <section class="pcta" id="zayavka">
       <h2 class="t-h2">Забронировать на свою свадьбу</h2>
       <p class="t-small pcta__note">Оставьте заявку — менеджер свяжется и уточнит дату и детали.</p>
-      <a class="pill pill--lg" href="#">Оставить заявку</a>
+      <div class="pcta__actions">
+        {/* ЗАГЛУШКА: здесь встанет форма-анкета (фаза дизайна) */}
+        <a class="pill pill--lg" href="#">Заказать</a>
+        <button class="pill pill--lg pcta__save" type="button" data-save={saveData} aria-pressed="false">
+          <span class="pcta__save-off">В избранное</span>
+          <span class="pcta__save-on">В избранном</span>
+        </button>
+      </div>
     </section>
   </div>
 
@@ -440,7 +450,18 @@ const saveData = JSON.stringify({
     max-width: var(--measure-lead);
   }
 
-  .pcta .pill { margin-top: var(--s-5); }
+  .pcta__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-4);
+    margin-top: var(--s-5);
+  }
+
+  /* Подпись меняется по состоянию: слово «В избранном» на бумаге понятнее
+     закрашенного сердца. */
+  .pcta__save-on { display: none; }
+  .pcta__save[aria-pressed='true'] .pcta__save-on { display: inline; }
+  .pcta__save[aria-pressed='true'] .pcta__save-off { display: none; }
 </style>
 
 <!-- Якорь разбираем ДО модульных скриптов (те отложены и выполняются после
