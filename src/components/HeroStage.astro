@@ -128,22 +128,6 @@ const facts = rating !== null && rating !== undefined;
       );
     })}
 
-    {/* КРАЙ СЛЕДУЮЩЕГО КАДРА — полоса у правой кромки окна.
-        Не декорация, а единственный очевидный знак, что кадр не один:
-        стрелки у счётчика на бумаге сообщали то же самое, но их надо
-        было сперва заметить. Кадр в полосе всегда cover, даже если сам
-        он горизонтальный: это не показ кадра, а знак продолжения, и
-        вписанная горизонталь дала бы в полосе бумагу вместо фотографии
-        (ровно из-за этого сняли прежнюю «подсказку листания»).
-        Заполняет полосу скрипт — тем же кадром, что уже подгружен
-        соседом, поэтому лишней загрузки нет. Без JS полосы нет вовсе:
-        листания без него тоже нет. */}
-    {frames.length > 1 && (
-      <div class="stage__peek" data-stage-peek aria-hidden="true" hidden>
-        <img alt="" decoding="async" />
-      </div>
-    )}
-
     {/* Свечение: бумага заходит на низ кадра и растворяет кромку.
         Лежит в окне, а не на кадре, — иначе уходило бы вместе
         со скрытым кадром при листании. */}
@@ -152,6 +136,35 @@ const facts = rating !== null && rating !== undefined;
     <!-- Кнопки поверх кадра (назад · избранное · поделиться) -->
     <slot name="actions" />
   </div>
+
+  <!-- ЛИСТАЛКА — СВОЕЙ СТРОКОЙ, а не в строке имени.
+       Раньше стрелки со счётчиком стояли справа от имени и отъедали
+       у него ширину: «Юлия и Леонид Лешаковы» обрезалось многоточием
+       ради двух значков — то есть главное на карточке уступало место
+       служебному. Здесь строка пустая, отнимать не у чего.
+
+       На телефоне в ней только полоса-прогресс: длина заполненного
+       отрезка говорит, сколько всего кадров, положение — где ты сейчас,
+       и ни того ни другого не надо читать. Листают свайпом.
+       Стрелки появляются ТОЛЬКО там, где есть мышь (@media hover): на
+       ПК свайпа нет, и без них кадр не пролистать вовсе. -->
+  {frames.length > 1 && (
+    <div class="stage__bar">
+      <button class="stage__arrow" type="button" data-stage-prev aria-label="Предыдущий кадр">
+        <Icon name="arrowLeft" />
+      </button>
+
+      <span class="stage__track" aria-hidden="true">
+        <span class="stage__fill" data-stage-fill style={`--n:${frames.length}`}></span>
+      </span>
+
+      <span class="stage__count" data-stage-count>1 / {frames.length}</span>
+
+      <button class="stage__arrow" type="button" data-stage-next aria-label="Следующий кадр">
+        <Icon name="arrowRight" />
+      </button>
+    </div>
+  )}
 
   <!-- ПОДПИСЬ НА БУМАГЕ. Правая колонка — бейдж (знак площадки или
        портрет подрядчика); нет ни того ни другого — колонка схлопывается
@@ -187,21 +200,6 @@ const facts = rating !== null && rating !== undefined;
          фотографиям, и отбитое вниз, в строку рейтинга, оно читалось
          цифрой неизвестно о чём. -->
     <div class="stage__aside">
-      {/* Листалка: стрелки по бокам счётчика, на бумаге (знаков на фото
-          нет). Свайп на телефоне остаётся главным жестом, стрелки —
-          явная подсказка, что кадров больше, и единственная ручка на ПК. */}
-      {frames.length > 1 && (
-        <span class="stage__pager">
-          <button class="stage__arrow" type="button" data-stage-prev aria-label="Предыдущий кадр">
-            <Icon name="arrowLeft" />
-          </button>
-          <span class="stage__count" data-stage-count>1 / {frames.length}</span>
-          <button class="stage__arrow" type="button" data-stage-next aria-label="Следующий кадр">
-            <Icon name="arrowRight" />
-          </button>
-        </span>
-      )}
-
       {
         avatar ? (
           <Avatar src={avatar} name={title} size={44} class="stage__badge" />
@@ -251,42 +249,13 @@ const facts = rating !== null && rating !== undefined;
 
   .stage__frame[hidden] { display: none; }
 
-  /* ============ КРАЙ СЛЕДУЮЩЕГО КАДРА ============
-     Полоса --stage-peek у правой кромки окна с левым краем следующей
-     фотографии. Лежит ПОВЕРХ показанного кадра, а не рядом: так окно
-     остаётся ровно той же постоянной пропорции --stage-ratio, и ни
-     разметку, ни загрузку кадров трогать не пришлось.
-
-     Прежняя «подсказка листания» (кадр сам отъезжал, приоткрывая соседа)
-     была снята из-за горизонталей: вписанный целиком кадр показывал
-     в щели поля, а не фотографию. Здесь этого нет по построению —
-     в полосе кадр всегда cover.
-
-     Волосок бумаги слева — чтобы две фотографии читались как две,
-     а не как одна с полосой. Свечение (z-index 2) проходит поверх,
-     поэтому низ полосы растворяется в бумаге вместе с кадром. */
-  .stage__peek {
-    position: absolute;
-    z-index: 1;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    width: var(--stage-peek);
-    overflow: hidden;
-    border-left: 2px solid var(--paper);
-    background: var(--surface-dim);
-    pointer-events: none;
-  }
-
-  .stage__peek img {
-    width: 100%;
-    height: 100%;
-    /* левый край соседнего кадра — он «приезжает» справа */
-    object-fit: cover;
-    object-position: left center;
-  }
-
-  .stage__peek[hidden] { display: none; }
+  /* КРАЯ СЛЕДУЮЩЕГО КАДРА ЗДЕСЬ БОЛЬШЕ НЕТ. Полоса с соседней
+     фотографией у правой кромки окна (--stage-peek) свою задачу решала —
+     было видно, что кадр не один, — но ценой самого кадра: у площадки
+     с горизонтальным снимком экран превращался в два обрезка рядом,
+     и первое, что видел человек, было не фото, а полоска чужого.
+     Очевидность листания теперь даёт полоса-прогресс ПОД кадром
+     (.stage__bar), которая ничего у фотографии не отнимает.
 
   /* ПЕРЕКЛАДКА КАДРА — только после первого действия человека.
      Класс is-paging ставит скрипт, когда листание уже началось: на
@@ -377,7 +346,7 @@ const facts = rating !== null && rating !== undefined;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: start;
     gap: 0 var(--s-4);
-    padding: var(--s-3) var(--gutter) 0;
+    padding: var(--s-2) var(--gutter) 0;
     background: var(--paper);
   }
 
@@ -473,32 +442,83 @@ const facts = rating !== null && rating !== undefined;
   /* Листалка: стрелка · счётчик · стрелка одной строкой, без рамок —
      служебная строка подписи, а не панель управления. Счётчик — тихая
      метка, приглушение opacity, а не серой краской (правило проекта). */
-  .stage__pager {
-    display: inline-flex;
+  /* ============ СТРОКА ЛИСТАЛКИ ============
+     Своя строка под кадром: полоса-прогресс во всю ширину, справа
+     счётчик, по краям — стрелки (только там, где есть мышь).
+     Фон бумажный и позиция relative — эта строка теперь и закрывает
+     шов под окном (окно заходит под неё на пиксель). */
+  .stage__bar {
+    position: relative;
+    display: flex;
     align-items: center;
+    gap: var(--s-3);
+    padding: var(--s-3) var(--gutter) 0;
+    background: var(--paper);
+  }
+
+  /* Дорожка. Толщина волоска: это не элемент управления, а отметка
+     положения — она должна читаться боковым зрением и не более. */
+  .stage__track {
+    position: relative;
+    flex: 1 1 0;
+    height: 2px;
+    border-radius: var(--radius-pill);
+    background: color-mix(in srgb, var(--fg) 12%, transparent);
+    overflow: hidden;
+  }
+
+  /* Заполненный отрезок: ширина — доля одного кадра (1/N), сдвиг — номер
+     кадра. Отсюда и читается сразу и «сколько всего», и «где я»: при
+     двадцати кадрах отрезок короткий, при трёх — треть дорожки. */
+  .stage__fill {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: calc(100% / var(--n, 1));
+    border-radius: inherit;
+    background: var(--fg);
+    opacity: 0.5;
+    transform: translateX(calc(var(--i, 0) * 100%));
+    transition: transform var(--dur-base) var(--ease-out);
   }
 
   .stage__count {
+    flex: none;
+    font-size: var(--fs-caption);
+    font-weight: var(--w-medium);
     white-space: nowrap;
-    opacity: 0.6;
-    /* цифры не «дышат» по ширине при листании — стрелки стоят на месте */
+    opacity: 0.5;
+    /* цифры не «дышат» по ширине при листании — строка стоит на месте */
     font-variant-numeric: tabular-nums;
   }
 
   /* Стрелка: знак 16px внутри зоны нажатия --tap; стрелки вплотную к
      счётчику визуально, зона нажатия — за счёт отрицательных полей. */
-  .stage__arrow {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: var(--tap);
-    height: var(--tap);
-    margin: calc((var(--tap) - 16px) / -2) 0;
-    padding: 0;
-    border: 0;
-    background: none;
-    color: var(--fg);
-    cursor: pointer;
+  /* СТРЕЛКИ — ТОЛЬКО ТАМ, ГДЕ ЕСТЬ МЫШЬ. На телефоне кадры листают
+     свайпом, и две кнопки рядом с полосой там лишний слой; на ПК свайпа
+     нет, и без стрелок кадр не пролистать вовсе (клавиатура не в счёт —
+     о ней надо догадаться). Место в строке они не отнимают ни у чего:
+     строка служебная, кроме полосы и счётчика в ней ничего нет. */
+  .stage__arrow { display: none; }
+
+  @media (hover: hover) {
+    .stage__arrow {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: none;
+      width: var(--tap);
+      height: var(--tap);
+      margin: calc((var(--tap) - 16px) / -2) 0;
+      padding: 0;
+      border: 0;
+      background: none;
+      color: var(--fg);
+      opacity: 0.5;
+      cursor: pointer;
+      transition: opacity var(--dur-fast) var(--ease-out);
+    }
   }
 
   .stage__arrow :global(svg) {
@@ -507,7 +527,7 @@ const facts = rating !== null && rating !== undefined;
   }
 
   @media (hover: hover) {
-    .stage__arrow:hover { color: var(--accent); }
+    .stage__arrow:hover { opacity: 1; }
   }
 
   /* ============ ПК ============
@@ -569,6 +589,7 @@ const facts = rating !== null && rating !== undefined;
   document.querySelectorAll<HTMLElement>('[data-hero-shot]').forEach((stage) => {
     const shots = Array.from(stage.querySelectorAll<HTMLElement>('[data-frame]'));
     const count = stage.querySelector<HTMLElement>('[data-stage-count]');
+    const fill = stage.querySelector<HTMLElement>('[data-stage-fill]');
     const imgOf = (frame: HTMLElement | undefined) => frame?.querySelector('img') ?? null;
 
     // ============ РОЛИКИ ============
@@ -593,23 +614,6 @@ const facts = rating !== null && rating !== undefined;
     // (больше вниз, чем вбок) не считается, чтобы не мешать прокрутке.
     let index = Math.max(0, shots.findIndex((f) => !f.hidden));
 
-    // Полоса с краем следующего кадра (см. .stage__peek в стилях).
-    const peek = stage.querySelector<HTMLElement>('[data-stage-peek]');
-    const peekImg = peek?.querySelector('img') ?? null;
-
-    /** Показать в полосе кадр, который пойдёт следующим.
-     *  Берём готовые src/srcset/sizes соседнего <img> — это ТОТ ЖЕ адрес,
-     *  который браузер и так подтянет соседом ниже, поэтому полоса не
-     *  добавляет ни одного запроса: она показывает уже качающийся кадр. */
-    const fillPeek = () => {
-      const next = imgOf(shots[(index + 1) % shots.length]);
-      if (!peek || !peekImg || !next) return;
-      peekImg.sizes = next.sizes;
-      peekImg.srcset = next.srcset;
-      peekImg.src = next.src;
-      peek.hidden = false;
-    };
-
     const show = (n: number, animate = true) => {
       const from = index;
       index = (n + shots.length) % shots.length;
@@ -624,19 +628,19 @@ const facts = rating !== null && rating !== undefined;
 
       shots.forEach((f, k) => { f.hidden = k !== index; });
       if (count) count.textContent = `${index + 1} / ${shots.length}`;
+      // полоса-прогресс под кадром: отрезок едет на свой номер
+      fill?.style.setProperty('--i', String(index));
 
       // Соседние кадры подтягиваем заранее — листание не показывает
       // пустоту. Но ТОЛЬКО когда показанный кадр уже доехал: на открытии
       // карточки два соседа шли по сети вместе с дежурным и делили с ним
       // канал — первый экран стоял пустой подложкой, пока качались три
-      // фотографии сразу. Полосу-край заполняем там же и по той же
-      // причине: она показывает соседа, а сосед грузится только здесь.
+      // фотографии сразу.
       whenLoaded(imgOf(shots[index]), () => {
         [index + 1, index - 1].forEach((k) => {
           const near = shots[(k + shots.length) % shots.length];
           near?.querySelectorAll('img').forEach((img) => { img.loading = 'eager'; });
         });
-        fillPeek();
       });
 
       // пролистали на ролик — он должен пойти сам, как в ленте на главной

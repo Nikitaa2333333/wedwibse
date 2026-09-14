@@ -115,10 +115,12 @@ const mapPoints = venueMapPoints();
       <!-- КАРТА: тот же набор площадок, что и в сетке (фильтры карта
            повторяет). Скрыта до нажатия «На карте» — пока её не открыли,
            скрипт Яндекса не грузится вовсе.
-           РЕЖИМ, А НЕ ПОДМЕНА (реф. ЦИАН): карта не убирает выдачу,
-           а встаёт над ней и ведёт её — карточки остаются под картой
-           и показывают то, что сейчас в её видимой области. Карта
-           липкая: список уезжает под неё, она остаётся на месте. -->
+           КАРТА ЗАНИМАЕТ ЭКРАН ЦЕЛИКОМ и подменяет выдачу. Пробовали
+           иначе — карта сверху, карточки лентой под ней (реф. ЦИАН):
+           на телефоне это дало половину карты и полоску обрезанных
+           карточек снизу, то есть ни карты, ни выдачи. На узком экране
+           выбирать по карте и листать карточки — два разных занятия,
+           и делить между ними один экран нечем. -->
       <section class="mapview" data-map-view hidden>
         <VenueMap points={mapPoints} size="screen" />
       </section>
@@ -280,7 +282,9 @@ const mapPoints = venueMapPoints();
   .empty { padding: var(--s-7) var(--catalog-pad); }
   .empty[hidden] { display: none; }
 
-  /* Режим «На карте»: карта липнет к верху, выдача идёт под ней */
+  /* Режим «На карте»: карта встаёт на место сетки и занимает экран.
+     Липкая — чтобы при прокрутке полоса фильтров ушла наверх, а карта
+     осталась на месте и добрала высоту до целого экрана. */
   .mapview[hidden] { display: none; }
   .vgrid[hidden] { display: none; }
 
@@ -288,18 +292,10 @@ const mapPoints = venueMapPoints();
     position: sticky;
     top: 0;
     z-index: 2;
-    /* Карта во всю ширину экрана, как доска: поля тут только мешают. */
-    margin-bottom: var(--s-5);
     background: var(--bg);
   }
 
   [data-card].is-hidden { display: none; }
-
-  /* Карточка вне видимой области карты. Класс ОТДЕЛЬНЫЙ от .is-hidden
-     (её ставят фильтры) намеренно: карта читает именно .is-hidden, когда
-     решает, какие метки показывать, — общий класс замкнул бы круг
-     «карта спрятала карточку → пропала метка → область схлопнулась». */
-  [data-card].is-off-map { display: none; }
 
   /* ============ КАРТОЧКА ============ */
   .vcard {
@@ -443,32 +439,10 @@ const mapPoints = venueMapPoints();
     mapToggle.addEventListener('click', () => {
       const showMap = mapView.hidden;
       mapView.hidden = !showMap;
-      // Сетка в режиме карты НЕ прячется: карта ведёт выдачу, а не
-      // заменяет её (реф. ЦИАН). Вышли из режима — снимаем отбор по
-      // области, иначе список останется урезанным без видимой причины.
+      grid.hidden = showMap;
       mapToggle.textContent = showMap ? 'Списком' : 'На карте';
       mapToggle.setAttribute('aria-pressed', String(showMap));
-
-      if (showMap) {
-        mapView.querySelector('[data-venue-map]')?.dispatchEvent(new Event('vmap:show'));
-      } else {
-        grid.querySelectorAll('[data-card]').forEach((card) => card.classList.remove('is-off-map'));
-      }
-    });
-
-    // ============ КАРТА ВЕДЁТ СПИСОК ============
-    // Двигаешь карту — под ней остаются карточки того, что сейчас видно.
-    // Слаги отдаёт сама карта событием vmap:bounds (см. VenueMap), здесь
-    // только прячем чужие карточки. В режиме списка событие игнорируем:
-    // карта скрыта, а её последняя область не должна резать выдачу.
-    mapView.addEventListener('vmap:bounds', (e) => {
-      if (mapView.hidden) return;
-      const inside = new Set((e as CustomEvent<{ slugs: string[] }>).detail.slugs);
-
-      grid.querySelectorAll<HTMLElement>('[data-card]').forEach((card) => {
-        const slug = card.dataset.slug ?? '';
-        card.classList.toggle('is-off-map', !inside.has(slug));
-      });
+      if (showMap) mapView.querySelector('[data-venue-map]')?.dispatchEvent(new Event('vmap:show'));
     });
   }
 </script>
