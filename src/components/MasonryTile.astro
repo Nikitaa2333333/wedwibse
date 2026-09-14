@@ -18,9 +18,11 @@ interface Props {
   widths: number[];
   /** плитка в скрытом хвосте галереи: есть в HTML, не показана и не грузится */
   hidden?: boolean;
+  /** первый ряд доски — LCP страницы: первый кадр рельса без lazy, с fetchpriority high */
+  priority?: boolean;
 }
 
-const { tile, sizes, widths, hidden = false } = Astro.props;
+const { tile, sizes, widths, hidden = false, priority = false } = Astro.props;
 ---
 
 <article
@@ -37,7 +39,7 @@ const { tile, sizes, widths, hidden = false } = Astro.props;
       <span class="pill pill--sm note__cta">Читать</span>
     </a>
   ) : (
-    <PhotoRail photos={tile.photos} alt={tile.alt} href={tile.href ?? undefined} sizes={sizes} widths={widths} />
+    <PhotoRail photos={tile.photos} alt={tile.alt} href={tile.href ?? undefined} sizes={sizes} widths={widths} priority={priority} />
   )}
 </article>
 

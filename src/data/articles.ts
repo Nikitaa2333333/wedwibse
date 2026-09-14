@@ -388,10 +388,6 @@ export const articlesOfRubric = (slug: string) =>
 
 export const articleUrl = (a: Article) => `/blog/${a.rubricSlug}/${a.slug}/`;
 
-/** Обратная связь каталог → блог: статьи, в которых упомянута площадка */
-export const articlesAboutVenue = (venueName: string) =>
-  ARTICLES.filter((a) => a.venues.includes(venueName));
-
 // ============ ИНЛАЙН-РАЗМЕТКА ============
 // В тексте разрешены ровно две вещи: ссылка [анкор](/url) — контекстная
 // перелинковка на подборки, и ==фраза== — фирменный маркер (правило проекта:

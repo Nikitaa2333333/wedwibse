@@ -40,9 +40,13 @@ interface Props {
   widths?: number[];
   /** сколько плиток показать сразу; остальные — по кнопке (галерея карточки) */
   limit?: number;
+  /** доска — первый экран страницы (главная): первый ряд получает LCP-приоритет.
+   *  В галерее карточки НЕ ставить — там первый экран уже держит HeroStage,
+   *  второй fetchpriority="high" ниже сгиба только отбирает у него канал */
+  priority?: boolean;
 }
 
-const { tiles, sizes, widths = IMG_WIDTHS.tile, limit } = Astro.props;
+const { tiles, sizes, widths = IMG_WIDTHS.tile, limit, priority = false } = Astro.props;
 
 // Видимая часть и скрытый хвост. Раскладка под телефон считается на сервере
 // только по видимым — скрытые в колонках места не занимают; шире и после
@@ -50,6 +54,17 @@ const { tiles, sizes, widths = IMG_WIDTHS.tile, limit } = Astro.props;
 const shown = limit && tiles.length > limit ? tiles.slice(0, limit) : tiles;
 const rest = tiles.slice(shown.length);
 const columns = layoutColumns(shown, 2);
+
+// ПЕРВЫЙ РЯД ДОСКИ — ОН ЖЕ LCP ГЛАВНОЙ. На телефоне (2 колонки, основной
+// сценарий) первый ряд — первые два кадра потока: layoutColumns на старте
+// всегда кладёт первую плитку в колонку 0, вторую — в колонку 1 (обе колонки
+// пустые, жадный алгоритм берёт по порядку). Эти две плитки помечаем
+// priority — тем же пропом, что уже гонит первый кадр HeroStage без lazy
+// и с fetchpriority="high" (см. PhotoRail), только тут это первый кадр
+// каждой из двух карусельных плиток, а не все кадры рельса.
+const priorityTiles = new Set(
+  priority ? shown.filter((t) => t.kind === 'photo').slice(0, 2).map((t) => t.index) : []
+);
 ---
 
 <!-- Без параллакса намеренно: доска листается как обычная страница,
@@ -60,7 +75,7 @@ const columns = layoutColumns(shown, 2);
       columns.map((col) => (
         <div class="masonry__col">
           {col.map((tile) => (
-            <MasonryTile tile={tile} sizes={sizes} widths={widths} />
+            <MasonryTile tile={tile} sizes={sizes} widths={widths} priority={priorityTiles.has(tile.index)} />
           ))}
         </div>
       ))

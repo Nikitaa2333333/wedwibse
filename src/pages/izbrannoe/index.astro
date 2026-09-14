@@ -577,7 +577,8 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
     color: var(--accent-fg);
   }
 
-  .pick__btn--yes svg > * { fill: currentColor; }
+  /* заливка контурного сердца из спрайта — через ручку --icon-fill (gen-icons.mjs) */
+  .pick__btn--yes svg { --icon-fill: currentColor; }
 
   @media (hover: hover) {
     .pick__btn--no:hover { background: var(--ink); color: var(--paper); }

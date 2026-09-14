@@ -2,31 +2,36 @@
 // Набор Solar (Bold), лицензия CC BY 4.0 — https://github.com/480-Design/Solar-Icon-Set
 // Добавить иконку: дописать её в MAP генератора и прогнать `node scripts/gen-icons.mjs`.
 
+// Версия спрайта public/icons.svg (см. ниже) — используется в Icon.astro
+// и Layout.astro как ?v=<spriteVersion>, чтобы обновление иконок не залипало
+// в кеше браузера/CDN на старом файле.
+export const spriteVersion = 'db799492';
+
 export const icons = {
   /** solar:home-2-linear */
   home: {
     viewBox: '0 0 24 24',
-    body: "<g fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"><path d=\"M2 12.2039C2 9.91549 2 8.77128 2.5192 7.82274C3.0384 6.87421 3.98695 6.28551 5.88403 5.10813L7.88403 3.86687C9.88939 2.62229 10.8921 2 12 2C13.1079 2 14.1106 2.62229 16.116 3.86687L18.116 5.10812C20.0131 6.28551 20.9616 6.87421 21.4808 7.82274C22 8.77128 22 9.91549 22 12.2039V13.725C22 17.6258 22 19.5763 20.8284 20.7881C19.6569 22 17.7712 22 14 22H10C6.22876 22 4.34315 22 3.17157 20.7881C2 19.5763 2 17.6258 2 13.725V12.2039Z\"/><path stroke-linecap=\"round\" d=\"M12 15L12 18\"/></g>",
+    body: "<g style=\"fill:var(--icon-fill,none)\" stroke=\"currentColor\" stroke-width=\"1.5\"><path d=\"M2 12.2039C2 9.91549 2 8.77128 2.5192 7.82274C3.0384 6.87421 3.98695 6.28551 5.88403 5.10813L7.88403 3.86687C9.88939 2.62229 10.8921 2 12 2C13.1079 2 14.1106 2.62229 16.116 3.86687L18.116 5.10812C20.0131 6.28551 20.9616 6.87421 21.4808 7.82274C22 8.77128 22 9.91549 22 12.2039V13.725C22 17.6258 22 19.5763 20.8284 20.7881C19.6569 22 17.7712 22 14 22H10C6.22876 22 4.34315 22 3.17157 20.7881C2 19.5763 2 17.6258 2 13.725V12.2039Z\"/><path stroke-linecap=\"round\" d=\"M12 15L12 18\"/></g>",
   },
   /** solar:map-point-linear */
   venue: {
     viewBox: '0 0 24 24',
-    body: "<g fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"><path d=\"M4 10.1433C4 5.64588 7.58172 2 12 2C16.4183 2 20 5.64588 20 10.1433C20 14.6055 17.4467 19.8124 13.4629 21.6744C12.5343 22.1085 11.4657 22.1085 10.5371 21.6744C6.55332 19.8124 4 14.6055 4 10.1433Z\"/><circle cx=\"12\" cy=\"10\" r=\"3\"/></g>",
+    body: "<g style=\"fill:var(--icon-fill,none)\" stroke=\"currentColor\" stroke-width=\"1.5\"><path d=\"M4 10.1433C4 5.64588 7.58172 2 12 2C16.4183 2 20 5.64588 20 10.1433C20 14.6055 17.4467 19.8124 13.4629 21.6744C12.5343 22.1085 11.4657 22.1085 10.5371 21.6744C6.55332 19.8124 4 14.6055 4 10.1433Z\"/><circle cx=\"12\" cy=\"10\" r=\"3\"/></g>",
   },
   /** solar:users-group-rounded-linear */
   vendors: {
     viewBox: '0 0 24 24',
-    body: "<g fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"><circle cx=\"9\" cy=\"6\" r=\"4\"/><path stroke-linecap=\"round\" d=\"M15 9C16.6569 9 18 7.65685 18 6C18 4.34315 16.6569 3 15 3\"/><ellipse cx=\"9\" cy=\"17\" rx=\"7\" ry=\"4\"/><path stroke-linecap=\"round\" d=\"M18 14C19.7542 14.3847 21 15.3589 21 16.5C21 17.5293 19.9863 18.4229 18.5 18.8704\"/></g>",
+    body: "<g style=\"fill:var(--icon-fill,none)\" stroke=\"currentColor\" stroke-width=\"1.5\"><circle cx=\"9\" cy=\"6\" r=\"4\"/><path stroke-linecap=\"round\" d=\"M15 9C16.6569 9 18 7.65685 18 6C18 4.34315 16.6569 3 15 3\"/><ellipse cx=\"9\" cy=\"17\" rx=\"7\" ry=\"4\"/><path stroke-linecap=\"round\" d=\"M18 14C19.7542 14.3847 21 15.3589 21 16.5C21 17.5293 19.9863 18.4229 18.5 18.8704\"/></g>",
   },
   /** solar:heart-linear */
   heart: {
     viewBox: '0 0 24 24',
-    body: "<path fill=\"none\" stroke=\"currentColor\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"M2 9.1371C2 14 6.01943 16.5914 8.96173 18.9109C10 19.7294 11 20.5 12 20.5C13 20.5 14 19.7294 15.0383 18.9109C17.9806 16.5914 22 14 22 9.1371C22 4.27416 16.4998 0.825464 12 5.50063C7.50016 0.825464 2 4.27416 2 9.1371Z\"/>",
+    body: "<path style=\"fill:var(--icon-fill,none)\" stroke=\"currentColor\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"M2 9.1371C2 14 6.01943 16.5914 8.96173 18.9109C10 19.7294 11 20.5 12 20.5C13 20.5 14 19.7294 15.0383 18.9109C17.9806 16.5914 22 14 22 9.1371C22 4.27416 16.4998 0.825464 12 5.50063C7.50016 0.825464 2 4.27416 2 9.1371Z\"/>",
   },
   /** solar:heart-linear */
   heartOutline: {
     viewBox: '0 0 24 24',
-    body: "<path fill=\"none\" stroke=\"currentColor\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"M2 9.1371C2 14 6.01943 16.5914 8.96173 18.9109C10 19.7294 11 20.5 12 20.5C13 20.5 14 19.7294 15.0383 18.9109C17.9806 16.5914 22 14 22 9.1371C22 4.27416 16.4998 0.825464 12 5.50063C7.50016 0.825464 2 4.27416 2 9.1371Z\"/>",
+    body: "<path style=\"fill:var(--icon-fill,none)\" stroke=\"currentColor\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"M2 9.1371C2 14 6.01943 16.5914 8.96173 18.9109C10 19.7294 11 20.5 12 20.5C13 20.5 14 19.7294 15.0383 18.9109C17.9806 16.5914 22 14 22 9.1371C22 4.27416 16.4998 0.825464 12 5.50063C7.50016 0.825464 2 4.27416 2 9.1371Z\"/>",
   },
   /** solar:user-bold */
   account: {

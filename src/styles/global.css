@@ -4,6 +4,35 @@
    ВСЁ управляется токенами. В компонентах чисел нет.
    ============================================================ */
 
+/* Самохостинг Onest (было — блокирующий <link> на fonts.googleapis.com).
+   Вариативный woff2 (один файл покрывает вес 100–900) — веса компонентов
+   (--w-body и т.д. ниже) достаются из него без отдельных начертаний.
+   Два сабсета вместо google-набора cyrillic+cyrillic-ext+latin+latin-ext+
+   +vietnamese: сайт русский, cyrillic-ext (старославянские знаки) и
+   vietnamese не нужны. Режем сами из полного Onest[wght].ttf
+   (google/fonts, ofl/onest) через pyftsubset — диапазоны как у Google,
+   но ₽ (U+20BD), ← (U+2190) и ↗ (U+2197) у Google жили в latin-ext, а он
+   не подключён; кладём их в кириллический файл — он в preload, а цена
+   с рублём есть почти на каждой странице. ★ в Onest нет вовсе — звезда
+   рейтинга идёт из fallback-стека, так было и с Google Fonts. */
+@font-face {
+  font-family: 'Onest';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/onest-cyrillic.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116, U+20BD, U+2190, U+2197;
+}
+
+@font-face {
+  font-family: 'Onest';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/onest-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 :root {
   /* Светлая — база сайта; тёмную ставит тумблер (см. блок темы ниже).
      color-scheme красит то, до чего CSS не достаёт: резинку скролла,
@@ -1233,8 +1262,9 @@ mark {
 .save--inline svg { width: 22px; height: 22px; }
 
 /* Сердце Solar: контур — «не в избранном», заливка тем же цветом —
-   «сохранено». Правило бьёт по внутреннему path (у него fill="none"). */
-.save[aria-pressed='true'] svg > * { fill: currentColor; }
+   «сохранено». Иконка идёт из спрайта через <use>, внутрь которого
+   достаёт только кастомное свойство — ручка --icon-fill (см. gen-icons.mjs). */
+.save[aria-pressed='true'] svg { --icon-fill: currentColor; }
 
 /* ============ ЗВУК РОЛИКА ============
    Ролик всегда стартует немым — автозапуск со звуком запрещён во всех
@@ -1340,8 +1370,8 @@ mark {
 .hero-btn:active { transform: scale(0.92); }
 
 /* Сердце Solar: контур — «не в избранном», заливка тем же цветом —
-   «сохранено». Правило бьёт по внутреннему path (у него fill="none"). */
-.hero-btn[aria-pressed='true'] svg > * { fill: currentColor; }
+   «сохранено». Та же ручка --icon-fill, что у .save выше. */
+.hero-btn[aria-pressed='true'] svg { --icon-fill: currentColor; }
 
 /* «Поделиться»: на десктопе, где нет системного листа, кнопка кладёт
    адрес в буфер и на пару секунд показывает галочку вместо скрепки

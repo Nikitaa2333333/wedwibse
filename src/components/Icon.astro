@@ -1,9 +1,13 @@
 ---
 // Единственная точка вывода иконок проекта. Набор — Solar (Bold),
-// контуры лежат в src/lib/icons.ts (генерируются scripts/gen-icons.mjs).
+// контуры лежат во внешнем спрайте public/icons.svg (генерируется
+// scripts/gen-icons.mjs из src/lib/icons.ts — там же исходные контуры).
+// Вместо инлайна полного <svg> на каждое место использования — <use> на
+// symbol в спрайте: раньше повторяющиеся иконки (sound/soundOff/play на
+// каждый ролик карточки) раздували HTML на десятки КБ (см. AUDIT.md).
 // Размер и цвет иконка берёт от места, куда вставлена: currentColor
 // и размеры класса-хозяина — своих значений компонент не задаёт.
-import { icons, type IconName } from '../lib/icons';
+import { spriteVersion, type IconName } from '../lib/icons';
 
 interface Props {
   name: IconName;
@@ -11,10 +15,9 @@ interface Props {
 }
 
 const { name, class: className } = Astro.props;
-const { viewBox, body } = icons[name];
 ---
 
-<svg class={className} viewBox={viewBox} fill="currentColor" aria-hidden="true" set:html={body} />
+<svg class={className} fill="currentColor" aria-hidden="true"><use href={`/icons.svg?v=${spriteVersion}#i-${name}`} /></svg>
 
 <style>
   /* Подстраховка от «растянутого» SVG: у svg без размеров дефолт 300×150,

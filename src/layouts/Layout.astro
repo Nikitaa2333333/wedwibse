@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import { spriteVersion } from '../lib/icons';
 
 interface Props {
   title: string;
@@ -37,12 +38,14 @@ const indexable = process.env.SITE_INDEXABLE === 'true';
     <meta name="theme-color" content="#ffffff" />
     {!indexable && <meta name="robots" content="noindex, nofollow" />}
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Onest:wght@200;300;400;500;600&display=swap"
-      rel="stylesheet"
-    />
+    {/* Самохостинг Onest (public/fonts/, @font-face — src/styles/global.css).
+        Preload только кириллического файла: сайт русский, латиница дальше
+        подтянется сама по unicode-range в кегле обычного набора. */}
+    <link rel="preload" href="/fonts/onest-cyrillic.woff2" as="font" type="font/woff2" crossorigin />
+    {/* Спрайт иконок (Icon.astro → <use href="/icons.svg#i-...">) — без
+        preload первая иконка на странице мигает пустым: браузер запрашивает
+        файл только по факту <use>, и рендер ждёт лишний round-trip. */}
+    <link rel="preload" href={`/icons.svg?v=${spriteVersion}`} as="image" type="image/svg+xml" />
     <link rel="canonical" href={canonical.href} />
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="ru_RU" />

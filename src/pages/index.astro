@@ -205,17 +205,16 @@ import Icon from '../components/Icon.astro';
     display: inline-flex;
   }
 
+  /* Заливка контурного сердца — через ручку --icon-fill: иконка идёт
+     из спрайта через <use>, и внутрь символа достаёт только кастомное
+     свойство (см. gen-icons.mjs). Анимация дискретная — переменной хватает. */
   :global(.hint__heart) {
     width: clamp(32px, 4vw, 48px);
     height: clamp(32px, 4vw, 48px);
     transform-origin: center;
-    animation: hint-heart-tap 4s ease-in-out infinite;
-  }
-
-  /* Заливка живёт на самом контуре: у контурного сердца Solar
-     свой fill="none", на внешнем svg его не перебить. */
-  :global(.hint__heart > *) {
-    animation: hint-heart-fill 4s steps(1, end) infinite;
+    animation:
+      hint-heart-tap 4s ease-in-out infinite,
+      hint-heart-fill 4s steps(1, end) infinite;
   }
 
   /* Мини-демо «сохранили в избранное»: сердце жмётся и заливается,
@@ -228,9 +227,9 @@ import Icon from '../components/Icon.astro';
   }
 
   @keyframes hint-heart-fill {
-    0%, 19% { fill: none; }
-    20%, 88% { fill: currentColor; }
-    89%, 100% { fill: none; }
+    0%, 19% { --icon-fill: none; }
+    20%, 88% { --icon-fill: currentColor; }
+    89%, 100% { --icon-fill: none; }
   }
 
   .hint__badge {
