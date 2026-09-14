@@ -87,11 +87,20 @@ const apiKey = import.meta.env.YANDEX_MAPS_API_KEY;
     overflow: hidden;
   }
 
-  /* режим «На карте»: карта занимает экран, но не лезет под нижний док */
-  .vmap--screen .vmap__canvas { height: 72dvh; }
+  /* Режим «На карте»: карта берёт верхнюю половину экрана, а не весь —
+     под ней идёт выдача, которую она ведёт (реф. ЦИАН). Прежние 72dvh
+     были рассчитаны на то, что карта ПОДМЕНЯЕТ список; теперь они
+     показывали бы карту и полоску карточек под ней. */
+  .vmap--screen .vmap__canvas { height: 52dvh; }
+
+  @media (min-width: 1024px) {
+    .vmap--screen .vmap__canvas { height: 60dvh; }
+  }
 </style>
 
 <script>
+  import { seenSet, seenId } from '../lib/seen';
+
   interface MapPointData {
     slug: string;
     name: string;
@@ -127,6 +136,32 @@ const apiKey = import.meta.env.YANDEX_MAPS_API_KEY;
     loadMapsApi(key).then((ymaps) => {
       const map = new ymaps.Map(canvas, { center: [55.75, 37.62], zoom: 9 });
 
+      // ============ КЛАСТЕРЫ ============
+      // Реф. ЦИАН: отдалили — точки схлопываются в кружок с числом,
+      // приблизили — снова цены. Без кластеров карта врёт: «Лесная Роса»
+      // и «Из-за любви» стоят в ста метрах друг от друга, и на масштабе
+      // области их метки просто накладываются — видно одну, второй как
+      // будто нет. С ростом каталога до сотен площадок это не косметика,
+      // а единственный способ показать Москву и область целиком.
+      // Клик по кластеру — приближение (это поведение по умолчанию,
+      // балон отключён): тот же жест, что у всех карт.
+      const ClusterLayout = ymaps.templateLayoutFactory.createClass(
+        '<span class="map-cluster">$[properties.geoObjects.length]</span>'
+      );
+
+      const clusterer = new ymaps.Clusterer({
+        clusterIconLayout: ClusterLayout,
+        // рамка кружка: у своей вёрстки метки размеры Яндекс не знает
+        clusterIconShape: { type: 'Circle', coordinates: [0, 0], radius: 22 },
+        clusterDisableClickZoom: false,
+        hasBalloon: false,
+        // мельче сетка — кластеры распадаются раньше, а нам важно как раз
+        // не склеивать соседние площадки на среднем масштабе
+        gridSize: 64,
+      });
+
+      map.geoObjects.add(clusterer);
+
       // Метка не ссылка: у неё задан iconShape, и клики забирает слой карты —
       // нажатие ловим событием метки ниже.
       // Подпись метки — ТОЛЬКО ЦЕНА (см. .map-pin в global.css): название
@@ -141,6 +176,13 @@ const apiKey = import.meta.env.YANDEX_MAPS_API_KEY;
       const marks = new Map<string, any>();
       const bySlug = new Map(points.map((p) => [p.slug, p]));
 
+      // ============ «УЖЕ СМОТРЕЛ» ============
+      // Открытая карточка гасит свою метку (реф. ЦИАН): на карте из
+      // десятков точек сразу видно, что осталось. Отметку ставит сама
+      // страница площадки (lib/seen), здесь только читаем.
+      const seen = seenSet();
+      const stateOf = (slug: string) => (seen.has(seenId('venue', slug)) ? 'is-seen' : '');
+
       points.forEach((point) => {
         marks.set(
           point.slug,
@@ -149,7 +191,7 @@ const apiKey = import.meta.env.YANDEX_MAPS_API_KEY;
             {
               pinPrice: point.label,
               pinTitle: point.price ? `${point.name} — ${point.price}` : point.name,
-              pinState: '',
+              pinState: stateOf(point.slug),
             },
             {
               iconLayout: PinLayout,
@@ -169,7 +211,7 @@ const apiKey = import.meta.env.YANDEX_MAPS_API_KEY;
 
       const closeCard = () => {
         cards.forEach((card) => { card.hidden = true; });
-        marks.forEach((mark) => mark.properties.set('pinState', ''));
+        marks.forEach((mark, slug) => mark.properties.set('pinState', stateOf(slug)));
       };
 
       const openCard = (slug: string) => {
@@ -210,24 +252,49 @@ const apiKey = import.meta.env.YANDEX_MAPS_API_KEY;
       const sync = () => {
         const visible = new Set(visibleSlugs());
 
-        marks.forEach((mark, slug) => {
-          const onMap = map.geoObjects.indexOf(mark) !== -1;
-          if (visible.has(slug) && !onMap) map.geoObjects.add(mark);
-          if (!visible.has(slug) && onMap) {
-            map.geoObjects.remove(mark);
-            const card = root.querySelector<HTMLElement>(`[data-map-card="${slug}"]`);
-            if (card) card.hidden = true;
-          }
+        clusterer.removeAll();
+        clusterer.add(
+          points.filter((p) => visible.has(p.slug)).map((p) => marks.get(p.slug))
+        );
+
+        marks.forEach((_, slug) => {
+          if (visible.has(slug)) return;
+          const card = root.querySelector<HTMLElement>(`[data-map-card="${slug}"]`);
+          if (card) card.hidden = true;
         });
 
-        if (map.geoObjects.getLength() > 0) {
-          map.setBounds(map.geoObjects.getBounds(), { checkZoomRange: true, zoomMargin: 48 });
-        }
+        const bounds = clusterer.getBounds();
+        if (bounds) map.setBounds(bounds, { checkZoomRange: true, zoomMargin: 48 });
       };
 
+      // ============ КАРТА ВЕДЁТ СПИСОК ============
+      // Реф. ЦИАН: двигаешь карту — список под ней остаётся про то, что
+      // сейчас на экране. Отдаём наружу слаги, попавшие в видимую область,
+      // событием; что с ними делать, решает страница (каталог прячет
+      // карточки классом .is-off-map). Карта сама список не трогает: она
+      // модуль и стоит не только в каталоге.
+      //
+      // Обратной связи тут нет намеренно: карточки, спрятанные картой,
+      // не должны убирать метки (visibleSlugs смотрит только на .is-hidden
+      // от фильтров) — иначе область схлопывалась бы сама в себя.
+      const report = () => {
+        const box = map.getBounds();
+        const inside = points
+          .filter((p) => {
+            const [lat, lon] = p.coords;
+            return lat >= box[0][0] && lat <= box[1][0] && lon >= box[0][1] && lon <= box[1][1];
+          })
+          .map((p) => p.slug);
+
+        root.dispatchEvent(new CustomEvent('vmap:bounds', { detail: { slugs: inside }, bubbles: true }));
+      };
+
+      map.events.add('boundschange', report);
+
       sync();
+      report();
       document.addEventListener('change', sync); // фильтры каталога — обычные input'ы
-      root.addEventListener('vmap:show', sync);
+      root.addEventListener('vmap:show', () => { sync(); report(); });
     });
   }
 

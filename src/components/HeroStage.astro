@@ -128,6 +128,22 @@ const facts = rating !== null && rating !== undefined;
       );
     })}
 
+    {/* КРАЙ СЛЕДУЮЩЕГО КАДРА — полоса у правой кромки окна.
+        Не декорация, а единственный очевидный знак, что кадр не один:
+        стрелки у счётчика на бумаге сообщали то же самое, но их надо
+        было сперва заметить. Кадр в полосе всегда cover, даже если сам
+        он горизонтальный: это не показ кадра, а знак продолжения, и
+        вписанная горизонталь дала бы в полосе бумагу вместо фотографии
+        (ровно из-за этого сняли прежнюю «подсказку листания»).
+        Заполняет полосу скрипт — тем же кадром, что уже подгружен
+        соседом, поэтому лишней загрузки нет. Без JS полосы нет вовсе:
+        листания без него тоже нет. */}
+    {frames.length > 1 && (
+      <div class="stage__peek" data-stage-peek aria-hidden="true" hidden>
+        <img alt="" decoding="async" />
+      </div>
+    )}
+
     {/* Свечение: бумага заходит на низ кадра и растворяет кромку.
         Лежит в окне, а не на кадре, — иначе уходило бы вместе
         со скрытым кадром при листании. */}
@@ -235,9 +251,58 @@ const facts = rating !== null && rating !== undefined;
 
   .stage__frame[hidden] { display: none; }
 
-  /* Подсказки «кадр уезжает, показывая край соседа» больше нет: с
-     горизонталью в соседях она открывала поля, а не фото, и уносила
-     свечение под кадр. Листание объявляют стрелки у счётчика на бумаге. */
+  /* ============ КРАЙ СЛЕДУЮЩЕГО КАДРА ============
+     Полоса --stage-peek у правой кромки окна с левым краем следующей
+     фотографии. Лежит ПОВЕРХ показанного кадра, а не рядом: так окно
+     остаётся ровно той же постоянной пропорции --stage-ratio, и ни
+     разметку, ни загрузку кадров трогать не пришлось.
+
+     Прежняя «подсказка листания» (кадр сам отъезжал, приоткрывая соседа)
+     была снята из-за горизонталей: вписанный целиком кадр показывал
+     в щели поля, а не фотографию. Здесь этого нет по построению —
+     в полосе кадр всегда cover.
+
+     Волосок бумаги слева — чтобы две фотографии читались как две,
+     а не как одна с полосой. Свечение (z-index 2) проходит поверх,
+     поэтому низ полосы растворяется в бумаге вместе с кадром. */
+  .stage__peek {
+    position: absolute;
+    z-index: 1;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: var(--stage-peek);
+    overflow: hidden;
+    border-left: 2px solid var(--paper);
+    background: var(--surface-dim);
+    pointer-events: none;
+  }
+
+  .stage__peek img {
+    width: 100%;
+    height: 100%;
+    /* левый край соседнего кадра — он «приезжает» справа */
+    object-fit: cover;
+    object-position: left center;
+  }
+
+  .stage__peek[hidden] { display: none; }
+
+  /* ПЕРЕКЛАДКА КАДРА — только после первого действия человека.
+     Класс is-paging ставит скрипт, когда листание уже началось: на
+     открытии карточки анимации нет намеренно, въезжающий первый экран
+     это и есть та «вспышка», от которой экран избавляли. Направление
+     берётся из --dir, поэтому кадр приезжает с той стороны, куда
+     листают, а не всегда справа. */
+  @keyframes stage-in {
+    from { opacity: 0; transform: translateX(calc(var(--dir, 1) * 5%)); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  .stage.is-paging .stage__frame:not([hidden]) {
+    animation: stage-in var(--dur-base) var(--ease-out);
+  }
+
 
   /* Портрет и квадрат заполняют окно, горизонталь вписывается целиком:
      решает сам браузер по пропорции файла. object-fit тут один на всех
@@ -528,8 +593,35 @@ const facts = rating !== null && rating !== undefined;
     // (больше вниз, чем вбок) не считается, чтобы не мешать прокрутке.
     let index = Math.max(0, shots.findIndex((f) => !f.hidden));
 
-    const show = (n: number) => {
+    // Полоса с краем следующего кадра (см. .stage__peek в стилях).
+    const peek = stage.querySelector<HTMLElement>('[data-stage-peek]');
+    const peekImg = peek?.querySelector('img') ?? null;
+
+    /** Показать в полосе кадр, который пойдёт следующим.
+     *  Берём готовые src/srcset/sizes соседнего <img> — это ТОТ ЖЕ адрес,
+     *  который браузер и так подтянет соседом ниже, поэтому полоса не
+     *  добавляет ни одного запроса: она показывает уже качающийся кадр. */
+    const fillPeek = () => {
+      const next = imgOf(shots[(index + 1) % shots.length]);
+      if (!peek || !peekImg || !next) return;
+      peekImg.sizes = next.sizes;
+      peekImg.srcset = next.srcset;
+      peekImg.src = next.src;
+      peek.hidden = false;
+    };
+
+    const show = (n: number, animate = true) => {
+      const from = index;
       index = (n + shots.length) % shots.length;
+
+      // Направление перекладки: кадр приезжает с той стороны, куда листают.
+      // Через край стопки (последний → первый) считаем как шаг вперёд.
+      if (animate) {
+        const back = (from - index + shots.length) % shots.length === 1;
+        stage.style.setProperty('--dir', back ? '-1' : '1');
+        stage.classList.add('is-paging');
+      }
+
       shots.forEach((f, k) => { f.hidden = k !== index; });
       if (count) count.textContent = `${index + 1} / ${shots.length}`;
 
@@ -537,19 +629,21 @@ const facts = rating !== null && rating !== undefined;
       // пустоту. Но ТОЛЬКО когда показанный кадр уже доехал: на открытии
       // карточки два соседа шли по сети вместе с дежурным и делили с ним
       // канал — первый экран стоял пустой подложкой, пока качались три
-      // фотографии сразу.
+      // фотографии сразу. Полосу-край заполняем там же и по той же
+      // причине: она показывает соседа, а сосед грузится только здесь.
       whenLoaded(imgOf(shots[index]), () => {
         [index + 1, index - 1].forEach((k) => {
           const near = shots[(k + shots.length) % shots.length];
           near?.querySelectorAll('img').forEach((img) => { img.loading = 'eager'; });
         });
+        fillPeek();
       });
 
       // пролистали на ролик — он должен пойти сам, как в ленте на главной
       handles.forEach((handle) => handle.sync());
     };
 
-    show(index);
+    show(index, false);
 
     // Стрелки у счётчика — тот же show(), что и свайп
     stage.querySelector('[data-stage-prev]')?.addEventListener('click', () => show(index - 1));

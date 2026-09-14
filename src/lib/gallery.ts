@@ -304,6 +304,24 @@ function blendReels(photos: Pin[], reels: Pin[]): Pin[] {
   return out;
 }
 
+/** ОДИН КАДР — ОДНА ПЛИТКА. Пять роликов стоят у площадок прямо в
+ *  `gallery` (они же кадры первого экрана карточки) и одновременно лежат
+ *  в REELS — и лента показывала такой ролик ДВАЖДЫ, в разных местах и
+ *  с разным соседством, так что на глаз это читалось не как повтор
+ *  кадра, а как сбой. Считаем занятые кадры после сборки фото-дорожек
+ *  и выкидываем из роликов те, что уже стоят.
+ *
+ *  Именно в таком порядке, а не «убрать ролики из gallery»: в галерее
+ *  площадки ролик стоит осознанно (первый экран им и листается), и
+ *  срезать его там значило бы чинить ленту за счёт карточки. И не
+ *  наоборот — приоритет у кадра карточки, потому что он ведёт на саму
+ *  площадку, а плитка REELS у ролика без venue/author может вести в никуда. */
+function framesOf(pins: Pin[]): Set<string> {
+  const used = new Set<string>();
+  for (const pin of pins) for (const src of pin.photos) used.add(src);
+  return used;
+}
+
 /** Доска целиком — один непрерывный поток плиток, без блоков и полос:
  *  колонки просто идут вниз и заканчиваются на разной высоте, как в ленте.
  *  Каждая ARTICLE_EVERY-я позиция — карточка статьи. */
@@ -311,9 +329,11 @@ export function collectTiles(): Tile[] {
   // Кадры площадок и подрядчиков идут дорожками в interleave — по одной
   // плитке с карточки по кругу, чтобы доска не шла блоками «сначала одна
   // площадка, потом другая». Ролики подмешиваются сверху долей (blendReels).
+  const cards = interleave([...VENUES.map(tallPins), ...REAL_SPECIALISTS.map(specialistPins)]);
+  const used = framesOf(cards);
   const photos = blendReels(
-    interleave([...VENUES.map(tallPins), ...REAL_SPECIALISTS.map(specialistPins)]),
-    reelPins()
+    cards,
+    reelPins().filter((pin) => !used.has(pin.photos[0]))
   );
   const articles = ARTICLES.map(articleTile);
   const out: Tile[] = [];
