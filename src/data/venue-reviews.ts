@@ -41,6 +41,12 @@ export interface VenueReview {
 export interface VenueReviewsBlock {
   /** откуда взято: yandex-maps | site | own */
   source?: string;
+  /** Карточка-источник: с неё тянет scripts/maps-reviews.mjs, и она же
+   *  единственное место, где у части площадок вообще есть точка на карте
+   *  (у Spark Hall и LЁD в материалах адрес только до округа).
+   *  СЛУЖЕБНОЕ ПОЛЕ: на странице не показывается — источник в интерфейсе
+   *  не назван, см. долг в шапке файла. */
+  sourceUrl?: string;
   /** когда тянули, YYYY-MM-DD */
   pulled?: string;
   /** средняя оценка, как её показывает источник */
