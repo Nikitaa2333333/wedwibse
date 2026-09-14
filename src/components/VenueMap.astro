@@ -87,15 +87,12 @@ const apiKey = import.meta.env.YANDEX_MAPS_API_KEY;
     overflow: hidden;
   }
 
-  /* Режим «На карте»: карта берёт верхнюю половину экрана, а не весь —
-     под ней идёт выдача, которую она ведёт (реф. ЦИАН). Прежние 72dvh
-     были рассчитаны на то, что карта ПОДМЕНЯЕТ список; теперь они
-     показывали бы карту и полоску карточек под ней. */
-  .vmap--screen .vmap__canvas { height: 52dvh; }
-
-  @media (min-width: 1024px) {
-    .vmap--screen .vmap__canvas { height: 60dvh; }
-  }
+  /* Режим «На карте»: карта занимает ЦЕЛЫЙ экран, без нижнего дока.
+     Не 72dvh, как было: та высота оставляла под картой полосу пустой
+     бумаги, и экран читался незаконченным. Секция липкая (см. .mapview
+     в каталоге), поэтому при прокрутке фильтры уходят наверх, а карта
+     встаёт ровно во весь экран над доком. */
+  .vmap--screen .vmap__canvas { height: calc(100dvh - var(--dock-h)); }
 </style>
 
 <script>
@@ -267,34 +264,13 @@ const apiKey = import.meta.env.YANDEX_MAPS_API_KEY;
         if (bounds) map.setBounds(bounds, { checkZoomRange: true, zoomMargin: 48 });
       };
 
-      // ============ КАРТА ВЕДЁТ СПИСОК ============
-      // Реф. ЦИАН: двигаешь карту — список под ней остаётся про то, что
-      // сейчас на экране. Отдаём наружу слаги, попавшие в видимую область,
-      // событием; что с ними делать, решает страница (каталог прячет
-      // карточки классом .is-off-map). Карта сама список не трогает: она
-      // модуль и стоит не только в каталоге.
-      //
-      // Обратной связи тут нет намеренно: карточки, спрятанные картой,
-      // не должны убирать метки (visibleSlugs смотрит только на .is-hidden
-      // от фильтров) — иначе область схлопывалась бы сама в себя.
-      const report = () => {
-        const box = map.getBounds();
-        const inside = points
-          .filter((p) => {
-            const [lat, lon] = p.coords;
-            return lat >= box[0][0] && lat <= box[1][0] && lon >= box[0][1] && lon <= box[1][1];
-          })
-          .map((p) => p.slug);
-
-        root.dispatchEvent(new CustomEvent('vmap:bounds', { detail: { slugs: inside }, bubbles: true }));
-      };
-
-      map.events.add('boundschange', report);
-
+      // Отдачи видимой области наружу (vmap:bounds) тут больше нет:
+      // она нужна была, когда карточки каталога стояли под картой и
+      // подстраивались под неё. В режиме карты выдачи на экране нет —
+      // подстраивать нечего.
       sync();
-      report();
       document.addEventListener('change', sync); // фильтры каталога — обычные input'ы
-      root.addEventListener('vmap:show', () => { sync(); report(); });
+      root.addEventListener('vmap:show', sync);
     });
   }
 

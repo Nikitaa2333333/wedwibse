@@ -27,7 +27,7 @@ import { ARTICLES, articleUrl, rubricBySlug } from '../data/articles';
 import { REELS, reelHref, type Reel } from '../data/reels';
 import { FEED } from '../data/feed';
 import { REAL_SPECIALISTS, specialistUrl, type Specialist } from '../data/specialists';
-import { frameId, isPortrait, ratioOf } from './media';
+import { frameId, isPortrait, isVideo, ratioOf } from './media';
 
 /** ЧЕЙ КАДР — подпись под фотографией в просмотре на весь экран
  *  (PhotoMasonry → lib/viewer). Ровно тот набор, что уже стоит на карточке
@@ -128,8 +128,18 @@ function tallPins(venue: Venue): Pin[] {
 
   while (i < shots.length) {
     const size = Math.min(SIZES[s++ % SIZES.length], shots.length - i);
-    const group = shots.slice(i, i + size);
-    i += size;
+    let group = shots.slice(i, i + size);
+
+    // РОЛИК В ЛЕНТЕ — ВСЕГДА ОТДЕЛЬНОЙ ПЛИТКОЙ. В мини-галерее играет
+    // только ТЕКУЩИЙ кадр (см. PhotoRail), поэтому ролик, попавший
+    // в плитку вторым или третьим, стоит постером и не двигается, пока
+    // его не пролистают пальцем. Со стороны это выглядит как «у одних
+    // карточек видео работает, у других нет» — разницы-то не видно.
+    const v = group.findIndex((g) => isVideo(g.src));
+    if (v === 0) group = [group[0]];
+    else if (v > 0) group = group.slice(0, v);
+
+    i += group.length;
 
     // Подписываем только мини-галереи: подпись у каждой плитки
     // превращает доску в каталог, а тут нужен именно поток кадров.
@@ -217,6 +227,52 @@ function specialistPins(s: Specialist): Pin[] {
   }
 
   return pins;
+}
+
+// ============================================================
+// СКОЛЬКО ЛЕНТА БЕРЁТ С ОДНОЙ КАРТОЧКИ
+//
+// Лента — витрина КАТАЛОГА, а не альбом одной карточки. Пока карточек
+// одиннадцать, «взять у каждой всё, что есть» означает, что каждая
+// одиннадцатая плитка — одна и та же площадка или один и тот же человек:
+// на телефоне это примерно раз в полтора экрана, то есть постоянно.
+//
+// Отдельно про людей. У ведущего, вокалиста, диджея портфолио — ОН САМ:
+// все кадры это один человек в разных залах. Двадцать таких кадров
+// в ленте отличаются друг от друга куда меньше, чем двадцать кадров
+// площадки, и читаются не как каталог, а как чей-то личный аккаунт.
+// Поэтому у этих категорий потолок втрое ниже — и он про ЛИЦО, а не про
+// качество карточки: у фотографа или декоратора в photos работы, там
+// кадр от кадра отличается.
+//
+// Потолок в ПЛИТКАХ, а не в кадрах: плитка может нести три кадра, и
+// считать надо то, сколько раз карточка попадается на глаза.
+// С ростом каталога потолок перестанет срабатывать сам собой — при
+// полусотне карточек до него никто не дотянется.
+//
+// РОЛИКИ ПОТОЛОК НЕ РЕЖЕТ, и это осознанно: двенадцать роликов площадки
+// — это двенадцать РАЗНЫХ съёмок (интерьер, подача, облёт), они и в ленте
+// читаются как разное. Потолок же придуман против повтора одного и того
+// же — одного лица, одного зала с другой точки. Окажется, что и видео
+// примелькалось, — потолок на ролики заводится здесь же, в reelPins.
+// ============================================================
+const PER_CARD_TILES = 8;
+const PER_CARD_TILES_FACE = 3;
+
+/** Категории, где портфолио — сам подрядчик, а не его работы. */
+const SELF_PORTFOLIO = new Set([
+  'vedushchie',
+  'vokalisty',
+  'muzykanty',
+  'dj',
+  'kaver-gruppy',
+  'horeografy',
+  'animatory',
+  'fokusniki',
+]);
+
+function capOf(s: Specialist): number {
+  return SELF_PORTFOLIO.has(s.categorySlug) ? PER_CARD_TILES_FACE : PER_CARD_TILES;
 }
 
 /** по одной штуке с каждой площадки по кругу — доска не идёт блоками
@@ -329,7 +385,10 @@ export function collectTiles(): Tile[] {
   // Кадры площадок и подрядчиков идут дорожками в interleave — по одной
   // плитке с карточки по кругу, чтобы доска не шла блоками «сначала одна
   // площадка, потом другая». Ролики подмешиваются сверху долей (blendReels).
-  const cards = interleave([...VENUES.map(tallPins), ...REAL_SPECIALISTS.map(specialistPins)]);
+  const cards = interleave([
+    ...VENUES.map((v) => tallPins(v).slice(0, PER_CARD_TILES)),
+    ...REAL_SPECIALISTS.map((s) => specialistPins(s).slice(0, capOf(s))),
+  ]);
   const used = framesOf(cards);
   const photos = blendReels(
     cards,
