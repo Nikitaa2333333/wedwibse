@@ -87,10 +87,19 @@ const { cards } = Astro.props;
         <!-- Цена и стиль — в подписи под кадром на любой ширине.
              Одно правило на весь сайт: текст не кладём на фотографию. -->
         <div class="scard__body">
-          <p class="scard__price">
-            {price}
-            {styleTag && <span class="scard__style">{styleTag}</span>}
-          </p>
+          {s.priceFrom ? (
+            <p class="scard__price">
+              {price}
+              {styleTag && <span class="scard__style">{styleTag}</span>}
+            </p>
+          ) : (
+            /* без прайса — не цифра, значит не кегль цены, а метка: та же
+               плашка .chip--tag, что у карточки площадки */
+            <p class="scard__price scard__price--tag">
+              <span class="chip chip--tag">цена по запросу</span>
+              {styleTag && <span class="scard__style">{styleTag}</span>}
+            </p>
+          )}
           <div class="scard__top">
             <h2 class="scard__name">
               {s.avatar && <Avatar src={s.avatar} name={s.name} size={30} />}
@@ -260,7 +269,13 @@ const { cards } = Astro.props;
     flex-shrink: 0;
   }
 
-  .scard__tagline { font-size: var(--fs-caption); }
+  /* Межстрочное подписи, а не абзаца: --lh-body (1.55) у двухстрочного
+     слогана давал дыру между строками, вторая строка отваливалась от
+     первой. Тот же плотный шаг, что у города в карточке площадки. */
+  .scard__tagline {
+    font-size: var(--fs-caption);
+    line-height: 1.2;
+  }
 
   @media (min-width: 640px) {
     .scard__name { font-size: var(--fs-h3); line-height: 1.15; }
