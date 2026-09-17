@@ -19,6 +19,7 @@ import Avatar from '../../../../components/Avatar.astro';
 import Reviews from '../../../../components/Reviews.astro';
 import Icon from '../../../../components/Icon.astro';
 import HeroActions from '../../../../components/HeroActions.astro';
+import HeroCta from '../../../../components/HeroCta.astro';
 import HeroStage from '../../../../components/HeroStage.astro';
 import ReelsRow from '../../../../components/ReelsRow.astro';
 import { SPECIALISTS_BY_CATEGORY, FILTERS_BY_CATEGORY, type Specialist } from '../../../../data/specialists';
@@ -126,15 +127,16 @@ const saveData = JSON.stringify({
         backLabel={`К списку «${s.category}»`}
         save={saveData}
       />
+      <!-- Заказ и избранное — сразу под именем, а не под ценой (см. HeroCta) -->
+      <HeroCta slot="cta" orderLabel="Заказать" orderHref="#zayavka" save={saveData} />
     </HeroStage>
 
     <!-- УСЛОВИЯ — ровно та же логика, что у площадки (VenueHero): строка
-         продолжает подпись первого экрана прямо на бумаге, под ней одна
-         пилюля-действие. Ни плашки, ни заливки, ни своей карточки. -->
+         продолжает подпись первого экрана прямо на бумаге. Кнопка заказа
+         переехала выше, в ряд действий под именем. -->
     <section class="phero">
       <p class="phero__price">{priceLabel}</p>
       <p class="t-caption phero__price-note">{priceFacts.join(' · ')}</p>
-      <a class="pill pill--lg" href="#zayavka">Заказать</a>
     </section>
 
     <!-- О ПОДРЯДЧИКЕ: рассказ о себе и портрет автора целиком.
@@ -295,8 +297,6 @@ const saveData = JSON.stringify({
     padding: var(--s-4) var(--gutter) 0;
     margin-bottom: var(--section-gap-tight);
   }
-
-  .phero .pill { margin-top: var(--s-5); }
 
   /* Цена — крупно: якорь блока условий */
   .phero__price {

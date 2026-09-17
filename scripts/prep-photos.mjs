@@ -8,25 +8,36 @@
 // размер. По этому манифесту агент выбирает кадры, не глядя на пиксели.
 // Результат — research/<slug>/photos/pNN.webp; в src/assets переносит
 // уже конвейер по venue.json (scripts/place-photos.mjs).
-import { readdir, mkdir, writeFile, stat } from 'node:fs/promises';
+import { readdir, mkdir, writeFile, readFile, stat } from 'node:fs/promises';
 import { join, extname } from 'node:path';
 import { execFileSync } from 'node:child_process';
 
-const [slug, ...dirs] = process.argv.slice(2);
-if (!slug) { console.error('usage: node scripts/prep-photos.mjs <slug> [raw_dir...]'); process.exit(1); }
+// --append — ДОЛИВКА к уже заведённой карточке: файлы, которые уже описаны
+// в photos.json, пропускает, новые нумерует дальше (p37, p38…). Без флага
+// манифест собирается с нуля и p01 достаётся первому файлу по алфавиту —
+// после докачки это сдвинуло бы номера и сломало ссылки в JSON карточки.
+const args = process.argv.slice(2);
+const append = args.includes('--append');
+const [slug, ...dirs] = args.filter((a) => a !== '--append');
+if (!slug) { console.error('usage: node scripts/prep-photos.mjs <slug> [raw_dir...] [--append]'); process.exit(1); }
 
 const base = slug.includes('/') ? slug : join('research', slug);
 const rawDirs = dirs.length ? dirs : (await readdir(base)).filter((d) => d.startsWith('raw')).map((d) => join(base, d));
 const outDir = join(base, 'photos');
 await mkdir(outDir, { recursive: true });
 
+const manifest = append ? JSON.parse(await readFile(join(base, 'photos.json'), 'utf8')) : [];
+const known = new Set(manifest.map((m) => m.source));
+
 const IMG = /\.(jpe?g|png|webp|heic)$/i;
 const files = [];
-for (const d of rawDirs) for (const f of (await readdir(d)).sort()) if (IMG.test(f)) files.push(join(d, f));
-console.log(`source files: ${files.length}`);
+for (const d of rawDirs) for (const f of (await readdir(d)).sort()) {
+  const p = join(d, f);
+  if (IMG.test(f) && !known.has(p.replace(/\\/g, '/'))) files.push(p);
+}
+console.log(`source files: ${files.length}${append ? ` new (after ${manifest.length} known)` : ''}`);
 
-const manifest = [];
-let i = 0;
+let i = manifest.length;
 for (const src of files) {
   i++;
   const id = `p${String(i).padStart(2, '0')}`;

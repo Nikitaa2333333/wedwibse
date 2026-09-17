@@ -24,7 +24,18 @@ interface Props {
   widths?: number[];
   /** отбивка секции: обычная (площадка) или поджатая (подрядчик) */
   tight?: boolean;
+  /** сколько кадров видно сразу; остальные — по кнопке «Показать все» */
+  limit?: number;
 }
+
+// ГАЛЕРЕЯ НА 40–50 КАДРОВ НЕ ЛИСТАЕТСЯ ЦЕЛИКОМ (норма с 17.09.2026 — до
+// 50 кадров на карточку, см. скиллы venue-page / specialist-page). Сразу
+// видны первые GALLERY_PREVIEW (на телефоне — шесть рядов, три экрана),
+// хвост лежит в HTML скрытым (кадры в выдаче поисковика, браузер их не
+// грузит) и досыпается в колонки по кнопке «Показать все N фото» — сам
+// механизм давно живёт в PhotoMasonry (limit), отдельной страницы
+// «все фото» не нужно.
+const GALLERY_PREVIEW = 12;
 
 const {
   tiles,
@@ -34,6 +45,7 @@ const {
   sizes = '(min-width: 1440px) 19vw, (min-width: 1024px) 24vw, (min-width: 640px) 32vw, 48vw',
   widths = IMG_WIDTHS.tile,
   tight = false,
+  limit = GALLERY_PREVIEW,
 } = Astro.props;
 ---
 
@@ -43,7 +55,7 @@ const {
     <h2 class="gallery__title t-h2">{title}</h2>
   </header>
 
-  <PhotoMasonry tiles={tiles} sizes={sizes} widths={widths} />
+  <PhotoMasonry tiles={tiles} sizes={sizes} widths={widths} limit={limit} />
 </section>
 
 <style>

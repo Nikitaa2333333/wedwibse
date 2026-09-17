@@ -1,0 +1,51 @@
+---
+// РЯД ДЕЙСТВИЙ ПОД ИМЕНЕМ КАРТОЧКИ: «Заказать» и «В избранное» словами —
+// первое, что стоит на бумаге после кадра, у площадки и у подрядчика.
+//
+// Заказчик (16.09.2026): кнопки «Избранное» и «Заказать» — в самый верх
+// страницы, до них не долистывают. Раньше «Заказать» стояла под лидом
+// (площадка) и под ценой (подрядчик), то есть на втором экране, а сердце
+// поверх кадра значком не читалось как «избранное». Ряд ставится в слот
+// `cta` HeroStage — сразу под именем и рейтингом, до лида.
+//
+// Механика избранного — та же, что у сердца поверх кадра и у кнопки в
+// финальном экране (lib/save.ts, data-save): один снимок карточки на
+// страницу, иначе площадка задвоится в разделе. Подпись меняется по
+// aria-pressed, как в VenueContacts.
+interface Props {
+  /** подпись действия: «Забронировать дату» у площадки, «Заказать» у подрядчика */
+  orderLabel: string;
+  orderHref: string;
+  /** снимок карточки для избранного (lib/favorite-snapshot) — уже в JSON */
+  save: string;
+}
+
+const { orderLabel, orderHref, save } = Astro.props;
+---
+
+<div class="hero-cta">
+  <a class="pill pill--lg" href={orderHref}>{orderLabel}</a>
+  <button class="pill pill--lg hero-cta__save" type="button" data-save={save} aria-pressed="false">
+    <span class="hero-cta__off">В избранное</span>
+    <span class="hero-cta__on">В избранном</span>
+  </button>
+</div>
+
+<style>
+  .hero-cta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-3);
+  }
+
+  .hero-cta__on { display: none; }
+  .hero-cta__save[aria-pressed='true'] .hero-cta__on { display: inline; }
+  .hero-cta__save[aria-pressed='true'] .hero-cta__off { display: none; }
+</style>
+
+<script>
+  import { bindSaveButtons } from '../lib/save';
+
+  bindSaveButtons();
+</script>

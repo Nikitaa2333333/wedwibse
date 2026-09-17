@@ -64,12 +64,34 @@
   "filters": {
     "gender": "ж",
     "priceHour": "10+",
-    "city": ["цао", "сао", "свао", "вао", "юво", "юао", "юзао", "зао", "сзао", "mo"],
-    "style": ["reportage", "staged", "artistic", "bw"],
-    "serviceType": ["full-day", "partial", "express"],
+    "city": [
+      "цао",
+      "сао",
+      "свао",
+      "вао",
+      "юво",
+      "юао",
+      "юзао",
+      "зао",
+      "сзао",
+      "mo"
+    ],
+    "style": [
+      "reportage",
+      "staged",
+      "artistic",
+      "bw"
+    ],
+    "serviceType": [
+      "full-day",
+      "partial",
+      "express"
+    ],
     "minBudget": "60-100",
     "secondPhotographer": "yes",
-    "deliveryFormat": ["photobook"],
+    "deliveryFormat": [
+      "photobook"
+    ],
     "contract": "yes",
     "prepayment": "0-20"
   },

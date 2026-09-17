@@ -16,6 +16,7 @@
 // экран, а не на её уменьшенную копию с текстом под ней.
 import type { Venue } from '../data/venues';
 import HeroActions from './HeroActions.astro';
+import HeroCta from './HeroCta.astro';
 import HeroStage from './HeroStage.astro';
 import { venueFavorite } from '../lib/favorite-snapshot';
 import { FEED } from '../data/feed';
@@ -35,6 +36,7 @@ const frames = [...new Set([venue.hero.image, ...venue.gallery.map((shot) => sho
 // сердце на карточке площадки и сердце на карточке каталога должны
 // класть в хранилище одну и ту же запись, иначе площадка задвоится.
 const favorite = await venueFavorite(venue);
+const saveData = JSON.stringify(favorite);
 
 // Оценка и число отзывов: если у площадки есть свой блок отзывов, цифры
 // в первом экране берём оттуда — иначе на кадре стоит одно число, а
@@ -67,8 +69,10 @@ const reviews = block?.total ?? feedReviews;
     slot="actions"
     backHref={`/${venue.citySlug}/${venue.categorySlug}/`}
     backLabel="К списку площадок"
-    save={JSON.stringify(favorite)}
+    save={saveData}
   />
+  <!-- Заказ и избранное — сразу под именем, а не под лидом (см. HeroCta) -->
+  <HeroCta slot="cta" orderLabel="Забронировать дату" orderHref="#zayavka" save={saveData} />
 </HeroStage>
 
 <section class="vhero">
@@ -76,7 +80,6 @@ const reviews = block?.total ?? feedReviews;
     <div class="vhero__bottom">
       <div class="vhero__pitch">
         <p class="vhero__lead t-lead">{venue.lead}</p>
-        <a class="pill pill--lg" href="#zayavka">Забронировать дату</a>
       </div>
     </div>
   </div>

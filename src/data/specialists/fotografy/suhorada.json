@@ -38,7 +38,22 @@
     "/specialists/fotografy/suhorada/gal/p27.webp",
     "/specialists/fotografy/suhorada/gal/p28.webp",
     "/specialists/fotografy/suhorada/gal/p30.webp",
-    "/specialists/fotografy/suhorada/gal/p31.webp"
+    "/specialists/fotografy/suhorada/gal/p31.webp",
+    "/specialists/fotografy/suhorada/gal/p42.webp",
+    "/specialists/fotografy/suhorada/gal/p43.webp",
+    "/specialists/fotografy/suhorada/gal/p48.webp",
+    "/specialists/fotografy/suhorada/gal/p36.webp",
+    "/specialists/fotografy/suhorada/gal/p37.webp",
+    "/specialists/fotografy/suhorada/gal/p38.webp",
+    "/specialists/fotografy/suhorada/gal/p39.webp",
+    "/specialists/fotografy/suhorada/gal/p40.webp",
+    "/specialists/fotografy/suhorada/gal/p41.webp",
+    "/specialists/fotografy/suhorada/gal/p44.webp",
+    "/specialists/fotografy/suhorada/gal/p45.webp",
+    "/specialists/fotografy/suhorada/gal/p46.webp",
+    "/specialists/fotografy/suhorada/gal/p47.webp",
+    "/specialists/fotografy/suhorada/gal/p49.webp",
+    "/specialists/fotografy/suhorada/gal/p50.webp"
   ],
   "tagline": "Фотографии, которые захочется пересматривать",
   "bio": "Меня зовут Алексей. Я люблю сохранять моменты в картинках — на них улыбки, радость, смех, наши чувства. Уже 17 лет это моё главное и любимое дело. Каждый год обновляю парк техники и учусь дополнительно, чтобы создавать актуальные образы и надёжно фиксировать события в цифре.\n\nДля каждого ищу свой подход и стараюсь поймать самые искренние эмоции. Если понадобится, всегда подскажу, как лучше позировать, чтобы выглядеть в кадре естественно.\n\nЧто определяет наше самосознание? Наша память. Если помнишь счастливые моменты — значит, счастлив. Фотография помогает нам быть счастливее. Всё просто.",
@@ -50,13 +65,35 @@
   "filters": {
     "gender": "м",
     "priceHour": "8-10",
-    "city": ["цао", "сао", "свао", "вао", "юво", "юао", "юзао", "зао", "сзао", "mo"],
+    "city": [
+      "цао",
+      "сао",
+      "свао",
+      "вао",
+      "юво",
+      "юао",
+      "юзао",
+      "зао",
+      "сзао",
+      "mo"
+    ],
     "experience": "15+",
-    "style": ["reportage", "staged", "artistic", "bw"],
-    "serviceType": ["full-day", "partial", "express"],
+    "style": [
+      "reportage",
+      "staged",
+      "artistic",
+      "bw"
+    ],
+    "serviceType": [
+      "full-day",
+      "partial",
+      "express"
+    ],
     "minBudget": "30-60",
     "deliveryTime": "1-2w",
-    "deliveryFormat": ["photobook"]
+    "deliveryFormat": [
+      "photobook"
+    ]
   },
   "packageIncludes": [
     "Съёмка от 1 часа: репортаж, небольшая свадьба или полный день",

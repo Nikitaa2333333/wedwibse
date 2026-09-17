@@ -36,24 +36,62 @@
     "/specialists/dekoratory/maria-decor/gal/p32.webp",
     "/specialists/dekoratory/maria-decor/gal/p33.webp",
     "/specialists/dekoratory/maria-decor/gal/p35.webp",
-    "/specialists/dekoratory/maria-decor/gal/p37.webp"
+    "/specialists/dekoratory/maria-decor/gal/p37.webp",
+    "/specialists/dekoratory/maria-decor/gal/p01.webp",
+    "/specialists/dekoratory/maria-decor/gal/p02.webp",
+    "/specialists/dekoratory/maria-decor/gal/p13.webp",
+    "/specialists/dekoratory/maria-decor/gal/p16.webp",
+    "/specialists/dekoratory/maria-decor/gal/p17.webp",
+    "/specialists/dekoratory/maria-decor/gal/p29.webp",
+    "/specialists/dekoratory/maria-decor/gal/p38.webp",
+    "/specialists/dekoratory/maria-decor/gal/p45.webp",
+    "/specialists/dekoratory/maria-decor/gal/p48.webp",
+    "/specialists/dekoratory/maria-decor/gal/p55.webp",
+    "/specialists/dekoratory/maria-decor/gal/p58.webp",
+    "/specialists/dekoratory/maria-decor/gal/p59.webp",
+    "/specialists/dekoratory/maria-decor/gal/p61.webp",
+    "/specialists/dekoratory/maria-decor/gal/p63.webp",
+    "/specialists/dekoratory/maria-decor/gal/p64.webp",
+    "/specialists/dekoratory/maria-decor/gal/p67.webp",
+    "/specialists/dekoratory/maria-decor/gal/p68.webp",
+    "/specialists/dekoratory/maria-decor/gal/p70.webp"
   ],
   "tagline": "Элегантный декор свадеб, больше 14 лет",
   "bio": "Вместе с моей командой мы декорируем свадьбы уже больше 14 лет. За это время обзавелись своими креативными флористами и надёжными монтажниками, с которыми можно горы сворачивать. Оформлять мероприятия нам довелось для сотен людей — среди них команда Петровского путевого дворца, ресторан Savoy, Maunfeld, Il de bote, публичные люди и блогеры.\n\nОсобым достижением считаем работу для наших постоянных клиентов. Говорят, с нами легко и приятно: мы любим людей и свою работу, и нам особенно ценно доверие наших пар.\n\nНаша задача — сделать подготовку к свадьбе лёгкой, понятной и комфортной, чтобы вы наслаждались процессом и были уверены в результате.",
   "gender": "ж",
   "priceNote": "Считаем по смете: эскизы бесплатно ещё до встречи, стоимость каждого элемента — прозрачно",
   "experienceYears": 14,
-  "cities": ["moskva", "mo"],
-  "styles": ["classic", "glam", "eco"],
+  "cities": [
+    "moskva",
+    "mo"
+  ],
+  "styles": [
+    "classic",
+    "glam",
+    "eco"
+  ],
   "aboutTitle": "О нас",
   "filters": {
-    "city": ["moskva", "mo"],
-    "style": ["classic", "glam", "eco"],
+    "city": [
+      "moskva",
+      "mo"
+    ],
+    "style": [
+      "classic",
+      "glam",
+      "eco"
+    ],
     "liveFlorals": "yes",
     "fabrics": "yes",
     "riggingWork": "yes",
-    "serviceType": ["turnkey"],
-    "venueTypes": ["hall", "estate", "country-club"],
+    "serviceType": [
+      "turnkey"
+    ],
+    "venueTypes": [
+      "hall",
+      "estate",
+      "country-club"
+    ],
     "contract": "yes"
   },
   "packageIncludes": [

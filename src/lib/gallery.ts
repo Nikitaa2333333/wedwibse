@@ -6,11 +6,15 @@
 // и все ролики (REELS). Новая карточка любой из этих трёх пород
 // попадает в ленту сама, без правок вёрстки.
 //
-// ДОСКА ТОЛЬКО ИЗ ВЕРТИКАЛЬНЫХ И КВАДРАТНЫХ КАДРОВ. Горизонтальный
-// снимок в узкой колонке выглядит маркой, а полосой во всю ширину рвёт
-// колонки на блоки — и над полосой остаются дыры разной высоты. Убрать
-// такие кадры из доски дешевле, чем чинить последствия: вертикальных
-// в каталоге втрое больше, доска держится на них.
+// ГОРИЗОНТАЛЬНЫЕ КАДРЫ В ДОСКЕ ЕСТЬ — НИЗКОЙ ПЛИТКОЙ. Раньше доска их
+// отсеивала, и колонки шли почти симметрично: в каталоге кадры одной
+// съёмочной пропорции (2:3 — больше половины всех фото, ещё четверть
+// 3:4), колонки стартуют с одной высоты и дальше идут в ногу. Рваный
+// ритм Pinterest — не от алгоритма (он тот же, жадный), а от разброса
+// пропорций, и у нас единственный источник разброса — горизонтальные,
+// их в каталоге каждый пятый. Низкая плитка сдвигает колонку на полкадра,
+// и дальше стыки уже не совпадают. Полосой во всю ширину горизонтальный
+// не ставим по-прежнему: полоса рвёт колонки на блоки.
 //
 // Плитка (Pin) может нести несколько кадров: тогда в ней работает
 // PhotoRail — точки-индикаторы и листание свайпом, как в карточке
@@ -73,8 +77,45 @@ const SIZES = [1, 2, 1, 1, 3, 1, 2, 1];
 const PER_VENUE = 24;
 
 // Совсем узкую вертикаль («полоску») прижимаем: в колонке она вырастает
-// на два экрана и рвёт ритм.
+// на два экрана и рвёт ритм. Симметрично сверху — панораму: шире 16:9
+// в колонке телефона она превращается в щель.
 const MIN_RATIO = 0.6;
+const MAX_RATIO = 16 / 9;
+
+function clampRatio(src: string): number {
+  return Math.min(MAX_RATIO, Math.max(MIN_RATIO, ratioOf(src)));
+}
+
+/** Нарезка кадров карточки на плитки: размеры по SIZES, но мини-галерея
+ *  собирается только из кадров ОДНОЙ ориентации — рамка у плитки одна
+ *  (пропорция первого кадра), и вертикальный кадр в горизонтальной рамке
+ *  PhotoRail кропил бы до марки. Ролик — всегда отдельной плиткой:
+ *  в мини-галерее играет только ТЕКУЩИЙ кадр (см. PhotoRail), и ролик,
+ *  попавший вторым, стоит постером, пока его не пролистают, — со стороны
+ *  это «у одних видео работает, у других нет». */
+function chunkShots(shots: string[]): string[][] {
+  const groups: string[][] = [];
+  let i = 0;
+  let s = 0;
+
+  while (i < shots.length) {
+    const size = Math.min(SIZES[s++ % SIZES.length], shots.length - i);
+    let group = shots.slice(i, i + size);
+
+    const v = group.findIndex(isVideo);
+    if (v === 0) group = [group[0]];
+    else if (v > 0) group = group.slice(0, v);
+
+    const tall = isPortrait(group[0]);
+    const flip = group.findIndex((src) => isPortrait(src) !== tall);
+    if (flip > 0) group = group.slice(0, flip);
+
+    i += group.length;
+    groups.push(group);
+  }
+
+  return groups;
+}
 
 // ВЕТКА-ПРЕВЬЮ: подписи под кадрами сняты (см. PhotoMasonry), поэтому
 // их высота (CAPTION_H) из раскладки убрана — иначе жадный алгоритм
@@ -118,36 +159,18 @@ function makePin(group: Shot[], venue: Venue, ratio: number, caption: string | n
   };
 }
 
-/** Вертикальные и квадратные кадры площадки, собранные в плитки колонок */
-function tallPins(venue: Venue): Pin[] {
-  const shots = venue.gallery.slice(0, PER_VENUE).filter((s) => isPortrait(s.src));
-  const pins: Pin[] = [];
+/** Кадры площадки, собранные в плитки колонок (нарезка — chunkShots) */
+function venuePins(venue: Venue): Pin[] {
+  const shots = venue.gallery.slice(0, PER_VENUE);
+  const bySrc = new Map(shots.map((s) => [s.src, s]));
 
-  let i = 0;
-  let s = 0;
-
-  while (i < shots.length) {
-    const size = Math.min(SIZES[s++ % SIZES.length], shots.length - i);
-    let group = shots.slice(i, i + size);
-
-    // РОЛИК В ЛЕНТЕ — ВСЕГДА ОТДЕЛЬНОЙ ПЛИТКОЙ. В мини-галерее играет
-    // только ТЕКУЩИЙ кадр (см. PhotoRail), поэтому ролик, попавший
-    // в плитку вторым или третьим, стоит постером и не двигается, пока
-    // его не пролистают пальцем. Со стороны это выглядит как «у одних
-    // карточек видео работает, у других нет» — разницы-то не видно.
-    const v = group.findIndex((g) => isVideo(g.src));
-    if (v === 0) group = [group[0]];
-    else if (v > 0) group = group.slice(0, v);
-
-    i += group.length;
-
+  return chunkShots(shots.map((s) => s.src)).map((srcs) => {
+    const group = srcs.map((src) => bySrc.get(src)!);
     // Подписываем только мини-галереи: подпись у каждой плитки
     // превращает доску в каталог, а тут нужен именно поток кадров.
     const caption = group.length > 1 ? venue.name : null;
-    pins.push(makePin(group, venue, Math.max(MIN_RATIO, ratioOf(group[0].src)), caption));
-  }
-
-  return pins;
+    return makePin(group, venue, clampRatio(group[0].src), caption);
+  });
 }
 
 /** Видео-кадры общего потока (data/reels.ts): такие же плитки, как фото,
@@ -168,9 +191,9 @@ function reelPin(reel: Reel): Pin {
     alt: reel.alt,
     href: reelHref(reel),
     caption: null,
-    ratio: `${ratioOf(reel.src).toFixed(3)} / 1`,
+    ratio: `${clampRatio(reel.src).toFixed(3)} / 1`,
     index: 0,
-    height: 1 / ratioOf(reel.src),
+    height: 1 / clampRatio(reel.src),
   };
 }
 
@@ -198,35 +221,23 @@ const PER_SPECIALIST = 24;
 
 /** Кадры специалиста — второй источник доски рядом с площадками: подрядчик
  *  со своей карточкой попадает на главную сам, без правок вёрстки.
- *  Правило то же: только вертикальные кадры, подпись — у мини-галерей. */
+ *  Нарезка та же (chunkShots), подпись — у мини-галерей. */
 function specialistPins(s: Specialist): Pin[] {
-  const shots = s.photos.slice(0, PER_SPECIALIST).filter(isPortrait);
-  const pins: Pin[] = [];
+  return chunkShots(s.photos.slice(0, PER_SPECIALIST)).map((group) => {
+    const ratio = clampRatio(group[0]);
 
-  let i = 0;
-  let n = 0;
-
-  while (i < shots.length) {
-    const size = Math.min(SIZES[n++ % SIZES.length], shots.length - i);
-    const group = shots.slice(i, i + size);
-    i += size;
-
-    pins.push({
+    return {
       owner: specialistOwner(s),
       photos: group,
       alt: `${s.name} — свадебная съёмка`,
       // как у площадок: открываем визитку НА ТОМ кадре, по которому нажали
       href: `${specialistUrl(s)}#foto-${frameId(group[0])}`,
       caption: group.length > 1 ? s.name : null,
-      ratio: `${Math.max(MIN_RATIO, ratioOf(group[0])).toFixed(3)} / 1`,
+      ratio: `${ratio.toFixed(3)} / 1`,
       index: 0,
-      height:
-        1 / Math.max(MIN_RATIO, ratioOf(group[0])) +
-        (group.length > 1 ? DOTS_H : 0),
-    });
-  }
-
-  return pins;
+      height: 1 / ratio + (group.length > 1 ? DOTS_H : 0),
+    };
+  });
 }
 
 // ============================================================
@@ -285,6 +296,27 @@ const SELF_PORTFOLIO = new Set([
 
 function capOf(s: Specialist): number {
   return SELF_PORTFOLIO.has(s.categorySlug) ? PER_CARD_TILES_FACE : PER_CARD_TILES;
+}
+
+/** ПЕРВЫЙ РЯД ДОСКИ — ВЕРТИКАЛЬНЫЙ. Две первые плитки — это первый экран
+ *  главной и её LCP (см. PhotoMasonry); interleave берёт с каждой дорожки
+ *  по первой плитке, а у нескольких площадок галерея начинается с широкой
+ *  обложки (og-cover) — без этого правила ряд собирался из низких полосок.
+ *  Первые n вертикальных плиток выносим вперёд, остальной порядок потока
+ *  не трогаем: обложки встают сразу за первым рядом и с него же начинают
+ *  рвать ритм колонок. Ровно первый ряд, а не «вход каждой карточки»:
+ *  во втором варианте горизонтальные уезжали на второй экран, и первый
+ *  снова стоял симметрично. */
+function tallLead(pins: Pin[], n: number): Pin[] {
+  const lead: Pin[] = [];
+  const rest: Pin[] = [];
+
+  for (const p of pins) {
+    if (lead.length < n && isPortrait(p.photos[0])) lead.push(p);
+    else rest.push(p);
+  }
+
+  return [...lead, ...rest];
 }
 
 /** по одной штуке с каждой площадки по кругу — доска не идёт блоками
@@ -397,10 +429,13 @@ export function collectTiles(): Tile[] {
   // Кадры площадок и подрядчиков идут дорожками в interleave — по одной
   // плитке с карточки по кругу, чтобы доска не шла блоками «сначала одна
   // площадка, потом другая». Ролики подмешиваются сверху долей (blendReels).
-  const cards = interleave([
-    ...VENUES.map((v) => tallPins(v).slice(0, PER_CARD_TILES)),
-    ...REAL_SPECIALISTS.map((s) => specialistPins(s).slice(0, capOf(s))),
-  ]);
+  const cards = tallLead(
+    interleave([
+      ...VENUES.map((v) => venuePins(v).slice(0, PER_CARD_TILES)),
+      ...REAL_SPECIALISTS.map((s) => specialistPins(s).slice(0, capOf(s))),
+    ]),
+    2
+  );
   const used = framesOf(cards);
   const photos = blendReels(
     cards,
@@ -427,18 +462,14 @@ export function collectTiles(): Tile[] {
 /** Плитки доски из простого списка кадров — галерея карточки подрядчика.
  *  Тут нет ни мини-галерей, ни подписей, ни статей: подпись под каждым
  *  кадром своей же съёмки — шум, а не смысл. Единственное, что берём
- *  от доски главной, — настоящую пропорцию файла и тот же зажим совсем
- *  узкой вертикали (MIN_RATIO): в колонке она вырастает на два экрана.
- *
- *  Горизонтальные кадры тут, в отличие от доски главной, остаются:
- *  там они отсеиваются потому, что доска — витрина каталога и марка среди
- *  вертикалей выглядит ошибкой, а здесь это ПОРТФОЛИО подрядчика — прятать
- *  часть его съёмки ради ровного ритма нельзя. В масонри горизонтальный
- *  кадр просто становится низкой плиткой, колонки он не рвёт.
+ *  от доски главной, — настоящую пропорцию файла и тот же зажим крайних
+ *  пропорций (clampRatio): совсем узкая вертикаль в колонке вырастает
+ *  на два экрана, панорама — сжимается в щель. Горизонтальный кадр, как
+ *  и на доске главной, — просто низкая плитка, колонки он не рвёт.
  */
 export function photoTiles(photos: string[], alt: string): Tile[] {
   return photos.map((src, index) => {
-    const ratio = Math.max(MIN_RATIO, ratioOf(src));
+    const ratio = clampRatio(src);
 
     return {
       kind: 'photo',
