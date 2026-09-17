@@ -22,6 +22,20 @@ jobs:
 
       - run: npm ci
 
+      # КЭШ ПЕРЕЖАТЫХ КАРТИНОК. Без него Build шёл 7 минут из 8 минут
+      # деплоя: раннер каждый раз чистый, и Sharp режет все ~4700 вариантов
+      # srcset с нуля (локально та же сборка — 15 секунд, потому что кэш
+      # лежит в node_modules/.astro). Ключ — по содержимому src/assets:
+      # новые фото досчитываются поверх ближайшего кэша (restore-keys),
+      # а не всё заново.
+      - name: Cache optimized images
+        uses: actions/cache@v4
+        with:
+          path: node_modules/.astro
+          key: astro-images-${{ hashFiles('src/assets/**') }}
+          restore-keys: |
+            astro-images-
+
       - name: Build
         env:
           SITE_URL: https://wed-secrets.ru
