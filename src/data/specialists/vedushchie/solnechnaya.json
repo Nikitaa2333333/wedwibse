@@ -1,0 +1,98 @@
+{
+  "slug": "solnechnaya",
+  "categorySlug": "vedushchie",
+  "category": "Ведущие",
+  "name": "Ольга Солнечная",
+  "avatar": "/specialists/vedushchie/avatars/solnechnaya.webp",
+  "portrait": "/specialists/vedushchie/solnechnaya/portrait.webp",
+  "photos": [
+    "/specialists/vedushchie/solnechnaya/gal/p01.webp",
+    "/specialists/vedushchie/solnechnaya/gal/p35.webp",
+    "/specialists/vedushchie/solnechnaya/gal/p03.webp",
+    "/specialists/vedushchie/solnechnaya/gal/p29.webp",
+    "/specialists/vedushchie/solnechnaya/gal/p21.webp",
+    "/specialists/vedushchie/solnechnaya/gal/p05.webp",
+    "/specialists/vedushchie/solnechnaya/gal/p39.webp",
+    "/specialists/vedushchie/solnechnaya/gal/p13.webp",
+    "/specialists/vedushchie/solnechnaya/gal/p32.webp",
+    "/specialists/vedushchie/solnechnaya/gal/p08.webp",
+    "/specialists/vedushchie/solnechnaya/gal/p33.webp",
+    "/specialists/vedushchie/solnechnaya/gal/p04.webp",
+    "/specialists/vedushchie/solnechnaya/gal/p36.webp",
+    "/specialists/vedushchie/solnechnaya/gal/p37.webp",
+    "/specialists/vedushchie/solnechnaya/gal/p38.webp",
+    "/specialists/vedushchie/solnechnaya/gal/p22.webp",
+    "/specialists/vedushchie/solnechnaya/gal/p23.webp",
+    "/specialists/vedushchie/solnechnaya/gal/p24.webp",
+    "/specialists/vedushchie/solnechnaya/gal/p25.webp",
+    "/specialists/vedushchie/solnechnaya/gal/p26.webp",
+    "/specialists/vedushchie/solnechnaya/gal/p27.webp",
+    "/specialists/vedushchie/solnechnaya/gal/p30.webp",
+    "/specialists/vedushchie/solnechnaya/gal/p31.webp",
+    "/specialists/vedushchie/solnechnaya/gal/p34.webp",
+    "/specialists/vedushchie/solnechnaya/gal/p40.webp",
+    "/specialists/vedushchie/solnechnaya/gal/p41.webp",
+    "/specialists/vedushchie/solnechnaya/gal/p02.webp",
+    "/specialists/vedushchie/solnechnaya/gal/p06.webp",
+    "/specialists/vedushchie/solnechnaya/gal/p07.webp",
+    "/specialists/vedushchie/solnechnaya/gal/p09.webp",
+    "/specialists/vedushchie/solnechnaya/gal/p11.webp",
+    "/specialists/vedushchie/solnechnaya/gal/p12.webp",
+    "/specialists/vedushchie/solnechnaya/gal/p14.webp",
+    "/specialists/vedushchie/solnechnaya/gal/p19.webp",
+    "/specialists/vedushchie/solnechnaya/gal/p28.webp",
+    "/specialists/vedushchie/solnechnaya/gal/p42.webp",
+    "/specialists/vedushchie/solnechnaya/gal/p43.webp"
+  ],
+  "tagline": "Свадьба, на которой хорошо не только молодожёнам",
+  "bio": "Меня зовут Ольга Солнечная, я ведущая и организатор объединяющих событий. Одна из главных мыслей невесты перед свадьбой звучит примерно так: «только бы всем было хорошо». Чтобы родители чувствовали себя комфортно, друзья не скучали, бабушки не краснели от конкурсов — и чтобы самой не пришлось весь вечер думать: «а что сейчас происходит?». Я это понимаю.\n\nДля меня хорошая свадьба — это не вечер, где ведущий старается быть самым заметным человеком в зале. Это праздник, где главные — вы. Где гости знакомятся, смеются и постепенно становятся одной компанией. Где есть юмор — но нет неловкости, есть энергия — но никто никого не тянет за руку «поучаствовать», есть красивые эмоциональные моменты — но без искусственной сентиментальности. И есть ощущение, что вечер в надёжных руках.\n\nЯ заранее продумываю структуру события, знакомлюсь с вашей историей, учитываю характер гостей, семейные особенности и то, что для вас неприемлемо. А на самой свадьбе мягко управляю динамикой вечера: понимаю, когда гостей нужно собрать, когда дать им время просто поговорить, когда добавить энергии, а когда ничего не нужно добавлять вообще. Иногда лучшая работа ведущего — вовремя помолчать. И это тоже профессиональный навык.",
+  "gender": "ж",
+  "priceNote": "Стоимость — по запросу, после знакомства и даты свадьбы",
+  "ceremonyMaster": true,
+  "cities": ["цао", "сао", "свао", "вао", "юво", "юао", "юзао", "зао", "сзао", "mo"],
+  "styles": ["humor", "no-vulgar", "intelligent", "modern"],
+  "formats": ["medium", "large", "ceremony"],
+  "languages": ["ru"],
+  "aboutTitle": "Обо мне",
+  "filters": {
+    "gender": "ж",
+    "city": ["цао", "сао", "свао", "вао", "юво", "юао", "юзао", "зао", "сзао", "mo"],
+    "style": ["humor", "no-vulgar", "intelligent", "modern"],
+    "formats": ["medium", "large", "ceremony"],
+    "languages": ["ru"],
+    "ceremonyMaster": "yes"
+  },
+  "packageIncludes": [
+    "Знакомство до свадьбы: разговор о вас, ваших гостях и о том, каким вы хотите запомнить этот день",
+    "Структура вечера, продуманная заранее под вашу историю, характер гостей и семейные особенности",
+    "Управление динамикой на самой свадьбе: когда собрать гостей, когда дать им поговорить, когда добавить энергии",
+    "Ритм, тайминг и атмосфера под контролем — вам не приходится следить за собственной свадьбой"
+  ],
+  "quote": "Если вам хочется свадьбу, после которой останется не усталость от программы, а ощущение «это было именно про нас», — напишите мне дату вашей свадьбы. Познакомимся, немного поговорим о вас, ваших гостях и о том, каким вы хотите запомнить этот день.",
+  "offers": [
+    {
+      "title": "Юмор без неловкости",
+      "text": "Живой смех без пошлости, жёсткого стёба и шуток за счёт гостей."
+    },
+    {
+      "title": "Никого не заставляю участвовать",
+      "text": "Вовлекаю мягко: гость может быть частью праздника, не выходя против своей воли в центр зала."
+    },
+    {
+      "title": "Родители и друзья — на одном празднике",
+      "text": "Умею объединять поколения и очень разных людей так, чтобы каждому нашлось место в этом вечере."
+    },
+    {
+      "title": "За лёгкостью — структура",
+      "text": "Вечер не превращается в хаос: слежу за ритмом, таймингом и атмосферой, чтобы вам не приходилось контролировать собственную свадьбу."
+    },
+    {
+      "title": "Ведущая — не главный герой",
+      "text": "Я рядом, когда нужна, и умею вовремя отойти в сторону. Этот день — про вас."
+    },
+    {
+      "title": "Две семьи становятся ближе",
+      "text": "Свадьба — не просто мероприятие, а день, когда две семьи становятся ближе. Хочу, чтобы после неё вам говорили: «так тепло, так красиво, так весело»."
+    }
+  ]
+}
