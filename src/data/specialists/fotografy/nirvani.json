@@ -1,0 +1,99 @@
+{
+  "slug": "nirvani",
+  "categorySlug": "fotografy",
+  "category": "Фотографы",
+  "name": "Даша Нирвани",
+  "avatar": "/specialists/fotografy/avatars/nirvani.webp",
+  "photos": [
+    "/specialists/fotografy/nirvani/gal/p01.webp",
+    "/specialists/fotografy/nirvani/gal/p06.webp",
+    "/specialists/fotografy/nirvani/gal/p11.webp",
+    "/specialists/fotografy/nirvani/gal/p12.webp",
+    "/specialists/fotografy/nirvani/gal/p27.webp",
+    "/specialists/fotografy/nirvani/gal/p03.webp",
+    "/specialists/fotografy/nirvani/gal/p14.webp",
+    "/specialists/fotografy/nirvani/gal/p28.webp",
+    "/specialists/fotografy/nirvani/gal/p24.webp",
+    "/specialists/fotografy/nirvani/gal/p22.webp",
+    "/specialists/fotografy/nirvani/gal/p09.webp",
+    "/specialists/fotografy/nirvani/gal/p10.webp",
+    "/specialists/fotografy/nirvani/gal/p13.webp",
+    "/specialists/fotografy/nirvani/gal/p15.webp",
+    "/specialists/fotografy/nirvani/gal/p16.webp",
+    "/specialists/fotografy/nirvani/gal/p18.webp",
+    "/specialists/fotografy/nirvani/gal/p19.webp",
+    "/specialists/fotografy/nirvani/gal/p23.webp",
+    "/specialists/fotografy/nirvani/gal/p25.webp",
+    "/specialists/fotografy/nirvani/gal/p26.webp",
+    "/specialists/fotografy/nirvani/gal/p29.webp",
+    "/specialists/fotografy/nirvani/gal/p30.webp",
+    "/specialists/fotografy/nirvani/gal/p31.webp",
+    "/specialists/fotografy/nirvani/gal/p32.webp",
+    "/specialists/fotografy/nirvani/gal/p33.webp",
+    "/specialists/fotografy/nirvani/gal/p34.webp",
+    "/specialists/fotografy/nirvani/gal/p02.webp",
+    "/specialists/fotografy/nirvani/gal/p04.webp",
+    "/specialists/fotografy/nirvani/gal/p05.webp",
+    "/specialists/fotografy/nirvani/gal/p07.webp",
+    "/specialists/fotografy/nirvani/gal/p08.webp",
+    "/specialists/fotografy/nirvani/gal/p17.webp",
+    "/specialists/fotografy/nirvani/gal/p20.webp",
+    "/specialists/fotografy/nirvani/gal/p21.webp"
+  ],
+  "tagline": "Главное — люди и момент жизни",
+  "bio": "Меня зовут Даша. Со мной легко — так говорят, а я верю.\n\nЕстественность, красота, искренняя радость, моменты, когда мы чувствуем себя красивыми и любимыми, семья рядом, объятия друзей, смех и слёзы радости — чаще всего нам хочется остановить именно эти мгновения и именно их вспоминать долго. Я влюбляюсь в каждую семью, с которой работаю, и стараюсь сохранить ваши воспоминания влюблёнными глазами.\n\nЛюблю людей, котиков, PS5, стендап и слушать рок на виниле.",
+  "gender": "ж",
+  "priceNote": "Цену не публикует по просьбе фотографа: стоимость называет на конкретную дату и длительность съёмки, дата закрепляется договором и задатком",
+  "aboutTitle": "Обо мне",
+  "filters": {
+    "gender": "ж",
+    "priceHour": "10+",
+    "city": ["цао", "сао", "свао", "вао", "юво", "юао", "юзао", "зао", "сзао", "mo"],
+    "style": ["reportage", "staged", "artistic", "bw"],
+    "serviceType": ["full-day", "partial", "express"],
+    "minBudget": "60-100",
+    "secondPhotographer": "yes",
+    "deliveryFormat": ["photobook"],
+    "contract": "yes",
+    "prepayment": "0-20"
+  },
+  "packageIncludes": [
+    "Репортаж: эмоции и портреты гостей, помощь в позировании паре и гостям",
+    "Не менее 500 фотографий, все в обработке",
+    "Ретушь фотосессии и чёрно-белые версии некоторых фотографий",
+    "Первые 100 готовых фотографий в течение 7–10 дней",
+    "Заключение договора",
+    "Дополнительно к любому тарифу — съёмка на плёнку и второй фотограф"
+  ],
+  "quote": "Расскажите о своих идеях для съёмки и узнайте, свободна ли ваша дата. Буду рада обсудить концепцию, возможные локации и условия — стоимость назову на вашу дату и количество часов.",
+  "offers": [
+    {
+      "title": "Тариф Про — свадьба с рестораном",
+      "text": "Репортаж с эмоциями и портретами гостей и помощь в позировании. Не менее 500 фотографий в обработке, ретушь фотосессии и чёрно-белые версии части кадров."
+    },
+    {
+      "title": "Про Макс — с утра до конца программы",
+      "text": "Съёмка 10–13 часов с нескольких камер и ракурсов, от 700 фотографий, две катушки плёнки и премиум-фотокнига на 100 фото."
+    },
+    {
+      "title": "Фотограф + рилсы",
+      "text": "В паре с рилсмейкером: 10 часов съёмки, 3–4 вертикальных видео с авторским монтажом, мини-фильм на 1–3 минуты и исходный материал."
+    },
+    {
+      "title": "Мини — один час съёмки",
+      "text": "Лёгкая постановка и репортаж, 80 фотографий за час с авторской обработкой и ретушью."
+    },
+    {
+      "title": "Первые 100 кадров за 7–10 дней",
+      "text": "Готовые фотографии приходят частями: первую сотню отдаю в течение 7–10 дней после съёмки, в тарифе Про Макс — от 3 дней."
+    },
+    {
+      "title": "Плёнка, второй фотограф, фотокниги",
+      "text": "К любому тарифу можно добавить съёмку на плёнку и второго фотографа; премиум-фотокнига на 100 фото входит в Про Макс, для родителей печатаются отдельные экземпляры."
+    },
+    {
+      "title": "Договор и дата",
+      "text": "Дата закрепляется договором и задатком. Конечная стоимость зависит от даты и длительности съёмки; с октября по июнь есть специальные предложения на свадебные дни."
+    }
+  ]
+}

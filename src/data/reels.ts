@@ -46,6 +46,7 @@ export const REELS: Reel[] = [
   { slug: 'suhorada-bikers', src: '/reels/suhorada-bikers.mp4', alt: 'Пара в кожаных куртках на мотоцикле у кирпичного завода', author: 'suhorada', sound: true },
   { slug: 'suhorada-palace', src: '/reels/suhorada-palace.mp4', alt: 'Молодожёны у дворцовой лестницы', author: 'suhorada', sound: true },
   { slug: 'suhorada-hotel', src: '/reels/suhorada-hotel.mp4', alt: 'Утро невесты в номере: платье и лепестки', author: 'suhorada', sound: true },
+  { slug: 'nirvani-backstage', src: '/reels/nirvani-backstage.mp4', alt: 'Даша Нирвани на съёмке: за камерой и на площадке с парой', author: 'nirvani', sound: true },
   { slug: 'galkin-hall', src: '/reels/galkin-hall.mp4', alt: 'Михаил Галкин ведёт банкет в зале', author: 'galkin', sound: true },
   { slug: 'galkin-mic', src: '/reels/galkin-mic.mp4', alt: 'Ведущий с микрофоном на танцполе', author: 'galkin', sound: true },
   { slug: 'galkin-suit', src: '/reels/galkin-suit.mp4', alt: 'Михаил Галкин у фотозоны выездной регистрации', author: 'galkin', sound: true },
