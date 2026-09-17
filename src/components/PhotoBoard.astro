@@ -27,13 +27,15 @@ const TILE_SIZES =
        к описанию и брони.
        Бесконечная лента: в колонках сразу BOARD_SHOWN плиток, остальной
        пул досыпается сам при прокрутке (infinite) — никаких кнопок
-       «показать ещё», как в Pinterest. -->
+       «показать ещё», как в Pinterest. Порядок случайный на каждый заход
+       (shuffle): перезашёл — доска другая. -->
   <PhotoMasonry
     tiles={collectTiles()}
     sizes={TILE_SIZES}
     widths={IMG_WIDTHS.tile}
     limit={BOARD_SHOWN}
     infinite
+    shuffle
     priority
   />
 </section>

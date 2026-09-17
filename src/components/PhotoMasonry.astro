@@ -34,6 +34,20 @@
 //              перекладываются заново: колонки продолжаются с того места,
 //              где остановилась раскладка (тем же pickColumn), так что
 //              уже загруженные кадры не двигаются и ролики не сбиваются.
+//   shuffle  — порядок плиток случайный на каждый заход (заказчик, 17.09:
+//              «перезашёл — видит другой порядок»). Сборка статическая,
+//              поэтому HTML отдаёт один и тот же порядок (для поисковика
+//              и без JS), а скрипт перед первой раскладкой тасует ВЕСЬ пул
+//              — видимую часть и скрытый хвост вместе, чтобы первый экран
+//              каждый раз собирался из всего каталога, а не из одних и
+//              тех же 44 плиток в разном порядке. Что сохраняется после
+//              тасовки: первый ряд вертикальный (как tallLead на сервере)
+//              и статьи ровным шагом (как ARTICLE_EVERY) — без этого
+//              случайный порядок начинал доску с двух низких полосок или
+//              ставил три статьи подряд. Плитки с fetchpriority (первый
+//              ряд серверной раскладки) могут уехать вниз — для прототипа
+//              допустимо; на проде первый ряд лучше держать фиксированным
+//              и тасовать со второго.
 //
 // Просмотра-оверлея на весь экран тут больше нет: нажатие на кадр ведёт
 // на страницу карточки, где полноэкранный кадр со стеклом — её первый
@@ -52,13 +66,23 @@ interface Props {
   limit?: number;
   /** хвост досыпается сам при прокрутке, а не по кнопке (доска главной) */
   infinite?: boolean;
+  /** случайный порядок плиток на каждый заход (доска главной, см. шапку) */
+  shuffle?: boolean;
   /** доска — первый экран страницы (главная): первый ряд получает LCP-приоритет.
    *  В галерее карточки НЕ ставить — там первый экран уже держит HeroStage,
    *  второй fetchpriority="high" ниже сгиба только отбирает у него канал */
   priority?: boolean;
 }
 
-const { tiles, sizes, widths = IMG_WIDTHS.tile, limit, infinite = false, priority = false } = Astro.props;
+const {
+  tiles,
+  sizes,
+  widths = IMG_WIDTHS.tile,
+  limit,
+  infinite = false,
+  shuffle = false,
+  priority = false,
+} = Astro.props;
 
 // Видимая часть и скрытый хвост. Раскладка под телефон считается на сервере
 // только по видимым — скрытые в колонках места не занимают; шире и после
@@ -81,7 +105,7 @@ const priorityTiles = new Set(
 
 <!-- Без параллакса намеренно: доска листается как обычная страница,
      все кадры на месте сразу, ничего не проявляется. -->
-<div class="masonry-host" data-masonry-host>
+<div class="masonry-host" data-masonry-host data-shown={shown.length} data-shuffle={shuffle || undefined}>
   <div class="masonry" data-masonry>
     {
       columns.map((col) => (
@@ -194,12 +218,52 @@ const priorityTiles = new Set(
     const proto = board?.firstElementChild as HTMLElement | null;
     if (!board || !proto) return;
 
-    const pins = Array.from(host.querySelectorAll<HTMLElement>('.pin')).sort(
+    let pins = Array.from(host.querySelectorAll<HTMLElement>('.pin')).sort(
       (a, b) => Number(a.dataset.i) - Number(b.dataset.i)
     );
 
     const heightOf = (pin: HTMLElement) => parseFloat(pin.dataset.h || '1');
     const isArticle = (pin: HTMLElement) => pin.classList.contains('pin--article');
+    const rest = host.querySelector<HTMLElement>('[data-masonry-rest]');
+
+    // ============ СЛУЧАЙНЫЙ ПОРЯДОК (shuffle) ============
+    // Тасуем весь пул, потом восстанавливаем два правила серверного потока:
+    // первый ряд — вертикальные плитки (низкая полоска в первом ряду —
+    // это и был исходный баг доски), статьи — ровным шагом, а не пачкой.
+    // Видимых остаётся столько же (data-shown), остальные — в скрытый хвост.
+    if (host.dataset.shuffle !== undefined) {
+      const ARTICLE_EVERY = 5;
+      const shownCount = Number(host.dataset.shown) || pins.length;
+
+      const photos = pins.filter((p) => !isArticle(p));
+      const articles = pins.filter(isArticle);
+
+      for (let i = photos.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [photos[i], photos[j]] = [photos[j], photos[i]];
+      }
+
+      // первый ряд — первые две вертикальные из перетасованных, вперёд
+      const lead: HTMLElement[] = [];
+      const tail: HTMLElement[] = [];
+      for (const p of photos) (lead.length < 2 && !isWide(heightOf(p)) ? lead : tail).push(p);
+      const ordered = [...lead, ...tail];
+
+      const mixed: HTMLElement[] = [];
+      let a = 0;
+      ordered.forEach((p, i) => {
+        if (i > 0 && i % ARTICLE_EVERY === 0 && articles[a]) mixed.push(articles[a++]);
+        mixed.push(p);
+      });
+      mixed.push(...articles.slice(a));
+
+      pins = mixed;
+      pins.forEach((p, i) => {
+        p.hidden = i >= shownCount;
+        // скрытые — в контейнер хвоста, чтобы не висеть отвязанными узлами
+        if (p.hidden && rest) rest.append(p);
+      });
+    }
 
     let cols: HTMLElement[] = [];
     let tall: number[] = [];
@@ -234,9 +298,9 @@ const priorityTiles = new Set(
       article = pins.filter((pin) => !pin.hidden && isArticle(pin)).length;
     };
 
-    const relayout = () => {
+    const relayout = (force = false) => {
       const count = parseInt(getComputedStyle(board).getPropertyValue('--board-cols'), 10) || 2;
-      if (count === cols.length) return;
+      if (!force && count === cols.length) return;
 
       cols = Array.from({ length: count }, () => proto.cloneNode(false) as HTMLElement);
       tall = new Array<number>(count).fill(0);
@@ -248,13 +312,14 @@ const priorityTiles = new Set(
       board.replaceChildren(...cols);
     };
 
+    // После тасовки серверная раскладка не годится — перекладываем всегда,
+    // даже на двух колонках; без тасовки на телефоне ни одна плитка не двигается.
     readState();
-    relayout();
+    relayout(host.dataset.shuffle !== undefined);
     // выходит сразу, если число колонок не поменялось — ресайз дешёвый
-    window.addEventListener('resize', relayout);
+    window.addEventListener('resize', () => relayout());
 
     // ============ ХВОСТ: ПО КНОПКЕ ИЛИ ПРИ ПРОКРУТКЕ ============
-    const rest = host.querySelector<HTMLElement>('[data-masonry-rest]');
     const reveal = host.querySelector<HTMLElement>('[data-masonry-reveal]');
     const sentinel = host.querySelector<HTMLElement>('[data-masonry-sentinel]');
 
