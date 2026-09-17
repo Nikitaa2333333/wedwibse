@@ -7,6 +7,9 @@
 //    не проходят. Годы 19xx/20xx и номера сцен 01–09 пропускаются.
 // 4. Запрещённая типографика: <b>, <strong>, КАПС-слова длиннее 3 букв,
 //    «—» в начале пункта списка, двойные пробелы.
+// 5. Мусор парсинга в кадрах: мелкие картинки (аватарки отзывов, иконки,
+//    лого), почти однотонные файлы (подложки, пустое лого на прозрачном)
+//    и галерея, вываленная пачкой под один шаблонный alt.
 import { readFile, readdir, access } from 'node:fs/promises';
 import { join, dirname, basename } from 'node:path';
 
@@ -35,13 +38,14 @@ if (!venue.gallery?.length) errors.push('gallery пуста — первый э�
 // --- 2. фото
 const text = JSON.stringify(venue);
 const refs = new Set(text.match(new RegExp(`/venues/${slug}/[\\w./-]+\\.(webp|jpg)`, 'g')) ?? []);
+const resolved = new Map(); // ref -> путь к файлу на диске (для проверки 5)
 for (const ref of refs) {
   const file = ref.slice(`/venues/${slug}/`.length);
   let ok = false;
   // комплекс из залов (Гребнево): кадр `<зал>/pNN.webp` живёт в research/<slug>/<зал>/photos/
   const nested = join(base, dirname(file), 'photos', basename(file));
-  for (const p of [join(base, 'photos', file), join('src', 'assets', 'venues', slug, file), nested]) {
-    try { await access(p); ok = true; break; } catch {}
+  for (const p of [join('src', 'assets', 'venues', slug, file), join(base, 'photos', file), nested]) {
+    try { await access(p); ok = true; resolved.set(ref, p); break; } catch {}
   }
   if (!ok) errors.push(`нет файла для ${ref}`);
 }
@@ -85,6 +89,54 @@ for (const s of strings) {
   if (/<\/?(b|strong)>/.test(s)) errors.push(`жирность в тексте: «${s.slice(0, 60)}»`);
   if (/\b[А-ЯЁA-Z]{4,}\b/.test(s) && !/\b(LED|HDMI|DMX|VIP|JBL|FHD|XLR|SPA|МКАД|ЦКАД|DJ)\b/.test(s)) errors.push(`капс: «${s.slice(0, 60)}»`);
   if (/ {2,}/.test(s)) errors.push(`двойной пробел: «${s.slice(0, 60)}»`);
+}
+
+// --- 5. мусор парсинга
+// Страницу площадки собирает fetch-urls: он тянет ВСЕ картинки со страницы
+// подряд, а дальше place-photos раскладывает их в src/assets. Вместе с
+// фотографиями зала так приезжают аватарки отзывов, иконки, лого и пустые
+// подложки — на сайте их никто не отличает от кадра, и они уезжают в доску
+// главной наравне с залом (так больше месяца жили десять чужих картинок
+// в галерее «Отражения», нашёл заказчик). Три признака ловят это без
+// отсмотра каждого кадра — с ростом каталога отсматривать никто не будет.
+const MIN_SIDE = 600;   // самый мелкий настоящий кадр каталога — 600 px (Гребнево)
+const FLAT_STDEV = 12;  // разброс яркости ниже — это заливка, а не фотография
+let sharp = null;
+try { sharp = (await import('sharp')).default; } catch {}
+if (!sharp) {
+  console.warn('  ! sharp недоступен — кадры проверены только на наличие (п. 5 пропущен)');
+} else {
+  for (const [ref, file] of resolved) {
+    let meta;
+    try { meta = await sharp(file).metadata(); } catch (e) {
+      errors.push(`${ref}: файл не читается как изображение (${e.message})`);
+      continue;
+    }
+    const side = Math.min(meta.width ?? 0, meta.height ?? 0);
+    if (side < MIN_SIDE) {
+      errors.push(`${ref}: ${meta.width}×${meta.height} — мелкая картинка (аватарка отзыва, иконка, лого?), а не кадр площадки`);
+      continue;
+    }
+    try {
+      const { channels, isOpaque } = await sharp(file).stats();
+      // Прозрачность у ФОТОГРАФИИ не бывает: кадр с альфой — это лого,
+      // иконка или декоративная подложка с сайта. На бумаге такой файл
+      // выглядит пустым белым прямоугольником, и по картинке его не
+      // отличить — стандартное отклонение по RGB у него честно высокое
+      // (цвет лежит под нулевой альфой), ловит именно альфа.
+      if (!isOpaque) errors.push(`${ref}: кадр с прозрачностью — это графика (лого, иконка, подложка), а не фотография`);
+      const spread = Math.max(...channels.map((c) => c.stdev));
+      if (spread < FLAT_STDEV) errors.push(`${ref}: почти однотонный кадр (заливка, заглушка?)`);
+    } catch {}
+  }
+}
+// Галерея пачкой под один alt — след того же конвейера: кадры не отбирали,
+// а досыпали остатком. Alt ещё и уходит в поиск по картинкам.
+const alts = (venue.gallery ?? []).map((g) => g.alt?.trim()).filter(Boolean);
+const byAlt = new Map();
+for (const a of alts) byAlt.set(a, (byAlt.get(a) ?? 0) + 1);
+for (const [a, n] of byAlt) {
+  if (n >= 3) errors.push(`${n} кадров галереи под одним alt «${a}» — кадры досыпаны пачкой, а не отобраны`);
 }
 
 if (errors.length) {
