@@ -36,6 +36,9 @@ interface Props {
    *  Режим включается пропом, а не переопределением .prail снаружи через
    *  :global() — см. запрет в AGENTS.md. */
   bleed?: boolean;
+  /** точки-индикаторы под кадром; false — у рельса без них (секции залов:
+   *  двенадцать точек под кадром читались полосой прокрутки, а не счётчиком) */
+  dots?: boolean;
 }
 
 const {
@@ -46,6 +49,7 @@ const {
   widths = [360, 560, 800, 1100],
   priority = false,
   bleed = false,
+  dots = true,
 } = Astro.props;
 
 // ЗВУКА В ВЫДАЧЕ НЕТ. Кнопка звука над роликом тут была и снята: рельс —
@@ -102,7 +106,7 @@ const {
 
   <div class="veil" aria-hidden="true"></div>
 
-  {photos.length > 1 && (
+  {dots && photos.length > 1 && (
     <div class="prail__dots">
       {photos.map(() => (
         <span class="prail__dot"></span>

@@ -32,11 +32,27 @@ const { orderLabel, orderHref, save } = Astro.props;
 </div>
 
 <style>
+  /* Две кнопки в одну строку всегда (заказчик, 17.09): на телефоне пилюли
+     с полными полями не влезали и вставали столбиком. Делим ширину
+     пополам, поля пилюли ужимаем — текст центрируется в своей половине. */
   .hero-cta {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
+    align-items: stretch; /* <a> и <button> считают строку по-разному: тянем до одной высоты */
     gap: var(--s-3);
+  }
+
+  .hero-cta .pill {
+    flex: 1 1 0;
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding-inline: var(--s-4);
+    white-space: nowrap;
+  }
+
+  @media (min-width: 640px) {
+    .hero-cta .pill { flex: 0 0 auto; padding-inline: 40px; }
   }
 
   .hero-cta__on { display: none; }

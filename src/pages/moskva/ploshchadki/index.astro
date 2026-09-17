@@ -2,12 +2,10 @@
 // КАТАЛОГ ПЛОЩАДОК (раздел 2 основного меню).
 // Тот же паттерн, что у «Специалистов» (podryadchiki/vedushchie): полоса
 // чипов над каталогом (FilterBar) и шторка фильтров снизу (FilterSheet),
-// мозаика карточек — нормальная (1 колонка), wide и duo (2 колонки).
-// Первые два ряда всегда обычные: крупные карточки идут дальше по ленте
-// (см. PLAIN_HEAD ниже). Внутри карточки кадры листаются свайпом —
-// мобильный способ смотреть несколько фото, duo показывает два кадра
-// сразу без свайпа.
-import { Image } from 'astro:assets';
+// мозаика карточек — нормальная (1 колонка) и wide (2 колонки, один
+// большой кадр). Первые два ряда всегда обычные: крупные карточки идут
+// дальше по ленте (см. PLAIN_HEAD ниже). Внутри карточки кадры листаются
+// свайпом — мобильный способ смотреть несколько фото.
 import Layout from '../../../layouts/Layout.astro';
 import SiteHeader from '../../../components/SiteHeader.astro';
 import BottomDock from '../../../components/BottomDock.astro';
@@ -17,10 +15,9 @@ import ScopePicker from '../../../components/ScopePicker.astro';
 import PhotoRail from '../../../components/PhotoRail.astro';
 import VenueMap from '../../../components/VenueMap.astro';
 import { FEED, VENUE_FILTERS, type FeedVenue } from '../../../data/feed';
-import { resolveImage, IMG_WIDTHS } from '../../../lib/images';
+import { IMG_WIDTHS } from '../../../lib/images';
 import { countOptions } from '../../../lib/filter-counts';
 import { venueMapPoints } from '../../../lib/map-points';
-import { photosOnly } from '../../../lib/media';
 
 // Бакеты для диапазонных фильтров — считаются на сборке (см. тот же приём
 // в podryadchiki/vedushchie/index.astro).
@@ -50,15 +47,19 @@ function checkBucket(from: number): string {
 // что это каталог: несколько площадок рядом, у каждой название и цена,
 // их можно сравнивать глазами. Крупный кадр в самом верху занимал почти
 // весь экран телефона и читался как случайная фотография, а не как выдача.
-// Дальше по ленте широкие и «дуо» нужны — они и дают мозаике ритм.
+// Дальше по ленте широкая нужна — она и даёт мозаике ритм.
+//
+// «ДУО» (два кадра рядом в одной широкой карточке) СНЯТО (заказчик, 17.09):
+// на телефоне это читалось как две карточки без подписей, и кадры дуо
+// не были ссылками — нажатие на фото никуда не вело. Широкая карточка —
+// всегда ОДИН большой кадр с рельсом и ссылкой, как у обычной. Одна на
+// пять карточек: 1 широкая + 4 обычных = ровно три ряда без дыр.
 const PLAIN_HEAD = 4;
 
-type CardVariant = '' | 'vcard--wide' | 'vcard--duo';
+type CardVariant = '' | 'vcard--wide';
 function variant(i: number): CardVariant {
   if (i < PLAIN_HEAD) return '';
-  if (i % 5 === 4) return 'vcard--wide';
-  if (i % 5 === 2) return 'vcard--duo';
-  return '';
+  return i % 5 === 2 ? 'vcard--wide' : '';
 }
 
 // Значения фильтра карточки — одним местом: и в data-filters, и в счётчики чипов
@@ -149,10 +150,9 @@ const mapPoints = venueMapPoints();
           const sortKey = { price: item.checkFrom ?? Number.MAX_SAFE_INTEGER, rating: item.rating };
 
           const sizes =
-            cardVariant === 'vcard--wide' || cardVariant === 'vcard--duo'
+            cardVariant === 'vcard--wide'
               ? '(min-width: 1440px) 50vw, (min-width: 640px) 66vw, 100vw'
               : '(min-width: 1440px) 25vw, (min-width: 640px) 33vw, 50vw';
-
 
           return (
             <article
@@ -162,34 +162,14 @@ const mapPoints = venueMapPoints();
               data-filters={JSON.stringify(filters)}
               data-sort={JSON.stringify(sortKey)}
             >
-              {cardVariant === 'vcard--duo' ? (
-                <div class="vcard__media">
-                  <div class="vcard__strip">
-                    {/* дуо показывает два кадра сразу, без карусели — только фото */}
-                    {photosOnly(item.media).slice(0, 2).map((src, n) => (
-                      <div class="vcard__frame media">
-                        <Image
-                          src={resolveImage(src)}
-                          alt={`${item.name} — фото ${n + 1}`}
-                          widths={IMG_WIDTHS.card}
-                          sizes={sizes}
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <PhotoRail
-                  photos={item.media}
-                  alt={item.name}
-                  href={`/moskva/ploshchadki/${item.slug}/`}
-                  sizes={sizes}
-                  widths={IMG_WIDTHS.card}
-                  priority={firstRow}
-                />
-              )}
+              <PhotoRail
+                photos={item.media}
+                alt={item.name}
+                href={`/moskva/ploshchadki/${item.slug}/`}
+                sizes={sizes}
+                widths={IMG_WIDTHS.card}
+                priority={firstRow}
+              />
 
               <!-- Подпись по принципу близости: имя и город — одно целое
                    (город вплотную под именем), рейтинг справа на строке имени,
@@ -275,12 +255,10 @@ const mapPoints = venueMapPoints();
     .vgrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   }
 
-  .vcard--duo,
   .vcard--wide { grid-column: span 2; }
 
-  /* Карточка подменяет себе пропорцию кадра — дальше её читают и рельс
-     PhotoRail, и кадры дуо-карточки. Большой кадр на две колонки держит
-     высоту ряда у соседей. */
+  /* Карточка подменяет себе пропорцию кадра — дальше её читает рельс
+     PhotoRail. Большой кадр на две колонки держит высоту ряда у соседей. */
   .vcard--wide { --card-ratio: var(--card-ratio-wide); }
 
   .empty { padding: var(--s-7) var(--catalog-pad); }
@@ -315,25 +293,6 @@ const mapPoints = venueMapPoints();
      на самом фото остаётся только сердце (у него своя тень, .veil
      ему не нужен). */
   .vcard :global(.veil) { display: none; }
-
-  /* Дуо-карточка: два кадра видны сразу, без свайпа. Пропорция и зазор —
-     те же ручки каталога, что у остальных карточек ряда */
-  .vcard__strip {
-    display: flex;
-    gap: var(--catalog-gap-x);
-  }
-
-  .vcard__frame {
-    flex: 1 1 0;
-    aspect-ratio: var(--card-ratio);
-    background: var(--surface-dim);
-  }
-
-  .vcard__frame img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
 
   /* ============ ПОДПИСЬ ПОД ФОТО ============
      Кадр идёт в край экрана, текст — нет: своё поле подписи держит

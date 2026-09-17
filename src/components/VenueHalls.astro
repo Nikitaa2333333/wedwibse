@@ -25,12 +25,18 @@ const { halls } = Astro.props;
     <section class="hall section" id={`hall-${hall.id}`}>
       <div class="container container--wide">
         <div class="hall__grid">
+          {/* Кадр зала на телефоне — во всю ширину экрана и без точек
+              (заказчик, 17.09): в полях страницы он читался вставкой, а
+              двенадцать точек под ним — полосой прокрутки. Листается
+              свайпом как раньше. */}
           <div class="hall__media">
             <PhotoRail
               photos={hall.photos}
               alt={hall.alt}
               sizes="(min-width: 900px) 42vw, 100vw"
               widths={IMG_WIDTHS.card}
+              bleed
+              dots={false}
             />
           </div>
 
@@ -111,6 +117,10 @@ const { halls } = Astro.props;
     display: grid;
     gap: var(--s-6);
   }
+
+  /* Кадр в край экрана: вычитаем поле контейнера с обеих сторон. На ПК
+     (сетка ниже) поле возвращается — там кадр стоит колонкой. */
+  .hall__media { margin-inline: calc(-1 * var(--gutter)); }
 
   .hall__body {
     display: flex;
@@ -227,6 +237,7 @@ const { halls } = Astro.props;
     .hall__media {
       position: sticky;
       top: var(--s-6);
+      margin-inline: 0;
     }
 
     .hall__up { display: none; }

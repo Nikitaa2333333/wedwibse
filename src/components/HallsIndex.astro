@@ -144,8 +144,13 @@ const rentFrom = (hall: VenueHall) =>
     text-decoration: none;
   }
 
+  /* height: auto обязателен: <Image> ставит атрибут height (2560 у
+     вертикального кадра), и без него aspect-ratio не работает — плитка
+     вытягивалась на два экрана и показывала кусок кадра в десятикратном
+     увеличении. */
   .htile__img {
     width: 100%;
+    height: auto;
     aspect-ratio: 1;
     object-fit: cover;
     background: var(--surface-dim);
