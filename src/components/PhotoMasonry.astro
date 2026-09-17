@@ -19,11 +19,21 @@
 // скрипт ниже перекладывает те же плитки тем же жадным алгоритмом —
 // узлы переезжают, ничего не рисуется заново, слушатели PhotoRail живы.
 //
-// РЕЖИМ СВЕРХ ЭТОГО, пропом:
-//   limit  — галерея карточки: видны первые N кадров, остальные лежат
-//            в HTML скрытым хвостом (SEO) и досыпаются в колонки по кнопке
-//            «Показать все N фото», без перехода на другую страницу.
-//            Скрытый кадр браузер не грузит: lazy-картинка без бокса.
+// РЕЖИМЫ СВЕРХ ЭТОГО, пропами:
+//   limit    — видны первые N плиток, остальные лежат в HTML скрытым
+//              хвостом (SEO) и досыпаются в колонки на месте, без перехода
+//              на другую страницу. Скрытый кадр браузер не грузит:
+//              lazy-картинка без бокса.
+//   infinite — как хвост досыпается. Без него — по кнопке «Показать все
+//              N фото» (галерея карточки: она стоит посреди страницы, и
+//              растущая сама по себе доска отодвигала бы отзывы и бронь
+//              за горизонт). С ним — сам, при прокрутке: сторож под
+//              колонками (IntersectionObserver) за полтора экрана до конца
+//              подкладывает следующую порцию BATCH — бесконечная лента
+//              доски главной, как в Pinterest. Плитки при этом не
+//              перекладываются заново: колонки продолжаются с того места,
+//              где остановилась раскладка (тем же pickColumn), так что
+//              уже загруженные кадры не двигаются и ролики не сбиваются.
 //
 // Просмотра-оверлея на весь экран тут больше нет: нажатие на кадр ведёт
 // на страницу карточки, где полноэкранный кадр со стеклом — её первый
@@ -38,15 +48,17 @@ interface Props {
    *  идёт доска на каждом брейкпоинте */
   sizes: string;
   widths?: number[];
-  /** сколько плиток показать сразу; остальные — по кнопке (галерея карточки) */
+  /** сколько плиток показать сразу; остальные — хвостом (см. шапку) */
   limit?: number;
+  /** хвост досыпается сам при прокрутке, а не по кнопке (доска главной) */
+  infinite?: boolean;
   /** доска — первый экран страницы (главная): первый ряд получает LCP-приоритет.
    *  В галерее карточки НЕ ставить — там первый экран уже держит HeroStage,
    *  второй fetchpriority="high" ниже сгиба только отбирает у него канал */
   priority?: boolean;
 }
 
-const { tiles, sizes, widths = IMG_WIDTHS.tile, limit, priority = false } = Astro.props;
+const { tiles, sizes, widths = IMG_WIDTHS.tile, limit, infinite = false, priority = false } = Astro.props;
 
 // Видимая часть и скрытый хвост. Раскладка под телефон считается на сервере
 // только по видимым — скрытые в колонках места не занимают; шире и после
@@ -91,11 +103,15 @@ const priorityTiles = new Set(
       ))}
     </div>
   )}
-  {rest.length > 0 && (
+  {rest.length > 0 && !infinite && (
     <p class="masonry__more">
       <button class="pill" type="button" data-masonry-reveal>Показать все {tiles.length} фото</button>
     </p>
   )}
+  <!-- Сторож бесконечной ленты: пустой блок под колонками, по его
+       приближению к экрану скрипт досыпает следующую порцию. Без JS
+       хвост просто остаётся скрытым — первые limit плиток стоят как есть. -->
+  {rest.length > 0 && infinite && <div class="masonry__sentinel" data-masonry-sentinel aria-hidden="true"></div>}
 
 </div>
 
@@ -139,6 +155,10 @@ const priorityTiles = new Set(
     padding-top: var(--s-5);
   }
 
+  /* Сторож бесконечной ленты: не нулевой высоты, чтобы IntersectionObserver
+     видел его во всех браузерах одинаково; на глаз его нет. */
+  .masonry__sentinel { height: 1px; }
+
   @media (min-width: 640px) {
     .masonry { --board-cols: 3; }
   }
@@ -153,12 +173,22 @@ const priorityTiles = new Set(
 </style>
 
 <script>
+  import { isWide, pickColumn } from '../lib/masonry';
+
   // Перекладка под число колонок с экрана. Высота плитки известна из
   // data-h (пропорция + подпись, в долях ширины колонки) — картинки ждать
   // не нужно, раскладка считается до их загрузки. Колонку клонируем
   // с существующей, чтобы сохранить scoped-атрибут стилей Astro.
-  // Скрытый хвост (limit) в раскладке не участвует, пока его не раскрыли:
-  // по кнопке плитки получают видимость и перекладываются вместе со всеми.
+  // Скрытый хвост (limit) в раскладке не участвует, пока его не раскрыли.
+  //
+  // Состояние раскладки (высоты колонок, чем каждая заканчивается, счётчик
+  // статей) живёт между вызовами: бесконечная лента ПРОДОЛЖАЕТ колонки
+  // с того же места, а не перекладывает доску заново — иначе на каждой
+  // порции все загруженные кадры прыгали бы, а ролики сбивались.
+  // На телефоне (две колонки, серверная раскладка) состояние читается
+  // из готового DOM, чтобы не двигать ни одной плитки без нужды.
+  const BATCH = 12;
+
   document.querySelectorAll<HTMLElement>('[data-masonry-host]').forEach((host) => {
     const board = host.querySelector<HTMLElement>('[data-masonry]');
     const proto = board?.firstElementChild as HTMLElement | null;
@@ -168,52 +198,107 @@ const priorityTiles = new Set(
       (a, b) => Number(a.dataset.i) - Number(b.dataset.i)
     );
 
-    let current = board.children.length;
+    const heightOf = (pin: HTMLElement) => parseFloat(pin.dataset.h || '1');
+    const isArticle = (pin: HTMLElement) => pin.classList.contains('pin--article');
 
-    const relayout = (force = false) => {
-      const count = parseInt(getComputedStyle(board).getPropertyValue('--board-cols'), 10) || 2;
-      if (!force && count === current) return;
-      current = count;
+    let cols: HTMLElement[] = [];
+    let tall: number[] = [];
+    let lastWide: boolean[] = [];
+    let article = 0;
 
-      const cols = Array.from({ length: count }, () => proto.cloneNode(false) as HTMLElement);
-      const tall = new Array<number>(count).fill(0);
+    // та же развилка, что на сервере (layoutColumns): статьи идут по
+    // колонкам по кругу, кадры — по pickColumn
+    const place = (pin: HTMLElement) => {
+      let k = article % cols.length;
 
-      // та же развилка, что на сервере (layoutColumns): статьи идут по
-      // колонкам по кругу, кадры — жадно в самую короткую
-      let article = 0;
-
-      for (const pin of pins) {
-        if (pin.hidden) continue;
-        let k = article % count;
-
-        if (pin.classList.contains('pin--article')) {
-          article++;
-        } else {
-          k = 0;
-          for (let j = 1; j < count; j++) if (tall[j] < tall[k]) k = j;
-        }
-
-        cols[k].append(pin);
-        tall[k] += parseFloat(pin.dataset.h || '1');
+      if (isArticle(pin)) {
+        article++;
+      } else {
+        k = pickColumn(tall, lastWide, isWide(heightOf(pin)));
       }
+
+      cols[k].append(pin);
+      tall[k] += heightOf(pin);
+      lastWide[k] = isWide(heightOf(pin));
+    };
+
+    // Состояние из серверной раскладки: колонки уже стоят, считаем их
+    // высоты и хвосты, ничего не переставляя.
+    const readState = () => {
+      cols = Array.from(board.children) as HTMLElement[];
+      tall = cols.map((col) => Array.from(col.children).reduce((sum, pin) => sum + heightOf(pin as HTMLElement), 0));
+      lastWide = cols.map((col) => {
+        const last = col.lastElementChild as HTMLElement | null;
+        return last ? isWide(heightOf(last)) : false;
+      });
+      article = pins.filter((pin) => !pin.hidden && isArticle(pin)).length;
+    };
+
+    const relayout = () => {
+      const count = parseInt(getComputedStyle(board).getPropertyValue('--board-cols'), 10) || 2;
+      if (count === cols.length) return;
+
+      cols = Array.from({ length: count }, () => proto.cloneNode(false) as HTMLElement);
+      tall = new Array<number>(count).fill(0);
+      lastWide = new Array<boolean>(count).fill(false);
+      article = 0;
+
+      for (const pin of pins) if (!pin.hidden) place(pin);
 
       board.replaceChildren(...cols);
     };
 
+    readState();
     relayout();
     // выходит сразу, если число колонок не поменялось — ресайз дешёвый
-    window.addEventListener('resize', () => relayout());
+    window.addEventListener('resize', relayout);
 
-    // ============ ПОКАЗАТЬ ВСЕ ============
+    // ============ ХВОСТ: ПО КНОПКЕ ИЛИ ПРИ ПРОКРУТКЕ ============
     const rest = host.querySelector<HTMLElement>('[data-masonry-rest]');
     const reveal = host.querySelector<HTMLElement>('[data-masonry-reveal]');
+    const sentinel = host.querySelector<HTMLElement>('[data-masonry-sentinel]');
+
+    // Досыпать n скрытых плиток в существующие колонки, продолжая раскладку.
+    // Возвращает, остались ли ещё скрытые.
+    const append = (n: number) => {
+      const hidden = pins.filter((pin) => pin.hidden);
+
+      for (const pin of hidden.slice(0, n)) {
+        pin.hidden = false;
+        place(pin);
+      }
+
+      const left = hidden.length > n;
+      if (!left) rest?.remove();
+      return left;
+    };
 
     reveal?.addEventListener('click', () => {
-      pins.forEach((pin) => { pin.hidden = false; });
-      relayout(true);
-      rest?.remove();
+      append(pins.length);
       reveal.closest('.masonry__more')?.remove();
     });
 
+    if (sentinel) {
+      // Порог — полтора экрана до сторожа: порция встаёт в колонки раньше,
+      // чем человек долистает до пустоты. Наблюдатель перезапускается после
+      // каждой порции (unobserve/observe даёт свежий срез): если сторож
+      // всё ещё на экране — следующая порция сразу, без ожидания скролла.
+      const io = new IntersectionObserver(
+        (entries) => {
+          if (!entries.some((e) => e.isIntersecting)) return;
+
+          if (append(BATCH)) {
+            io.unobserve(sentinel);
+            io.observe(sentinel);
+          } else {
+            io.disconnect();
+            sentinel.remove();
+          }
+        },
+        { rootMargin: '150% 0px' }
+      );
+
+      io.observe(sentinel);
+    }
   });
 </script>

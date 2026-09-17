@@ -10,7 +10,7 @@
 // Раньше это были две фото-плашки первой строкой доски, и вход в раздел
 // приходилось искать среди кадров, которыми доска и заполнена.
 import PhotoMasonry from './PhotoMasonry.astro';
-import { collectTiles } from '../lib/gallery';
+import { BOARD_SHOWN, collectTiles } from '../lib/gallery';
 import { IMG_WIDTHS } from '../lib/images';
 
 const TILE_SIZES =
@@ -24,8 +24,18 @@ const TILE_SIZES =
        тупиком — кадр открывался, а дойти до сведений о площадке из него
        было нельзя. Полноэкранный кадр со стеклом теперь и есть первый
        экран самой карточки (HeroStage), и прокрутка с него ведёт дальше,
-       к описанию и брони. -->
-  <PhotoMasonry tiles={collectTiles()} sizes={TILE_SIZES} widths={IMG_WIDTHS.tile} priority />
+       к описанию и брони.
+       Бесконечная лента: в колонках сразу BOARD_SHOWN плиток, остальной
+       пул досыпается сам при прокрутке (infinite) — никаких кнопок
+       «показать ещё», как в Pinterest. -->
+  <PhotoMasonry
+    tiles={collectTiles()}
+    sizes={TILE_SIZES}
+    widths={IMG_WIDTHS.tile}
+    limit={BOARD_SHOWN}
+    infinite
+    priority
+  />
 </section>
 
 <style>
