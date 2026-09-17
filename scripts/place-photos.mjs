@@ -5,7 +5,7 @@
 // /venues/<slug>/<file>.webp, копирует только их. Кадры, которые в JSON
 // не попали, в репозиторий не едут — лишние мегабайты в сборке не нужны.
 import { readFile, mkdir, copyFile, access } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
 
 const slug = process.argv[2];
 if (!slug) { console.error('usage: node scripts/place-photos.mjs <slug>'); process.exit(1); }
@@ -21,8 +21,13 @@ await mkdir(publicDir, { recursive: true });
 let missing = 0;
 for (const ref of refs) {
   const file = ref.slice(`/venues/${slug}/`.length);
-  const from = join(srcDir, file);
-  try { await access(from); } catch { console.error(`MISSING ${from}`); missing++; continue; }
+  // комплекс из нескольких залов (Гребнево): кадр `<зал>/pNN.webp` готовится
+  // отдельным прогоном prep-photos и лежит в research/<slug>/<зал>/photos/
+  const candidates = [join(srcDir, file), join('research', slug, dirname(file), 'photos', file.split('/').pop())];
+  let from = null;
+  for (const c of candidates) { try { await access(c); from = c; break; } catch {} }
+  if (!from) { console.error(`MISSING ${candidates[0]}`); missing++; continue; }
+  await mkdir(join(assetsDir, dirname(file)), { recursive: true });
   await copyFile(from, join(assetsDir, file));
   // og-cover нужен и сырым URL для соцсетей (Layout собирает og:image через new URL)
   if (file.startsWith('og-cover')) await copyFile(from, join(publicDir, file));

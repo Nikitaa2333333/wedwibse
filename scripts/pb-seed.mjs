@@ -41,8 +41,16 @@ const TYPE_BY_WORD = [['оранжере', 'oranzhereya'], ['лофт', 'loft'],
 function flat(v) {
   const meta = Object.fromEntries((v.meta ?? []).map((r) => [r.label.toLowerCase(), r.value]));
   const cap = meta['вместимость'] ?? '';
-  const banquet = num(cap.split('·')[0]) ?? num(v.stats?.find((s) => /банкет/i.test(s.label))?.value);
-  const buffet = num(cap.split('·')[1]);
+  // Комплекс из залов (venue.halls, Гребнево): в фильтрах карточка живёт
+  // по самому большому залу и самой низкой аренде — у «от 30 до 350»
+  // регулярка иначе берёт первое число, и усадьба на 350 гостей уходит
+  // в «до 50». Одиночная площадка — как раньше, из meta.
+  const halls = v.halls ?? [];
+  const banquet = halls.length
+    ? Math.max(...halls.map((h) => h.banquet))
+    : num(cap.split('·')[0]) ?? num(v.stats?.find((s) => /банкет/i.test(s.label))?.value);
+  const buffet = halls.length ? Math.max(...halls.map((h) => h.buffet)) : num(cap.split('·')[1]);
+  const hallRent = halls.length ? Math.min(...halls.flatMap((h) => h.tariff.map((t) => num(t.rent)).filter(Boolean))) : null;
   const k = `${v.kicker ?? ''} ${v.name ?? ''} ${v.title ?? ''}`.toLowerCase();
   const type = TYPE_BY_WORD.find(([w]) => k.includes(w))?.[1] ?? 'drugoe';
   // Цены: у legacy-площадок terms/scenes лежат сверху, у JSON конвейера —
@@ -60,7 +68,7 @@ function flat(v) {
   // строка с «аренда» в подписи — аренда, даже если группа называется «Депозит и сервис»
   const menuRows = allRows.filter((r) => !/аренда/i.test(r.label) && /^меню|чек|на гостя|с человека|депозит|минимальн/i.test(`${r.label} ${r.group}`));
   const menu = menuRows.length ? { value: String(minOf(menuRows)) } : null;
-  const rent = rentRows.length ? { value: String(minOf(rentRows)) } : null;
+  const rent = hallRent ? { value: String(hallRent) } : rentRows.length ? { value: String(minOf(rentRows)) } : null;
   const km = num(v.contacts?.routes?.find((r) => /мкад/i.test(r.label))?.value);
   const text = JSON.stringify(v).toLowerCase();
   const features = [];

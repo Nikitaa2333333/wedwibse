@@ -48,6 +48,7 @@ const SPARK = '/venues/spark-hall';
 const LED = '/venues/led';
 const FP = '/venues/fish-point';
 const OTR = '/venues/otrazhenie';
+const GRB = '/venues/grebnevo';
 
 const venues: FeedVenue[] = [
   {
@@ -144,6 +145,22 @@ const venues: FeedVenue[] = [
     rating: 4.4,
     reviews: 10,
     media: [`${OTR}/p31.webp`, `${OTR}/p33.webp`, `${OTR}/p12.webp`, `${OTR}/p21.webp`],
+  },
+  {
+    // Усадьба с девятью залами — в каталоге одна карточка; вместимость
+    // и чек — по самому большому залу и общему минимуму меню.
+    kind: 'venue',
+    slug: 'grebnevo',
+    name: 'Усадьба Гребнево',
+    city: 'Щёлково',
+    type: 'Усадьба',
+    capacityMax: 350,
+    capacity: '9 залов · до 350 гостей',
+    checkFrom: 7000,
+    avgCheck: 'от 7 000 ₽',
+    rating: 4.9,
+    reviews: 55,
+    media: [`${GRB}/grand-lesnoy/p10.webp`, `${GRB}/barsky/p04.webp`, `${GRB}/pushkin/p13.webp`, `${GRB}/trubetskoy-hall/p13.webp`],
   },
 ];
 

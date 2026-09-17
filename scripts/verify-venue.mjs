@@ -8,7 +8,7 @@
 // 4. Запрещённая типографика: <b>, <strong>, КАПС-слова длиннее 3 букв,
 //    «—» в начале пункта списка, двойные пробелы.
 import { readFile, readdir, access } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, dirname, basename } from 'node:path';
 
 const slug = process.argv[2];
 if (!slug) { console.error('usage: node scripts/verify-venue.mjs <slug>'); process.exit(1); }
@@ -21,7 +21,7 @@ for (const k of ['slug', 'citySlug', 'city', 'category', 'categorySlug', 'name',
   if (!(k in venue)) errors.push(`нет поля ${k}`);
 }
 if (venue.slug !== slug) errors.push(`slug в файле (${venue.slug}) не совпадает с именем файла`);
-const TYPES = new Set(['stats', 'scenes', 'statement', 'terms', 'rules', 'docs', 'gallery', 'reviews', 'reels', 'faq']);
+const TYPES = new Set(['stats', 'scenes', 'statement', 'terms', 'rules', 'docs', 'gallery', 'reviews', 'reels', 'halls-index', 'halls', 'faq']);
 for (const [i, b] of (venue.blocks ?? []).entries()) {
   if (!TYPES.has(b.type)) errors.push(`blocks[${i}]: неизвестный тип ${b.type}`);
   if (b.type === 'scenes') for (const s of b.scenes) {
@@ -38,8 +38,10 @@ const refs = new Set(text.match(new RegExp(`/venues/${slug}/[\\w./-]+\\.(webp|jp
 for (const ref of refs) {
   const file = ref.slice(`/venues/${slug}/`.length);
   let ok = false;
-  for (const dir of [join(base, 'photos'), join('src', 'assets', 'venues', slug)]) {
-    try { await access(join(dir, file)); ok = true; break; } catch {}
+  // комплекс из залов (Гребнево): кадр `<зал>/pNN.webp` живёт в research/<slug>/<зал>/photos/
+  const nested = join(base, dirname(file), 'photos', basename(file));
+  for (const p of [join(base, 'photos', file), join('src', 'assets', 'venues', slug, file), nested]) {
+    try { await access(p); ok = true; break; } catch {}
   }
   if (!ok) errors.push(`нет файла для ${ref}`);
 }

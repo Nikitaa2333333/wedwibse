@@ -20,6 +20,8 @@ import FaqBlock from '../../../components/FaqBlock.astro';
 import VenueContacts from '../../../components/VenueContacts.astro';
 import Reviews from '../../../components/Reviews.astro';
 import ReelsRow from '../../../components/ReelsRow.astro';
+import HallsIndex from '../../../components/HallsIndex.astro';
+import VenueHalls from '../../../components/VenueHalls.astro';
 import BottomDock from '../../../components/BottomDock.astro';
 import { VENUES, type Venue } from '../../../data/venues';
 import { venueReviews } from '../../../data/venue-reviews';
@@ -144,6 +146,24 @@ const reels = reelsOfVenue(venue.slug);
 
           case 'reels':
             return <ReelsRow reels={reels} title={block.title} section />;
+
+          // ЗАЛЫ КОМПЛЕКСА (усадьба с несколькими площадками): оглавление
+          // плиткой и секции залов по якорям. Без venue.halls оба блока
+          // не рисуются — данные площадки без залов их и не заказывают.
+          case 'halls-index':
+            return (
+              venue.halls?.length && (
+                <HallsIndex
+                  kicker={block.kicker ?? 'Залы'}
+                  title={block.title ?? 'Какой зал под вашу свадьбу'}
+                  lead={block.lead}
+                  halls={venue.halls}
+                />
+              )
+            );
+
+          case 'halls':
+            return venue.halls?.length && <VenueHalls halls={venue.halls} />;
 
           case 'faq':
             return (

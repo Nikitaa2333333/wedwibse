@@ -23,7 +23,8 @@ async function get(url, tries = 12) {
   }
 }
 
-const base = join('research', 'specialists', slug);
+// слаг со слэшем — готовый путь (research/grebnevo/grand-lesnoy), как в prep-photos
+const base = slug.includes('/') ? slug : join('research', 'specialists', slug);
 const index = Object.fromEntries(
   (await readFile(join(base, 'prev', 'index.tsv'), 'utf8')).split('\n').map((l) => l.split('\t')).map(([n, path, size]) => [n, { path, size: Number(size) }])
 );

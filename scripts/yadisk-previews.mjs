@@ -27,7 +27,9 @@ async function get(url, tries = 12) {
   }
 }
 
-const base = join('research', 'specialists', slug);
+// слаг со слэшем — готовый путь (research/grebnevo/grand-lesnoy), как в prep-photos
+const base = slug.includes('/') ? slug : join('research', 'specialists', slug);
+const sheetName = slug.replace(/^research\//, '').replace(/\//g, '-');
 const out = join(base, 'prev');
 await mkdir(out, { recursive: true });
 const paths = pathsFile ? JSON.parse(await readFile(pathsFile, 'utf8')) : [''];
@@ -59,7 +61,7 @@ await writeFile(join(out, 'index.tsv'), index.join('\n'));
 console.log(`превью: ${n}`);
 
 await mkdir('research/_sheets', { recursive: true });
-const sheet = join('research', '_sheets', `${slug}.jpg`);
+const sheet = join('research', '_sheets', `${sheetName}.jpg`);
 const files = (await readdir(out)).filter((f) => f.endsWith('.jpg')).sort().map((f) => join(out, f));
 execFileSync('magick', ['montage', ...files, '-thumbnail', '200x200', '-set', 'label', '%t', '-tile', '10x', '-geometry', '+4+4', '-pointsize', '14', sheet]);
 execFileSync('magick', [sheet, '-resize', '1800x', sheet]);

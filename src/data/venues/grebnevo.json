@@ -1,0 +1,1216 @@
+{
+  "slug": "grebnevo",
+  "citySlug": "moskva",
+  "city": "Москва и область",
+  "category": "Площадки",
+  "categorySlug": "ploshchadki",
+  "name": "Усадьба Гребнево",
+  "kicker": "Усадьба · Щёлково",
+  "title": "Усадьба Гребнево · девять залов на 30–350 гостей",
+  "lead": "Историческая усадьба на 350 гектарах в 25 км от МКАД, Щёлково. Девять залов на 30–350 гостей банкетом — от лофта в кирпиче до стеклянного барнхауса в лесу, церемония на воде, храм на территории и 53 дома для гостей.",
+  "hero": {
+    "image": "/venues/grebnevo/grand-lesnoy/p10.webp",
+    "alt": "Стеклянный зал Grand «Лесной» сквозь деревья усадьбы Гребнево",
+    "portrait": "/venues/grebnevo/barsky/p04.webp",
+    "portraitAlt": "Пирс с цветочной аркой над Барским прудом у зала «Барский»"
+  },
+  "meta": [
+    {
+      "label": "Вместимость",
+      "value": "от 30 до 350 гостей банкетом · до 600 фуршетом"
+    },
+    {
+      "label": "Площадь",
+      "value": "9 залов от 68 до 740 м² · территория 350 га"
+    },
+    {
+      "label": "Форматы",
+      "value": "свадьбы · выездные церемонии · венчание · корпоративы · выпускные"
+    },
+    {
+      "label": "Кухня",
+      "value": "ресторан усадьбы «Царская трапеза», меню от 7 000 ₽ на персону"
+    }
+  ],
+  "stats": [
+    {
+      "value": "9",
+      "label": "залов на 30–350 гостей"
+    },
+    {
+      "value": "350",
+      "label": "гектаров усадьбы"
+    },
+    {
+      "value": "53",
+      "label": "дома для гостей"
+    },
+    {
+      "value": "25",
+      "label": "км от МКАД"
+    }
+  ],
+  "halls": [
+    {
+      "id": "trubetskoy-hall",
+      "name": "Трубецкой Холл",
+      "kicker": "Гранд-шатёр",
+      "photos": [
+        "/venues/grebnevo/trubetskoy-hall/p01.webp",
+        "/venues/grebnevo/trubetskoy-hall/p02.webp",
+        "/venues/grebnevo/trubetskoy-hall/p03.webp",
+        "/venues/grebnevo/trubetskoy-hall/p04.webp",
+        "/venues/grebnevo/trubetskoy-hall/p05.webp",
+        "/venues/grebnevo/trubetskoy-hall/p06.webp",
+        "/venues/grebnevo/trubetskoy-hall/p07.webp",
+        "/venues/grebnevo/trubetskoy-hall/p08.webp",
+        "/venues/grebnevo/trubetskoy-hall/p09.webp",
+        "/venues/grebnevo/trubetskoy-hall/p10.webp",
+        "/venues/grebnevo/trubetskoy-hall/p11.webp",
+        "/venues/grebnevo/trubetskoy-hall/p12.webp",
+        "/venues/grebnevo/trubetskoy-hall/p13.webp"
+      ],
+      "alt": "Белый гранд-шатёр «Трубецкой Холл» с накрытыми столами",
+      "areaM2": 740,
+      "areaNote": "+ палуба 250 м²",
+      "banquet": 350,
+      "buffet": 600,
+      "tariff": [
+        {
+          "day": "Пн–Чт",
+          "rent": "80 000 ₽",
+          "deposit": "220 000 ₽"
+        },
+        {
+          "day": "Пятница",
+          "rent": "120 000 ₽",
+          "deposit": "300 000 ₽"
+        },
+        {
+          "day": "Суббота",
+          "rent": "120 000 ₽",
+          "deposit": "450 000 ₽"
+        },
+        {
+          "day": "Воскресенье",
+          "rent": "100 000 ₽",
+          "deposit": "250 000 ₽"
+        }
+      ],
+      "included": [
+        "мебель",
+        "текстиль",
+        "посуда",
+        "площадка под выездную регистрацию"
+      ],
+      "body": [
+        "Самая большая посадка усадьбы: 740 м² под белым шатром и палуба 250 м², 350 гостей банкетом и 600 фуршетом. Белоснежный интерьер, в шаговой доступности от Барского пруда.",
+        "Аренда здесь ниже, чем у залов поменьше, — это пространство для больших свадеб и корпоративов, где главное — вместить всех."
+      ]
+    },
+    {
+      "id": "grand-lesnoy",
+      "name": "Grand «Лесной»",
+      "kicker": "Банкетный зал",
+      "photos": [
+        "/venues/grebnevo/grand-lesnoy/p01.webp",
+        "/venues/grebnevo/grand-lesnoy/p02.webp",
+        "/venues/grebnevo/grand-lesnoy/p03.webp",
+        "/venues/grebnevo/grand-lesnoy/p04.webp",
+        "/venues/grebnevo/grand-lesnoy/p05.webp",
+        "/venues/grebnevo/grand-lesnoy/p06.webp",
+        "/venues/grebnevo/grand-lesnoy/p07.webp",
+        "/venues/grebnevo/grand-lesnoy/p08.webp",
+        "/venues/grebnevo/grand-lesnoy/p09.webp",
+        "/venues/grebnevo/grand-lesnoy/p10.webp",
+        "/venues/grebnevo/grand-lesnoy/p11.webp",
+        "/venues/grebnevo/grand-lesnoy/p12.webp",
+        "/venues/grebnevo/grand-lesnoy/p13.webp",
+        "/venues/grebnevo/grand-lesnoy/p14.webp",
+        "/venues/grebnevo/grand-lesnoy/p15.webp"
+      ],
+      "alt": "Стеклянный зал Grand «Лесной» в лесу с люстрами",
+      "areaM2": 430,
+      "areaNote": "зал + веранды 96 и 360 м²",
+      "banquet": 280,
+      "buffet": 350,
+      "tariff": [
+        {
+          "day": "Пн–Чт",
+          "rent": "200 000 ₽",
+          "deposit": "350 000 ₽"
+        },
+        {
+          "day": "Пятница",
+          "rent": "300 000 ₽",
+          "deposit": "700 000 ₽"
+        },
+        {
+          "day": "Суббота",
+          "rent": "400 000 ₽",
+          "deposit": "800 000 ₽"
+        },
+        {
+          "day": "Воскресенье",
+          "rent": "200 000 ₽",
+          "deposit": "400 000 ₽"
+        }
+      ],
+      "included": [
+        "мебель",
+        "текстиль",
+        "посуда",
+        "площадка под выездную регистрацию",
+        "парковка",
+        "гримёрные комнаты",
+        "закрытая территория 950 м²"
+      ],
+      "body": [
+        "430 м² под сводчатой деревянной конструкцией в стиле барнхаус: стеклянные стены в чёрных переплётах, за ними лес. По обе стороны — две крытые веранды, 96 и 360 м², вторая выходит палубой в лес.",
+        "В аренду входят гримёрные, парковка и закрытая территория 950 м². В зал можно заехать на автомобиле."
+      ]
+    },
+    {
+      "id": "karetny-dvor",
+      "name": "Каретный двор",
+      "kicker": "Банкетный зал",
+      "photos": [
+        "/venues/grebnevo/karetny-dvor/p01.webp",
+        "/venues/grebnevo/karetny-dvor/p02.webp",
+        "/venues/grebnevo/karetny-dvor/p03.webp",
+        "/venues/grebnevo/karetny-dvor/p04.webp",
+        "/venues/grebnevo/karetny-dvor/p05.webp",
+        "/venues/grebnevo/karetny-dvor/p06.webp",
+        "/venues/grebnevo/karetny-dvor/p07.webp",
+        "/venues/grebnevo/karetny-dvor/p08.webp",
+        "/venues/grebnevo/karetny-dvor/p09.webp",
+        "/venues/grebnevo/karetny-dvor/p10.webp",
+        "/venues/grebnevo/karetny-dvor/p11.webp",
+        "/venues/grebnevo/karetny-dvor/p12.webp"
+      ],
+      "alt": "Краснокирпичный зал «Каретный двор» с паркетом ёлочкой",
+      "areaM2": 260,
+      "banquet": 130,
+      "buffet": 170,
+      "tariff": [
+        {
+          "day": "Пн–Чт",
+          "rent": "80 000 ₽",
+          "deposit": "250 000 ₽"
+        },
+        {
+          "day": "Пятница",
+          "rent": "130 000 ₽",
+          "deposit": "300 000 ₽"
+        },
+        {
+          "day": "Суббота",
+          "rent": "130 000 ₽",
+          "deposit": "350 000 ₽"
+        },
+        {
+          "day": "Воскресенье",
+          "rent": "85 000 ₽",
+          "deposit": "250 000 ₽"
+        }
+      ],
+      "included": [
+        "мебель",
+        "текстиль",
+        "посуда",
+        "площадка под выездную регистрацию",
+        "закрытая территория 550 м²"
+      ],
+      "body": [
+        "Краснокирпичный корпус с арочными окнами, паркет ёлочкой и люстры: 260 м² на 130 гостей банкетом.",
+        "Свой закрытый двор 550 м² с фонтаном входит в аренду — здесь встречают гостей и проводят церемонию."
+      ]
+    },
+    {
+      "id": "pushkin",
+      "name": "Пушкинъ",
+      "kicker": "Стеклянная оранжерея",
+      "photos": [
+        "/venues/grebnevo/pushkin/p01.webp",
+        "/venues/grebnevo/pushkin/p02.webp",
+        "/venues/grebnevo/pushkin/p03.webp",
+        "/venues/grebnevo/pushkin/p04.webp",
+        "/venues/grebnevo/pushkin/p05.webp",
+        "/venues/grebnevo/pushkin/p06.webp",
+        "/venues/grebnevo/pushkin/p07.webp",
+        "/venues/grebnevo/pushkin/p08.webp",
+        "/venues/grebnevo/pushkin/p09.webp",
+        "/venues/grebnevo/pushkin/p10.webp",
+        "/venues/grebnevo/pushkin/p11.webp",
+        "/venues/grebnevo/pushkin/p12.webp",
+        "/venues/grebnevo/pushkin/p13.webp",
+        "/venues/grebnevo/pushkin/p14.webp"
+      ],
+      "alt": "Стеклянная оранжерея «Пушкинъ» с белой колоннадой",
+      "areaM2": 254,
+      "areaNote": "+ терраса 167 м²",
+      "banquet": 130,
+      "buffet": 160,
+      "tariff": [
+        {
+          "day": "Пн–Чт",
+          "rent": "150 000 ₽",
+          "deposit": "300 000 ₽"
+        },
+        {
+          "day": "Пятница",
+          "rent": "200 000 ₽",
+          "deposit": "350 000 ₽"
+        },
+        {
+          "day": "Суббота",
+          "rent": "300 000 ₽",
+          "deposit": "450 000 ₽"
+        },
+        {
+          "day": "Воскресенье",
+          "rent": "200 000 ₽",
+          "deposit": "300 000 ₽"
+        }
+      ],
+      "included": [
+        "мебель",
+        "текстиль",
+        "посуда",
+        "площадка под выездную регистрацию",
+        "парковка",
+        "гримёрные комнаты",
+        "закрытая территория 950 м²"
+      ],
+      "body": [
+        "Стеклянная оранжерея с белой колоннадой у входа: 254 м² зала и терраса 167 м². Прозрачные стены и вид на парк, внутри тёмное дерево и хрустальные люстры.",
+        "В аренду входят гримёрные, парковка и закрытая территория 950 м²."
+      ]
+    },
+    {
+      "id": "lermontov",
+      "name": "Лермонтов",
+      "kicker": "Стеклянная оранжерея",
+      "photos": [
+        "/venues/grebnevo/lermontov/p01.webp",
+        "/venues/grebnevo/lermontov/p02.webp",
+        "/venues/grebnevo/lermontov/p03.webp",
+        "/venues/grebnevo/lermontov/p04.webp",
+        "/venues/grebnevo/lermontov/p05.webp",
+        "/venues/grebnevo/lermontov/p06.webp",
+        "/venues/grebnevo/lermontov/p07.webp",
+        "/venues/grebnevo/lermontov/p08.webp",
+        "/venues/grebnevo/lermontov/p09.webp",
+        "/venues/grebnevo/lermontov/p10.webp",
+        "/venues/grebnevo/lermontov/p11.webp"
+      ],
+      "alt": "Камерная стеклянная оранжерея «Лермонтов» в липовом парке",
+      "areaM2": 180,
+      "areaNote": "+ терраса 140 м²",
+      "banquet": 90,
+      "buffet": 120,
+      "tariff": [
+        {
+          "day": "Пн–Чт",
+          "rent": "120 000 ₽",
+          "deposit": "250 000 ₽"
+        },
+        {
+          "day": "Пятница",
+          "rent": "200 000 ₽",
+          "deposit": "300 000 ₽"
+        },
+        {
+          "day": "Суббота",
+          "rent": "250 000 ₽",
+          "deposit": "380 000 ₽"
+        },
+        {
+          "day": "Воскресенье",
+          "rent": "180 000 ₽",
+          "deposit": "300 000 ₽"
+        }
+      ],
+      "included": [
+        "мебель",
+        "текстиль",
+        "посуда",
+        "площадка под выездную регистрацию",
+        "гримёрные комнаты"
+      ],
+      "body": [
+        "Камерная стеклянная оранжерея на 90 гостей в старинном липовом парке: 180 м² зала и терраса 140 м². Фронтон с колоннами, чёрные фермы под потолком, фонтан перед входом.",
+        "Гримёрные входят в аренду."
+      ]
+    },
+    {
+      "id": "barsky",
+      "name": "Барский",
+      "kicker": "Банкетный зал",
+      "photos": [
+        "/venues/grebnevo/barsky/p01.webp",
+        "/venues/grebnevo/barsky/p02.webp",
+        "/venues/grebnevo/barsky/p03.webp",
+        "/venues/grebnevo/barsky/p04.webp",
+        "/venues/grebnevo/barsky/p05.webp",
+        "/venues/grebnevo/barsky/p06.webp",
+        "/venues/grebnevo/barsky/p07.webp",
+        "/venues/grebnevo/barsky/p08.webp",
+        "/venues/grebnevo/barsky/p09.webp",
+        "/venues/grebnevo/barsky/p10.webp",
+        "/venues/grebnevo/barsky/p11.webp",
+        "/venues/grebnevo/barsky/p12.webp"
+      ],
+      "alt": "Белый зал «Барский» на берегу пруда",
+      "areaM2": 180,
+      "areaNote": "+ палуба 100 м²",
+      "banquet": 80,
+      "buffet": 120,
+      "tariff": [
+        {
+          "day": "Пн–Чт",
+          "rent": "100 000 ₽",
+          "deposit": "250 000 ₽"
+        },
+        {
+          "day": "Пятница",
+          "rent": "150 000 ₽",
+          "deposit": "380 000 ₽"
+        },
+        {
+          "day": "Суббота",
+          "rent": "150 000 ₽",
+          "deposit": "400 000 ₽"
+        },
+        {
+          "day": "Воскресенье",
+          "rent": "100 000 ₽",
+          "deposit": "250 000 ₽"
+        }
+      ],
+      "included": [
+        "мебель",
+        "текстиль",
+        "посуда",
+        "площадка под выездную регистрацию на воде"
+      ],
+      "body": [
+        "Белый дом на берегу Барского пруда: 180 м² зала и палуба 100 м² над водой.",
+        "Площадка для выездной регистрации здесь — на воде: церемония проходит на пирсе прямо над прудом."
+      ]
+    },
+    {
+      "id": "shater-u-ozera",
+      "name": "Шатёр у озера",
+      "kicker": "Шатёр",
+      "photos": [
+        "/venues/grebnevo/shater-u-ozera/p01.webp",
+        "/venues/grebnevo/shater-u-ozera/p02.webp",
+        "/venues/grebnevo/shater-u-ozera/p03.webp",
+        "/venues/grebnevo/shater-u-ozera/p04.webp",
+        "/venues/grebnevo/shater-u-ozera/p05.webp",
+        "/venues/grebnevo/shater-u-ozera/p06.webp",
+        "/venues/grebnevo/shater-u-ozera/p07.webp",
+        "/venues/grebnevo/shater-u-ozera/p08.webp",
+        "/venues/grebnevo/shater-u-ozera/p09.webp",
+        "/venues/grebnevo/shater-u-ozera/p10.webp"
+      ],
+      "alt": "Белый шатёр у озера с розовыми цветами",
+      "areaM2": 100,
+      "areaNote": "+ палуба 200 м²",
+      "banquet": 50,
+      "buffet": 80,
+      "tariff": [
+        {
+          "day": "Пн–Чт",
+          "rent": "60 000 ₽",
+          "deposit": "150 000 ₽"
+        },
+        {
+          "day": "Пятница",
+          "rent": "80 000 ₽",
+          "deposit": "200 000 ₽"
+        },
+        {
+          "day": "Суббота",
+          "rent": "80 000 ₽",
+          "deposit": "250 000 ₽"
+        },
+        {
+          "day": "Воскресенье",
+          "rent": "60 000 ₽",
+          "deposit": "150 000 ₽"
+        }
+      ],
+      "included": [
+        "мебель",
+        "текстиль",
+        "посуда",
+        "площадка под выездную регистрацию"
+      ],
+      "body": [
+        "Белый шатёр на 100 м² и палуба 200 м² с выходом на пляжную зону озера.",
+        "До 50 гостей банкетом — камерная свадьба у воды с церемонией на палубе."
+      ]
+    },
+    {
+      "id": "limoncello",
+      "name": "Лимончелло",
+      "kicker": "Веранда",
+      "photos": [
+        "/venues/grebnevo/limoncello/p01.webp",
+        "/venues/grebnevo/limoncello/p02.webp",
+        "/venues/grebnevo/limoncello/p03.webp",
+        "/venues/grebnevo/limoncello/p04.webp"
+      ],
+      "alt": "Открытая веранда «Лимончелло» под гирляндами",
+      "areaM2": 80,
+      "banquet": 40,
+      "buffet": 60,
+      "tariff": [
+        {
+          "day": "Пн–Чт",
+          "rent": "40 000 ₽",
+          "deposit": "100 000 ₽"
+        },
+        {
+          "day": "Пятница",
+          "rent": "60 000 ₽",
+          "deposit": "120 000 ₽"
+        },
+        {
+          "day": "Суббота",
+          "rent": "60 000 ₽",
+          "deposit": "150 000 ₽"
+        },
+        {
+          "day": "Воскресенье",
+          "rent": "60 000 ₽",
+          "deposit": "120 000 ₽"
+        }
+      ],
+      "included": [
+        "мебель",
+        "мангал"
+      ],
+      "body": [
+        "Открытая веранда 80 м² под гирляндами на 40 гостей банкетом. В аренду входят мебель и мангал — формат для летнего ужина без банкетного протокола."
+      ]
+    },
+    {
+      "id": "suvorov",
+      "name": "Суворов",
+      "kicker": "Лофт",
+      "photos": [
+        "/venues/grebnevo/suvorov/p01.webp",
+        "/venues/grebnevo/suvorov/p02.webp",
+        "/venues/grebnevo/suvorov/p03.webp",
+        "/venues/grebnevo/suvorov/p04.webp",
+        "/venues/grebnevo/suvorov/p05.webp",
+        "/venues/grebnevo/suvorov/p06.webp",
+        "/venues/grebnevo/suvorov/p07.webp",
+        "/venues/grebnevo/suvorov/p08.webp",
+        "/venues/grebnevo/suvorov/p09.webp",
+        "/venues/grebnevo/suvorov/p10.webp"
+      ],
+      "alt": "Кирпичный лофт «Суворов» с чёрным мраморным полом",
+      "areaM2": 68,
+      "areaNote": "+ цоколь 48 м²",
+      "banquet": 30,
+      "buffet": 50,
+      "tariff": [
+        {
+          "day": "Пн–Чт",
+          "rent": "30 000 ₽",
+          "deposit": "110 000 ₽"
+        },
+        {
+          "day": "Пятница",
+          "rent": "50 000 ₽",
+          "deposit": "150 000 ₽"
+        },
+        {
+          "day": "Суббота",
+          "rent": "50 000 ₽",
+          "deposit": "200 000 ₽"
+        },
+        {
+          "day": "Воскресенье",
+          "rent": "30 000 ₽",
+          "deposit": "110 000 ₽"
+        }
+      ],
+      "included": [
+        "мебель",
+        "текстиль",
+        "посуда",
+        "площадка под выездную регистрацию"
+      ],
+      "body": [
+        "Лофт на 30 гостей: кирпичные стены, чёрный мраморный пол, хрустальные люстры. 68 м² зала и цоколь 48 м² с диванами — второе пространство для гостей."
+      ]
+    }
+  ],
+  "blocks": [
+    {
+      "type": "stats",
+      "items": [
+        {
+          "value": "9",
+          "label": "залов на 30–350 гостей"
+        },
+        {
+          "value": "350",
+          "label": "гектаров усадьбы"
+        },
+        {
+          "value": "53",
+          "label": "дома для гостей"
+        },
+        {
+          "value": "25",
+          "label": "км от МКАД"
+        }
+      ]
+    },
+    {
+      "type": "halls-index",
+      "kicker": "Девять залов",
+      "title": "Какой зал под вашу свадьбу",
+      "lead": "Залы разной посадки и цены в одной усадьбе: у каждого свой тариф по дням недели, аренда с 10:00 до 23:00. С января по апрель и в октябре–ноябре аренда любого зала — со скидкой 50 %."
+    },
+    {
+      "type": "halls"
+    },
+    {
+      "type": "statement",
+      "kicker": "Усадьба",
+      "title": "Свадьба на несколько дней в усадьбе на 350 гектарах",
+      "dark": true,
+      "body": [
+        "Залы стоят в историческом парке с вековыми липами и дубами вокруг Барского пруда. Площадка для выездной регистрации на берегу пруда входит в аренду любого зала, а официальную регистрацию брака проводит выездной сотрудник ЗАГСа прямо в усадьбе. На территории есть храм — венчание можно провести в тот же день.",
+        "Гостей селят в усадьбе: 53 дома и коттеджа, при бронировании зала — скидка 15 % на проживание. Парковка на 3 000 машин бесплатная."
+      ],
+      "facts": [
+        {
+          "label": "Церемония",
+          "value": "площадка на берегу пруда, 20 стульев — бесплатно"
+        },
+        {
+          "label": "Регистрация брака",
+          "value": "16 000 ₽, Красногорский ЗАГС № 2"
+        },
+        {
+          "label": "Венчание",
+          "value": "храм на территории усадьбы"
+        },
+        {
+          "label": "Проживание",
+          "value": "53 дома, скидка 15 % при аренде зала"
+        }
+      ]
+    },
+    {
+      "type": "terms",
+      "kicker": "Условия",
+      "title": "Общие условия для всех залов",
+      "terms": [
+        {
+          "title": "Меню и сборы",
+          "rows": [
+            {
+              "label": "Минимальный заказ по меню",
+              "value": "от 7 000 ₽ на персону"
+            },
+            {
+              "label": "Сервисный сбор",
+              "value": "15 % от суммы меню"
+            },
+            {
+              "label": "Свой алкоголь и напитки",
+              "value": "можно, пробковый сбор 500 ₽ с человека"
+            },
+            {
+              "label": "Аренда зала",
+              "value": "с 10:00 до 23:00, тариф по дням недели — в секции зала"
+            },
+            {
+              "label": "Низкий сезон",
+              "value": "январь–апрель и октябрь–ноябрь: скидка 50 % на аренду зала"
+            }
+          ]
+        }
+      ],
+      "included": [
+        {
+          "title": "В аренду любого зала входит",
+          "items": [
+            "Мебель, текстиль и посуда (у веранды «Лимончелло» — мебель и мангал)",
+            "Площадка под выездную регистрацию на 20 стульев",
+            "Парковка на 3 000 машин"
+          ]
+        },
+        {
+          "title": "Как посмотреть",
+          "items": [
+            "Показ залов — по предварительной записи в банкетной службе",
+            "Банкетная служба работает с 10:00 до 19:00"
+          ]
+        }
+      ],
+      "extras": [
+        {
+          "title": "Отдельно",
+          "rows": [
+            {
+              "label": "Официальная регистрация брака",
+              "value": "16 000 ₽"
+            },
+            {
+              "label": "Проживание гостей",
+              "value": "53 дома, скидка 15 % при бронировании зала"
+            },
+            {
+              "label": "Выпускной",
+              "value": "до 04:00, сервисный сбор 30 %"
+            },
+            {
+              "label": "Корпоратив в декабре",
+              "value": "сервисный сбор 20 %"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "gallery",
+      "kicker": "Галерея",
+      "title": "Девять залов и усадьба"
+    },
+    {
+      "type": "reviews"
+    },
+    {
+      "type": "faq",
+      "items": [
+        {
+          "q": "Что значит скидка 50 % в низкий сезон?",
+          "a": [
+            "С января по апрель и в октябре–ноябре аренда любого зала стоит вдвое дешевле тарифа. Минимальный заказ по меню и сервисный сбор не меняются."
+          ]
+        },
+        {
+          "q": "Можно ли привезти свой алкоголь?",
+          "a": [
+            "Да, свой алкоголь и безалкогольные напитки — с пробковым сбором 500 ₽ с человека."
+          ]
+        },
+        {
+          "q": "Как устроена церемония?",
+          "a": [
+            "Площадка для выездной регистрации на 20 стульев входит в аренду каждого зала; у «Барского» она стоит на воде. Официальную регистрацию брака (16 000 ₽) проводит Красногорский ЗАГС № 2, венчание — в храме на территории."
+          ]
+        },
+        {
+          "q": "Где разместить гостей?",
+          "a": [
+            "В усадьбе 53 дома и коттеджа; при бронировании зала на проживание действует скидка 15 %. Бронирует отдел домов усадьбы."
+          ]
+        },
+        {
+          "q": "До скольких работает зал?",
+          "a": [
+            "Аренда любого зала — с 10:00 до 23:00. Выпускные проводят до 04:00 с сервисным сбором 30 %."
+          ]
+        }
+      ]
+    }
+  ],
+  "scenes": [],
+  "terms": [],
+  "included": [],
+  "extras": [],
+  "rules": [],
+  "gallery": [
+    {
+      "src": "/venues/grebnevo/trubetskoy-hall/p01.webp",
+      "alt": "Столы в белом шатре «Трубецкой Холл»"
+    },
+    {
+      "src": "/venues/grebnevo/trubetskoy-hall/p02.webp",
+      "alt": "Букет на столе в шатре"
+    },
+    {
+      "src": "/venues/grebnevo/trubetskoy-hall/p03.webp",
+      "alt": "Зал шатра с зелёными акцентами",
+      "wide": true
+    },
+    {
+      "src": "/venues/grebnevo/trubetskoy-hall/p04.webp",
+      "alt": "Пара у стола в белом шатре",
+      "wide": true
+    },
+    {
+      "src": "/venues/grebnevo/trubetskoy-hall/p05.webp",
+      "alt": "Шатёр снаружи, летний день",
+      "wide": true
+    },
+    {
+      "src": "/venues/grebnevo/trubetskoy-hall/p06.webp",
+      "alt": "Стол с бордовыми цветами"
+    },
+    {
+      "src": "/venues/grebnevo/trubetskoy-hall/p07.webp",
+      "alt": "Президиум с бордовыми цветами"
+    },
+    {
+      "src": "/venues/grebnevo/trubetskoy-hall/p08.webp",
+      "alt": "Палуба у пруда, стулья для церемонии",
+      "wide": true
+    },
+    {
+      "src": "/venues/grebnevo/trubetskoy-hall/p09.webp",
+      "alt": "Молодожёны на палубе у пруда"
+    },
+    {
+      "src": "/venues/grebnevo/trubetskoy-hall/p10.webp",
+      "alt": "Молодожёны у красной арки на пруду"
+    },
+    {
+      "src": "/venues/grebnevo/trubetskoy-hall/p11.webp",
+      "alt": "Первый танец в дыму"
+    },
+    {
+      "src": "/venues/grebnevo/trubetskoy-hall/p12.webp",
+      "alt": "Ряды стульев на палубе перед церемонией",
+      "wide": true
+    },
+    {
+      "src": "/venues/grebnevo/trubetskoy-hall/p13.webp",
+      "alt": "Усадьба с высоты: шатёр среди зелени",
+      "wide": true
+    },
+    {
+      "src": "/venues/grebnevo/grand-lesnoy/p01.webp",
+      "alt": "Стол с бокалами у стеклянной стены Grand «Лесной»"
+    },
+    {
+      "src": "/venues/grebnevo/grand-lesnoy/p02.webp",
+      "alt": "Вечерний зал с подсветкой и фонтаном у входа",
+      "wide": true
+    },
+    {
+      "src": "/venues/grebnevo/grand-lesnoy/p03.webp",
+      "alt": "Белая дорожка церемонии с драпировкой"
+    },
+    {
+      "src": "/venues/grebnevo/grand-lesnoy/p04.webp",
+      "alt": "Сервировка у стеклянной стены"
+    },
+    {
+      "src": "/venues/grebnevo/grand-lesnoy/p05.webp",
+      "alt": "Зелёные композиции на полу перед стеклом"
+    },
+    {
+      "src": "/venues/grebnevo/grand-lesnoy/p06.webp",
+      "alt": "Свечи и зелень на светлом полу"
+    },
+    {
+      "src": "/venues/grebnevo/grand-lesnoy/p07.webp",
+      "alt": "Столы в зале с люстрами, лес за стеклом",
+      "wide": true
+    },
+    {
+      "src": "/venues/grebnevo/grand-lesnoy/p08.webp",
+      "alt": "Стеклянный зал снаружи: фасад и площадка",
+      "wide": true
+    },
+    {
+      "src": "/venues/grebnevo/grand-lesnoy/p09.webp",
+      "alt": "Фасад вечером с подсветкой",
+      "wide": true
+    },
+    {
+      "src": "/venues/grebnevo/grand-lesnoy/p10.webp",
+      "alt": "Зал сквозь деревья"
+    },
+    {
+      "src": "/venues/grebnevo/grand-lesnoy/p11.webp",
+      "alt": "Стол с зелёной скатертью у окна"
+    },
+    {
+      "src": "/venues/grebnevo/grand-lesnoy/p12.webp",
+      "alt": "Люстра под сводом и лес за стеклом"
+    },
+    {
+      "src": "/venues/grebnevo/grand-lesnoy/p13.webp",
+      "alt": "Белый фонтан у входа"
+    },
+    {
+      "src": "/venues/grebnevo/grand-lesnoy/p14.webp",
+      "alt": "Первый танец под люстрами"
+    },
+    {
+      "src": "/venues/grebnevo/grand-lesnoy/p15.webp",
+      "alt": "Молодожёны с микрофоном в вечернем зале"
+    },
+    {
+      "src": "/venues/grebnevo/karetny-dvor/p01.webp",
+      "alt": "Кирпичный фасад «Каретного двора» с арочными окнами",
+      "wide": true
+    },
+    {
+      "src": "/venues/grebnevo/karetny-dvor/p02.webp",
+      "alt": "Фонтан во дворе перед входом",
+      "wide": true
+    },
+    {
+      "src": "/venues/grebnevo/karetny-dvor/p03.webp",
+      "alt": "Фонтан под соснами"
+    },
+    {
+      "src": "/venues/grebnevo/karetny-dvor/p04.webp",
+      "alt": "Рояль у кирпичной стены"
+    },
+    {
+      "src": "/venues/grebnevo/karetny-dvor/p05.webp",
+      "alt": "Зал с паркетом ёлочкой и круглыми столами",
+      "wide": true
+    },
+    {
+      "src": "/venues/grebnevo/karetny-dvor/p06.webp",
+      "alt": "Столы под люстрами у арочных окон",
+      "wide": true
+    },
+    {
+      "src": "/venues/grebnevo/karetny-dvor/p07.webp",
+      "alt": "Зал «Каретный двор» целиком",
+      "wide": true
+    },
+    {
+      "src": "/venues/grebnevo/karetny-dvor/p08.webp",
+      "alt": "Кирпичная стена и высокие двери зала",
+      "wide": true
+    },
+    {
+      "src": "/venues/grebnevo/karetny-dvor/p09.webp",
+      "alt": "Умывальник в отделке под мрамор",
+      "wide": true
+    },
+    {
+      "src": "/venues/grebnevo/karetny-dvor/p10.webp",
+      "alt": "Плетёные кресла во дворе"
+    },
+    {
+      "src": "/venues/grebnevo/karetny-dvor/p11.webp",
+      "alt": "Кирпичный фасад в солнечный день",
+      "wide": true
+    },
+    {
+      "src": "/venues/grebnevo/karetny-dvor/p12.webp",
+      "alt": "Стулья для церемонии в парке у фонтана",
+      "wide": true
+    },
+    {
+      "src": "/venues/grebnevo/pushkin/p01.webp",
+      "alt": "Президиум с синими цветами в оранжерее «Пушкинъ»"
+    },
+    {
+      "src": "/venues/grebnevo/pushkin/p02.webp",
+      "alt": "Стол молодожёнов с зеленью у стеклянной стены"
+    },
+    {
+      "src": "/venues/grebnevo/pushkin/p03.webp",
+      "alt": "Зал под тёмным потолком с люстрами"
+    },
+    {
+      "src": "/venues/grebnevo/pushkin/p04.webp",
+      "alt": "Президиум с зеленью на фоне парка"
+    },
+    {
+      "src": "/venues/grebnevo/pushkin/p05.webp",
+      "alt": "Стол с белой драпировкой и хрусталём"
+    },
+    {
+      "src": "/venues/grebnevo/pushkin/p06.webp",
+      "alt": "Длинный стол под люстрой"
+    },
+    {
+      "src": "/venues/grebnevo/pushkin/p07.webp",
+      "alt": "Белая драпировка и хрустальные люстры"
+    },
+    {
+      "src": "/venues/grebnevo/pushkin/p08.webp",
+      "alt": "Фонтан с белой ротондой"
+    },
+    {
+      "src": "/venues/grebnevo/pushkin/p09.webp",
+      "alt": "Ротонда с драпировкой и фонтан",
+      "wide": true
+    },
+    {
+      "src": "/venues/grebnevo/pushkin/p10.webp",
+      "alt": "Невеста у ротонды с фонтаном"
+    },
+    {
+      "src": "/venues/grebnevo/pushkin/p11.webp",
+      "alt": "Невеста в белом зале оранжереи"
+    },
+    {
+      "src": "/venues/grebnevo/pushkin/p12.webp",
+      "alt": "Молодожёны за столом в оранжерее"
+    },
+    {
+      "src": "/venues/grebnevo/pushkin/p13.webp",
+      "alt": "Колоннада оранжереи и фонтан",
+      "wide": true
+    },
+    {
+      "src": "/venues/grebnevo/pushkin/p14.webp",
+      "alt": "Портик с колоннами и стулья для церемонии"
+    },
+    {
+      "src": "/venues/grebnevo/lermontov/p01.webp",
+      "alt": "Стеклянный фасад «Лермонтова» с ротондой",
+      "wide": true
+    },
+    {
+      "src": "/venues/grebnevo/lermontov/p02.webp",
+      "alt": "Фонтан у стеклянной стены оранжереи"
+    },
+    {
+      "src": "/venues/grebnevo/lermontov/p03.webp",
+      "alt": "Президиум с белыми цветами",
+      "wide": true
+    },
+    {
+      "src": "/venues/grebnevo/lermontov/p04.webp",
+      "alt": "Драпировка у стола молодожёнов"
+    },
+    {
+      "src": "/venues/grebnevo/lermontov/p05.webp",
+      "alt": "Скульптура в парке у оранжереи"
+    },
+    {
+      "src": "/venues/grebnevo/lermontov/p06.webp",
+      "alt": "Фронтон с колоннами и фонтан на закате",
+      "wide": true
+    },
+    {
+      "src": "/venues/grebnevo/lermontov/p07.webp",
+      "alt": "Бюст у входа в оранжерею"
+    },
+    {
+      "src": "/venues/grebnevo/lermontov/p08.webp",
+      "alt": "Зал с чёрными фермами и люстрами"
+    },
+    {
+      "src": "/venues/grebnevo/lermontov/p09.webp",
+      "alt": "Длинный зал с круглыми столами"
+    },
+    {
+      "src": "/venues/grebnevo/lermontov/p10.webp",
+      "alt": "Церемония на террасе оранжереи"
+    },
+    {
+      "src": "/venues/grebnevo/lermontov/p11.webp",
+      "alt": "Столы с золотистыми стульями под люстрами"
+    },
+    {
+      "src": "/venues/grebnevo/barsky/p01.webp",
+      "alt": "Белый дом «Барский» с лестницей к пруду",
+      "wide": true
+    },
+    {
+      "src": "/venues/grebnevo/barsky/p02.webp",
+      "alt": "Стол с оранжевыми цветами и люстра"
+    },
+    {
+      "src": "/venues/grebnevo/barsky/p03.webp",
+      "alt": "Президиум с осенними цветами"
+    },
+    {
+      "src": "/venues/grebnevo/barsky/p04.webp",
+      "alt": "Пирс над прудом с цветочной аркой"
+    },
+    {
+      "src": "/venues/grebnevo/barsky/p05.webp",
+      "alt": "Цветочная арка над водой"
+    },
+    {
+      "src": "/venues/grebnevo/barsky/p06.webp",
+      "alt": "Белый пирс с аркой на пруду",
+      "wide": true
+    },
+    {
+      "src": "/venues/grebnevo/barsky/p07.webp",
+      "alt": "Дом «Барский» снаружи",
+      "wide": true
+    },
+    {
+      "src": "/venues/grebnevo/barsky/p08.webp",
+      "alt": "Столы на террасе над прудом",
+      "wide": true
+    },
+    {
+      "src": "/venues/grebnevo/barsky/p09.webp",
+      "alt": "Зал с чёрными фермами и столами",
+      "wide": true
+    },
+    {
+      "src": "/venues/grebnevo/barsky/p10.webp",
+      "alt": "Стол под люстрой у окна"
+    },
+    {
+      "src": "/venues/grebnevo/barsky/p11.webp",
+      "alt": "Молодожёны на белом мосту"
+    },
+    {
+      "src": "/venues/grebnevo/barsky/p12.webp",
+      "alt": "Пара на балконе «Барского»"
+    },
+    {
+      "src": "/venues/grebnevo/shater-u-ozera/p01.webp",
+      "alt": "Столы с розовыми композициями в шатре у озера"
+    },
+    {
+      "src": "/venues/grebnevo/shater-u-ozera/p02.webp",
+      "alt": "Президиум с цветочной аркой"
+    },
+    {
+      "src": "/venues/grebnevo/shater-u-ozera/p03.webp",
+      "alt": "Розовые цветы и вид на озеро"
+    },
+    {
+      "src": "/venues/grebnevo/shater-u-ozera/p04.webp",
+      "alt": "Арка с цветами под гирляндами"
+    },
+    {
+      "src": "/venues/grebnevo/shater-u-ozera/p05.webp",
+      "alt": "Палуба с цветочной аркой над водой",
+      "wide": true
+    },
+    {
+      "src": "/venues/grebnevo/shater-u-ozera/p06.webp",
+      "alt": "Шатёр и арка на фоне озера",
+      "wide": true
+    },
+    {
+      "src": "/venues/grebnevo/shater-u-ozera/p07.webp",
+      "alt": "Церемония на палубе у шатра"
+    },
+    {
+      "src": "/venues/grebnevo/shater-u-ozera/p08.webp",
+      "alt": "Сервировка с зеркалом и цветами"
+    },
+    {
+      "src": "/venues/grebnevo/shater-u-ozera/p09.webp",
+      "alt": "Президиум с белыми цветами"
+    },
+    {
+      "src": "/venues/grebnevo/shater-u-ozera/p10.webp",
+      "alt": "Белые цветы у входа в шатёр"
+    },
+    {
+      "src": "/venues/grebnevo/limoncello/p01.webp",
+      "alt": "Длинный стол с красной скатертью на веранде «Лимончелло»"
+    },
+    {
+      "src": "/venues/grebnevo/limoncello/p02.webp",
+      "alt": "Веранда под гирляндами"
+    },
+    {
+      "src": "/venues/grebnevo/limoncello/p03.webp",
+      "alt": "Красная скатерть и жёлтые вазы с лимонами",
+      "wide": true
+    },
+    {
+      "src": "/venues/grebnevo/limoncello/p04.webp",
+      "alt": "Цветы и лимоны на столе веранды",
+      "wide": true
+    },
+    {
+      "src": "/venues/grebnevo/suvorov/p01.webp",
+      "alt": "Зал лофта «Суворов» с круглыми столами"
+    },
+    {
+      "src": "/venues/grebnevo/suvorov/p02.webp",
+      "alt": "Картина в раме на кирпичной стене",
+      "wide": true
+    },
+    {
+      "src": "/venues/grebnevo/suvorov/p03.webp",
+      "alt": "Столы у окон под люстрами"
+    },
+    {
+      "src": "/venues/grebnevo/suvorov/p04.webp",
+      "alt": "Стол с сервировкой и прозрачные стулья"
+    },
+    {
+      "src": "/venues/grebnevo/suvorov/p05.webp",
+      "alt": "Кирпичная стена и окна лофта"
+    },
+    {
+      "src": "/venues/grebnevo/suvorov/p06.webp",
+      "alt": "Зал лофта с чёрным мраморным полом"
+    },
+    {
+      "src": "/venues/grebnevo/suvorov/p07.webp",
+      "alt": "Стол у кирпичной стены"
+    },
+    {
+      "src": "/venues/grebnevo/suvorov/p08.webp",
+      "alt": "Картина под бра на кирпиче"
+    },
+    {
+      "src": "/venues/grebnevo/suvorov/p09.webp",
+      "alt": "Хрустальная люстра лофта"
+    },
+    {
+      "src": "/venues/grebnevo/suvorov/p10.webp",
+      "alt": "Лестница в цоколь и кирпичная стена"
+    }
+  ],
+  "faq": [],
+  "contacts": {
+    "address": "Московская область, городской округ Щёлково, территория усадьба Гребнево",
+    "addressNote": "Историческая усадьба на 350 гектарах между Щёлково и Фрязино, 25 км от МКАД",
+    "geo": {
+      "lat": 55.949301,
+      "lon": 38.087608
+    },
+    "phone": "+7 915 437-11-82",
+    "phoneHref": "tel:+79154371182",
+    "email": "banket@usadbagrebnevo.com",
+    "hours": "Банкетная служба 10:00–19:00, показ залов по записи",
+    "routes": [
+      {
+        "label": "На машине",
+        "value": "по Щёлковскому или Ярославскому шоссе до Фрязино, дальше по проспекту Мира и улице Фабричной до усадьбы; 25 км от МКАД"
+      },
+      {
+        "label": "Общественным транспортом",
+        "value": "от метро Щёлковская автобус № 361 до Фрязино, дальше № 43 или № 23 до остановки «Усадьба Гребнево»"
+      },
+      {
+        "label": "Электричкой",
+        "value": "с Ярославского вокзала до станции Фрязино-Пассажирская, дальше автобус № 43"
+      }
+    ],
+    "links": [
+      {
+        "label": "Банкетные залы усадьбы",
+        "href": "https://usadbagrebnevo.ru/banketnye-zaly/"
+      },
+      {
+        "label": "Дома для гостей",
+        "href": "https://usadbagrebnevo.ru/arenda-domov/"
+      }
+    ]
+  },
+  "seo": {
+    "title": "Усадьба Гребнево — девять свадебных залов в усадьбе под Щёлково · WED Secrets",
+    "description": "Усадьба Гребнево: девять залов на 30–350 гостей в 25 км от МКАД — стеклянные оранжереи, барнхаус в лесу, шатры у пруда, лофт. Открытый тариф по дням недели, церемония на воде, 53 дома для гостей. Фото, условия, отзывы.",
+    "ogImage": "/venues/grebnevo/og-cover.jpg"
+  }
+}

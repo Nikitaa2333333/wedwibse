@@ -1,0 +1,183 @@
+---
+// ОГЛАВЛЕНИЕ ЗАЛОВ КОМПЛЕКСА — плитка над секциями залов (блок `halls-index`).
+// Нужна площадке-усадьбе с несколькими залами (Гребнево: девять): человек
+// сперва выбирает зал по размеру и цене, а уже потом читает про него.
+// Плитка — ссылка на якорь секции этого же зала ниже по странице, не на
+// отдельный URL: залы одной усадьбы живут на одной карточке каталога.
+//
+// На плитке только то, по чему выбирают: номер, тип, имя, гости банкетом,
+// аренда «от» (минимум по дням недели). Кадр — первый из рельса зала,
+// квадратом: девять кадров разной пропорции сделали бы из плитки доску.
+// Ни цены, ни имени поверх кадра — всё на бумаге под ним (правило проекта).
+import { Image } from 'astro:assets';
+import type { VenueHall } from '../data/venues';
+import { resolveImage, IMG_WIDTHS } from '../lib/images';
+import { withCount, type PluralForms } from '../lib/plural';
+
+interface Props {
+  kicker: string;
+  title: string;
+  lead?: string;
+  halls: VenueHall[];
+}
+
+const { kicker, title, lead, halls } = Astro.props;
+
+const GUESTS: PluralForms = ['гость', 'гостя', 'гостей'];
+
+// «от 200 000 ₽» — самая низкая аренда по дням недели; строки тарифа
+// приходят уже отформатированными («200 000 ₽»), поэтому число вынимаем
+// из строки, а не храним второй раз.
+const rentFrom = (hall: VenueHall) =>
+  hall.tariff
+    .map((t) => ({ n: Number(t.rent.replace(/\D/g, '')), s: t.rent }))
+    .sort((a, b) => a.n - b.n)[0]?.s;
+---
+
+<section class="hidx section" id="zaly">
+  <div class="container container--wide">
+    <header class="hidx__head">
+      <p class="hidx__kicker t-caption">{kicker}</p>
+      <h2 class="hidx__title">{title}</h2>
+      {lead && <p class="hidx__lead">{lead}</p>}
+    </header>
+
+    <ol class="hidx__grid" data-halls-index>
+      {halls.map((hall, i) => (
+        <li>
+          <a class="htile" href={`#hall-${hall.id}`}>
+            <Image
+              class="htile__img"
+              src={resolveImage(hall.photos[0])}
+              alt=""
+              widths={IMG_WIDTHS.card}
+              sizes="(min-width: 1024px) 22vw, (min-width: 640px) 30vw, 46vw"
+              loading={i < 4 ? 'eager' : 'lazy'}
+              decoding="async"
+            />
+            <span class="htile__body">
+              <span class="htile__meta t-caption">
+                <span class="htile__num">{String(i + 1).padStart(2, '0')}</span>
+                {hall.kicker}
+              </span>
+              <span class="htile__name">{hall.name}</span>
+              <span class="htile__facts t-small">
+                до {withCount(hall.banquet, GUESTS)} · от {rentFrom(hall)}
+              </span>
+            </span>
+          </a>
+        </li>
+      ))}
+    </ol>
+  </div>
+</section>
+
+<script>
+  // Плавный ход к секции зала. Lenis в проекте выключен (Layout.astro),
+  // нативный переход по якорю прыгает мгновенно — а плитка над длинной
+  // страницей должна именно «повезти» вниз, иначе человек теряет, где он.
+  // reduced-motion — обычный прыжок, hash в адресе остаётся для «назад».
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.querySelectorAll<HTMLElement>('[data-halls-index]').forEach((list) => {
+    list.addEventListener('click', (e) => {
+      const a = (e.target as HTMLElement).closest<HTMLAnchorElement>('a[href^="#"]');
+      if (!a || reduced) return;
+      const target = document.querySelector<HTMLElement>(a.getAttribute('href')!);
+      if (!target) return;
+      e.preventDefault();
+      history.pushState(null, '', a.getAttribute('href'));
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+
+<style>
+  .hidx :global(.container) { max-width: none; }
+
+  .hidx__head { margin-bottom: var(--section-gap-tight); }
+
+  .hidx__kicker {
+    font-weight: var(--w-medium);
+    margin-bottom: var(--s-3);
+  }
+
+  .hidx__title {
+    font-size: var(--fs-h1);
+    font-weight: var(--w-head-lg);
+    line-height: var(--lh-display);
+    letter-spacing: var(--ls-display);
+    max-width: var(--measure-head);
+  }
+
+  .hidx__lead {
+    margin-top: var(--s-4);
+    font-size: var(--fs-lead);
+    line-height: var(--lh-body);
+    max-width: var(--measure-lead);
+  }
+
+  /* Две колонки на телефоне: девять плиток в одну колонку — это экран
+     с лишним, а по две плитка остаётся читаемой и вся сетка влезает
+     в полтора экрана. Дальше три и четыре. */
+  .hidx__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--pin-gap);
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  @media (min-width: 640px) { .hidx__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (min-width: 1024px) { .hidx__grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+  /* Плашка на --surface, как входы в разделы на главной: кадр сверху,
+     подпись на бумаге снизу. Своих цветов нет. */
+  .htile {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: var(--surface);
+    color: var(--ink);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    text-decoration: none;
+  }
+
+  .htile__img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    background: var(--surface-dim);
+  }
+
+  .htile__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-1);
+    padding: var(--s-3) var(--s-3) var(--s-4);
+  }
+
+  .htile__meta {
+    display: flex;
+    gap: var(--s-2);
+    font-weight: var(--w-medium);
+  }
+
+  /* Номер — тот же, что стоит у секции зала ниже: связка «плитка → секция» */
+  .htile__num { font-variant-numeric: tabular-nums; }
+
+  .htile__name {
+    font-size: var(--fs-h3);
+    font-weight: var(--w-head);
+    line-height: var(--lh-heading);
+    letter-spacing: var(--ls-display);
+  }
+
+  .htile__facts { margin-top: var(--s-1); }
+
+  @media (hover: hover) {
+    .htile__img { transition: transform var(--dur-fast) var(--ease-out); }
+    .htile:hover .htile__img { transform: scale(1.03); }
+  }
+</style>

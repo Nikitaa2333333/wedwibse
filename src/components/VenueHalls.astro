@@ -1,0 +1,234 @@
+---
+// ЗАЛЫ КОМПЛЕКСА — секции по одной на зал (блок `halls`, данные venue.halls).
+// Одна усадьба, девять площадок: у каждой свои кадры, площадь, посадка и
+// тариф по дням недели. Сюда ведут плитки оглавления (HallsIndex) по
+// якорю #hall-<id>; общие для всех залов условия (сервисный сбор, меню,
+// парковка) здесь не повторяются — они один раз в блоке `terms` ниже.
+//
+// Структура секции взята с сайта усадьбы, где тариф по дням — главный
+// элемент страницы зала: кадры → тип и имя → три числа → таблица тарифа
+// → что входит → 1–2 абзаца. Таблица — единственное место, где линии
+// между строками разрешены (это структура, а не разделители списка).
+import PhotoRail from './PhotoRail.astro';
+import type { VenueHall } from '../data/venues';
+import { IMG_WIDTHS } from '../lib/images';
+
+interface Props {
+  halls: VenueHall[];
+}
+
+const { halls } = Astro.props;
+---
+
+<div class="halls">
+  {halls.map((hall, i) => (
+    <section class="hall section" id={`hall-${hall.id}`}>
+      <div class="container container--wide">
+        <div class="hall__grid">
+          <div class="hall__media">
+            <PhotoRail
+              photos={hall.photos}
+              alt={hall.alt}
+              sizes="(min-width: 900px) 42vw, 100vw"
+              widths={IMG_WIDTHS.card}
+            />
+          </div>
+
+          <div class="hall__body">
+            <header class="hall__head">
+              <p class="hall__kicker t-caption">
+                <span class="hall__num">{String(i + 1).padStart(2, '0')}</span>
+                {hall.kicker}
+              </p>
+              <h2 class="hall__title">{hall.name}</h2>
+            </header>
+
+            {/* Три числа, по которым зал сравнивают с соседями */}
+            <dl class="hall__stats">
+              <div class="hall__stat">
+                <dd class="hall__val">{hall.areaM2}<span class="hall__unit"> м²</span></dd>
+                <dt class="hall__lbl t-caption">{hall.areaNote ?? 'площадь зала'}</dt>
+              </div>
+              <div class="hall__stat">
+                <dd class="hall__val">{hall.banquet}</dd>
+                <dt class="hall__lbl t-caption">гостей банкетом</dt>
+              </div>
+              <div class="hall__stat">
+                <dd class="hall__val">{hall.buffet}</dd>
+                <dt class="hall__lbl t-caption">гостей фуршетом</dt>
+              </div>
+            </dl>
+
+            <table class="tariff">
+              <caption class="tariff__caption t-caption">Аренда зала 10:00–23:00 и минимальный заказ по меню</caption>
+              <thead>
+                <tr>
+                  <th scope="col">День</th>
+                  <th scope="col">Аренда</th>
+                  <th scope="col">Заказ от</th>
+                </tr>
+              </thead>
+              <tbody>
+                {hall.tariff.map((t) => (
+                  <tr>
+                    <th scope="row">{t.day}</th>
+                    <td>{t.rent}</td>
+                    <td>{t.deposit}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <p class="hall__included">
+              <span class="hall__included-label">В аренду входит: </span>
+              {hall.included.join(', ')}
+            </p>
+
+            <div class="hall__text">
+              {hall.body.map((p) => <p class="hall__p">{p}</p>)}
+            </div>
+
+            <a class="hall__up t-small" href="#zaly">Все залы ↑</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  ))}
+</div>
+
+<style>
+  .hall :global(.container) { max-width: none; }
+
+  /* Секции залов идут подряд: между ними обычный ритм секции, а не
+     удвоенный (низ верхней + верх нижней) — иначе девять залов
+     растягиваются дырами. */
+  .hall + .hall { padding-top: 0; }
+
+  /* Якорь встаёт с воздухом сверху, а не в упор к краю экрана */
+  .hall { scroll-margin-top: var(--s-6); }
+
+  .hall__grid {
+    display: grid;
+    gap: var(--s-6);
+  }
+
+  .hall__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-6);
+    min-width: 0;
+  }
+
+  .hall__kicker {
+    display: flex;
+    gap: var(--s-2);
+    font-weight: var(--w-medium);
+    margin-bottom: var(--s-3);
+  }
+
+  .hall__num { font-variant-numeric: tabular-nums; }
+
+  .hall__title {
+    font-size: var(--fs-h1);
+    font-weight: var(--w-head-lg);
+    line-height: var(--lh-display);
+    letter-spacing: var(--ls-display);
+    max-width: var(--measure-head);
+  }
+
+  /* Числа — три колонки в любую ширину; у чисел короткие подписи,
+     и они читаются рядом даже на 360px */
+  .hall__stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--s-4);
+    margin: 0;
+  }
+
+  .hall__stat { min-width: 0; }
+
+  .hall__val {
+    font-size: var(--fs-h2);
+    font-weight: var(--w-head);
+    line-height: 1;
+    letter-spacing: var(--ls-display);
+    font-variant-numeric: tabular-nums;
+    margin: 0 0 var(--s-1);
+  }
+
+  .hall__unit { font-size: var(--fs-small); }
+
+  .hall__lbl { font-weight: var(--w-medium); }
+
+  /* ТАРИФ. Таблица во всю ширину колонки, линии между строками —
+     структура таблицы (единственное разрешённое место для линий). */
+  .tariff {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--fs-body);
+    line-height: var(--lh-body);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tariff__caption {
+    text-align: left;
+    font-weight: var(--w-medium);
+    padding-bottom: var(--s-3);
+  }
+
+  .tariff th,
+  .tariff td {
+    text-align: left;
+    padding: var(--s-3) var(--s-3) var(--s-3) 0;
+    border-bottom: 1px solid var(--line);
+    vertical-align: baseline;
+  }
+
+  .tariff thead th {
+    font-size: var(--fs-caption);
+    font-weight: var(--w-medium);
+  }
+
+  .tariff tbody th { font-weight: var(--w-body); }
+
+  .tariff td { white-space: nowrap; }
+
+  .hall__included {
+    font-size: var(--fs-body);
+    line-height: var(--lh-body);
+    max-width: var(--measure-text);
+  }
+
+  .hall__included-label { font-weight: var(--w-medium); }
+
+  .hall__p {
+    font-size: var(--fs-body);
+    line-height: var(--lh-body);
+    max-width: var(--measure-text);
+  }
+
+  .hall__p + .hall__p { margin-top: var(--s-4); }
+
+  .hall__up {
+    align-self: flex-start;
+    color: inherit;
+    font-weight: var(--w-medium);
+  }
+
+  @media (min-width: 900px) {
+    /* Кадр слева и липкий: секция зала длиннее окна 4:5, и пока читают
+       тариф, зал остаётся перед глазами. */
+    .hall__grid {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+      gap: var(--s-8);
+      align-items: start;
+    }
+
+    .hall__media {
+      position: sticky;
+      top: var(--s-6);
+    }
+
+    .hall__up { display: none; }
+  }
+</style>
