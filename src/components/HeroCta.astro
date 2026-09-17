@@ -13,7 +13,9 @@
 // страницу, иначе площадка задвоится в разделе. Подпись меняется по
 // aria-pressed, как в VenueContacts.
 interface Props {
-  /** подпись действия: «Забронировать дату» у площадки, «Заказать» у подрядчика */
+  /** подпись действия: «Забронировать» у площадки, «Заказать» у подрядчика.
+   *  Одно слово: кнопка делит строку пополам с «В избранное», и два слова
+   *  в половину телефона не влезают — текст вылезал за пилюлю. */
   orderLabel: string;
   orderHref: string;
   /** снимок карточки для избранного (lib/favorite-snapshot) — уже в JSON */
@@ -48,7 +50,6 @@ const { orderLabel, orderHref, save } = Astro.props;
     align-items: center;
     justify-content: center;
     padding-inline: var(--s-4);
-    white-space: nowrap;
   }
 
   @media (min-width: 640px) {

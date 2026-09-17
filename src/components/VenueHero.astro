@@ -72,7 +72,9 @@ const reviews = block?.total ?? feedReviews;
     save={saveData}
   />
   <!-- Заказ и избранное — сразу под именем, а не под лидом (см. HeroCta) -->
-  <HeroCta slot="cta" orderLabel="Забронировать дату" orderHref="#zayavka" save={saveData} />
+  <!-- «Забронировать», не «Забронировать дату»: на телефоне длинная подпись
+       не влезала в половину строки и вылезала за пилюлю (17.09) -->
+  <HeroCta slot="cta" orderLabel="Забронировать" orderHref="#zayavka" save={saveData} />
 </HeroStage>
 
 <section class="vhero">
