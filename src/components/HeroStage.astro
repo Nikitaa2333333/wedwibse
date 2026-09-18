@@ -137,32 +137,37 @@ const facts = rating !== null && rating !== undefined;
     <slot name="actions" />
   </div>
 
-  <!-- ЛИСТАЛКА — СВОЕЙ СТРОКОЙ, а не в строке имени.
-       Раньше стрелки со счётчиком стояли справа от имени и отъедали
-       у него ширину: «Юлия и Леонид Лешаковы» обрезалось многоточием
-       ради двух значков — то есть главное на карточке уступало место
-       служебному. Здесь строка пустая, отнимать не у чего.
+  <!-- ЛЕНТА МИНИАТЮР — СВОЕЙ СТРОКОЙ под окном, а не в строке имени
+       (стрелки со счётчиком справа от имени однажды обрезали «Юлия и
+       Леонид Лешаковы» многоточием ради двух значков).
 
-       На телефоне в ней только полоса-прогресс: длина заполненного
-       отрезка говорит, сколько всего кадров, положение — где ты сейчас,
-       и ни того ни другого не надо читать. Листают свайпом.
-       Стрелки появляются ТОЛЬКО там, где есть мышь (@media hover): на
-       ПК свайпа нет, и без них кадр не пролистать вовсе. -->
+       До 18.09.2026 здесь стояла полоса-прогресс со счётчиком «1 / 24»:
+       она говорила, сколько кадров и где ты, но не что там дальше.
+       Лента маленьких плиток показывает сами кадры: сколько их — видно
+       по длине, где ты — по рамке, куда листать — нажатием на плитку.
+       Ленту крутят вбок независимо от окна; активная плитка сама
+       подъезжает в видимую часть при листании свайпом.
+       Пробуем; не зайдёт — откат к полосе одним коммитом. -->
   {frames.length > 1 && (
-    <div class="stage__bar">
-      <button class="stage__arrow" type="button" data-stage-prev aria-label="Предыдущий кадр">
-        <Icon name="arrowLeft" />
-      </button>
-
-      <span class="stage__track" aria-hidden="true">
-        <span class="stage__fill" data-stage-fill style={`--n:${frames.length}`}></span>
-      </span>
-
-      <span class="stage__count" data-stage-count>1 / {frames.length}</span>
-
-      <button class="stage__arrow" type="button" data-stage-next aria-label="Следующий кадр">
-        <Icon name="arrowRight" />
-      </button>
+    <div class="stage__thumbs" data-stage-thumbs>
+      {frames.map((src, n) => (
+        <button
+          class:list={['stage__thumb', src === defaultFrame && 'is-active']}
+          type="button"
+          data-stage-thumb={frameId(src)}
+          aria-label={`Кадр ${n + 1} из ${frames.length}`}
+          aria-current={src === defaultFrame ? 'true' : undefined}
+        >
+          <Image
+            src={resolveImage(isVideo(src) ? posterOf(src) : src)}
+            alt=""
+            widths={IMG_WIDTHS.thumb}
+            sizes="68px"
+            loading="lazy"
+            decoding="async"
+          />
+        </button>
+      ))}
     </div>
   )}
 
@@ -263,8 +268,8 @@ const facts = rating !== null && rating !== undefined;
      было видно, что кадр не один, — но ценой самого кадра: у площадки
      с горизонтальным снимком экран превращался в два обрезка рядом,
      и первое, что видел человек, было не фото, а полоска чужого.
-     Очевидность листания теперь даёт полоса-прогресс ПОД кадром
-     (.stage__bar), которая ничего у фотографии не отнимает.
+     Очевидность листания теперь даёт лента миниатюр ПОД кадром
+     (.stage__thumbs), которая ничего у фотографии не отнимает.
 
   /* ПЕРЕКЛАДКА КАДРА — только после первого действия человека.
      Класс is-paging ставит скрипт, когда листание уже началось: на
@@ -454,95 +459,61 @@ const facts = rating !== null && rating !== undefined;
     height: 14px;
   }
 
-  /* Листалка: стрелка · счётчик · стрелка одной строкой, без рамок —
-     служебная строка подписи, а не панель управления. Счётчик — тихая
-     метка, приглушение opacity, а не серой краской (правило проекта). */
-  /* ============ СТРОКА ЛИСТАЛКИ ============
-     Своя строка под кадром: полоса-прогресс во всю ширину, справа
-     счётчик, по краям — стрелки (только там, где есть мышь).
-     Фон бумажный и позиция relative — эта строка теперь и закрывает
-     шов под окном (окно заходит под неё на пиксель). */
-  .stage__bar {
+  /* ============ ЛЕНТА МИНИАТЮР ============
+     Своя строка под кадром: плитки одного размера (--stage-thumb) в ряд,
+     ряд крутится вбок. Лента идёт от края до края экрана, а поля —
+     внутренним отступом: так первая плитка стоит по сетке текста, а
+     последняя докручивается до правого поля, не упираясь в кромку.
+     Фон бумажный и позиция relative — эта строка и закрывает шов
+     под окном (окно заходит под неё на пиксель).
+     На ПК стрелок рядом больше нет: плитка сама и есть кнопка. */
+  .stage__thumbs {
     position: relative;
     display: flex;
-    align-items: center;
-    gap: var(--s-3);
+    gap: var(--s-2);
     padding: var(--s-3) var(--gutter) 0;
     background: var(--paper);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: var(--gutter);
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
   }
 
-  /* Дорожка. Толщина волоска: это не элемент управления, а отметка
-     положения — она должна читаться боковым зрением и не более. */
-  .stage__track {
-    position: relative;
-    flex: 1 1 0;
-    height: 2px;
-    border-radius: var(--radius-pill);
-    background: color-mix(in srgb, var(--fg) 12%, transparent);
-    overflow: hidden;
-  }
+  .stage__thumbs::-webkit-scrollbar { display: none; }
 
-  /* Заполненный отрезок: ширина — доля одного кадра (1/N), сдвиг — номер
-     кадра. Отсюда и читается сразу и «сколько всего», и «где я»: при
-     двадцати кадрах отрезок короткий, при трёх — треть дорожки. */
-  .stage__fill {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    width: calc(100% / var(--n, 1));
-    border-radius: inherit;
-    background: var(--fg);
-    opacity: 0.5;
-    transform: translateX(calc(var(--i, 0) * 100%));
-    transition: transform var(--dur-base) var(--ease-out);
-  }
-
-  .stage__count {
+  /* Плитка квадратная: пропорцию кадра здесь показывать не надо, сюжет
+     узнаётся и в квадрате, а ряд из одинаковых окошек читается лентой,
+     а не рваной доской. Рамка активной — чернильная, в 2px: контур
+     обозначает «здесь», не заливка (см. запрет цветных заливок). */
+  .stage__thumb {
     flex: none;
-    font-size: var(--fs-caption);
-    font-weight: var(--w-medium);
-    white-space: nowrap;
-    opacity: 0.5;
-    /* цифры не «дышат» по ширине при листании — строка стоит на месте */
-    font-variant-numeric: tabular-nums;
+    width: var(--stage-thumb);
+    height: var(--stage-thumb);
+    padding: 0;
+    border: 0;
+    border-radius: calc(var(--radius-card) / 2);
+    overflow: hidden;
+    background: var(--surface-dim);
+    scroll-snap-align: start;
+    cursor: pointer;
+    outline: 2px solid transparent;
+    outline-offset: -2px;
+    transition: outline-color var(--dur-fast) var(--ease-out);
   }
 
-  /* Стрелка: знак 16px внутри зоны нажатия --tap; стрелки вплотную к
-     счётчику визуально, зона нажатия — за счёт отрицательных полей. */
-  /* СТРЕЛКИ — ТОЛЬКО ТАМ, ГДЕ ЕСТЬ МЫШЬ. На телефоне кадры листают
-     свайпом, и две кнопки рядом с полосой там лишний слой; на ПК свайпа
-     нет, и без стрелок кадр не пролистать вовсе (клавиатура не в счёт —
-     о ней надо догадаться). Место в строке они не отнимают ни у чего:
-     строка служебная, кроме полосы и счётчика в ней ничего нет. */
-  .stage__arrow { display: none; }
+  .stage__thumb img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .stage__thumb.is-active { outline-color: var(--fg); }
 
   @media (hover: hover) {
-    .stage__arrow {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      flex: none;
-      width: var(--tap);
-      height: var(--tap);
-      margin: calc((var(--tap) - 16px) / -2) 0;
-      padding: 0;
-      border: 0;
-      background: none;
-      color: var(--fg);
-      opacity: 0.5;
-      cursor: pointer;
-      transition: opacity var(--dur-fast) var(--ease-out);
-    }
-  }
-
-  .stage__arrow :global(svg) {
-    width: 16px;
-    height: 16px;
-  }
-
-  @media (hover: hover) {
-    .stage__arrow:hover { opacity: 1; }
+    .stage__thumb:not(.is-active):hover { outline-color: color-mix(in srgb, var(--fg) 40%, transparent); }
   }
 
   /* ============ ПК ============
@@ -551,12 +522,16 @@ const facts = rating !== null && rating !== undefined;
      колонке, а не по краям экрана. */
   @media (min-width: 1024px) {
     .stage__window,
+    .stage__thumbs,
     .stage__cap {
       max-width: var(--stage-max-w);
       margin-inline: auto;
     }
 
+    .stage__thumbs,
     .stage__cap { padding-inline: 0; }
+
+    .stage__thumbs { scroll-padding-inline: 0; }
   }
 </style>
 
@@ -603,8 +578,7 @@ const facts = rating !== null && rating !== undefined;
 
   document.querySelectorAll<HTMLElement>('[data-hero-shot]').forEach((stage) => {
     const shots = Array.from(stage.querySelectorAll<HTMLElement>('[data-frame]'));
-    const count = stage.querySelector<HTMLElement>('[data-stage-count]');
-    const fill = stage.querySelector<HTMLElement>('[data-stage-fill]');
+    const thumbs = Array.from(stage.querySelectorAll<HTMLElement>('[data-stage-thumb]'));
     const imgOf = (frame: HTMLElement | undefined) => frame?.querySelector('img') ?? null;
 
     // ============ РОЛИКИ ============
@@ -642,9 +616,30 @@ const facts = rating !== null && rating !== undefined;
       }
 
       shots.forEach((f, k) => { f.hidden = k !== index; });
-      if (count) count.textContent = `${index + 1} / ${shots.length}`;
-      // полоса-прогресс под кадром: отрезок едет на свой номер
-      fill?.style.setProperty('--i', String(index));
+
+      // Лента миниатюр: рамка на текущей, и она подъезжает в видимую
+      // часть ленты — при свайпе по окну человек ленту не крутит, а
+      // активная плитка иначе уезжала бы за край. `nearest`, а не
+      // `center`: лента не дёргается, пока плитка и так видна.
+      thumbs.forEach((t, k) => {
+        const on = k === index;
+        t.classList.toggle('is-active', on);
+        if (on) t.setAttribute('aria-current', 'true');
+        else t.removeAttribute('aria-current');
+      });
+      // Крутим саму ленту, а не scrollIntoView: тот заодно двигает
+      // страницу по вертикали, если строка не целиком в окне.
+      const strip = thumbs[index]?.parentElement;
+      const t = thumbs[index];
+      if (strip && t) {
+        const pad = parseFloat(getComputedStyle(strip).paddingLeft) || 0;
+        const left = t.offsetLeft - pad;
+        const right = t.offsetLeft + t.offsetWidth + pad;
+        let to = strip.scrollLeft;
+        if (left < to) to = left;
+        else if (right > to + strip.clientWidth) to = right - strip.clientWidth;
+        if (to !== strip.scrollLeft) strip.scrollTo({ left: to, behavior: animate ? 'smooth' : 'instant' });
+      }
 
       // Соседние кадры подтягиваем заранее — листание не показывает
       // пустоту. Но ТОЛЬКО когда показанный кадр уже доехал: на открытии
@@ -664,20 +659,23 @@ const facts = rating !== null && rating !== undefined;
 
     show(index, false);
 
-    // Стрелки у счётчика — тот же show(), что и свайп
-    stage.querySelector('[data-stage-prev]')?.addEventListener('click', () => show(index - 1));
-    stage.querySelector('[data-stage-next]')?.addEventListener('click', () => show(index + 1));
+    // Плитка ленты — тот же show(), что и свайп
+    thumbs.forEach((t, k) => t.addEventListener('click', () => show(k)));
 
     let x0 = 0;
     let y0 = 0;
+    let onStrip = false;
 
     stage.addEventListener('touchstart', (e) => {
       const t = e.changedTouches[0];
       x0 = t.clientX;
       y0 = t.clientY;
+      // жест начался на ленте миниатюр — это её прокрутка, не листание окна
+      onStrip = !!(e.target as HTMLElement).closest('[data-stage-thumbs]');
     }, { passive: true });
 
     stage.addEventListener('touchend', (e) => {
+      if (onStrip) return;
       const t = e.changedTouches[0];
       const dx = t.clientX - x0;
       const dy = t.clientY - y0;
