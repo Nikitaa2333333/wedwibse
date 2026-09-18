@@ -218,7 +218,7 @@ export const SPECIALIST_GROUPS: SpecialistGroup[] = [
     short: 'Декор',
     categories: ['dekoratory'],
     cover: '/specialists/groups/dekor.webp',
-    tone: 'dark',
+    tone: 'beige',
   },
   {
     key: 'foto-video',
@@ -249,24 +249,32 @@ export const SPECIALIST_GROUPS: SpecialistGroup[] = [
     label: 'Музыка и вокал',
     short: 'Музыка',
     categories: ['dj', 'kaver-gruppy', 'vokalisty', 'muzykanty'],
+    cover: '/specialists/groups/muzyka.webp',
+    tone: 'dark',
   },
   {
     key: 'oborudovanie',
     label: 'Оборудование и спецэффекты',
     short: 'Оборудование',
     categories: ['speceffekty', 'arenda-zvuka', 'arenda-sveta'],
+    cover: '/specialists/groups/oborudovanie.webp',
+    tone: 'dark',
   },
   {
     key: 'shou',
     label: 'Шоу и развлечения',
     short: 'Шоу',
     categories: ['horeografy', 'animatory', 'shou', 'fokusniki'],
+    cover: '/specialists/groups/shou.webp',
+    tone: 'beige',
   },
   {
     key: 'avto',
     label: 'Авто и трансфер',
     short: 'Авто',
     categories: ['avto'],
+    cover: '/specialists/groups/avto.webp',
+    tone: 'dark',
   },
 ];
 
