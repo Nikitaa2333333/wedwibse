@@ -14,7 +14,7 @@ import ArticleVenues from '../../../components/ArticleVenues.astro';
 import ArticleCard from '../../../components/ArticleCard.astro';
 import { resolveImage, IMG_WIDTHS } from '../../../lib/images';
 import { FEED, type FeedVenue } from '../../../data/feed';
-import { ARTICLES, RUBRICS, articleUrl, inlineHtml, type Article } from '../../../data/articles';
+import { ARTICLES, RUBRICS, articleUrl, inlineHtml, typograf, type Article } from '../../../data/articles';
 
 export function getStaticPaths() {
   return ARTICLES.map((article) => ({
@@ -43,9 +43,23 @@ const related = ARTICLES.filter((a) => a.slug !== article.slug).slice(0, 3);
 
 const dateLabel = (iso: string) =>
   new Date(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+
+// FAQ статьи — в микроразметку: вопросы взяты из ядра, поисковик отдаёт
+// их расширенным сниппетом, нейросети — цитатой. Текст тот же, что на странице.
+const faq = article.body.find((b) => b.kind === 'faq');
+const faqLd = faq && {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faq.items.map((i) => ({
+    '@type': 'Question',
+    name: i.q,
+    acceptedAnswer: { '@type': 'Answer', text: i.a },
+  })),
+};
 ---
 
 <Layout title={article.seo.title} description={article.seo.description} ogImage={article.cover.src}>
+  {faqLd && <script slot="head" type="application/ld+json" set:html={JSON.stringify(faqLd)} />}
   <SiteHeader />
 
   <main>
@@ -59,7 +73,7 @@ const dateLabel = (iso: string) =>
           </nav>
 
           <h1 class="post__title">{article.title}</h1>
-          <p class="post__lead t-lead">{article.lead}</p>
+          <p class="post__lead t-lead">{typograf(article.lead)}</p>
 
           <p class="post__date t-caption">
             <time datetime={article.published}>{dateLabel(article.published)}</time>
@@ -96,6 +110,45 @@ const dateLabel = (iso: string) =>
                     <li set:html={inlineHtml(item)} />
                   ))}
                 </ul>
+              );
+
+            if (block.kind === 'table')
+              return (
+                <div class="table-wrap post__table">
+                  <table class="table">
+                    {block.caption && <caption class="t-caption" set:html={inlineHtml(block.caption)} />}
+                    <thead>
+                      <tr>
+                        {block.head.map((h) => (
+                          <th scope="col" set:html={inlineHtml(h)} />
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {block.rows.map(([first, ...rest]) => (
+                        <tr>
+                          <th scope="row" set:html={inlineHtml(first)} />
+                          {rest.map((cell) => (
+                            <td set:html={inlineHtml(cell)} />
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              );
+
+            if (block.kind === 'faq')
+              return (
+                <section class="post__faq" aria-labelledby="post-faq-title">
+                  <h2 class="post__h2" id="post-faq-title">Частые вопросы</h2>
+                  {block.items.map((item) => (
+                    <div class="post__qa">
+                      <h3 class="post__q" set:html={inlineHtml(item.q)} />
+                      <p class="post__p" set:html={inlineHtml(item.a)} />
+                    </div>
+                  ))}
+                </section>
               );
 
             return (
@@ -198,6 +251,21 @@ const dateLabel = (iso: string) =>
   }
 
   .post__list { margin-top: var(--s-4); }
+
+  /* Таблица сравнения — шире меры текста: ей нужны колонки, а не строка */
+  .post__table { margin-top: var(--s-5); }
+  .post__table + .post__p { margin-top: var(--s-5); }
+
+  .post__faq { margin-top: var(--s-8); }
+
+  .post__qa + .post__qa { margin-top: var(--s-6); }
+
+  .post__q {
+    font-size: var(--fs-h3);
+    font-weight: var(--w-head);
+    line-height: var(--lh-heading);
+    margin-bottom: var(--s-3);
+  }
 
   .post__figure {
     margin-top: var(--s-7);

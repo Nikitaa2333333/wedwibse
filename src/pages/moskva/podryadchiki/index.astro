@@ -18,22 +18,11 @@ import {
   SPECIALISTS_BY_CATEGORY,
 } from '../../../data/specialists';
 import { withCount, type PluralForms } from '../../../lib/plural';
+import { Image } from 'astro:assets';
+import { resolveImage, IMG_WIDTHS } from '../../../lib/images';
 
-// Одна строка «что внутри» — по ключу раздела, чтобы порядок и состав
-// разделов менялись в данных, а текст не рассыпался.
-const BLURBS: Record<string, string> = {
-  organizacija: 'План дня и человек, который держит его на площадке',
-  vedushchie: 'Тот, кто ведёт вечер и говорит с гостями за вас',
-  dekor: 'Оформление зала, цветы и всё, что видно на фото',
-  'foto-video': 'Фото, видео и рилсы — всё, что останется, когда торт съеден',
-  kuhnya: 'Выездной кейтеринг и торт, ради которого ждут финала',
-  obraz: 'Утро невесты: причёска, макияж и образ на весь день',
-  muzyka: 'Диджей, кавер-группа, вокал и живые инструменты',
-  oborudovanie: 'Звук, свет и спецэффекты, которых нет на площадке',
-  shou: 'Танец, номера и всё, после чего гости не сядут',
-  avto: 'Машина молодых и трансфер гостей между точками',
-};
-
+// Описания «что внутри» с плиток сняты (18.09.2026): плитка — имя раздела
+// и счётчик, объяснять состав будет кадр, а не строка текста.
 const VENDORS: PluralForms = ['подрядчик', 'подрядчика', 'подрядчиков'];
 
 const labels = new Map(SPECIALIST_CATEGORIES.map((c) => [c.slug, c.label]));
@@ -46,7 +35,8 @@ const tiles = SPECIALIST_GROUPS.map((g) => {
   return {
     key: g.key,
     name: g.label,
-    blurb: BLURBS[g.key] ?? '',
+    cover: g.cover ? resolveImage(g.cover) : null,
+    tone: g.tone ?? null,
     href: `/moskva/podryadchiki/${cats[0]}/`,
     capsule: vendors.size === 0 ? 'скоро' : withCount(vendors.size, VENDORS),
   };
@@ -66,16 +56,36 @@ const tiles = SPECIALIST_GROUPS.map((g) => {
     </header>
 
     <ul class="hub__grid" aria-label="Разделы специалистов">
-      {tiles.map((t) => (
+      {tiles.map((t, i) => (
         <li>
-          <a class="gtile" href={t.href} aria-label={`${t.name} — ${t.capsule}`}>
-            <span class="gtile__top">
-              <span class="gtile__go" aria-hidden="true">↗</span>
-            </span>
+          <a
+            class:list={['gtile', t.cover && 'gtile--cover', t.tone === 'dark' && 'theme-dark']}
+            href={t.href}
+            aria-label={`${t.name} — ${t.capsule}`}
+          >
+            {t.cover ? (
+              /* Обложка — портрет на однотонном фоне того же тона, что
+                 плитка: кадр не лежит прямоугольником, а продолжает плашку.
+                 Декорация к имени раздела: без alt, ссылка подписана целиком. */
+              <span class="gtile__media">
+                <Image
+                  class="gtile__cover"
+                  src={t.cover}
+                  alt=""
+                  widths={IMG_WIDTHS.card}
+                  sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+                  loading={i < 4 ? 'eager' : 'lazy'}
+                  decoding="async"
+                />
+              </span>
+            ) : (
+              <span class="gtile__top">
+                <span class="gtile__go" aria-hidden="true">↗</span>
+              </span>
+            )}
 
             <span class="gtile__body">
               <span class="gtile__name">{t.name}</span>
-              <span class="gtile__blurb">{t.blurb}</span>
               <span class="gtile__count" aria-hidden="true">{t.capsule}</span>
             </span>
           </a>
@@ -155,6 +165,80 @@ const tiles = SPECIALIST_GROUPS.map((g) => {
     text-decoration: none;
   }
 
+  /* ПЛИТКА С ОБЛОЖКОЙ. Кадр снят на однотонном фоне в тоне плитки
+     (бежевый = --surface-dim, тёмный = .theme-dark), поэтому лежит без
+     полей от края до края верха, а подпись — на той же плашке под ним:
+     текста на фото нет (правило проекта), но и шва между кадром и
+     плашкой быть не должно. Стрелка-кружок тут не нужна: кадр сам
+     зовёт внутрь. */
+  .gtile--cover {
+    --tile-bg: var(--cover-beige);
+    padding: 0;
+    gap: 0;
+    justify-content: flex-start;
+    background: var(--tile-bg);
+    overflow: hidden;
+  }
+
+  /* Тёмная плитка: scoped-селектор .gtile сильнее глобального
+     .theme-dark, поэтому тон читаем из его ручек здесь явно. */
+  .gtile.theme-dark {
+    --tile-bg: var(--bg);
+    background: var(--tile-bg);
+    color: var(--fg);
+  }
+
+  /* Кадр снят на чистом белом/чёрном и притонирован в палитру
+     (multiply/screen) — верх и бока сливаются с плиткой точно, а у пола
+     остаётся естественная тень чуть темнее плашки. Её и закрывает
+     короткий градиент в тон плитки по нижней кромке: кадр «растворяется»
+     в плашку, а не обрывается линией над подписью. */
+  .gtile__media {
+    position: relative;
+    display: block;
+  }
+
+  .gtile__media::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 0;
+    height: 18%;
+    background: linear-gradient(to bottom, transparent, var(--tile-bg));
+    pointer-events: none;
+  }
+
+  .gtile__cover {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+  }
+
+  /* Подпись под кадром: заголовок сверху с местом под две строки
+     (у соседей «Ведущие» и «Организация и координация» капсула должна
+     стоять на одной высоте), капсула — у нижней границы плитки. */
+  .gtile--cover .gtile__body {
+    flex: 1 1 auto;
+    margin-top: 0;
+    padding: var(--s-3) var(--s-4) var(--s-4);
+  }
+
+  .gtile--cover .gtile__name {
+    min-height: calc(2 * 1.04em);
+  }
+
+  .gtile--cover .gtile__count {
+    margin-top: auto;
+  }
+
+  /* Капсула на плитке с обложкой: от цвета текста, а не --surface-dim —
+     бежевая плитка сама этого цвета, и капсула в ней растворялась;
+     на чернилах тот же серый читался бы светлым пятном. */
+  .gtile--cover .gtile__count {
+    background: color-mix(in srgb, currentColor 12%, transparent);
+  }
+
   .gtile__top {
     display: flex;
     align-items: center;
@@ -197,13 +281,6 @@ const tiles = SPECIALIST_GROUPS.map((g) => {
     font-weight: var(--w-head);
     line-height: 1.04;
     letter-spacing: -0.03em;
-  }
-
-  /* Меры тут нет намеренно: ширину описанию задаёт сама плитка, а внутри
-     текстового модуля мера не дублируется (правило проекта). */
-  .gtile__blurb {
-    font-size: var(--fs-small);
-    line-height: 1.3;
   }
 
   /* Капсула со счётчиком — плашка на тон гуще самой плитки. Прижата
