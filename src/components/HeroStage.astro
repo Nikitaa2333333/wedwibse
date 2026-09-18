@@ -360,7 +360,10 @@ const facts = rating !== null && rating !== undefined;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: start;
     gap: 0 var(--s-4);
-    padding: var(--s-2) var(--gutter) 0;
+    /* От ленты миниатюр до имени — --s-4, не --s-2: плитки это ещё
+       кадры, и имя, стоящее к ним вплотную, читалось подписью к плиткам,
+       а не заголовком карточки. */
+    padding: var(--s-4) var(--gutter) 0;
     background: var(--paper);
   }
 
@@ -464,15 +467,20 @@ const facts = rating !== null && rating !== undefined;
      ряд крутится вбок. Лента идёт от края до края экрана, а поля —
      внутренним отступом: так первая плитка стоит по сетке текста, а
      последняя докручивается до правого поля, не упираясь в кромку.
-     Фон бумажный и позиция relative — эта строка и закрывает шов
-     под окном (окно заходит под неё на пиксель).
+     ЛЕНТА ЗАЕЗЖАЕТ НА НИЗ ОКНА (--stage-thumb-lift): отдельной строкой
+     под окном между свечением и плитками читалась граница — кромка
+     кадра, которую свечение как раз и прячет. Плитки лежат на самом
+     переходе, фон у ленты прозрачный (свечение под ней видно), и слой
+     выше свечения и кнопки звука. Шов под окном закрывает свечение:
+     его нижний стоп — та же бумага.
      На ПК стрелок рядом больше нет: плитка сама и есть кнопка. */
   .stage__thumbs {
     position: relative;
+    z-index: 4;
     display: flex;
-    gap: var(--s-2);
-    padding: var(--s-3) var(--gutter) 0;
-    background: var(--paper);
+    gap: var(--stage-thumb-gap);
+    margin-top: calc(-1 * var(--stage-thumb-lift));
+    padding: 0 var(--gutter);
     overflow-x: auto;
     overscroll-behavior-x: contain;
     scroll-snap-type: x proximity;
