@@ -112,37 +112,60 @@ export interface Specialist {
 // (vedushchie), остальные рендерятся страницей-заглушкой.
 export interface SpecialistCategory {
   slug: string;
+  /** название раздела, множественное число — вкладки, заголовки каталога */
   label: string;
+  /** кто это один — «Фотограф», «Ведущий»: бирка под именем на визитке.
+      Тэглайн («Главное — люди и момент жизни») сам по себе не говорит,
+      фотограф это или ведущий, а из ленты в карточку попадают без контекста
+      раздела. Где единственного числа нет (кейтеринг, шоу, аренда) — то же
+      слово, что в label. */
+  role: string;
 }
 
 // Порядок здесь — порядок разделов ниже: категории одного раздела идут
 // подряд, чтобы список читался тем же деревом, что и хаб.
 export const SPECIALIST_CATEGORIES: SpecialistCategory[] = [
-  { slug: 'organizatory', label: 'Организаторы' },
-  { slug: 'koordinatory', label: 'Координаторы' },
-  { slug: 'vedushchie', label: 'Ведущие' },
-  { slug: 'dekoratory', label: 'Декораторы' },
-  { slug: 'fotografy', label: 'Фотографы' },
-  { slug: 'videografy', label: 'Видеографы' },
-  { slug: 'rils-meikery', label: 'Reels-мейкеры' },
-  { slug: 'keitering', label: 'Кейтеринг' },
-  { slug: 'konditery', label: 'Кондитеры' },
+  { slug: 'organizatory', label: 'Организаторы', role: 'Организатор' },
+  { slug: 'koordinatory', label: 'Координаторы', role: 'Координатор' },
+  { slug: 'vedushchie', label: 'Ведущие', role: 'Ведущий' },
+  { slug: 'dekoratory', label: 'Декораторы', role: 'Декоратор' },
+  { slug: 'fotografy', label: 'Фотографы', role: 'Фотограф' },
+  { slug: 'videografy', label: 'Видеографы', role: 'Видеограф' },
+  { slug: 'rils-meikery', label: 'Reels-мейкеры', role: 'Reels-мейкер' },
+  { slug: 'keitering', label: 'Кейтеринг', role: 'Кейтеринг' },
+  { slug: 'konditery', label: 'Кондитеры', role: 'Кондитер' },
   // Раздел без вкладок: стилист и визажист на свадьбе — один заказ
   // (утро невесты целиком), поэтому и категория одна.
-  { slug: 'stilisty', label: 'Стилисты и визажисты' },
-  { slug: 'dj', label: 'Диджеи' },
-  { slug: 'kaver-gruppy', label: 'Кавер-группы' },
-  { slug: 'vokalisty', label: 'Вокалисты' },
-  { slug: 'muzykanty', label: 'Музыканты' },
-  { slug: 'speceffekty', label: 'Спецэффекты' },
-  { slug: 'arenda-zvuka', label: 'Аренда звука' },
-  { slug: 'arenda-sveta', label: 'Аренда светомузыки' },
-  { slug: 'horeografy', label: 'Хореографы' },
-  { slug: 'animatory', label: 'Аниматоры' },
-  { slug: 'shou', label: 'Шоу' },
-  { slug: 'fokusniki', label: 'Фокусники и иллюзионисты' },
-  { slug: 'avto', label: 'Авто и трансфер' },
+  { slug: 'stilisty', label: 'Стилисты и визажисты', role: 'Стилист и визажист' },
+  { slug: 'dj', label: 'Диджеи', role: 'Диджей' },
+  { slug: 'kaver-gruppy', label: 'Кавер-группы', role: 'Кавер-группа' },
+  { slug: 'vokalisty', label: 'Вокалисты', role: 'Вокалист' },
+  { slug: 'muzykanty', label: 'Музыканты', role: 'Музыкант' },
+  { slug: 'speceffekty', label: 'Спецэффекты', role: 'Спецэффекты' },
+  { slug: 'arenda-zvuka', label: 'Аренда звука', role: 'Аренда звука' },
+  { slug: 'arenda-sveta', label: 'Аренда светомузыки', role: 'Аренда светомузыки' },
+  { slug: 'horeografy', label: 'Хореографы', role: 'Хореограф' },
+  { slug: 'animatory', label: 'Аниматоры', role: 'Аниматор' },
+  { slug: 'shou', label: 'Шоу', role: 'Шоу' },
+  { slug: 'fokusniki', label: 'Фокусники и иллюзионисты', role: 'Фокусник' },
+  { slug: 'avto', label: 'Авто и трансфер', role: 'Авто и трансфер' },
 ];
+
+/** Бирка «кто это» для визитки: «Фотограф», у пары — во множественном
+    числе и со всеми направлениями: «Фотографы и видеографы». Ведущий
+    с alsoCategories не бывает, но правило одно на всех. */
+export function specialistRole(s: Pick<Specialist, 'categorySlug' | 'alsoCategories' | 'gender'>): string {
+  const slugs = [s.categorySlug, ...(s.alsoCategories ?? [])];
+  const pair = s.gender === 'pair';
+  return slugs
+    .map((slug) => SPECIALIST_CATEGORIES.find((c) => c.slug === slug))
+    .filter((c): c is SpecialistCategory => !!c)
+    .map((c, i) => {
+      const word = pair ? c.label : c.role;
+      return i === 0 ? word : word.toLowerCase();
+    })
+    .join(' и ');
+}
 
 // ============ СМЫСЛОВЫЕ ГРУППЫ НАПРАВЛЕНИЙ ============
 // Два десятка категорий подряд человек не читает — он ищет «кто снимает»
@@ -162,6 +185,14 @@ export interface SpecialistGroup {
   short: string;
   /** slug'и категорий в порядке показа внутри группы */
   categories: string[];
+  /** обложка плитки на хабе раздела — постановочный студийный портрет
+      на однотонном фоне палитры сайта (генерация image-styler, пресет
+      wed-secrets-cover). Путь как у всех фото: строка от src/assets.
+      Нет обложки — плитка без кадра, как было. */
+  cover?: string;
+  /** тон фона обложки: под него красится сама плитка, чтобы кадр
+      сливался с плашкой, а не лежал прямоугольником на сером */
+  tone?: 'dark' | 'beige';
 }
 
 export const SPECIALIST_GROUPS: SpecialistGroup[] = [
@@ -170,36 +201,48 @@ export const SPECIALIST_GROUPS: SpecialistGroup[] = [
     label: 'Организация и координация',
     short: 'Организация',
     categories: ['organizatory', 'koordinatory'],
+    cover: '/specialists/groups/organizacija.webp',
+    tone: 'beige',
   },
   {
     key: 'vedushchie',
     label: 'Ведущие',
     short: 'Ведущие',
     categories: ['vedushchie'],
+    cover: '/specialists/groups/vedushchie.webp',
+    tone: 'dark',
   },
   {
     key: 'dekor',
     label: 'Декораторы',
     short: 'Декор',
     categories: ['dekoratory'],
+    cover: '/specialists/groups/dekor.webp',
+    tone: 'dark',
   },
   {
     key: 'foto-video',
     label: 'Фото и видео',
     short: 'Фото и видео',
     categories: ['fotografy', 'videografy', 'rils-meikery'],
+    cover: '/specialists/groups/foto-video.webp',
+    tone: 'beige',
   },
   {
     key: 'kuhnya',
     label: 'Кухня и сладости',
     short: 'Кухня',
     categories: ['keitering', 'konditery'],
+    cover: '/specialists/groups/kuhnya.webp',
+    tone: 'beige',
   },
   {
     key: 'obraz',
     label: 'Стилисты и визажисты',
     short: 'Образ',
     categories: ['stilisty'],
+    cover: '/specialists/groups/obraz.webp',
+    tone: 'beige',
   },
   {
     key: 'muzyka',
@@ -226,13 +269,6 @@ export const SPECIALIST_GROUPS: SpecialistGroup[] = [
     categories: ['avto'],
   },
 ];
-
-const IMG_M = '/specialists/vedushchie/m';
-const IMG_F = '/specialists/vedushchie/f';
-// Портреты авторов — отдельная папка, а не кадр из photos: аватарка это
-// лицо, а кадр каталога у половины категорий вообще не про человека
-// (см. поле avatar в интерфейсе Specialist).
-const AVA_V = '/specialists/vedushchie/avatars';
 
 // ============ ФИЛЬТРЫ: ВЕДУЩИЕ ============
 export const VEDUSHCHIE_FILTERS: FilterGroup[] = [
@@ -645,342 +681,6 @@ export const DEKORATORY_FILTERS: FilterGroup[] = [
   },
 ];
 
-// ============ КАРТОЧКИ: ВЕДУЩИЕ (демо-набор для дизайна) ============
-// Подпись (tagline) — одна короткая строка: на карточке кроме неё
-// только имя, рейтинг и метки на фото. Длинные описания — на странице.
-export const VEDUSHCHIE: Specialist[] = [
-  {
-    slug: 'anton-volkov',
-    categorySlug: 'vedushchie',
-    category: 'Ведущие',
-    name: 'Антон Волков',
-    avatar: `${AVA_V}/anton-volkov.webp`,
-    photos: [
-      `${IMG_M}/m08.jpg`,
-      `${IMG_M}/m21.jpg`,
-      `${IMG_M}/m42.jpg`,
-      `${IMG_M}/m16.jpg`,
-      `${IMG_M}/m27.jpg`,
-      `${IMG_M}/m36.jpg`,
-    ],
-    tagline: 'Лёгкий юмор, ноль пошлости',
-    bio: 'Ведёт свадьбы больше десяти лет — начинал с корпоративов, но быстро понял: настоящий кайф именно в свадебном формате, где эмоции честные, а не заученная реакция зала. За это время провёл больше пятидесяти свадеб — от камерных на 20 человек до банкетов на полторы сотни гостей.\n\nСтроит вечер вокруг пары, а не вокруг конкурсов: перед свадьбой обязательно созванивается, узнаёт историю знакомства, вычисляет, что точно не понравится гостям. Работает в связке со своим диджеем — вместе собирают плейлист под характер компании, поэтому пауз между блоками почти не бывает.',
-    gender: 'м',
-    priceFrom: 75000,
-    cities: ['цао', 'сао', 'mo'],
-    styles: ['no-vulgar', 'modern', 'humor'],
-    age: '35–50',
-    experienceYears: 12,
-    hasOwnDJ: true,
-    formats: ['medium', 'large', 'anniversary'],
-    languages: ['ru'],
-    ceremonyMaster: true,
-    hasEquipment: true,
-    rating: 4.9,
-    reviews: 58,
-    demo: true,
-    aboutTitle: 'О ведущем',
-    quote:
-      'Перед бронированием — пробный созвон: обсудим сценарий, стиль ведения и пожелания, бесплатно и ни к чему не обязывает. Бронируете дату за три месяца и раньше — минус 10%: у меня появляется время собрать сценарий именно под вашу пару. И берите комплект «ведущий + диджей»: мы работаем одной командой, поэтому пауз между блоками вечера просто не бывает.',
-    reels: [
-      { poster: `${IMG_M}/m19.jpg` },
-      { poster: `${IMG_M}/m23.jpg` },
-      { poster: `${IMG_M}/m29.jpg` },
-      { poster: `${IMG_M}/m54.jpg` },
-    ],
-    reviewsList: [
-      {
-        author: 'Мария и Дмитрий',
-        date: '14 июня 2026',
-        text: 'Антон полностью прочувствовал, чего мы хотим — никакой пошлости, только тёплая атмосфера. За месяц до свадьбы созвонились, разобрали историю знакомства, и половина вечера была построена на деталях, которые знали только мы. Гости до сих пор вспоминают вечер.',
-        rating: 5,
-      },
-      {
-        author: 'Ольга и Сергей',
-        date: '25 апреля 2026',
-        text: 'Отдельное спасибо за работу с диджеем в связке — вечер шёл без единой заминки, танцпол не пустовал ни минуты. Родители, которые «не танцуют», ушли с танцпола последними.',
-        rating: 5,
-      },
-      {
-        author: 'Анна и Павел',
-        date: '13 февраля 2026',
-        text: 'Изначально боялись классического формата тамады, но Антон предложил современный сценарий без банальных конкурсов. Единственное — хотелось чуть больше времени на свободное общение, но это мы сами перегрузили тайминг.',
-        rating: 4,
-      },
-      {
-        author: 'Ксения и Артём',
-        date: '19 декабря 2025',
-        text: 'Камерная свадьба на двадцать человек — боялись, что с ведущим будет «слишком официально». Получилось наоборот: как будто вечер вёл близкий друг семьи, который почему-то знает всех по именам.',
-        rating: 5,
-      },
-    ],
-  },
-  {
-    slug: 'marina-lebedeva',
-    categorySlug: 'vedushchie',
-    category: 'Ведущие',
-    name: 'Марина Лебедева',
-    avatar: `${AVA_V}/marina-lebedeva.webp`,
-    photos: [`${IMG_F}/f04.jpg`, `${IMG_F}/f07.jpg`, `${IMG_F}/f12.jpg`],
-    tagline: 'Камерные свадьбы на двух языках',
-    bio: 'Специализируется на камерных свадьбах — от 10 до 40 человек, где важен каждый гость и разговор, а не громкий тамада-формат. Ведёт на двух языках без потери интонации — удобно для смешанных пар и гостей из-за границы. Сценарий собирает вместе с парой на созвоне за месяц до даты.',
-    gender: 'ж',
-    priceFrom: 95000,
-    cities: ['цао', 'зао', 'сзао'],
-    styles: ['bilingual', 'intelligent', 'classic'],
-    age: '25–35',
-    experienceYears: 7,
-    hasOwnDJ: false,
-    formats: ['intimate', 'engagement'],
-    languages: ['ru', 'en'],
-    ceremonyMaster: true,
-    hasEquipment: false,
-    rating: 4.8,
-    reviews: 34,
-    demo: true,
-  },
-  {
-    slug: 'igor-sokolov',
-    categorySlug: 'vedushchie',
-    category: 'Ведущие',
-    name: 'Игорь Соколов',
-    avatar: `${AVA_V}/igor-sokolov.webp`,
-    photos: [`${IMG_M}/m03.jpg`, `${IMG_M}/m39.jpg`, `${IMG_M}/m67.jpg`],
-    tagline: 'Шоу и интерактив для больших залов',
-    bio: 'Работает с залами на 100+ гостей: держит энергию весь вечер через интерактив и элементы шоу, а не через микрофон и стандартные тосты. Приезжает с готовым диджей-сетом и реквизитом для конкурсов. Особенно любит гендер-пати — умеет удивить даже видавших виды гостей.',
-    gender: 'м',
-    priceFrom: 130000,
-    cities: ['юао', 'юво', 'mo', 'вне-мо'],
-    styles: ['show', 'interactive', 'modern'],
-    age: '35–50',
-    experienceYears: 16,
-    hasOwnDJ: true,
-    formats: ['large', 'gender-party', 'anniversary'],
-    languages: ['ru'],
-    ceremonyMaster: false,
-    hasEquipment: true,
-    rating: 4.7,
-    reviews: 71,
-    demo: true,
-  },
-  {
-    slug: 'ekaterina-orlova',
-    categorySlug: 'vedushchie',
-    category: 'Ведущие',
-    name: 'Екатерина Орлова',
-    avatar: `${AVA_V}/ekaterina-orlova.webp`,
-    photos: [`${IMG_F}/f51.jpg`, `${IMG_F}/f52.jpg`, `${IMG_F}/f53.jpg`],
-    tagline: 'Тёплая классика без клише',
-    bio: 'Ведёт тепло и без клише — никаких конкурсов «свяжите ленточку», только живой разговор с гостями и уважение к сценарию пары. Хорошо чувствует камерные и средние форматы, где важна атмосфера, а не масштаб. Перед свадьбой обязательно встречается с парой лично, а не только по видеосвязи.',
-    gender: 'ж',
-    priceFrom: 65000,
-    cities: ['свао', 'вао', 'mo'],
-    styles: ['classic', 'intelligent', 'no-vulgar'],
-    age: '25–35',
-    experienceYears: 5,
-    hasOwnDJ: false,
-    formats: ['intimate', 'medium', 'engagement'],
-    languages: ['ru'],
-    ceremonyMaster: true,
-    hasEquipment: false,
-    rating: 4.9,
-    reviews: 21,
-    demo: true,
-  },
-  {
-    slug: 'dmitriy-kuznetsov',
-    categorySlug: 'vedushchie',
-    category: 'Ведущие',
-    name: 'Дмитрий Кузнецов',
-    avatar: `${AVA_V}/dmitriy-kuznetsov.webp`,
-    photos: [`${IMG_M}/m23.jpg`, `${IMG_M}/m54.jpg`, `${IMG_M}/m19.jpg`],
-    tagline: '22 года за микрофоном',
-    bio: '22 года за микрофоном — начинал ещё в 2000-х, видел все форматы свадеб и знает, как держать зал даже без диджея, хотя обычно работает в связке со своим. Классическая подача с уместным юмором, без резких шуток. Часто ведёт не только свадьбы, но и годовщины той же пары — многие зовут повторно.',
-    gender: 'м',
-    priceFrom: 110000,
-    cities: ['юзао', 'зао', 'mo', 'вне-мо'],
-    styles: ['classic', 'humor'],
-    age: '50+',
-    experienceYears: 22,
-    hasOwnDJ: true,
-    formats: ['medium', 'large', 'anniversary', 'gender-party'],
-    languages: ['ru'],
-    ceremonyMaster: false,
-    hasEquipment: true,
-    rating: 4.6,
-    reviews: 89,
-    demo: true,
-  },
-  {
-    slug: 'alina-belova',
-    categorySlug: 'vedushchie',
-    category: 'Ведущие',
-    name: 'Алина Белова',
-    avatar: `${AVA_V}/alina-belova.webp`,
-    photos: [`${IMG_F}/f16.jpg`, `${IMG_F}/f44.jpg`, `${IMG_F}/f59.jpg`],
-    tagline: 'Современно и легко',
-    bio: 'Молодой ведущий современного формата — легко находит общий язык с гостями своего поколения, без старых шаблонов сценариев. Специализируется на камерных свадьбах и помолвках, где важна лёгкость, а не масштабные конкурсы. Может провести часть вечера на английском для смешанных компаний.',
-    gender: 'ж',
-    priceFrom: 55000,
-    cities: ['цао', 'сао', 'свао'],
-    styles: ['modern', 'interactive', 'no-vulgar'],
-    age: 'до 25',
-    experienceYears: 3,
-    hasOwnDJ: false,
-    formats: ['intimate', 'engagement'],
-    languages: ['ru', 'en'],
-    ceremonyMaster: true,
-    hasEquipment: false,
-    rating: 4.7,
-    reviews: 12,
-    demo: true,
-  },
-  {
-    slug: 'sergey-panov',
-    categorySlug: 'vedushchie',
-    category: 'Ведущие',
-    name: 'Сергей Панов',
-    avatar: `${AVA_V}/sergey-panov.webp`,
-    photos: [`${IMG_M}/m20.jpg`, `${IMG_M}/m26.jpg`, `${IMG_M}/m36.jpg`],
-    tagline: 'Церемонии и большие банкеты',
-    bio: 'Один из немногих, кто одинаково уверенно ведёт и выездную церемонию, и большой банкет на 150+ человек — от первого «да» до последнего танца. За 18 лет собрал свою команду звука и света, работает с ней синхронно. Подача классическая, с элементами шоу там, где это уместно, а не везде подряд.',
-    gender: 'м',
-    priceFrom: 160000,
-    cities: ['цао', 'зао', 'mo', 'вне-мо'],
-    styles: ['show', 'classic'],
-    age: '35–50',
-    experienceYears: 18,
-    hasOwnDJ: true,
-    formats: ['large', 'ceremony'],
-    languages: ['ru', 'en'],
-    ceremonyMaster: true,
-    hasEquipment: true,
-    rating: 4.9,
-    reviews: 104,
-    demo: true,
-  },
-  {
-    slug: 'olga-romanova',
-    categorySlug: 'vedushchie',
-    category: 'Ведущие',
-    name: 'Ольга Романова',
-    avatar: `${AVA_V}/olga-romanova.webp`,
-    photos: [`${IMG_F}/f17.jpg`, `${IMG_F}/f23.jpg`, `${IMG_F}/f60.jpg`],
-    tagline: 'Интеллигентно, по-семейному',
-    bio: 'Ведёт по-семейному — так, будто знакома с гостями лично, а не читает сценарий по бумажке. Хорошо подходит парам, которые хотят тёплую атмосферу без пошлых конкурсов и надрыва. Часто зовут на юбилеи свадеб — уже сложившаяся аудитория ценит её манеру.',
-    gender: 'ж',
-    priceFrom: 85000,
-    cities: ['сао', 'сзао', 'mo'],
-    styles: ['intelligent', 'no-vulgar'],
-    age: '35–50',
-    experienceYears: 9,
-    hasOwnDJ: false,
-    formats: ['intimate', 'medium', 'anniversary'],
-    languages: ['ru'],
-    ceremonyMaster: true,
-    hasEquipment: false,
-    rating: 4.8,
-    reviews: 47,
-    demo: true,
-  },
-  {
-    slug: 'maksim-goncharov',
-    categorySlug: 'vedushchie',
-    category: 'Ведущие',
-    name: 'Максим Гончаров',
-    avatar: `${AVA_V}/maksim-goncharov.webp`,
-    photos: [`${IMG_M}/m06.jpg`, `${IMG_M}/m18.jpg`, `${IMG_M}/m29.jpg`],
-    tagline: 'Драйв, диджей в комплекте',
-    bio: 'Драйвовый формат для больших свадеб — работает в связке со своим диджеем, поэтому звук и ведение выстроены как единое шоу, а не два отдельных подрядчика. Специализируется на масштабных форматах и гендер-пати, где нужна энергия на весь вечер. Один из самых бронируемых в верхнем ценовом сегменте.',
-    gender: 'м',
-    priceFrom: 210000,
-    cities: ['цао', 'юзао', 'mo', 'вне-мо'],
-    styles: ['show', 'interactive', 'humor'],
-    age: '25–35',
-    experienceYears: 8,
-    hasOwnDJ: true,
-    formats: ['large', 'gender-party'],
-    languages: ['ru'],
-    ceremonyMaster: false,
-    hasEquipment: true,
-    rating: 4.8,
-    reviews: 66,
-    demo: true,
-  },
-  {
-    slug: 'anna-tsaryova',
-    categorySlug: 'vedushchie',
-    category: 'Ведущие',
-    name: 'Анна Царёва',
-    avatar: `${AVA_V}/anna-tsaryova.webp`,
-    photos: [`${IMG_F}/f61.jpg`, `${IMG_F}/f62.jpg`, `${IMG_F}/f55.jpg`],
-    tagline: 'Вечер, который танцует',
-    bio: 'Строит вечер вокруг танцпола — с первых минут вовлекает гостей, а не ждёт полуночи, чтобы «раскачать» зал. Хорошо работает со средними и большими компаниями, где нужен постоянный интерактив. Приезжает со своим диджеем — сценарий и музыка планируются вместе.',
-    gender: 'ж',
-    priceFrom: 120000,
-    cities: ['вао', 'юво', 'mo'],
-    styles: ['interactive', 'modern', 'show'],
-    age: '25–35',
-    experienceYears: 6,
-    hasOwnDJ: true,
-    formats: ['medium', 'large', 'gender-party'],
-    languages: ['ru'],
-    ceremonyMaster: false,
-    hasEquipment: true,
-    rating: 4.7,
-    reviews: 39,
-    demo: true,
-  },
-  {
-    slug: 'pavel-krylov',
-    categorySlug: 'vedushchie',
-    category: 'Ведущие',
-    name: 'Павел Крылов',
-    avatar: `${AVA_V}/pavel-krylov.webp`,
-    photos: [`${IMG_M}/m16.jpg`, `${IMG_M}/m27.jpg`, `${IMG_M}/m60.jpg`],
-    tagline: 'Классика жанра для 30–80 гостей',
-    bio: 'Классика жанра без импровизаций «на грани» — подходит парам, которые хотят традиционный сценарий с тостами и конкурсами, но без пошлости. Комфортно чувствует себя с компаниями 30–80 человек. Работает без своего диджея, поэтому заранее согласовывает тайминг с музыкальным подрядчиком.',
-    gender: 'м',
-    priceFrom: 58000,
-    cities: ['свао', 'вао', 'юао'],
-    styles: ['classic', 'no-vulgar'],
-    age: '35–50',
-    experienceYears: 11,
-    hasOwnDJ: false,
-    formats: ['medium', 'anniversary'],
-    languages: ['ru'],
-    ceremonyMaster: false,
-    hasEquipment: false,
-    rating: 4.5,
-    reviews: 28,
-    demo: true,
-  },
-  {
-    slug: 'vera-solovyova',
-    categorySlug: 'vedushchie',
-    category: 'Ведущие',
-    name: 'Вера Соловьёва',
-    avatar: `${AVA_V}/vera-solovyova.webp`,
-    photos: [`${IMG_F}/f18.jpg`, `${IMG_F}/f50.jpg`, `${IMG_F}/f56.jpg`],
-    tagline: 'Нежные камерные праздники',
-    bio: 'Ведёт нежные камерные праздники и выездные церемонии — там, где важнее интонация, чем громкость микрофона. Один из самых доступных по цене вариантов в каталоге, при этом с личным подходом к каждой паре. Хорошо подходит для помолвок и небольших семейных торжеств.',
-    gender: 'ж',
-    priceFrom: 48000,
-    cities: ['зао', 'сзао', 'mo'],
-    styles: ['intelligent', 'classic'],
-    age: '25–35',
-    experienceYears: 4,
-    hasOwnDJ: false,
-    formats: ['intimate', 'ceremony', 'engagement'],
-    languages: ['ru'],
-    ceremonyMaster: true,
-    hasEquipment: false,
-    rating: 4.8,
-    reviews: 17,
-    demo: true,
-  },
-];
-
 // ============ КАРТОЧКИ: ФОТОГРАФЫ ============
 // ПЕРВЫЙ РЕАЛЬНЫЙ ПОДРЯДЧИК КАТАЛОГА (не демо): Лешаковы, фото и видео.
 // Тексты — их собственные, слегка причёсанные; ничего не дописано за них.
@@ -1096,8 +796,9 @@ const jsonSpecialists = Object.values(
 );
 
 export const SPECIALISTS_BY_CATEGORY: Record<string, Specialist[]> = (() => {
+  // Ведущие целиком из JSON: демо-набор на стоковых кадрах снят 18.09.2026,
+  // в каталоге только реальные подрядчики.
   const map: Record<string, Specialist[]> = {
-    vedushchie: [...VEDUSHCHIE],
     fotografy: [...FOTOGRAFY],
   };
   for (const s of jsonSpecialists) (map[s.categorySlug] ??= []).push(s);

@@ -42,9 +42,9 @@ const styleLabels = new Map(
 
 const priceFmt = new Intl.NumberFormat('ru-RU');
 
-// Демо-ведущие из массива VEDUSHCHIE и реальные из JSON (см. загрузчик
-// в data/specialists.ts) — один список; у JSON-карточки значения фильтров
-// уже лежат готовой картой s.filters, у демо раскладываются по бакетам здесь.
+// Ведущие — только реальные из JSON (см. загрузчик в data/specialists.ts);
+// демо-набор снят. У JSON-карточки значения фильтров лежат готовой картой
+// s.filters, раскладка по бакетам ниже осталась для карточек без неё.
 const cards: SpecialistCard[] = await Promise.all(
   (SPECIALISTS_BY_CATEGORY.vedushchie ?? []).map(async (s, i) => {
     const price = s.priceFrom ? `от ${priceFmt.format(s.priceFrom)} ₽` : 'Цена по запросу';

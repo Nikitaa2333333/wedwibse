@@ -22,7 +22,7 @@ import HeroActions from '../../../../components/HeroActions.astro';
 import HeroCta from '../../../../components/HeroCta.astro';
 import HeroStage from '../../../../components/HeroStage.astro';
 import ReelsRow from '../../../../components/ReelsRow.astro';
-import { SPECIALISTS_BY_CATEGORY, FILTERS_BY_CATEGORY, type Specialist } from '../../../../data/specialists';
+import { SPECIALISTS_BY_CATEGORY, FILTERS_BY_CATEGORY, specialistRole, type Specialist } from '../../../../data/specialists';
 import { reelsOf } from '../../../../data/reels';
 import { photoTiles } from '../../../../lib/gallery';
 import { resolveImage, favoriteImage, IMG_WIDTHS } from '../../../../lib/images';
@@ -111,12 +111,16 @@ const saveData = JSON.stringify({
     <!-- ПЕРВЫЙ ЭКРАН — тот же HeroStage, что у площадки, и теперь не только
          кадром: подпись он собирает сам из пропов. Здесь карточка отдаёт
          имя, специальность, рейтинг и портрет — где у площадки стоит её
-         знак, у подрядчика стоит он сам. Условия и заявка идут следом. -->
+         знак, у подрядчика стоит он сам. Условия и заявка идут следом.
+         Бирка начинается с профессии («Фотограф · …»): из ленты главной
+         в карточку попадают без раздела, и один тэглайн не говорит,
+         кто это — фотограф, видеограф или ведущий. Тот же приём, что
+         у площадки: «Оранжерея · Быково». -->
     <HeroStage
       frames={frames}
       alt={s.name}
       title={s.name}
-      kicker={s.tagline}
+      kicker={`${specialistRole(s)} · ${s.tagline}`}
       rating={s.rating}
       reviews={s.reviews}
       avatar={s.avatar}
