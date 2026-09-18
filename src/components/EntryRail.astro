@@ -40,6 +40,9 @@ interface Card {
   icon?: IconName;
   /** раздел каталога: крупнее набором */
   lead?: boolean;
+  /** тон плашки — тот же, что у плиток хаба подрядчиков:
+      бежевый (--cover-beige) или тёмный (.theme-dark) */
+  tone: 'beige' | 'dark';
 }
 
 /** сколько кружков-фото стоит в стопке */
@@ -83,6 +86,7 @@ const cards: Card[] = [
     thumbs: VENUES.slice(0, THUMBS).map((v) => v.hero.portrait),
     icon: 'venue',
     lead: true,
+    tone: 'beige',
   },
   {
     // Ведём на хаб раздела — экран с плитками шести групп
@@ -95,6 +99,7 @@ const cards: Card[] = [
     thumbs: portraits([...vendors.values()]),
     icon: 'vendors',
     lead: true,
+    tone: 'dark',
   },
 ];
 
@@ -114,7 +119,7 @@ const view = cards.map((card) => ({
     {view.map((card, i) => (
       <li class="entries__item">
         <a
-          class:list={['ecard', card.lead && 'ecard--lead']}
+          class:list={['ecard', card.lead && 'ecard--lead', card.tone === 'dark' && 'theme-dark']}
           href={card.href}
           aria-label={card.aria}
         >
@@ -191,9 +196,13 @@ const view = cards.map((card) => ({
      строке высота начинает диктовать ширину, карточка перестаёт слушаться
      колонки и вылезает за неё — тем сильнее, чем длиннее слово внутри. */
   .ecard {
-    /* БЕЗ ЦВЕТА. Тона --tint-* сняты: на главной остаётся палитра проекта —
-       бумага, серая плашка, чернила. Заливка семантическая (--surface),
-       поэтому в тёмной теме плашка темнеет сама, руками ничего не красим. */
+    /* ТОНА ХАБА ПОДРЯДЧИКОВ (18.09.2026). Серая --surface заменена на два
+       тона плиток хаба (pages/moskva/podryadchiki): «Площадки» — песочная
+       --cover-beige, «Подрядчики» — тёмная .theme-dark. Главная и хаб —
+       один ряд входов на разных экранах, и плашки на них должны читаться
+       одной семьёй. Тон лежит в --tile-bg: от него же считается обводка
+       кружков-стопки, чтобы кадры лежали на плашке без чужого ободка. */
+    --tile-bg: var(--cover-beige);
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
@@ -203,12 +212,18 @@ const view = cards.map((card) => ({
     min-width: 0;
     aspect-ratio: 3 / 4;
     padding: var(--s-4);
-    background: var(--surface);
-    /* Набор — чернила текущей темы: плашка теперь того же семейства, что
-       бумага страницы, и в тёмной теме переворачивается вместе с ней. */
+    background: var(--tile-bg);
     color: var(--ink);
     border-radius: var(--radius-card);
     text-decoration: none;
+  }
+
+  /* Тёмная плашка: scoped-селектор .ecard сильнее глобального .theme-dark,
+     поэтому его ручки читаем здесь явно (тот же приём, что у .gtile хаба). */
+  .ecard.theme-dark {
+    --tile-bg: var(--bg);
+    background: var(--tile-bg);
+    color: var(--fg);
   }
 
   .ecard__top {
@@ -226,7 +241,7 @@ const view = cards.map((card) => ({
      со стрелкой напротив. */
   .ecard__badge {
     display: inline-flex;
-    color: var(--ink);
+    color: inherit;
   }
 
   .ecard__badge :global(svg) { width: var(--entry-icon); height: var(--entry-icon); }
@@ -300,7 +315,7 @@ const view = cards.map((card) => ({
     border-radius: var(--radius-pill);
     object-fit: cover;
     /* обводка тоном плашки — кадры лежат прямо на ней */
-    border: 2px solid var(--surface);
+    border: 2px solid var(--tile-bg);
     background: var(--surface-dim);
   }
 
