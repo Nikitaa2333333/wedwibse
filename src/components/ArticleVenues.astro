@@ -5,11 +5,10 @@
 // фотографы, декор, — а площадки из блога карточками не получают ничего:
 // текст ссылается только на подборки-фильтры. Это наш перевес, см. SEO-BLOG.md.
 //
-// Модуль переиспользуемый: те же карточки лягут на посадочную подборки
-// («похожие площадки») и на карточку площадки — компонент про конкретную
-// страницу ничего не знает, принимает список и подписи.
-import PhotoRail from './PhotoRail.astro';
-import { IMG_WIDTHS } from '../lib/images';
+// Сетка карточек — общий RelatedCards (он же «Похожие площадки» в конце
+// карточки площадки); здесь к нему добавляется ряд подборок-фильтров.
+import RelatedCards from './RelatedCards.astro';
+import { venueCard } from '../lib/similar-cards';
 import type { FeedVenue } from '../data/feed';
 import type { Collection } from '../data/articles';
 
@@ -27,109 +26,22 @@ const {
   collections = [],
   collectionsTitle = 'Смотреть подборками',
 } = Astro.props;
-
-// Три карточки — ряд читается одним взглядом и не спорит с текстом статьи.
-const items = venues.slice(0, 3);
 ---
 
-<section class="avenues section section--tight" aria-labelledby="avenues-title">
-  <div class="container">
-    <h2 class="avenues__title t-h2" id="avenues-title">{title}</h2>
-
-    <div class="avenues__grid">
-      {items.map((venue) => {
-        const href = `/moskva/ploshchadki/${venue.slug}/`;
-        return (
-          <article class="vmini">
-            <PhotoRail
-              photos={venue.media}
-              alt={venue.name}
-              href={href}
-              sizes="(min-width: 900px) 33vw, (min-width: 640px) 50vw, 100vw"
-              widths={IMG_WIDTHS.card}
-            />
-
-            <!-- Цена и тип — в подписи под кадром, а не плашками на фото:
-                 одно правило на весь сайт, текст не кладём на фотографию. -->
-            <div class="vmini__body">
-              <p class="vmini__price">
-                {venue.avgCheck}
-                <span class="vmini__type">{venue.type}</span>
-              </p>
-              <h3 class="vmini__name">
-                <a href={href}>{venue.name}</a>
-              </h3>
-              <p class="vmini__meta t-small">{venue.city} · {venue.capacity}</p>
-            </div>
-          </article>
-        );
-      })}
-    </div>
-
-    {collections.length > 0 && (
-      <div class="avenues__collections">
-        <p class="avenues__collections-title t-small">{collectionsTitle}</p>
-        <div class="avenues__pills">
-          {collections.map((c) => (
-            <a class="pill pill--sm" href={c.href}>{c.label}</a>
-          ))}
-        </div>
+<RelatedCards title={title} cards={venues.map(venueCard)} id="avenues-title">
+  {collections.length > 0 && (
+    <div class="avenues__collections">
+      <p class="avenues__collections-title t-small">{collectionsTitle}</p>
+      <div class="avenues__pills">
+        {collections.map((c) => (
+          <a class="pill pill--sm" href={c.href}>{c.label}</a>
+        ))}
       </div>
-    )}
-  </div>
-</section>
+    </div>
+  )}
+</RelatedCards>
 
 <style>
-  .avenues__title {
-    max-width: var(--measure-head);
-    margin-bottom: var(--s-6);
-  }
-
-  .avenues__grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--s-6) clamp(8px, 1vw, 16px);
-  }
-
-  @media (min-width: 900px) {
-    .avenues__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  }
-
-  .vmini {
-    display: flex;
-    flex-direction: column;
-    gap: var(--s-3);
-    min-width: 0;
-  }
-
-  /* Кадр карточки — тот же формат, что в ленте каталога */
-  .vmini :global(.prail) { aspect-ratio: 4 / 5; }
-
-  /* Цена крупно, тип вторым планом рядом — та же подпись, что в каталоге
-     площадок. Вуаль не нужна: на кадре больше нет текста. */
-  .vmini__price {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 0 var(--s-2);
-    font-size: var(--fs-body);
-    font-weight: var(--w-medium);
-  }
-
-  .vmini__type { opacity: 0.6; }
-
-  .vmini :global(.veil) { display: none; }
-
-  .vmini__name {
-    font-size: var(--fs-h3);
-    font-weight: var(--w-head);
-    line-height: 1.15;
-  }
-
-  .vmini__name a { text-decoration: none; }
-
-  .vmini__meta { margin-top: -2px; }
-
   /* Подборки: те же анкоры, что и в тексте, — но собранные в один ряд.
      Пилюли, а не список: это действие «перейти в каталог», не перечисление. */
   .avenues__collections { margin-top: var(--s-7); }

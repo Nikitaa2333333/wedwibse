@@ -23,7 +23,10 @@ import ReelsRow from '../../../components/ReelsRow.astro';
 import HallsIndex from '../../../components/HallsIndex.astro';
 import VenueHalls from '../../../components/VenueHalls.astro';
 import BottomDock from '../../../components/BottomDock.astro';
+import RelatedCards from '../../../components/RelatedCards.astro';
 import { VENUES, type Venue } from '../../../data/venues';
+import { similarVenues } from '../../../lib/similar';
+import { venueCard } from '../../../lib/similar-cards';
 import { venueReviews } from '../../../data/venue-reviews';
 import { reelsOfVenue } from '../../../data/reels';
 import { venueBlocks } from '../../../lib/venue-blocks';
@@ -178,6 +181,12 @@ const reels = reelsOfVenue(venue.slug);
     }
 
     <VenueContacts venue={venue} />
+
+    <!-- ПОХОЖИЕ ПЛОЩАДКИ — самый конец страницы, после заявки: не выбрал
+         эту — вот соседи по типу, месту, вместимости и чеку. Считаются на
+         сборке из ленты каталога (lib/similar.ts), новая площадка попадает
+         сюда сама, без отдельного шага. -->
+    <RelatedCards title="Похожие площадки" cards={similarVenues(venue.slug).map(venueCard)} />
   </main>
 
   <BottomDock active="venues" />

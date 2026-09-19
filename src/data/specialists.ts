@@ -860,6 +860,14 @@ export function findSpecialist(slug: string): Specialist | undefined {
   return undefined;
 }
 
+/** Есть ли у карточки своя страница-визитка: она собирается только тем,
+ *  кто дал материал — предложение или список причин. Одно условие на
+ *  getStaticPaths визитки и на все места, которые на визитку ссылаются
+ *  («похожие подрядчики»): иначе ссылка ведёт в 404. */
+export function hasProfile(s: Specialist): boolean {
+  return Boolean(s.quote || s.offers);
+}
+
 /** адрес визитки: она одна, даже если карточка стоит в двух категориях */
 export function specialistUrl(s: Specialist): string {
   return `/moskva/podryadchiki/${s.categorySlug}/${s.slug}/`;

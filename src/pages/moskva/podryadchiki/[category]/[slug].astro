@@ -22,7 +22,10 @@ import HeroActions from '../../../../components/HeroActions.astro';
 import HeroCta from '../../../../components/HeroCta.astro';
 import HeroStage from '../../../../components/HeroStage.astro';
 import ReelsRow from '../../../../components/ReelsRow.astro';
-import { SPECIALISTS_BY_CATEGORY, FILTERS_BY_CATEGORY, specialistRole, type Specialist } from '../../../../data/specialists';
+import RelatedCards from '../../../../components/RelatedCards.astro';
+import { similarSpecialists } from '../../../../lib/similar';
+import { specialistCard } from '../../../../lib/similar-cards';
+import { SPECIALISTS_BY_CATEGORY, FILTERS_BY_CATEGORY, specialistRole, hasProfile, type Specialist } from '../../../../data/specialists';
 import { reelsOf } from '../../../../data/reels';
 import { photoTiles } from '../../../../lib/gallery';
 import { resolveImage, favoriteImage, IMG_WIDTHS } from '../../../../lib/images';
@@ -34,7 +37,7 @@ export function getStaticPaths() {
   return Object.values(SPECIALISTS_BY_CATEGORY)
     .flat()
     // визитка есть у тех, кто дал материал: предложение или список причин
-    .filter((s) => s.quote || s.offers)
+    .filter(hasProfile)
     .filter((s) => !seen.has(s.slug) && seen.add(s.slug))
     .map((s) => ({ params: { category: s.categorySlug, slug: s.slug }, props: { s } }));
 }
@@ -272,6 +275,14 @@ const saveData = JSON.stringify({
         </button>
       </div>
     </section>
+
+    <!-- ПОХОЖИЕ ПОДРЯДЧИКИ — после заявки, в самом конце: та же категория,
+         ближе всего по цене, городу и стилю (lib/similar.ts). Заголовок —
+         по разделу («Похожие ведущие»), а не общее «подрядчики». -->
+    <RelatedCards
+      title={`Похожие ${s.category.toLowerCase()}`}
+      cards={similarSpecialists(s).map(specialistCard)}
+    />
   </div>
 
   <BottomDock active="vendors" />

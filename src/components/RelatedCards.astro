@@ -1,0 +1,118 @@
+---
+// РЯД СВЯЗАННЫХ КАРТОЧЕК — три мини-карточки под заголовком.
+// Один модуль на три места: «Площадки из этой статьи» (блог),
+// «Похожие площадки» (конец карточки площадки) и «Похожие подрядчики»
+// (конец визитки). Раньше сетка жила внутри ArticleVenues; вынесена,
+// чтобы конец карточки не держал вторую копию той же вёрстки.
+//
+// Компонент про площадки и подрядчиков ничего не знает: получает уже
+// собранные строки подписи (цена, тип, имя, метка). Кто из кого это
+// собирает — решает вызывающая страница (см. lib/similar.ts).
+// Слот — что угодно после сетки внутри той же секции (ряд подборок в блоге).
+import PhotoRail from './PhotoRail.astro';
+import { IMG_WIDTHS } from '../lib/images';
+import type { RelatedCard } from '../lib/similar-cards';
+
+interface Props {
+  title: string;
+  cards: RelatedCard[];
+  /** id заголовка — для aria-labelledby, когда блоков на странице два */
+  id?: string;
+}
+
+const { title, cards, id = 'related-title' } = Astro.props;
+
+// Три карточки — ряд читается одним взглядом и не спорит с текстом страницы.
+const items = cards.slice(0, 3);
+---
+
+{items.length > 0 && (
+  <section class="related section section--tight" aria-labelledby={id}>
+    <div class="container">
+      <h2 class="related__title t-h2" id={id}>{title}</h2>
+
+      <div class="related__grid">
+        {items.map((card) => (
+          <article class="vmini">
+            <PhotoRail
+              photos={card.media}
+              alt={card.alt}
+              href={card.href}
+              sizes="(min-width: 900px) 33vw, (min-width: 640px) 50vw, 100vw"
+              widths={IMG_WIDTHS.card}
+            />
+
+            <!-- Цена и тип — в подписи под кадром, а не плашками на фото:
+                 одно правило на весь сайт, текст не кладём на фотографию. -->
+            <div class="vmini__body">
+              <p class="vmini__price">
+                {card.price}
+                {card.type && <span class="vmini__type">{card.type}</span>}
+              </p>
+              <h3 class="vmini__name">
+                <a href={card.href}>{card.name}</a>
+              </h3>
+              {card.meta && <p class="vmini__meta t-small">{card.meta}</p>}
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <slot />
+    </div>
+  </section>
+)}
+
+<style>
+  .related__title {
+    max-width: var(--measure-head);
+    margin-bottom: var(--s-6);
+  }
+
+  .related__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s-6) clamp(8px, 1vw, 16px);
+  }
+
+  @media (min-width: 900px) {
+    .related__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+
+  .vmini {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+    min-width: 0;
+  }
+
+  /* Кадр карточки — тот же формат, что в ленте каталога */
+  .vmini :global(.prail) { aspect-ratio: 4 / 5; }
+
+  /* Цена крупно, тип вторым планом рядом — та же подпись, что в каталоге
+     площадок. Вуаль не нужна: на кадре больше нет текста. */
+  .vmini__price {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 var(--s-2);
+    font-size: var(--fs-body);
+    font-weight: var(--w-medium);
+  }
+
+  /* тип — тем же цветом, вторым планом только кеглем: приглушённого
+     текста в проекте нет */
+  .vmini__type { font-size: var(--fs-small); }
+
+  .vmini :global(.veil) { display: none; }
+
+  .vmini__name {
+    font-size: var(--fs-h3);
+    font-weight: var(--w-head);
+    line-height: 1.15;
+  }
+
+  .vmini__name a { text-decoration: none; }
+
+  .vmini__meta { margin-top: -2px; }
+</style>
