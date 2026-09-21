@@ -14,6 +14,7 @@ import FilterSheet from '../../../components/FilterSheet.astro';
 import ScopePicker from '../../../components/ScopePicker.astro';
 import PhotoRail from '../../../components/PhotoRail.astro';
 import VenueMap from '../../../components/VenueMap.astro';
+import Icon from '../../../components/Icon.astro';
 import { FEED, VENUE_FILTERS, type FeedVenue } from '../../../data/feed';
 import { IMG_WIDTHS } from '../../../lib/images';
 import { countOptions } from '../../../lib/filter-counts';
@@ -94,9 +95,21 @@ const mapPoints = venueMapPoints();
     cityGroup={VENUE_FILTERS.find((g) => g.key === 'city')}
   >
     <!-- Переключатель вида: сетка ↔ карта. Действие, а не выбор, — поэтому
-         .pill рядом с чипом локации. -->
-    <button class="pill pill--sm" type="button" slot="actions" data-map-toggle aria-pressed="false">
-      На карте
+         .pill рядом с чипом локации. Ростом и кеглем — как соседний чип
+         (.pill--icon), со знаком карты: мелкая .pill--sm без иконки в этом
+         ряду читалась приступкой к чипу, а не кнопкой.
+         Обе подписи стоят в разметке, видимую выбирает состояние
+         aria-pressed — скрипту остаётся переключить один атрибут, и
+         иконку не приходится каждый раз перерисовывать из JS. -->
+    <button class="pill pill--icon vmap-btn" type="button" slot="actions" data-map-toggle aria-pressed="false">
+      <span class="vmap-btn__off">
+        <Icon name="map" />
+        На карте
+      </span>
+      <span class="vmap-btn__on">
+        <Icon name="list" />
+        Списком
+      </span>
     </button>
   </ScopePicker>
 
@@ -264,6 +277,21 @@ const mapPoints = venueMapPoints();
   .empty { padding: var(--s-7) var(--catalog-pad); }
   .empty[hidden] { display: none; }
 
+  /* Подписи переключателя вида лежат обе, показывается одна — по
+     aria-pressed (тот же приём, что у кнопки избранного). Внутренний
+     span держит строку «иконка + слово» сам: у .pill--icon флекс
+     на кнопке, а видимых детей у неё всегда ровно один. */
+  .vmap-btn__off,
+  .vmap-btn__on {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-2);
+  }
+
+  .vmap-btn__on { display: none; }
+  .vmap-btn[aria-pressed='true'] .vmap-btn__on { display: inline-flex; }
+  .vmap-btn[aria-pressed='true'] .vmap-btn__off { display: none; }
+
   /* Режим «На карте»: карта встаёт на место сетки и занимает экран.
      Липкая — чтобы при прокрутке полоса фильтров ушла наверх, а карта
      осталась на месте и добрала высоту до целого экрана. */
@@ -403,7 +431,9 @@ const mapPoints = venueMapPoints();
       const showMap = mapView.hidden;
       mapView.hidden = !showMap;
       grid.hidden = showMap;
-      mapToggle.textContent = showMap ? 'Списком' : 'На карте';
+      // Подпись и знак меняет CSS по aria-pressed — обе строки уже в
+      // разметке (см. .vmap-btn). Раньше здесь стоял textContent, и он
+      // вместе с подписью вынес бы из кнопки иконку.
       mapToggle.setAttribute('aria-pressed', String(showMap));
       if (showMap) mapView.querySelector('[data-venue-map]')?.dispatchEvent(new Event('vmap:show'));
     });

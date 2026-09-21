@@ -259,22 +259,12 @@ const saveData = JSON.stringify({
       <Reviews reviews={s.reviewsList} rating={s.rating} total={s.reviews} />
     )}
 
-    <!-- ЗАЯВКА. Две кнопки и ничего больше: контактов подрядчика на
-         странице нет (то же правило, что у площадки — см. VenueContacts).
-         «В избранное» здесь подписана словами: сердце стоит в первом
-         экране, а он к этому месту давно за экраном. -->
-    <section class="pcta" id="zayavka">
-      <h2 class="t-h2">Забронировать на свою свадьбу</h2>
-      <p class="t-small pcta__note">Оставьте заявку — менеджер свяжется и уточнит дату и детали.</p>
-      <div class="pcta__actions">
-        {/* ЗАГЛУШКА: здесь встанет форма-анкета (фаза дизайна) */}
-        <a class="pill pill--lg" href="#">Заказать</a>
-        <button class="pill pill--lg pcta__save" type="button" data-save={saveData} aria-pressed="false">
-          <span class="pcta__save-off">В избранное</span>
-          <span class="pcta__save-on">В избранном</span>
-        </button>
-      </div>
-    </section>
+    <!-- ЗАЯВКИ ВНИЗУ БОЛЬШЕ НЕТ (заказчик, 19.09.2026): «Заказать» и
+         «В избранное» повторяли ряд действий первого экрана (HeroCta) и
+         только удлиняли страницу — до них долистывают уже после того,
+         как оба действия были в руках. Место под форму-анкету остаётся
+         за якорем #zayavka: когда она появится, встанет сюда и снова
+         станет целью кнопки «Заказать» из первого экрана. -->
 
     <!-- ПОХОЖИЕ ПОДРЯДЧИКИ — после заявки, в самом конце: та же категория,
          ближе всего по цене, городу и стилю (lib/similar.ts). Заголовок —
@@ -442,30 +432,6 @@ const saveData = JSON.stringify({
   /* Стили отзывов уехали в Reviews.astro — блок общий с карточкой
      площадки, и вид у него должен быть один. */
 
-  /* ============ ЗАЯВКА ============ */
-  .pcta {
-    padding: var(--section-gap) var(--gutter);
-  }
-
-  .pcta h2 { max-width: var(--measure-head); }
-
-  .pcta__note {
-    margin-top: var(--s-3);
-    max-width: var(--measure-lead);
-  }
-
-  .pcta__actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--s-4);
-    margin-top: var(--s-5);
-  }
-
-  /* Подпись меняется по состоянию: слово «В избранном» на бумаге понятнее
-     закрашенного сердца. */
-  .pcta__save-on { display: none; }
-  .pcta__save[aria-pressed='true'] .pcta__save-on { display: inline; }
-  .pcta__save[aria-pressed='true'] .pcta__save-off { display: none; }
 </style>
 
 <!-- Якорь разбираем ДО модульных скриптов (те отложены и выполняются после

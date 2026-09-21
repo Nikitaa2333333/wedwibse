@@ -7,7 +7,6 @@
 import type { FeedVenue } from '../data/feed';
 import { FILTERS_BY_CATEGORY, specialistUrl, type Specialist } from '../data/specialists';
 import { photosOnly } from './media';
-import { withCount } from './plural';
 
 /** контракт мини-карточки — что рисует RelatedCards.astro */
 export interface RelatedCard {
@@ -19,7 +18,7 @@ export interface RelatedCard {
   price: string;
   type?: string;
   name: string;
-  /** третья строка: «Подольск · до 70 гостей», «ЦАО · 8 лет» */
+  /** третья строка: «Подольск · до 70 гостей», «ЦАО» */
   meta?: string;
 }
 
@@ -46,15 +45,15 @@ function labelOf(cat: string, key: string, value: string | undefined): string {
 }
 
 /** подрядчик → мини-карточка: цена и стиль — как в сетке категории,
- *  третьей строкой город и опыт. Кадры — только фото: ролик в ряду из
- *  трёх мини-карточек в конце страницы играть не должен. */
+ *  третьей строкой город. Кадры — только фото: ролик в ряду из
+ *  трёх мини-карточек в конце страницы играть не должен.
+ *
+ *  Опыта в подписи нет (заказчик, 19.09.2026): «15 лет» под именем в ряду
+ *  рекомендаций читалось не как стаж, а как возраст подрядчика — будто
+ *  сервис предлагает подростков. В самой карточке опыт остаётся, там он
+ *  стоит рядом со специальностью и читается верно. */
 export function specialistCard(s: Specialist): RelatedCard {
-  const meta = [
-    labelOf(s.categorySlug, 'city', s.cities?.[0]),
-    s.experienceYears ? withCount(s.experienceYears, ['год', 'года', 'лет']) : '',
-  ]
-    .filter(Boolean)
-    .join(' · ');
+  const meta = labelOf(s.categorySlug, 'city', s.cities?.[0]);
 
   return {
     href: specialistUrl(s),

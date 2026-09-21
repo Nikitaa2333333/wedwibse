@@ -50,8 +50,13 @@ const items = showcaseReviews(reviews);
 
 const shown = items.length;
 
-// сворачиваем только действительно большие отзывы: средние читаются целиком
-const LONG = 900;
+// ПОРОГ СВОРАЧИВАНИЯ. Пока отзывы шли столбиком, сворачивать имело смысл
+// только простыни (900 знаков): средний отзыв никому не мешал. В ленте
+// вбок карточки стоят в один ряд и тянутся до высоты самой длинной —
+// один разговорчивый гость задавал рост всему ряду. Порог опущен до
+// шести строк карточки (~260 знаков): обрезано ровно то, у чего есть
+// кнопка «Читать целиком», без обрезков без кнопки.
+const LONG = 260;
 ---
 
 <section class="reviews section section--tight" id={id}>
@@ -76,6 +81,10 @@ const LONG = 900;
       }
     </header>
 
+    <!-- ЛЕНТА ВБОК, а не столбик (заказчик, 21.09.2026): десять отзывов
+         в столбик растягивали карточку на несколько экранов, и всё, что
+         идёт после них («Похожие»), уезжало за горизонт. Вбок — тот же
+         жест, которым человек уже листал кадры выше по странице. -->
     <div class="reviews__list">
       {
         items.map((r) => (
@@ -152,17 +161,34 @@ const LONG = 900;
 
   .reviews__count { opacity: 0.6; }
 
+  /* Лента отзывов: ряд карточек, который крутится вбок. Идёт от края до
+     края экрана — поля контейнера снимаются отрицательным полем и тут же
+     возвращаются внутренним отступом, чтобы первая карточка стояла по
+     сетке текста, а последняя докручивалась до правого поля.
+     touch-action не ставим (см. DESIGN.md, «Жест на лентах»): pan-x
+     стоил бы вертикального скролла страницы с самой ленты. */
   .reviews__list {
     display: flex;
-    flex-direction: column;
     gap: var(--s-3);
     margin-top: var(--s-5);
+    margin-inline: calc(-1 * var(--gutter));
+    padding-inline: var(--gutter);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline-start: var(--gutter);
+    scrollbar-width: none;
   }
 
-  /* Отзыв — карточка на подложке. Мера строки здесь не токеном: ширину
-     задаёт сам модуль, текст внутри уже в узкой колонке. */
+  .reviews__list::-webkit-scrollbar { display: none; }
+
+  /* Отзыв — карточка на подложке шириной почти в экран телефона: узкая
+     колонка текста и подсказка листания — кромка следующей карточки.
+     Мера строки здесь не токеном: ширину задаёт сам модуль. */
   .review {
-    max-width: var(--measure-prose);
+    flex: none;
+    width: min(84vw, 420px);
+    scroll-snap-align: start;
     padding: var(--s-5);
     background: var(--surface-dim);
     border-radius: var(--radius-card);
@@ -201,10 +227,10 @@ const LONG = 900;
     overflow-wrap: anywhere;
   }
 
-  /* свёрнутый большой отзыв: 8 строк, дальше обрез многоточием */
+  /* свёрнутый отзыв: шесть строк, дальше обрез многоточием */
   .review__text.is-clamped {
     display: -webkit-box;
-    -webkit-line-clamp: 8;
+    -webkit-line-clamp: 6;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
