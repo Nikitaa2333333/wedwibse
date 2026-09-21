@@ -37,6 +37,7 @@ import { Image } from 'astro:assets';
 import Icon from './Icon.astro';
 import Avatar from './Avatar.astro';
 import { frameId, isPortrait, isVideo, posterOf } from '../lib/media';
+import { plural } from '../lib/plural';
 import { resolveImage, IMG_WIDTHS } from '../lib/images';
 import { hasSound } from '../data/reels';
 
@@ -191,7 +192,7 @@ const facts = rating !== null && rating !== undefined;
             {reviews ? (
               <span class="stage__fact">
                 <Icon name="chat" />
-                {reviews}
+                {reviews}&nbsp;{plural(reviews, ['отзыв', 'отзыва', 'отзывов'])}
               </span>
             ) : null}
           </a>
@@ -456,6 +457,13 @@ const facts = rating !== null && rating !== undefined;
     align-items: center;
     gap: var(--s-1);
   }
+
+  /* Слово стоит только у отзывов (заказчик, 21.09.2026): значок-облачко
+     сам по себе читается не всеми, а «151» рядом с оценкой — вообще любое
+     число. У звезды подписи нет: цифра с одним знаком после запятой и так
+     читается оценкой, а «из 5» рядом с ней оказалось лишним словом.
+     Кегль и тон у слова те же, что у числа: приглушать его не стали —
+     строка фактов короткая, блёклый хвост в ней читался браком печати. */
 
   /* Знаки оценки и отзывов — крупнее подписи, а не вровень с ней
      (заказчик, 21.09.2026): на 14px звезда и облачко читались серой
