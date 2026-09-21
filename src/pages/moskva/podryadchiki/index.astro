@@ -18,7 +18,7 @@ import {
   SPECIALISTS_BY_CATEGORY,
 } from '../../../data/specialists';
 import { withCount, type PluralForms } from '../../../lib/plural';
-import { Image } from 'astro:assets';
+import CoverTile from '../../../components/CoverTile.astro';
 import { resolveImage, IMG_WIDTHS } from '../../../lib/images';
 
 // Описания «что внутри» с плиток сняты (18.09.2026): плитка — имя раздела
@@ -58,37 +58,19 @@ const tiles = SPECIALIST_GROUPS.map((g) => {
     <ul class="hub__grid" aria-label="Разделы специалистов">
       {tiles.map((t, i) => (
         <li>
-          <a
-            class:list={['gtile', t.cover && 'gtile--cover', t.tone === 'dark' && 'theme-dark']}
+          {/* Плитка — общий модуль CoverTile: та же разметка, что у входов
+              на главной. Обложка снята на однотонном фоне в тон плитки,
+              поэтому кадр не лежит прямоугольником, а продолжает плашку. */}
+          <CoverTile
+            name={t.name}
             href={t.href}
-            aria-label={`${t.name} — ${t.capsule}`}
-          >
-            {t.cover ? (
-              /* Обложка — портрет на однотонном фоне того же тона, что
-                 плитка: кадр не лежит прямоугольником, а продолжает плашку.
-                 Декорация к имени раздела: без alt, ссылка подписана целиком. */
-              <span class="gtile__media">
-                <Image
-                  class="gtile__cover"
-                  src={t.cover}
-                  alt=""
-                  widths={IMG_WIDTHS.card}
-                  sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
-                  loading={i < 4 ? 'eager' : 'lazy'}
-                  decoding="async"
-                />
-              </span>
-            ) : (
-              <span class="gtile__top">
-                <span class="gtile__go" aria-hidden="true">↗</span>
-              </span>
-            )}
-
-            <span class="gtile__body">
-              <span class="gtile__name">{t.name}</span>
-              <span class="gtile__count" aria-hidden="true">{t.capsule}</span>
-            </span>
-          </a>
+            capsule={t.capsule}
+            covers={t.cover ? [t.cover] : []}
+            tone={t.tone ?? 'beige'}
+            widths={IMG_WIDTHS.card}
+            sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+            eager={i < 4}
+          />
         </li>
       ))}
     </ul>
@@ -144,163 +126,4 @@ const tiles = SPECIALIST_GROUPS.map((g) => {
     .hub__grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   }
 
-  /* БЕЗ ЦВЕТА. Тона --tint-* сняты вслед за плашками главной: остаётся
-     палитра проекта — светлая плашка (--surface), чернила, капсула
-     на тон гуще. Заливка семантическая, поэтому в тёмной теме плитка
-     темнеет сама, руками ничего не красим. */
-  .gtile {
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    gap: var(--s-5);
-    /* Жёсткой пропорции нет намеренно: высоту ряда держит 1fr сетки,
-       и aspect-ratio тут с ней спорил бы — плитка вылезала бы из ряда
-       ровно настолько, насколько длиннее её заголовок. */
-    height: 100%;
-    padding: var(--s-4);
-    background: var(--surface);
-    color: var(--ink);
-    border-radius: var(--radius-card);
-    text-decoration: none;
-  }
-
-  /* ПЛИТКА С ОБЛОЖКОЙ. Кадр снят на однотонном фоне в тоне плитки
-     (бежевый = --surface-dim, тёмный = .theme-dark), поэтому лежит без
-     полей от края до края верха, а подпись — на той же плашке под ним:
-     текста на фото нет (правило проекта), но и шва между кадром и
-     плашкой быть не должно. Стрелка-кружок тут не нужна: кадр сам
-     зовёт внутрь. */
-  .gtile--cover {
-    --tile-bg: var(--cover-beige);
-    padding: 0;
-    gap: 0;
-    justify-content: flex-start;
-    background: var(--tile-bg);
-    overflow: hidden;
-  }
-
-  /* Тёмная плитка: scoped-селектор .gtile сильнее глобального
-     .theme-dark, поэтому тон читаем из его ручек здесь явно. */
-  .gtile.theme-dark {
-    --tile-bg: var(--bg);
-    background: var(--tile-bg);
-    color: var(--fg);
-  }
-
-  /* Кадр снят на чистом белом/чёрном и притонирован в палитру
-     (multiply/screen) — верх и бока сливаются с плиткой точно, а у пола
-     остаётся естественная тень чуть темнее плашки. Её и закрывает
-     короткий градиент в тон плитки по нижней кромке: кадр «растворяется»
-     в плашку, а не обрывается линией над подписью. */
-  .gtile__media {
-    position: relative;
-    display: block;
-  }
-
-  .gtile__media::after {
-    content: '';
-    position: absolute;
-    inset: auto 0 0;
-    height: 18%;
-    background: linear-gradient(to bottom, transparent, var(--tile-bg));
-    pointer-events: none;
-  }
-
-  .gtile__cover {
-    display: block;
-    width: 100%;
-    height: auto;
-    aspect-ratio: 4 / 5;
-    object-fit: cover;
-  }
-
-  /* Подпись под кадром: заголовок сверху с местом под две строки
-     (у соседей «Ведущие» и «Организация и координация» капсула должна
-     стоять на одной высоте), капсула — у нижней границы плитки. */
-  .gtile--cover .gtile__body {
-    flex: 1 1 auto;
-    margin-top: 0;
-    padding: var(--s-3) var(--s-4) var(--s-4);
-  }
-
-  .gtile--cover .gtile__name {
-    min-height: calc(2 * 1.04em);
-  }
-
-  .gtile--cover .gtile__count {
-    margin-top: auto;
-  }
-
-  /* Капсула на плитке с обложкой: от цвета текста, а не --surface-dim —
-     бежевая плитка сама этого цвета, и капсула в ней растворялась;
-     на чернилах тот же серый читался бы светлым пятном. */
-  .gtile--cover .gtile__count {
-    background: color-mix(in srgb, currentColor 12%, transparent);
-  }
-
-  .gtile__top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--s-3);
-    min-height: var(--entry-knob);
-  }
-
-  /* Стрелка-ссылка в кружке, как на плашках главной: приглушена opacity,
-     не серым (правило проекта) */
-  .gtile__go {
-    margin-left: auto;
-    width: var(--entry-knob);
-    height: var(--entry-knob);
-    flex: none;
-    border-radius: var(--radius-pill);
-    border: var(--entry-knob-line) solid currentColor;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: var(--fs-small);
-    line-height: 1;
-    opacity: var(--entry-knob-dim);
-  }
-
-  .gtile__body {
-    display: flex;
-    flex-direction: column;
-    gap: var(--s-2);
-    min-width: 0;
-    /* Набор прижат к низу плитки: ряды выровнены и по верхней линии
-       (стрелка), и по нижней — заголовки соседей стоят на одной высоте. */
-    margin-top: auto;
-  }
-
-  /* Кегль от ширины колонки, не экрана: колонок две уже на телефоне,
-     и прежний потолок 30px рвал длинное имя раздела на четыре строки. */
-  .gtile__name {
-    font-size: clamp(18px, 4.2vw, 24px);
-    font-weight: var(--w-head);
-    line-height: 1.04;
-    letter-spacing: -0.03em;
-  }
-
-  /* Капсула со счётчиком — плашка на тон гуще самой плитки. Прижата
-     влево под текстом, а не растянута строкой. */
-  .gtile__count {
-    align-self: flex-start;
-    margin-top: var(--s-2);
-    padding: 6px 12px;
-    border-radius: var(--radius-pill);
-    background: var(--surface-dim);
-    font-size: var(--fs-caption);
-    font-weight: var(--w-medium);
-    line-height: 1.2;
-    white-space: nowrap;
-  }
-
-  @media (hover: hover) {
-    .gtile__go {
-      transition: transform var(--dur-fast) var(--ease-out), opacity var(--dur-fast) var(--ease-out);
-    }
-    .gtile:hover .gtile__go { transform: translate(3px, -3px); opacity: 1; }
-  }
 </style>
