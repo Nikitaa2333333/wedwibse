@@ -338,8 +338,13 @@ def ref_range(name):
     L = get_column_letter(col)
     return f"'Справочники'!${L}$2:${L}${len(REF[name]) + 1}"
 
+# Для Apps Script (registry-fix-validations.gs): списки по столбцам и какие
+# столбцы многозначные — там выбор из списка ДОБАВЛЯЕТ значение, а не заменяет
+GS_LISTS, GS_MULTI = {}, {}
+
 def build_sheet(title, cols, rows, max_rows=300):
     ws = wb.create_sheet(title)
+    GS_LISTS[title], GS_MULTI[title] = {}, []
     c = 1
     while c <= len(cols):
         g = cols[c - 1][2]
@@ -390,6 +395,12 @@ def build_sheet(title, cols, rows, max_rows=300):
             dv = DataValidation(type="decimal", operator="greaterThanOrEqual", formula1="0", allow_blank=True)
         if dv:
             ws.add_data_validation(dv); dv.add(rng)
+        if kind == "yes":
+            GS_LISTS[title][i] = ["да", "нет"]
+        elif kind.startswith("list:") or kind.startswith("multi:"):
+            GS_LISTS[title][i] = REF[kind.split(":", 1)[1]]
+            if kind.startswith("multi:"):
+                GS_MULTI[title].append(i)
         for r in range(4, 4 + max(len(rows), 1)):
             cell = ws.cell(row=r, column=i); cell.font = F_BODY
             cell.alignment = WRAP if kind in ("long", "text") or kind.startswith("multi:") else TOP
@@ -442,4 +453,54 @@ ws.row_dimensions[1].height = 30
 
 wb.move_sheet("Справочники", offset=-(len(wb.sheetnames)-2))
 wb.save(OUT)
+
+# ---------- Apps Script для уже загруженной Google Таблицы ----------
+GS = """// Сгенерировано scripts/registry-sheet.py — руками не править.
+// 1) fixValidations — ставит выпадающие списки заново по карте «вкладка → столбец
+//    → значения»: после импорта xlsx Google теряет ссылку на «Справочники».
+// 2) onEdit — в многозначных столбцах (MULTI) выбор из списка ДОБАВЛЯЕТ значение
+//    через запятую, повторный выбор убирает. Режим «несколько вариантов» через
+//    API включить нельзя, поэтому так. Срабатывает сам, ничего запускать не надо.
+const MAP = %s;
+const MULTI = %s;
+const FIRST_ROW = 4, LAST_ROW = 300;
+
+function fixValidations() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let fixed = 0, missing = [];
+  Object.keys(MAP).forEach((name) => {
+    const sheet = ss.getSheetByName(name);
+    if (!sheet) { missing.push(name); return; }
+    if (sheet.getMaxRows() < LAST_ROW) sheet.insertRowsAfter(sheet.getMaxRows(), LAST_ROW - sheet.getMaxRows());
+    Object.keys(MAP[name]).forEach((col) => {
+      const rule = SpreadsheetApp.newDataValidation()
+        .requireValueInList(MAP[name][col], true)
+        .setAllowInvalid(true)
+        .build();
+      sheet.getRange(FIRST_ROW, Number(col), LAST_ROW - FIRST_ROW + 1, 1).setDataValidation(rule);
+      fixed++;
+    });
+  });
+  Logger.log('Готово: столбцов — ' + fixed + (missing.length ? '. Не найдены вкладки: ' + missing.join(', ') : ''));
+}
+
+function onEdit(e) {
+  const range = e.range;
+  const sheet = range.getSheet();
+  const cols = MULTI[sheet.getName()];
+  if (!cols || range.getNumRows() !== 1 || range.getNumColumns() !== 1) return;
+  const col = range.getColumn();
+  if (cols.indexOf(col) < 0 || range.getRow() < FIRST_ROW) return;
+  const picked = String(e.value || '').trim();
+  const old = String(e.oldValue || '').trim();
+  if (!picked || !old || picked.indexOf(',') >= 0) return;   // пусто, первое значение или ручной ввод списка
+  const list = old.split(',').map((v) => v.trim()).filter(String);
+  const i = list.indexOf(picked);
+  if (i >= 0) list.splice(i, 1); else list.push(picked);
+  range.setValue(list.join(', '));
+}
+""" % (json.dumps(GS_LISTS, ensure_ascii=False, separators=(",", ":")),
+       json.dumps(GS_MULTI, ensure_ascii=False, separators=(",", ":")))
+open("scripts/registry-fix-validations.gs", "w", encoding="utf-8").write(GS)
+print("gs:", sum(len(v) for v in GS_MULTI.values()), "многозначных столбцов")
 print("saved", OUT, "sheets:", len(wb.sheetnames))
