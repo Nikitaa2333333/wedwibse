@@ -37,6 +37,7 @@ import { Image } from 'astro:assets';
 import Icon from './Icon.astro';
 import Avatar from './Avatar.astro';
 import { frameId, isPortrait, isVideo, posterOf } from '../lib/media';
+import { plural } from '../lib/plural';
 import { resolveImage, IMG_WIDTHS } from '../lib/images';
 import { hasSound } from '../data/reels';
 
@@ -187,11 +188,13 @@ const facts = rating !== null && rating !== undefined;
             <span class="stage__fact">
               <Icon name="star" />
               {rating!.toFixed(1).replace('.', ',')}
+              <span class="stage__unit">из 5</span>
             </span>
             {reviews ? (
               <span class="stage__fact">
                 <Icon name="chat" />
                 {reviews}
+                <span class="stage__unit">{plural(reviews, ['отзыв', 'отзыва', 'отзывов'])}</span>
               </span>
             ) : null}
           </a>
@@ -456,6 +459,12 @@ const facts = rating !== null && rating !== undefined;
     align-items: center;
     gap: var(--s-1);
   }
+
+  /* Что именно значат цифры — словом (заказчик, 21.09.2026): значок сам
+     по себе читается не всеми, а «5,0» без «из 5» — вообще любым числом.
+     Приглушены прозрачностью, а не серым цветом: приглушение в проекте
+     делает только opacity, второго тона текста в палитре нет. */
+  .stage__unit { opacity: 0.6; }
 
   /* Знаки оценки и отзывов — крупнее подписи, а не вровень с ней
      (заказчик, 21.09.2026): на 14px звезда и облачко читались серой
