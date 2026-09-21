@@ -18,6 +18,7 @@ import VenueDocs from '../../../components/VenueDocs.astro';
 import PhotoGallery from '../../../components/PhotoGallery.astro';
 import FaqBlock from '../../../components/FaqBlock.astro';
 import VenueContacts from '../../../components/VenueContacts.astro';
+import BookingSheet from '../../../components/BookingSheet.astro';
 import Reviews from '../../../components/Reviews.astro';
 import ReelsRow from '../../../components/ReelsRow.astro';
 import HallsIndex from '../../../components/HallsIndex.astro';
@@ -188,6 +189,11 @@ const reels = reelsOfVenue(venue.slug);
          сюда сама, без отдельного шага. -->
     <RelatedCards title="Похожие площадки" cards={similarVenues(venue.slug).map(venueCard)} />
   </main>
+
+  <!-- ЗАЯВКА: шторка поднимается кнопкой «Забронировать» из первого экрана
+       и кнопкой «Заказать» из финального блока. Лежит вне <main>: это
+       накладка поверх страницы, а не её раздел. -->
+  <BookingSheet subject={venue.name} />
 
   <BottomDock active="venues" />
 </Layout>
