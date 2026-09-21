@@ -23,11 +23,13 @@ interface Props {
   /** о ком заявка: имя площадки или подрядчика — человек видит его в шторке
    *  и понимает, что заявка уйдёт именно по этой карточке */
   subject: string;
-  /** подпись кнопки отправки: у площадки бронируют дату, у подрядчика заказывают */
+  /** подпись кнопки отправки. По умолчанию «Отправить» — и у площадки тоже
+   *  (заказчик, 21.09.2026): «Забронировать дату» обещало готовую бронь,
+   *  а кнопка отправляет заявку, дату потом подтверждает менеджер. */
   action?: string;
 }
 
-const { subject, action = 'Отправить заявку' } = Astro.props;
+const { subject, action = 'Отправить' } = Astro.props;
 
 // Способы связи — то же множество, что человек ждёт от свадебного сервиса.
 // Значения латиницей: они же уйдут в запрос, когда появится бэкенд.
@@ -53,12 +55,15 @@ const WAYS = [
          поля и формат телефона — своей валидации на фазе дизайна не пишем. -->
     <form class="booking" data-booking-form>
       <div class="sheet__body" data-lenis-prevent>
-        <p class="booking__subject t-small">
-          Заявка по карточке <span class="booking__name">{subject}</span>
+        <!-- Обещание формы — крупно и обычным тоном (заказчик, 21.09.2026):
+             это главная мысль шторки, а не сноска. Серого текста в форме
+             не осталось вовсе: блёклая строка читается браком печати. -->
+        <p class="booking__note t-lead" data-booking-note>
+          Контакты нужны один раз: при следующей заявке они уже будут в полях.
         </p>
 
-        <p class="booking__note t-caption" data-booking-note>
-          Контакты нужны один раз: при следующей заявке они уже будут в полях.
+        <p class="booking__subject t-small">
+          Заявка по карточке <span class="booking__name">{subject}</span>
         </p>
 
         <div class="booking__fields">
@@ -120,7 +125,7 @@ const WAYS = [
         {/* Заголовка «Заявка принята» здесь нет: его на время этого экрана
             берёт на себя шапка шторки — иначе два заголовка подряд. */}
         <p class="booking__done-mark" aria-hidden="true"><Icon name="check" /></p>
-        <p class="booking__done-text">
+        <p class="booking__done-text t-lead">
           Менеджер свяжется выбранным способом и уточнит дату и детали.
           Контакты мы запомнили — по следующей карточке хватит одного касания.
         </p>
@@ -147,15 +152,13 @@ const WAYS = [
   .booking[hidden],
   .booking__done[hidden] { display: none; }
 
-  /* Строка «по какой карточке заявка» — первое, что читается в шторке:
-     человек мог открыть её, листая несколько площадок подряд. */
-  .booking__subject { margin-bottom: var(--s-1); }
-  .booking__name { font-weight: var(--w-medium); }
+  .booking__note { margin-bottom: var(--s-3); }
 
-  .booking__note {
-    margin-bottom: var(--s-5);
-    opacity: 0.6;
-  }
+  /* Строка «по какой карточке заявка» — под обещанием: человек мог открыть
+     шторку, листая несколько площадок подряд, и должен видеть, по какой
+     из них уйдёт заявка. */
+  .booking__subject { margin-bottom: var(--s-6); }
+  .booking__name { font-weight: var(--w-medium); }
 
   .booking__fields {
     display: grid;
@@ -170,7 +173,9 @@ const WAYS = [
     margin: 0;
   }
 
-  .booking__legal { opacity: 0.6; }
+  /* Правовая строка — мелким кеглем, но обычным тоном: серым в этой
+     шторке не пишем ничего. */
+  .booking__legal { font-size: var(--fs-caption); }
 
   /* Экран «принято»: знак, заголовок и строка — по центру панели */
   .booking__done-mark {
@@ -179,14 +184,11 @@ const WAYS = [
   }
 
   .booking__done-mark :global(svg) {
-    width: 40px;
-    height: 40px;
+    width: 56px;
+    height: 56px;
   }
 
-  .booking__done-text {
-    max-width: var(--measure-lead);
-    opacity: 0.8;
-  }
+  .booking__done-text { max-width: var(--measure-lead); }
 </style>
 
 <script>

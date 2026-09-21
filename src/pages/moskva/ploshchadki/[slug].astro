@@ -193,7 +193,7 @@ const reels = reelsOfVenue(venue.slug);
   <!-- ЗАЯВКА: шторка поднимается кнопкой «Забронировать» из первого экрана
        и кнопкой «Заказать» из финального блока. Лежит вне <main>: это
        накладка поверх страницы, а не её раздел. -->
-  <BookingSheet subject={venue.name} action="Забронировать дату" />
+  <BookingSheet subject={venue.name} />
 
   <BottomDock active="venues" />
 </Layout>
