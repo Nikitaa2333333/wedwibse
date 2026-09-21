@@ -19,6 +19,7 @@ import PhotoGallery from '../../../components/PhotoGallery.astro';
 import FaqBlock from '../../../components/FaqBlock.astro';
 import VenueContacts from '../../../components/VenueContacts.astro';
 import BookingSheet from '../../../components/BookingSheet.astro';
+import StickyCta from '../../../components/StickyCta.astro';
 import Reviews from '../../../components/Reviews.astro';
 import ReelsRow from '../../../components/ReelsRow.astro';
 import HallsIndex from '../../../components/HallsIndex.astro';
@@ -59,7 +60,7 @@ const reels = reelsOfVenue(venue.slug);
       совсем (см. VenueContacts) — заявка идёт через нас. */}
   <SiteHeader />
 
-  <main data-venue-slug={venue.slug}>
+  <main class="venue" data-venue-slug={venue.slug}>
     <VenueHero venue={venue} />
 
     {
@@ -190,6 +191,11 @@ const reels = reelsOfVenue(venue.slug);
     <RelatedCards title="Похожие площадки" cards={similarVenues(venue.slug).map(venueCard)} />
   </main>
 
+  <!-- Плавающая кнопка заявки: всплывает, когда кнопка первого экрана
+       ушла за верх экрана (StickyCta). Кнопок в финальном блоке больше
+       нет — эта закрывает всю страницу ниже первого экрана. -->
+  <StickyCta label="Забронировать" />
+
   <!-- ЗАЯВКА: шторка поднимается кнопкой «Забронировать» из первого экрана
        и кнопкой «Заказать» из финального блока. Лежит вне <main>: это
        накладка поверх страницы, а не её раздел. -->
@@ -197,6 +203,14 @@ const reels = reelsOfVenue(venue.slug);
 
   <BottomDock active="venues" />
 </Layout>
+
+<style>
+  /* Место под нижнюю полосу навигации — как на визитке подрядчика
+     (.profile). Без него последний блок страницы ложился почти вплотную
+     к доку, а с плавающей капсулой заявки — прямо под неё. Запас под саму
+     капсулу добавляет body (--float-cta-space). */
+  .venue { padding-bottom: var(--dock-space); }
+</style>
 
 <script>
   // ОТМЕТКА «УЖЕ СМОТРЕЛ» — открыли карточку, значит на карте её метка

@@ -1,5 +1,5 @@
 ---
-// РЯД СВЯЗАННЫХ КАРТОЧЕК — три мини-карточки под заголовком.
+// РЯД СВЯЗАННЫХ КАРТОЧЕК — лента карточек под заголовком, листается вбок.
 // Один модуль на три места: «Площадки из этой статьи» (блог),
 // «Похожие площадки» (конец карточки площадки) и «Похожие подрядчики»
 // (конец визитки). Раньше сетка жила внутри ArticleVenues; вынесена,
@@ -22,8 +22,15 @@ interface Props {
 
 const { title, cards, id = 'related-title' } = Astro.props;
 
-// Три карточки — ряд читается одним взглядом и не спорит с текстом страницы.
-const items = cards.slice(0, 3);
+// ЛЕНТА ВБОК, а не сетка в два столбца (заказчик, 21.09.2026). Сетка из
+// трёх карточек в конце страницы занимала два экрана в высоту, стояла в
+// полях текста и от самой страницы ничем не отличалась — читалась её
+// продолжением, а не соседней выдачей. Лента идёт от края до края,
+// карточка крупная и вертикальная, следующая видна кромкой: это сразу
+// другой блок, и смотрят его тем же жестом, что кадры выше.
+// Карточек до шести: в ленте лишние ничего не занимают, пока их не
+// пролистали, а выбирать из трёх соседей было не из чего.
+const items = cards.slice(0, 6);
 ---
 
 {items.length > 0 && (
@@ -31,7 +38,7 @@ const items = cards.slice(0, 3);
     <div class="container">
       <h2 class="related__title t-h2" id={id}>{title}</h2>
 
-      <div class="related__grid">
+      <div class="related__rail">
         {items.map((card) => (
           <article class="vmini">
             <PhotoRail
@@ -66,28 +73,45 @@ const items = cards.slice(0, 3);
 <style>
   .related__title {
     max-width: var(--measure-head);
-    margin-bottom: var(--s-6);
+    margin-bottom: var(--s-5);
   }
 
-  .related__grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--s-6) clamp(8px, 1vw, 16px);
+  /* Лента от края до края экрана: поля контейнера снимаются отрицательным
+     полем и возвращаются внутренним отступом — первая карточка стоит по
+     сетке заголовка, последняя докручивается до правого поля.
+     touch-action не ставим (см. DESIGN.md, «Жест на лентах»). */
+  .related__rail {
+    display: flex;
+    gap: var(--s-3);
+    margin-inline: calc(-1 * var(--gutter));
+    padding-inline: var(--gutter);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline-start: var(--gutter);
+    scrollbar-width: none;
   }
 
-  @media (min-width: 900px) {
-    .related__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  }
+  .related__rail::-webkit-scrollbar { display: none; }
 
+  /* Карточка во всю высоту столбца: кадр крупный, вертикальный, подпись
+     под ним — та же карточка, что в каталоге, только шире. Следующая
+     видна кромкой — подсказка, что ленту крутят. */
   .vmini {
+    flex: none;
+    width: min(74vw, 300px);
+    scroll-snap-align: start;
     display: flex;
     flex-direction: column;
     gap: var(--s-3);
-    min-width: 0;
+    /* пропорцию кадра PhotoRail читает сам (--card-ratio), а не получает
+       переопределением .prail снаружи — см. правило в CLAUDE.md */
+    --card-ratio: 3 / 4;
   }
 
-  /* Кадр карточки — тот же формат, что в ленте каталога */
-  .vmini :global(.prail) { aspect-ratio: 4 / 5; }
+  @media (min-width: 1024px) {
+    .vmini { width: 320px; }
+  }
 
   /* Цена крупно, тип вторым планом рядом — та же подпись, что в каталоге
      площадок. Вуаль не нужна: на кадре больше нет текста. */

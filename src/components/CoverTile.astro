@@ -1,0 +1,201 @@
+---
+// ПЛИТКА С ОБЛОЖКОЙ — один модуль на хаб подрядчиков и ряд входов
+// на главной. Кадр сверху, под ним имя раздела и капсула со счётчиком.
+//
+// Выросла из плиток хаба (.gtile--cover): заказчик попросил такие же
+// на главной. Вёрстка вынесена сюда, а не скопирована во второе место —
+// на этом проект уже обжигался (первый экран карточки и блок отзывов
+// разъезжались ровно так: одна разметка, две копии).
+//
+// КАДР ЛЕЖИТ БЕЗ ПОЛЕЙ и растворяется в плашку по нижней кромке: обложки
+// сняты на однотонном фоне в тон плитки (бежевый/чернила), поэтому шва
+// между кадром и подписью быть не должно. Текста на фото нет — имя и
+// счётчик стоят на бумаге под ним (правило проекта).
+//
+// НЕСКОЛЬКО ОБЛОЖЕК — переключаются сами (заказчик, 21.09.2026): плитка
+// раздела, за которым стоят десятки людей, одной фотографией говорит
+// про одного. Смена — кроссфейд по таймеру, без свайпа и точек: это
+// вход в раздел, а не карусель для разглядывания. Только opacity —
+// моушн-бюджет телефона; при prefers-reduced-motion смены нет вовсе.
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+
+interface Props {
+  name: string;
+  href: string;
+  /** готовая подпись счётчика: «7 подрядчиков», «скоро» */
+  capsule: string;
+  /** кадры обложки: один — статичная плитка, несколько — переключаются сами */
+  covers: ImageMetadata[];
+  /** тон плашки под кадром: бежевая или чернильная */
+  tone?: 'beige' | 'dark';
+  /** доля экрана, которую плитка занимает на брейкпоинтах (для srcset) */
+  sizes: string;
+  /** первый экран — грузим сразу */
+  eager?: boolean;
+  /** ширины srcset: роль из IMG_WIDTHS */
+  widths: number[];
+}
+
+const { name, href, capsule, covers, tone = 'beige', sizes, eager = false, widths } = Astro.props;
+---
+
+<a
+  class:list={['ctile', tone === 'dark' && 'theme-dark']}
+  href={href}
+  aria-label={`${name} — ${capsule}`}
+>
+  {/* Кадры — декорация к имени раздела: без alt, ссылка подписана целиком */}
+  <span class="ctile__media" data-cover-swap={covers.length > 1 ? '' : undefined}>
+    {covers.map((cover, n) => (
+      <Image
+        class:list={['ctile__cover', n === 0 && 'is-on']}
+        src={cover}
+        alt=""
+        widths={widths}
+        sizes={sizes}
+        loading={eager && n === 0 ? 'eager' : 'lazy'}
+        decoding="async"
+      />
+    ))}
+  </span>
+
+  <span class="ctile__body">
+    <span class="ctile__name">{name}</span>
+    <span class="ctile__count" aria-hidden="true">{capsule}</span>
+  </span>
+</a>
+
+<style>
+  .ctile {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: var(--tile-bg, var(--cover-beige));
+    color: var(--ink);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    text-decoration: none;
+  }
+
+  /* Тёмная плитка: scoped-селектор .ctile сильнее глобального .theme-dark,
+     поэтому тон читаем из его ручек здесь явно. */
+  .ctile.theme-dark {
+    --tile-bg: var(--bg);
+    background: var(--tile-bg);
+    color: var(--fg);
+  }
+
+  /* Кадры лежат стопкой: второй и следующие — поверх первого, видимый
+     выбирает класс. Высоту стопке задаёт первый кадр (он в потоке). */
+  .ctile__media {
+    position: relative;
+    display: block;
+  }
+
+  /* Кадр снят на чистом фоне и притонирован в палитру — верх и бока
+     сливаются с плиткой, а у пола остаётся естественная тень чуть темнее
+     плашки. Её закрывает короткий градиент в тон плитки по нижней кромке:
+     кадр растворяется в плашку, а не обрывается линией над подписью. */
+  .ctile__media::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 0;
+    height: 18%;
+    z-index: 1;
+    background: linear-gradient(to bottom, transparent, var(--tile-bg, var(--cover-beige)));
+    pointer-events: none;
+  }
+
+  .ctile__cover {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+  }
+
+  /* Кадры после первого вынуты из потока и лежат ровно на нём */
+  .ctile__cover:not(:first-child) {
+    position: absolute;
+    inset: 0;
+    height: 100%;
+  }
+
+  /* Видимый кадр — тот, на котором стоит .is-on. Без JS класс стоит
+     на первом и не меняется: плитка просто статична. */
+  .ctile__cover {
+    opacity: 0;
+    transition: opacity var(--dur-slow) var(--ease-inout);
+  }
+
+  .ctile__cover.is-on { opacity: 1; }
+
+  /* Подпись под кадром: имя сверху с местом под две строки (у соседей
+     «Площадки» и «Организация и координация» капсула должна стоять на
+     одной высоте), капсула — у нижней границы плитки. */
+  .ctile__body {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+    padding: var(--s-3) var(--s-4) var(--s-4);
+  }
+
+  /* Кегль от ширины колонки, не экрана: колонок две уже на телефоне,
+     и потолок в 30px рвал длинное имя раздела на четыре строки. */
+  .ctile__name {
+    font-size: clamp(18px, 4.2vw, 24px);
+    font-weight: var(--w-head);
+    line-height: 1.04;
+    letter-spacing: -0.03em;
+    /* место под две строки: у соседей по ряду капсула должна стоять
+       на одной высоте, сколько бы строк ни занял заголовок */
+    min-height: calc(2 * 1.04em);
+  }
+
+  /* Капсула-счётчик от цвета текста, а не --surface-dim: бежевая плитка
+     сама этого цвета и капсула в ней растворялась, а на чернилах тот же
+     серый читался бы светлым пятном. */
+  .ctile__count {
+    align-self: flex-start;
+    margin-top: auto;
+    padding: 6px 12px;
+    font-size: var(--fs-caption);
+    font-weight: var(--w-medium);
+    line-height: 1.2;
+    white-space: nowrap;
+    border-radius: var(--radius-pill);
+    background: color-mix(in srgb, currentColor 12%, transparent);
+  }
+</style>
+
+<script>
+  // СМЕНА ОБЛОЖЕК. Кроссфейд по таймеру; плитки, у которых кадр один,
+  // скрипт не трогает вовсе (у них нет data-cover-swap).
+  // Уважаем prefers-reduced-motion: там смены нет — остаётся первый кадр.
+  const SWAP_MS = 4000;
+
+  const calm = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  if (!calm.matches) {
+    document.querySelectorAll<HTMLElement>('[data-cover-swap]').forEach((stack) => {
+      const frames = Array.from(stack.querySelectorAll<HTMLElement>('.ctile__cover'));
+      if (frames.length < 2) return;
+
+      let i = 0;
+      // Разводим плитки по фазе: иначе все обложки на экране мигают разом,
+      // и страница выглядит моргающей, а не живой.
+      const phase = Math.random() * SWAP_MS;
+
+      window.setTimeout(() => {
+        window.setInterval(() => {
+          frames[i].classList.remove('is-on');
+          i = (i + 1) % frames.length;
+          frames[i].classList.add('is-on');
+        }, SWAP_MS);
+      }, phase);
+    });
+  }
+</script>

@@ -9,11 +9,12 @@
 // Данные остаются в `venue.contacts` (они нужны нам самим — менеджеру,
 // который повезёт заявку площадке), просто не рендерятся.
 //
-// ОСТАЛИСЬ ДВЕ КНОПКИ: «В избранное» и «Заказать». Первая — та же
-// механика, что у сердца поверх первого кадра (lib/save.ts, data-save),
-// только здесь она подписана словами: человек дочитал карточку до конца,
-// и сердечко в шапке уже давно за экраном. Вторая поднимает шторку
-// заявки (BookingSheet) — ту же, что кнопка первого экрана.
+// КНОПОК ЗДЕСЬ БОЛЬШЕ НЕТ (заказчик, 21.09.2026). Были две — «Заказать»
+// и «В избранное»; обе удлиняли страницу ради действий, которые человеку
+// уже доступны: заявку поднимает плавающая капсула (StickyCta), она висит
+// над нижней полосой от второго экрана и до конца страницы, а сердце
+// стоит в ряду действий поверх первого кадра. Блок остался тем, чем он
+// и был по смыслу: призыв и сведения о месте.
 //
 // Адрес и «как добраться» — НЕ контакты, а сведения о месте: по ним
 // выбирают площадку (сколько ехать от МКАД, есть ли парковка), они же
@@ -21,7 +22,6 @@
 import { Image } from 'astro:assets';
 import type { Venue } from '../data/venues';
 import { resolveImage, IMG_WIDTHS } from '../lib/images';
-import { venueFavorite } from '../lib/favorite-snapshot';
 
 interface Props {
   venue: Venue;
@@ -29,12 +29,6 @@ interface Props {
 
 const { venue } = Astro.props;
 const { contacts } = venue;
-
-// Снимок карточки для «Избранного» — ТОТ ЖЕ, что у сердца в первом экране
-// (lib/favorite-snapshot): две кнопки на одной странице обязаны класть
-// в хранилище одну запись, иначе площадка задвоится в разделе.
-const favorite = await venueFavorite(venue);
-const saveData = JSON.stringify(favorite);
 ---
 
 <section class="cta section theme-dark" id="zayavka">
@@ -46,20 +40,6 @@ const saveData = JSON.stringify(favorite);
           Напишите или позвоните — менеджер площадки подтвердит свободную дату, соберёт смету
           и&nbsp;покажет зал вживую.
         </p>
-
-        <div class="cta__actions">
-          {/* Открывает шторку заявки (BookingSheet) — ту же, что кнопка
-              первого экрана. Телефон партнёра с карточки снят намеренно,
-              подставлять его обратно нельзя: заявка идёт через нас. */}
-          <button class="pill pill--lg" type="button" data-booking-open>Заказать</button>
-          {/* Та же кнопка «в избранное», что сердце в первом экране:
-              одна привязка на проект (bindSaveButtons по data-save),
-              подпись меняется сама по aria-pressed. */}
-          <button class="pill pill--lg cta__save" type="button" data-save={saveData} aria-pressed="false">
-            <span class="cta__save-off">В избранное</span>
-            <span class="cta__save-on">В избранном</span>
-          </button>
-        </div>
 
         <dl class="rows cta__rows">
           <div class="rows__row">
@@ -123,21 +103,7 @@ const saveData = JSON.stringify(favorite);
     margin-bottom: var(--s-5);
   }
 
-  .cta__lead { margin-bottom: var(--s-6); }
-
-  .cta__actions {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--s-5);
-    margin-bottom: var(--s-7);
-  }
-
-  /* Подпись кнопки меняется по состоянию, а не иконка: слово «В избранном»
-     на бумаге читается без догадок, в отличие от закрашенного сердца. */
-  .cta__save-on { display: none; }
-  .cta__save[aria-pressed='true'] .cta__save-on { display: inline; }
-  .cta__save[aria-pressed='true'] .cta__save-off { display: none; }
+  .cta__lead { margin-bottom: var(--s-7); }
 
   /* на мобилке кадр тоже уходит в край страницы */
   .cta__shot {
@@ -169,12 +135,3 @@ const saveData = JSON.stringify(favorite);
     }
   }
 </style>
-
-<script>
-  // Кнопка «В избранное» на бумаге — та же привязка, что у сердца поверх
-  // кадра. Зовём здесь, а не полагаемся на скрипт первого экрана: блок
-  // может встать на странице, где того первого экрана нет.
-  import { bindSaveButtons } from '../lib/save';
-
-  bindSaveButtons();
-</script>
