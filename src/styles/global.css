@@ -1001,6 +1001,65 @@ mark {
 
 .radio-row__label { font-size: var(--fs-body); }
 
+/* ============ ПОЛЕ ВВОДА ============
+   Первая форма проекта — заявка (BookingSheet), и поля заводятся сразу
+   реестром: анкета подбора, вход в кабинет и форма подрядчика придут на
+   те же классы, а не каждая со своим полем.
+   Заливка --surface без обводки — тот же материал, что у .chip: рамка
+   вокруг каждого поля превращает короткую форму в таблицу. Угол прямой,
+   как велит --radius-ui: пилюля остаётся единственной капсулой в форме,
+   и кнопка внизу от полей отличается сразу. */
+.field {
+  display: grid;
+  gap: var(--s-2);
+}
+
+.field__label {
+  font-size: var(--fs-caption);
+  font-weight: var(--w-medium);
+}
+
+/* Подпись-пояснение под полем (необязательность, формат телефона) */
+.field__note {
+  font-size: var(--fs-caption);
+  opacity: 0.6;
+}
+
+.input {
+  width: 100%;
+  min-height: 52px;
+  padding: 14px var(--s-4);
+  font: inherit;
+  color: var(--fg);
+  background: var(--surface);
+  border: 1px solid transparent;
+  border-radius: var(--radius-ui);
+  /* iOS зумит страницу, когда в поле кегль меньше 16px — держим набор */
+  font-size: var(--fs-small);
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+
+.input::placeholder { color: var(--fg); opacity: 0.4; }
+
+/* Фокус виден контуром своего же цвета, а не системным кольцом:
+   синяя рамка браузера мимо палитры проекта. */
+.input:focus-visible {
+  outline: none;
+  border-color: var(--fg);
+}
+
+textarea.input {
+  min-height: 96px;
+  resize: vertical;
+}
+
+/* Ряд чипов-вариантов внутри формы («как удобно связаться») */
+.field__opts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+
 /* ============ НИЖНЯЯ ШТОРКА ============
    Одна оболочка на все настройки каталога (фильтры, сортировка, локация);
    открытие/закрытие — src/lib/sheet.ts. Закрытая невидима и не ловит клики

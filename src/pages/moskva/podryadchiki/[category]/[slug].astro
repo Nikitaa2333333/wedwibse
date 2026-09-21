@@ -23,6 +23,7 @@ import HeroCta from '../../../../components/HeroCta.astro';
 import HeroStage from '../../../../components/HeroStage.astro';
 import ReelsRow from '../../../../components/ReelsRow.astro';
 import RelatedCards from '../../../../components/RelatedCards.astro';
+import BookingSheet from '../../../../components/BookingSheet.astro';
 import { similarSpecialists } from '../../../../lib/similar';
 import { specialistCard } from '../../../../lib/similar-cards';
 import { SPECIALISTS_BY_CATEGORY, FILTERS_BY_CATEGORY, specialistRole, hasProfile, type Specialist } from '../../../../data/specialists';
@@ -274,6 +275,11 @@ const saveData = JSON.stringify({
       cards={similarSpecialists(s).map(specialistCard)}
     />
   </div>
+
+  <!-- ЗАЯВКА: та же шторка, что у площадки. Она же закрывает висяк,
+       оставшийся от снятого нижнего блока: кнопка «Заказать» из первого
+       экрана вела в пустой якорь #zayavka и ничего не делала. -->
+  <BookingSheet subject={s.name} action="Отправить заявку" />
 
   <BottomDock active="vendors" />
 </Layout>

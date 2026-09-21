@@ -1,0 +1,279 @@
+---
+// ЗАЯВКА — нижняя шторка, которую поднимает кнопка «Забронировать»
+// (площадка) и «Заказать» (подрядчик). Оболочка — тот же реестр .sheet,
+// что у фильтров и сортировки: человек этот жест уже знает по каталогу,
+// и новая механика поверх него не заводится (открытие — lib/sheet.ts).
+//
+// ПОЧЕМУ ШТОРКА, А НЕ ОТДЕЛЬНАЯ СТРАНИЦА-ФОРМА. Заявка — продолжение
+// просмотра карточки, а не уход с неё: человек ещё смотрит зал и хочет
+// спросить про дату. Страница заявки увела бы его с карточки, а вернуться
+// назад в ту же точку листания мы не умеем.
+//
+// КОНТАКТЫ СПРАШИВАЕМ ОДИН РАЗ. Заполненное уходит в localStorage
+// (wed:contact) и при следующем открытии уже стоит в полях — шапка
+// шторки тогда говорит не «оставьте», а «проверьте». Это и есть обещание
+// «нужно один раз»: по второй площадке заявка отправляется в два касания.
+//
+// ЗАГЛУШКА: отправки на сервер нет (фаза дизайна) — форма показывает
+// экран «принято» и запоминает контакты локально. Когда появится бэкенд,
+// сюда встанет fetch, разметка и стили не изменятся.
+import Icon from './Icon.astro';
+
+interface Props {
+  /** о ком заявка: имя площадки или подрядчика — человек видит его в шторке
+   *  и понимает, что заявка уйдёт именно по этой карточке */
+  subject: string;
+  /** подпись кнопки отправки: у площадки бронируют дату, у подрядчика заказывают */
+  action?: string;
+}
+
+const { subject, action = 'Отправить заявку' } = Astro.props;
+
+// Способы связи — то же множество, что человек ждёт от свадебного сервиса.
+// Значения латиницей: они же уйдут в запрос, когда появится бэкенд.
+const WAYS = [
+  { value: 'telegram', label: 'Telegram' },
+  { value: 'whatsapp', label: 'WhatsApp' },
+  { value: 'call', label: 'Звонок' },
+];
+---
+
+<div class="sheet" data-sheet="booking" data-booking>
+  <div class="sheet__backdrop" data-sheet-close></div>
+
+  <section class="sheet__panel" role="dialog" aria-modal="true" aria-labelledby="booking-title">
+    <header class="sheet__head">
+      <h2 class="sheet__title" id="booking-title" data-booking-title>Оставить заявку</h2>
+      <button class="icon-btn" type="button" data-sheet-close aria-label="Закрыть">
+        <Icon name="close" />
+      </button>
+    </header>
+
+    <!-- ФОРМА. novalidate снят намеренно: браузер сам проверит обязательные
+         поля и формат телефона — своей валидации на фазе дизайна не пишем. -->
+    <form class="booking" data-booking-form>
+      <div class="sheet__body" data-lenis-prevent>
+        <p class="booking__subject t-small">
+          Заявка по карточке <span class="booking__name">{subject}</span>
+        </p>
+
+        <p class="booking__note t-caption" data-booking-note>
+          Контакты нужны один раз: при следующей заявке они уже будут в полях.
+        </p>
+
+        <div class="booking__fields">
+          <label class="field">
+            <span class="field__label">Как вас зовут</span>
+            <input class="input" type="text" name="name" autocomplete="name" placeholder="Имя" required />
+          </label>
+
+          <label class="field">
+            <span class="field__label">Телефон</span>
+            <input
+              class="input"
+              type="tel"
+              name="phone"
+              autocomplete="tel"
+              inputmode="tel"
+              placeholder="+7 900 000-00-00"
+              required
+            />
+          </label>
+
+          <fieldset class="field booking__ways">
+            <legend class="field__label">Как удобно связаться</legend>
+            <div class="field__opts">
+              {WAYS.map((w, i) => (
+                <label class="chip-opt">
+                  <input class="chip-opt__input" type="radio" name="way" value={w.value} checked={i === 0} />
+                  <span class="chip">{w.label}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          <label class="field">
+            <span class="field__label">Дата свадьбы</span>
+            <input class="input" type="date" name="date" />
+            <span class="field__note">Не выбрали — ничего страшного, обсудим</span>
+          </label>
+
+          <label class="field">
+            <span class="field__label">Что уточнить</span>
+            <textarea class="input" name="comment" rows="3" placeholder="Сколько гостей, что важно, вопросы по смете"></textarea>
+          </label>
+        </div>
+      </div>
+
+      <footer class="sheet__foot">
+        <button class="pill pill--lg booking__submit" type="submit">{action}</button>
+        <p class="booking__legal t-caption">
+          Отправляя заявку, вы соглашаетесь на обработку своих данных.
+        </p>
+      </footer>
+    </form>
+
+    <!-- ЭКРАН «ПРИНЯТО» — на месте формы, а не поверх неё: шторка остаётся
+         одной высоты со своим содержимым и не прыгает при подмене. -->
+    <div class="booking__done" data-booking-done hidden>
+      <div class="sheet__body">
+        {/* Заголовка «Заявка принята» здесь нет: его на время этого экрана
+            берёт на себя шапка шторки — иначе два заголовка подряд. */}
+        <p class="booking__done-mark" aria-hidden="true"><Icon name="check" /></p>
+        <p class="booking__done-text">
+          Менеджер свяжется выбранным способом и уточнит дату и детали.
+          Контакты мы запомнили — по следующей карточке хватит одного касания.
+        </p>
+      </div>
+      <footer class="sheet__foot">
+        <button class="pill pill--lg" type="button" data-sheet-close>Готово</button>
+      </footer>
+    </div>
+  </section>
+</div>
+
+<style>
+  /* Форма занимает всю панель: тело листается, футер с кнопкой липкий —
+     ровно как у шторки фильтров, только вместо «Показать» здесь отправка. */
+  .booking,
+  .booking__done {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  /* display:flex сильнее атрибута hidden — без этой пары скрытая форма
+     и экран «принято» показались бы одновременно, один под другим. */
+  .booking[hidden],
+  .booking__done[hidden] { display: none; }
+
+  /* Строка «по какой карточке заявка» — первое, что читается в шторке:
+     человек мог открыть её, листая несколько площадок подряд. */
+  .booking__subject { margin-bottom: var(--s-1); }
+  .booking__name { font-weight: var(--w-medium); }
+
+  .booking__note {
+    margin-bottom: var(--s-5);
+    opacity: 0.6;
+  }
+
+  .booking__fields {
+    display: grid;
+    gap: var(--s-5);
+  }
+
+  /* fieldset несёт своё системное оформление — снимаем: рамка вокруг
+     ряда чипов читалась бы вторым полем. */
+  .booking__ways {
+    border: 0;
+    padding: 0;
+    margin: 0;
+  }
+
+  .booking__legal { opacity: 0.6; }
+
+  /* Экран «принято»: знак, заголовок и строка — по центру панели */
+  .booking__done-mark {
+    display: flex;
+    margin-bottom: var(--s-4);
+  }
+
+  .booking__done-mark :global(svg) {
+    width: 40px;
+    height: 40px;
+  }
+
+  .booking__done-text {
+    max-width: var(--measure-lead);
+    opacity: 0.8;
+  }
+</style>
+
+<script>
+  import { bindSheet } from '../lib/sheet';
+
+  // ЗАГЛУШКА (фаза дизайна): заявка никуда не уходит — контакты остаются
+  // в браузере, чтобы форма держала своё обещание «нужно один раз».
+  // Ключ отдельный от избранного: то — снимки карточек, это — человек.
+  const STORE_KEY = 'wed:contact';
+
+  interface Contact {
+    name?: string;
+    phone?: string;
+    way?: string;
+  }
+
+  const sheet = document.querySelector<HTMLElement>('[data-booking]');
+
+  if (sheet) {
+    const handle = bindSheet(sheet);
+    const form = sheet.querySelector<HTMLFormElement>('[data-booking-form]')!;
+    const done = sheet.querySelector<HTMLElement>('[data-booking-done]')!;
+    const note = sheet.querySelector<HTMLElement>('[data-booking-note]')!;
+    const title = sheet.querySelector<HTMLElement>('[data-booking-title]')!;
+
+    const read = (): Contact => {
+      try {
+        return JSON.parse(localStorage.getItem(STORE_KEY) ?? '{}') as Contact;
+      } catch {
+        return {};
+      }
+    };
+
+    // Знакомого человека форма встречает заполненной и говорит «проверьте»,
+    // а не «оставьте»: это и есть обещанное «один раз».
+    const known = read();
+    if (known.name || known.phone) {
+      form.querySelector<HTMLInputElement>('[name="name"]')!.value = known.name ?? '';
+      form.querySelector<HTMLInputElement>('[name="phone"]')!.value = known.phone ?? '';
+      if (known.way) {
+        const way = form.querySelector<HTMLInputElement>(`[name="way"][value="${known.way}"]`);
+        if (way) way.checked = true;
+      }
+      title.textContent = 'Проверьте данные';
+      note.textContent = 'Контакты мы запомнили с прошлой заявки — поправьте, если что-то изменилось.';
+    }
+
+    // Кнопки заказа по всей странице (первый экран, финальный блок площадки)
+    // остаются настоящими ссылками на #zayavka: без JS человек попадает в
+    // блок заявки, как и раньше. Скрипт перехватывает клик и поднимает шторку.
+    document.querySelectorAll<HTMLElement>('[data-booking-open]').forEach((btn) =>
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        handle.open(btn);
+      })
+    );
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const data = new FormData(form);
+      try {
+        localStorage.setItem(
+          STORE_KEY,
+          JSON.stringify({
+            name: String(data.get('name') ?? ''),
+            phone: String(data.get('phone') ?? ''),
+            way: String(data.get('way') ?? ''),
+          })
+        );
+      } catch {}
+
+      form.hidden = true;
+      done.hidden = false;
+      title.textContent = 'Заявка принята';
+    });
+
+    // Закрыли шторку после отправки — в следующий раз она снова открывается
+    // формой, уже с заполненными полями.
+    sheet.querySelectorAll<HTMLElement>('[data-sheet-close]').forEach((btn) =>
+      btn.addEventListener('click', () => {
+        if (!done.hidden) {
+          done.hidden = true;
+          form.hidden = false;
+          title.textContent = 'Проверьте данные';
+          note.textContent = 'Контакты мы запомнили с прошлой заявки — поправьте, если что-то изменилось.';
+        }
+      })
+    );
+  }
+</script>

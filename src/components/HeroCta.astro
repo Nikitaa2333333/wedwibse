@@ -26,7 +26,10 @@ const { orderLabel, orderHref, save } = Astro.props;
 ---
 
 <div class="hero-cta">
-  <a class="pill pill--lg" href={orderHref}>{orderLabel}</a>
+  <!-- Ссылка настоящая (href на блок заявки) — без JS она работает, как
+       работала. Скрипт BookingSheet перехватывает клик по data-booking-open
+       и поднимает шторку с формой; тот же приём, что у BackButton. -->
+  <a class="pill pill--lg" href={orderHref} data-booking-open>{orderLabel}</a>
   <button class="pill pill--lg hero-cta__save" type="button" data-save={save} aria-pressed="false">
     <span class="hero-cta__off">В избранное</span>
     <span class="hero-cta__on">В избранном</span>
