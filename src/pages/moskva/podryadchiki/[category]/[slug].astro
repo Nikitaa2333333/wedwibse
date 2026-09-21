@@ -24,6 +24,7 @@ import HeroStage from '../../../../components/HeroStage.astro';
 import ReelsRow from '../../../../components/ReelsRow.astro';
 import RelatedCards from '../../../../components/RelatedCards.astro';
 import BookingSheet from '../../../../components/BookingSheet.astro';
+import StickyCta from '../../../../components/StickyCta.astro';
 import { similarSpecialists } from '../../../../lib/similar';
 import { specialistCard } from '../../../../lib/similar-cards';
 import { SPECIALISTS_BY_CATEGORY, FILTERS_BY_CATEGORY, specialistRole, hasProfile, type Specialist } from '../../../../data/specialists';
@@ -275,6 +276,10 @@ const saveData = JSON.stringify({
       cards={similarSpecialists(s).map(specialistCard)}
     />
   </div>
+
+  <!-- Плавающая кнопка заявки — та же, что у площадки: наверху карточки
+       её нет, ниже она всегда под рукой (StickyCta). -->
+  <StickyCta label="Заказать" />
 
   <!-- ЗАЯВКА: та же шторка, что у площадки. Она же закрывает висяк,
        оставшийся от снятого нижнего блока: кнопка «Заказать» из первого

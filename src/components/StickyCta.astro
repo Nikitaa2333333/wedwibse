@@ -1,0 +1,106 @@
+---
+// ПЛАВАЮЩАЯ КНОПКА ЗАЯВКИ — всплывает над нижней полосой, когда ряд
+// действий первого экрана уходит за верх экрана, и прячется обратно,
+// когда человек возвращается к началу карточки.
+//
+// ЗАЧЕМ. Кнопки в конце страницы (финальный блок площадки) заказчик снял:
+// до них долистывают уже после того, как решение принято, а страницу они
+// удлиняли. Но и первый экран остаётся позади через полтора пролистывания
+// — дальше человек читает зал, цены и отзывы без единой кнопки заказа.
+// Плавающая капсула закрывает этот разрыв: наверху её нет (там настоящая
+// кнопка под именем), ниже она всегда под большим пальцем.
+//
+// ЛАЙКА ЗДЕСЬ НЕТ. Сердце стоит ровно в одном месте — в ряду действий
+// поверх первого кадра (HeroActions). Вторая кнопка избранного рядом с
+// заявкой только делит внимание: правило «знак избранного один на
+// страницу» тут действует так же, как в каталоге.
+//
+// Появление — реакция на прокрутку, а не reveal контента: снятый из
+// проекта механизм появлений (data-reveal) сюда не возвращается, блоки
+// страницы как стояли на месте, так и стоят.
+interface Props {
+  /** подпись: «Забронировать» у площадки, «Заказать» у подрядчика */
+  label: string;
+  /** якорь блока заявки — работает без JS, как у кнопки первого экрана */
+  href?: string;
+}
+
+const { label, href = '#zayavka' } = Astro.props;
+---
+
+<div class="scta" data-sticky-cta hidden>
+  <a class="pill pill--lg scta__btn" href={href} data-booking-open>{label}</a>
+</div>
+
+<style>
+  /* Считается от вьюпорта, поэтому место вертикальной полосы на ПК
+     вычитается руками (--rail-w) — так же, как у панели сравнения
+     в «Избранном». Снизу — над нижней полосой телефона (--dock-h). */
+  .scta {
+    position: fixed;
+    left: var(--rail-w);
+    right: 0;
+    bottom: calc(var(--dock-h) + var(--s-3));
+    z-index: var(--z-nav);
+    display: flex;
+    justify-content: center;
+    padding-inline: var(--gutter);
+    pointer-events: none;
+  }
+
+  /* hidden снимается скриптом сразу: без JS кнопка не всплывает вовсе,
+     и капсула не висит поверх страницы мёртвым грузом. */
+  .scta[hidden] { display: none; }
+
+  .scta__btn {
+    pointer-events: auto;
+    /* Капсула лежит на фотографиях и на бумаге — заливка обязательна,
+       прозрачная пилюля на кадре читалась бы контуром без слова. */
+    background: var(--fg);
+    color: var(--bg);
+    border-color: var(--fg);
+    box-shadow: var(--shadow-float);
+    /* Только transform и opacity — моушн-бюджет телефона. */
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity var(--dur-fast) var(--ease-out),
+                transform var(--dur-fast) var(--ease-out);
+  }
+
+  .scta.is-shown .scta__btn {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Ховер-инверсия .pill здесь не нужна: капсула уже чернильная */
+  @media (hover: hover) {
+    .scta__btn:hover {
+      background: var(--fg);
+      color: var(--bg);
+    }
+  }
+</style>
+
+<script>
+  // Кнопка показывается, когда настоящая кнопка первого экрана (.hero-cta)
+  // ушла за верх экрана. Наблюдаем именно за ней, а не за пройденными
+  // пикселями: у площадки и у подрядчика первый экран разной высоты, и
+  // число «через 600px» разъехалось бы между страницами.
+  const bar = document.querySelector<HTMLElement>('[data-sticky-cta]');
+  const anchor = document.querySelector<HTMLElement>('.hero-cta');
+
+  if (bar && anchor) {
+    bar.hidden = false;
+    // Запас снизу под капсулу держит body (см. --float-cta-space): капсула
+    // фиксированная и места в потоке не занимает, а накрывать последний
+    // блок страницы ей нельзя.
+    document.body.classList.add('has-sticky-cta');
+
+    const io = new IntersectionObserver(
+      ([entry]) => bar.classList.toggle('is-shown', !entry.isIntersecting),
+      { rootMargin: '0px' }
+    );
+
+    io.observe(anchor);
+  }
+</script>
