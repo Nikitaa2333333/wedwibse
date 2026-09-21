@@ -281,6 +281,9 @@ const mapPoints = venueMapPoints();
      aria-pressed (тот же приём, что у кнопки избранного). Внутренний
      span держит строку «иконка + слово» сам: у .pill--icon флекс
      на кнопке, а видимых детей у неё всегда ровно один. */
+  /* Кнопка не сжимается: место в строке уступает чип локации (см. ScopePicker) */
+  .vmap-btn { flex: none; }
+
   .vmap-btn__off,
   .vmap-btn__on {
     display: inline-flex;
