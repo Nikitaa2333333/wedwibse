@@ -458,30 +458,85 @@ wb.save(OUT)
 GS = """// Сгенерировано scripts/registry-sheet.py — руками не править.
 // 1) fixValidations — ставит выпадающие списки заново по карте «вкладка → столбец
 //    → значения»: после импорта xlsx Google теряет ссылку на «Справочники».
-// 2) onEdit — в многозначных столбцах (MULTI) выбор из списка ДОБАВЛЯЕТ значение
-//    через запятую, повторный выбор убирает. Режим «несколько вариантов» через
-//    API включить нельзя, поэтому так. Срабатывает сам, ничего запускать не надо.
+// 2) spreadMulti — чипы с множественным выбором на всех многозначных столбцах
+//    (после ручного шаблона на TEMPLATE_CELL, см. AGENTS.md). Проверено, работает.
+// 3) onEdit — страховка для столбцов без чипов: выбор из обычного списка
+//    ДОБАВЛЯЕТ значение через запятую, повторный выбор убирает. При чипах
+//    не вмешивается. Срабатывает сам, ничего запускать не надо.
 const MAP = %s;
 const MULTI = %s;
 const FIRST_ROW = 4, LAST_ROW = 300;
 
-function fixValidations() {
+// Ячейка-шаблон: правило с включённым «Разрешить выбор нескольких вариантов»
+// (через API этот флаг не ставится, а при копировании правила сохраняется).
+// Включить руками на одной ячейке — fixAll размножит на все многозначные столбцы.
+const TEMPLATE_CELL = ["Организаторы", "O5"];
+
+function templateRule() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(TEMPLATE_CELL[0]);
+  return sheet ? sheet.getRange(TEMPLATE_CELL[1]).getDataValidation() : null;
+}
+
+// Снимает ВСЕ правила на вкладках реестра и ставит заново: обычные списки —
+// как есть, многозначные — копией шаблона с подменёнными значениями.
+function fixAll() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let fixed = 0, missing = [];
+  const tpl = templateRule();
+  let fixed = 0, multi = 0, missing = [];
   Object.keys(MAP).forEach((name) => {
     const sheet = ss.getSheetByName(name);
     if (!sheet) { missing.push(name); return; }
     if (sheet.getMaxRows() < LAST_ROW) sheet.insertRowsAfter(sheet.getMaxRows(), LAST_ROW - sheet.getMaxRows());
+    sheet.getRange(1, 1, sheet.getMaxRows(), sheet.getMaxColumns()).clearDataValidations();
     Object.keys(MAP[name]).forEach((col) => {
-      const rule = SpreadsheetApp.newDataValidation()
-        .requireValueInList(MAP[name][col], true)
-        .setAllowInvalid(true)
-        .build();
+      const isMulti = (MULTI[name] || []).indexOf(Number(col)) >= 0;
+      const builder = isMulti && tpl ? tpl.copy() : SpreadsheetApp.newDataValidation();
+      const rule = builder.requireValueInList(MAP[name][col], true).setAllowInvalid(true).build();
       sheet.getRange(FIRST_ROW, Number(col), LAST_ROW - FIRST_ROW + 1, 1).setDataValidation(rule);
-      fixed++;
+      fixed++; if (isMulti && tpl) multi++;
     });
   });
-  Logger.log('Готово: столбцов — ' + fixed + (missing.length ? '. Не найдены вкладки: ' + missing.join(', ') : ''));
+  Logger.log('Готово: столбцов — ' + fixed + ', из них по шаблону с множественным выбором — ' + multi +
+    (tpl ? '' : '. Шаблон ' + TEMPLATE_CELL.join('!') + ' не найден: многозначные поставлены обычными списками') +
+    (missing.length ? '. Не найдены вкладки: ' + missing.join(', ') : ''));
+}
+
+function fixValidations() { fixAll(); }
+
+// ---------- чипы с множественным выбором на всех многозначных столбцах ----------
+// Флаг «несколько вариантов» через API не ставится, но при КОПИРОВАНИИ правила
+// сохраняется. Поэтому: списки многозначных столбцов раскладываются в скрытые
+// строки LIST_ROW.. под самим столбцом, а шаблон — правило «список из диапазона»
+// с относительной ссылкой на эти строки (O$302:O$330, без имени листа) и
+// включённым множественным выбором — копируется на каждый столбец: ссылка
+// сдвигается вместе со столбцом, и каждый берёт свой список.
+// Шаблон один раз делается руками на ячейке TEMPLATE_CELL, потом spreadMulti().
+const LIST_ROW = 302, LIST_ROWS = 30;
+
+function spreadMulti() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const tplSheet = ss.getSheetByName(TEMPLATE_CELL[0]);
+  const tpl = tplSheet.getRange(TEMPLATE_CELL[1]);
+  if (!tpl.getDataValidation()) throw new Error('На ' + TEMPLATE_CELL.join('!') + ' нет правила-шаблона');
+  let done = 0;
+  Object.keys(MULTI).forEach((name) => {
+    const cols = MULTI[name];
+    if (!cols.length) return;
+    const sheet = ss.getSheetByName(name);
+    if (!sheet) return;
+    const need = LIST_ROW + LIST_ROWS - 1;
+    if (sheet.getMaxRows() < need) sheet.insertRowsAfter(sheet.getMaxRows(), need - sheet.getMaxRows());
+    cols.forEach((col) => {
+      const values = MAP[name][col] || [];
+      const cells = values.map((v) => [v]);
+      while (cells.length < LIST_ROWS) cells.push(['']);
+      sheet.getRange(LIST_ROW, col, LIST_ROWS, 1).setValues(cells);
+      tpl.copyTo(sheet.getRange(FIRST_ROW, col, LAST_ROW - FIRST_ROW + 1, 1), SpreadsheetApp.CopyPasteType.PASTE_DATA_VALIDATION, false);
+      done++;
+    });
+    sheet.hideRows(LIST_ROW, LIST_ROWS);
+  });
+  Logger.log('Скопировано на столбцов: ' + done);
 }
 
 function onEdit(e) {
