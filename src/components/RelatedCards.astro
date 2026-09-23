@@ -41,8 +41,12 @@ const items = cards.slice(0, 6);
       <div class="related__rail">
         {items.map((card) => (
           <article class="vmini">
+            {/* ОДИН КАДР, без карусели внутри (заказчик, 23.09.2026): лента
+                 сама листается вбок, и второй горизонтальный жест внутри
+                 карточки перехватывал палец — вместо соседней площадки
+                 ехали кадры этой. Смотреть съёмку — на самой карточке. */}
             <PhotoRail
-              photos={card.media}
+              photos={card.media.slice(0, 1)}
               alt={card.alt}
               href={card.href}
               sizes="(min-width: 900px) 33vw, (min-width: 640px) 50vw, 100vw"

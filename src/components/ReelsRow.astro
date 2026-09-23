@@ -46,14 +46,16 @@ const { reels, title = 'Видео', section = false } = Astro.props;
             </span>
           </button>
 
-          {/* Под роликом — только звук: знака «в избранное» у ролика нет */}
+          {/* ЗВУК — НА САМОМ КАДРЕ, в углу (заказчик, 23.09.2026): кнопка под
+               роликом читалась отдельным элементом, будто не от этого видео.
+               Лежит соседом плитки, а не внутри неё: кнопка в кнопке
+               недопустима. Нажатие звука ЗАПУСКАЕТ именно этот ролик со
+               звуком и останавливает остальные (см. скрипт). */}
           {reel.sound && (
-            <div class="preels__foot">
-              <button class="sound-btn sound-btn--inline" type="button" data-sound={reel.src} aria-pressed="false" aria-label="Звук ролика">
-                <span class="sound-btn__off"><Icon name="soundOff" /></span>
-                <span class="sound-btn__on"><Icon name="sound" /></span>
-              </button>
-            </div>
+            <button class="sound-btn preels__sound" type="button" data-reel-sound aria-pressed="false" aria-label="Смотреть со звуком">
+              <span class="sound-btn__off"><Icon name="soundOff" /></span>
+              <span class="sound-btn__on"><Icon name="sound" /></span>
+            </button>
           )}
         </div>
       ))}
@@ -89,6 +91,7 @@ const { reels, title = 'Видео', section = false } = Astro.props;
   /* Ячейка ряда: кадр и строка звука под ним. Ширину держит она,
      а не сам ролик, — иначе строка вылезала бы за кадр. */
   .preels__cell {
+    position: relative;
     flex: 0 0 clamp(180px, 48vw, 240px);
     scroll-snap-align: start;
   }
@@ -103,14 +106,6 @@ const { reels, title = 'Видео', section = false } = Astro.props;
     background: var(--surface-dim);
     cursor: pointer;
     color: inherit;
-  }
-
-  .preels__foot {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: var(--s-2);
-    padding-top: 2px;
   }
 
   /* Ролик поверх своего постера — проявляется, когда реально пошёл:
@@ -160,50 +155,68 @@ const { reels, title = 'Видео', section = false } = Astro.props;
 </style>
 
 <script>
-  import { bindSoundButtons } from '../lib/video';
-
-  bindSoundButtons();
-
   // ============ РЯД «ВИДЕО»: ИГРАЕТ ТОЛЬКО ОДИН ============
-  const tiles = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-reel]'));
+  // Одна точка правды на весь ряд: и тап по кадру, и кнопка звука идут
+  // через play()/stop(). Раньше звук жил в общем bindSoundButtons и о ряде
+  // ничего не знал — включённый звук запускал ролик, но соседний, начатый
+  // тапом, продолжал играть, а плитка не считала себя запущенной.
+  const cells = Array.from(document.querySelectorAll<HTMLElement>('.preels__cell'));
 
-  function stopTile(tile: HTMLButtonElement) {
-    const video = tile.querySelector<HTMLVideoElement>('[data-reel-video]');
-    video?.pause();
-    video?.classList.remove('is-playing');
+  const parts = (cell: HTMLElement) => ({
+    tile: cell.querySelector<HTMLButtonElement>('[data-reel]')!,
+    video: cell.querySelector<HTMLVideoElement>('[data-reel-video]')!,
+    sound: cell.querySelector<HTMLButtonElement>('[data-reel-sound]'),
+  });
+
+  function stop(cell: HTMLElement) {
+    const { tile, video, sound } = parts(cell);
+    video.pause();
+    video.muted = true;
+    video.classList.remove('is-playing');
     tile.setAttribute('aria-pressed', 'false');
+    sound?.setAttribute('aria-pressed', 'false');
   }
 
-  tiles.forEach((tile) => {
+  function play(cell: HTMLElement, withSound: boolean) {
+    const { tile, video, sound } = parts(cell);
+    cells.forEach((other) => other !== cell && stop(other));
+
+    // файл подставляем при первом запуске: до нажатия ролик не качается
+    if (!video.src) video.src = tile.dataset.reel!;
+    // звук ставим до play(): это жест человека, и браузер его разрешает
+    video.muted = !withSound;
+    tile.setAttribute('aria-pressed', 'true');
+    sound?.setAttribute('aria-pressed', String(withSound));
+    video
+      .play()
+      .then(() => video.classList.add('is-playing'))
+      .catch(() => stop(cell));
+  }
+
+  cells.forEach((cell) => {
+    const { tile, video, sound } = parts(cell);
+    if (!tile || !video) return;
+
     tile.addEventListener('click', () => {
-      const video = tile.querySelector<HTMLVideoElement>('[data-reel-video]');
-      if (!video) return;
+      if (tile.getAttribute('aria-pressed') === 'true') stop(cell);
+      else play(cell, false);
+    });
 
-      if (tile.getAttribute('aria-pressed') === 'true') {
-        stopTile(tile);
-        return;
-      }
-
-      tiles.forEach((other) => other !== tile && stopTile(other));
-
-      // файл подставляем при первом запуске: до нажатия ролик не качается
-      if (!video.src) video.src = tile.dataset.reel!;
-      video
-        .play()
-        .then(() => {
-          video.classList.add('is-playing');
-          tile.setAttribute('aria-pressed', 'true');
-        })
-        .catch(() => {});
+    sound?.addEventListener('click', () => {
+      const playing = tile.getAttribute('aria-pressed') === 'true';
+      if (!playing) return play(cell, true);
+      // ролик уже идёт — кнопка только переключает звук у него же
+      video.muted = !video.muted;
+      sound.setAttribute('aria-pressed', String(!video.muted));
     });
   });
 
   // Ушёл ряд с экрана — ролик встаёт на паузу: крутить видео за кадром
-  // незачем, это батарея телефона.
+  // незачем, это батарея телефона, и звук из невидимого кадра не нужен.
   document.querySelectorAll('[data-reels-rail]').forEach((rail) => {
     new IntersectionObserver(
       ([entry]) => {
-        if (!entry.isIntersecting) tiles.forEach(stopTile);
+        if (!entry.isIntersecting) cells.forEach(stop);
       },
       { threshold: 0 }
     ).observe(rail);
