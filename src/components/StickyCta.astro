@@ -66,14 +66,24 @@ const { label, href = '#zayavka' } = Astro.props;
        градиент внизу экрана без кнопки читался бы грязью на бумаге.
        Только opacity и transform, моушн-бюджет телефона. */
     opacity: 0;
-    transition: opacity var(--dur-fast) var(--ease-out);
+    /* ПЛАВНО И ПО ОЧЕРЕДИ (заказчик, 23.09.2026: кнопка «выпрыгивала»).
+       Появление: сначала медленно проступает растворение, и только на нём
+       всплывает капсула. Уход — в обратном порядке: капсула опускается
+       первой, растворение гаснет следом (задержка на время её ухода). */
+    transform: translateY(16px);
+    transition: opacity var(--dur-slow) var(--ease-inout) var(--dur-fast),
+                transform var(--dur-slow) var(--ease-out) var(--dur-fast);
   }
 
   /* hidden снимается скриптом сразу: без JS кнопка не всплывает вовсе,
      и полоса не висит поверх страницы мёртвым грузом. */
   .scta[hidden] { display: none; }
 
-  .scta.is-shown { opacity: 1; }
+  .scta.is-shown {
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 0s;
+  }
 
   .scta__btn {
     pointer-events: auto;
@@ -85,11 +95,19 @@ const { label, href = '#zayavka' } = Astro.props;
     background: var(--fg);
     color: var(--bg);
     border-color: var(--fg);
-    transform: translateY(10px);
-    transition: transform var(--dur-fast) var(--ease-out);
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity var(--dur-fast) var(--ease-out),
+                transform var(--dur-fast) var(--ease-out);
   }
 
-  .scta.is-shown .scta__btn { transform: translateY(0); }
+  /* капсула всплывает, когда растворение уже почти проступило */
+  .scta.is-shown .scta__btn {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity var(--dur-base) var(--ease-out) calc(var(--dur-slow) * 0.45),
+                transform var(--dur-base) var(--ease-out) calc(var(--dur-slow) * 0.45);
+  }
 
   /* Пока капсула не показана, невидимая кнопка не должна ловить тап */
   .scta:not(.is-shown) .scta__btn { pointer-events: none; }
@@ -120,6 +138,9 @@ const { label, href = '#zayavka' } = Astro.props;
 
     // Доля пройденной страницы, после которой капсула всплывает
     const MID_PROGRESS = 0.4;
+    // Прячем чуть раньше порога, а не ровно на нём: иначе у самой границы
+    // лёгкое движение пальцем туда-обратно дёргало капсулу вверх-вниз.
+    const HIDE_PROGRESS = 0.34;
     let heroGone = false;
     let pastMid = false;
     const sync = () => bar.classList.toggle('is-shown', heroGone && pastMid);
@@ -136,7 +157,8 @@ const { label, href = '#zayavka' } = Astro.props;
       requestAnimationFrame(() => {
         ticking = false;
         const max = document.documentElement.scrollHeight - window.innerHeight;
-        pastMid = max > 0 && window.scrollY / max >= MID_PROGRESS;
+        const progress = max > 0 ? window.scrollY / max : 0;
+        pastMid = progress >= (pastMid ? HIDE_PROGRESS : MID_PROGRESS);
         sync();
       });
     };
