@@ -59,8 +59,33 @@ const { label, href = '#zayavka' } = Astro.props;
     z-index: var(--z-nav);
     display: flex;
     justify-content: center;
-    padding: 56px var(--gutter) var(--s-4);
-    background: linear-gradient(to bottom, transparent, var(--bg) 56px, var(--bg) 100%);
+    padding: 88px var(--gutter) var(--s-4);
+    /* РАСТВОРЕНИЕ ПО КРИВОЙ, А НЕ ПРЯМОЙ (заказчик, 23.09.2026: градиент
+       шёл «ступеньками»). Прямая от прозрачного к бумаге на коротких 56px
+       даёт резкий перелом на обоих концах — глаз видит края полосы
+       (эффект полос Маха), а на тёмной секции под ней переход от чернил
+       к бумаге ещё и распадается на заметные ступени яркости. Кривая
+       ease-in-out (scrim) с частыми опорными точками и ramp подлиннее
+       убирает оба перелома: начало и конец входят мягко. */
+    background: linear-gradient(
+      to bottom,
+      transparent 0,
+      color-mix(in srgb, var(--bg) 1.3%, transparent) 7.1px,
+      color-mix(in srgb, var(--bg) 4.9%, transparent) 13.6px,
+      color-mix(in srgb, var(--bg) 10.4%, transparent) 19.8px,
+      color-mix(in srgb, var(--bg) 17.5%, transparent) 25.5px,
+      color-mix(in srgb, var(--bg) 25.9%, transparent) 31.0px,
+      color-mix(in srgb, var(--bg) 35.2%, transparent) 36.2px,
+      color-mix(in srgb, var(--bg) 45.0%, transparent) 41.4px,
+      color-mix(in srgb, var(--bg) 55.0%, transparent) 46.6px,
+      color-mix(in srgb, var(--bg) 64.8%, transparent) 51.8px,
+      color-mix(in srgb, var(--bg) 74.1%, transparent) 57.0px,
+      color-mix(in srgb, var(--bg) 82.5%, transparent) 62.5px,
+      color-mix(in srgb, var(--bg) 89.6%, transparent) 68.2px,
+      color-mix(in srgb, var(--bg) 95.1%, transparent) 74.4px,
+      color-mix(in srgb, var(--bg) 98.7%, transparent) 80.9px,
+      var(--bg) 88px
+    );
     pointer-events: none;
     /* Появляется полоса целиком — вместе с растворением: один только
        градиент внизу экрана без кнопки читался бы грязью на бумаге.
