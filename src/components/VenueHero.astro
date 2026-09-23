@@ -21,6 +21,7 @@ import HeroStage from './HeroStage.astro';
 import { venueFavorite } from '../lib/favorite-snapshot';
 import { FEED } from '../data/feed';
 import { venueReviews } from '../data/venue-reviews';
+import { reelsOfVenue } from '../data/reels';
 
 interface Props {
   venue: Venue;
@@ -30,7 +31,17 @@ const { venue } = Astro.props;
 
 // Повторы убираем: кадр героя нередко лежит и в галерее, показывать его
 // дважды незачем.
-const frames = [...new Set([venue.hero.image, ...venue.gallery.map((shot) => shot.src)])];
+// Ролики площадки (data/reels.ts) — тоже кадры первого экрана: доска
+// главной ведёт на них якорем #foto-<ролик>, и без кадра с таким именем
+// карточка открывалась на дежурной фотографии, а не на нажатом видео
+// (так было у «Из-за любви»: в gallery два ролика, в ленте — двенадцать).
+const frames = [
+  ...new Set([
+    venue.hero.image,
+    ...venue.gallery.map((shot) => shot.src),
+    ...reelsOfVenue(venue.slug).map((reel) => reel.src),
+  ]),
+];
 
 // Снимок для «Избранного» — общий с каталогом (см. lib/favorite-snapshot):
 // сердце на карточке площадки и сердце на карточке каталога должны

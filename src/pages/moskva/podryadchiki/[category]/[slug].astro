@@ -14,7 +14,7 @@ import { Image } from 'astro:assets';
 import Layout from '../../../../layouts/Layout.astro';
 import SiteHeader from '../../../../components/SiteHeader.astro';
 import BottomDock from '../../../../components/BottomDock.astro';
-import PhotoGallery from '../../../../components/PhotoGallery.astro';
+// import PhotoGallery from '../../../../components/PhotoGallery.astro'; — галерея отложена
 import Avatar from '../../../../components/Avatar.astro';
 import Reviews from '../../../../components/Reviews.astro';
 import Icon from '../../../../components/Icon.astro';
@@ -29,7 +29,7 @@ import { similarSpecialists } from '../../../../lib/similar';
 import { specialistCard } from '../../../../lib/similar-cards';
 import { SPECIALISTS_BY_CATEGORY, FILTERS_BY_CATEGORY, specialistRole, hasProfile, type Specialist } from '../../../../data/specialists';
 import { reelsOf } from '../../../../data/reels';
-import { photoTiles } from '../../../../lib/gallery';
+// import { photoTiles } from '../../../../lib/gallery'; — галерея отложена
 import { resolveImage, favoriteImage, IMG_WIDTHS } from '../../../../lib/images';
 import { frameId, isPortrait, isVideo, photosOnly, posterOf } from '../../../../lib/media';
 
@@ -75,12 +75,10 @@ const priceFacts = [
 // именно тот снимок или ролик, по которому нажали (якорь разбирает сам
 // HeroStage). Кадров ровно столько, сколько их уходит в доску главной
 // (PER_SPECIALIST в lib/gallery): любой кадр, по которому там можно
-// нажать, тут есть. Вся съёмка целиком — ниже, в блоке «Фотографии».
-const HERO_PHOTOS = 12;
+// нажать, тут есть. Блок «Фотографии» ниже снят (23.09.2026) — первый
+// экран и есть галерея, поэтому в него уходит ВСЯ съёмка, а не первые 12.
 const reels = reelsOf(s.slug);
-const frames = [
-  ...new Set([s.photos[0], ...reels.map((r) => r.src), ...s.photos.slice(1, HERO_PHOTOS)]),
-];
+const frames = [...new Set([s.photos[0], ...reels.map((r) => r.src), ...s.photos.slice(1)])];
 
 const priceLabel = s.priceFrom ? `от ${priceFmt.format(s.priceFrom)} ₽` : 'Цена по запросу';
 const href = `/moskva/podryadchiki/${s.categorySlug}/${s.slug}/`;
@@ -202,21 +200,17 @@ const saveData = JSON.stringify({
       </section>
     )}
 
-    <!-- ГАЛЕРЕЯ: ТА ЖЕ СЕКЦИЯ, ЧТО У ПЛОЩАДКИ (PhotoGallery поверх доски
-         PhotoMasonry) — кикер, заголовок, колонки одной ширины, каждый
-         кадр в своей настоящей пропорции. Раньше тут стоял голый h2 и
-         доска без поля от края: та же доска у площадки и подрядчика
-         выглядела по-разному.
-         ВСЯ съёмка сразу, без кнопки «показать ещё»: человек пришёл
-         смотреть работы, и прятать половину портфолио незачем. Систему
-         это не грузит — картинки ленивые, браузер качает только те, что
-         дошли до экрана, в HTML лежит одна разметка. -->
+    {/* ГАЛЕРЕЯ СНЯТА (заказчик, 23.09.2026, «отложим, если что — вернём»):
+         вся съёмка листается в первом экране (HeroStage — туда теперь уходят
+         ВСЕ кадры), внизу остаётся только ряд «Видео». Вернуть секцию —
+         раскомментировать:
     <PhotoGallery
       kicker="Портфолио"
       title="Фотографии"
       tiles={photoTiles(photosOnly(s.photos), s.name)}
       tight
     />
+    */}
 
     <!-- ВИДЕО: свои ролики подрядчика отдельным рядом (ReelsRow, тот же
          компонент, что у площадки): рилсы это то, за чем к видеографу и

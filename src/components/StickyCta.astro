@@ -15,6 +15,12 @@
 // заявкой только делит внимание: правило «знак избранного один на
 // страницу» тут действует так же, как в каталоге.
 //
+// КОМПАКТНАЯ И С СЕРЕДИНЫ (заказчик, 23.09.2026): капсула обычного
+// кегля .pill, не --lg, — она не должна перетягивать взгляд с самой
+// площадки; и всплывает не сразу за первым экраном, а когда человек
+// прошёл примерно половину карточки (MID_PROGRESS): к этому моменту он
+// уже прочитал зал и цены, и кнопка приходит к решению, а не до него.
+//
 // Появление — реакция на прокрутку, а не reveal контента: снятый из
 // проекта механизм появлений (data-reveal) сюда не возвращается, блоки
 // страницы как стояли на месте, так и стоят.
@@ -29,7 +35,7 @@ const { label, href = '#zayavka' } = Astro.props;
 ---
 
 <div class="scta" data-sticky-cta hidden>
-  <a class="pill pill--lg scta__btn" href={href} data-booking-open>{label}</a>
+  <a class="pill scta__btn" href={href} data-booking-open>{label}</a>
 </div>
 
 <style>
@@ -85,6 +91,9 @@ const { label, href = '#zayavka' } = Astro.props;
 
   .scta.is-shown .scta__btn { transform: translateY(0); }
 
+  /* Пока капсула не показана, невидимая кнопка не должна ловить тап */
+  .scta:not(.is-shown) .scta__btn { pointer-events: none; }
+
   /* Ховер-инверсия .pill здесь не нужна: капсула уже чернильная */
   @media (hover: hover) {
     .scta__btn:hover {
@@ -109,11 +118,29 @@ const { label, href = '#zayavka' } = Astro.props;
     // блок страницы ей нельзя.
     document.body.classList.add('has-sticky-cta');
 
-    const io = new IntersectionObserver(
-      ([entry]) => bar.classList.toggle('is-shown', !entry.isIntersecting),
-      { rootMargin: '0px' }
-    );
+    // Доля пройденной страницы, после которой капсула всплывает
+    const MID_PROGRESS = 0.4;
+    let heroGone = false;
+    let pastMid = false;
+    const sync = () => bar.classList.toggle('is-shown', heroGone && pastMid);
 
-    io.observe(anchor);
+    new IntersectionObserver(([entry]) => {
+      heroGone = !entry.isIntersecting;
+      sync();
+    }).observe(anchor);
+
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        ticking = false;
+        const max = document.documentElement.scrollHeight - window.innerHeight;
+        pastMid = max > 0 && window.scrollY / max >= MID_PROGRESS;
+        sync();
+      });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
   }
 </script>

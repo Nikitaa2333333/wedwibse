@@ -62,7 +62,7 @@ const {
 ---
 
 <div class="prail-wrap" data-prail-host>
-  <div class:list={['prail', bleed && 'prail--bleed']}>
+  <div class:list={['prail', bleed && 'prail--bleed', photos.length < 2 && 'prail--single']}>
     <div class="prail__track" data-rail>
       {photos.map((src, n) => {
         const video = isVideo(src);
@@ -141,6 +141,11 @@ const {
     background: var(--surface-dim);
     touch-action: pan-y;
   }
+
+  /* Один кадр — листать внутри нечего, и горизонтальный жест отдаём
+     браузеру: иначе pan-y глушит прокрутку ЛЕНТЫ, в которой карточка
+     стоит («Похожие площадки» не ехали пальцем вбок, 23.09.2026). */
+  .prail--single { touch-action: auto; }
 
   /* Кадр во всю ширину экрана — прямым углом (см. --radius-media) */
   .prail--bleed { border-radius: var(--radius-media); }

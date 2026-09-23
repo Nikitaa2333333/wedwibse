@@ -15,7 +15,7 @@ import VenueStatement from '../../../components/VenueStatement.astro';
 import VenueTerms from '../../../components/VenueTerms.astro';
 import VenueRules from '../../../components/VenueRules.astro';
 import VenueDocs from '../../../components/VenueDocs.astro';
-import PhotoGallery from '../../../components/PhotoGallery.astro';
+// import PhotoGallery from '../../../components/PhotoGallery.astro'; — галерея отложена, см. case 'gallery'
 import FaqBlock from '../../../components/FaqBlock.astro';
 import VenueContacts from '../../../components/VenueContacts.astro';
 import BookingSheet from '../../../components/BookingSheet.astro';
@@ -32,7 +32,6 @@ import { venueCard } from '../../../lib/similar-cards';
 import { venueReviews } from '../../../data/venue-reviews';
 import { reelsOfVenue } from '../../../data/reels';
 import { venueBlocks } from '../../../lib/venue-blocks';
-import { photoTiles } from '../../../lib/gallery';
 
 export function getStaticPaths() {
   return VENUES.map((venue) => ({
@@ -118,22 +117,17 @@ const reels = reelsOfVenue(venue.slug);
               />
             );
 
-          // ГАЛЕРЕЯ: общая секция с визиткой подрядчика (PhotoGallery поверх
-          // доски PhotoMasonry) — колонки, каждый кадр в своей настоящей
-          // пропорции. Все кадры сразу, без «показать ещё»: картинки ленивые,
-          // браузер качает только те, что дошли до экрана. Ролики в доску
-          // не идут — плитка их не играет, у них свой ряд (блок reels).
-          case 'gallery': {
-            const photos = (block.photos ?? venue.gallery).filter((g) => !g.src.endsWith('.mp4'));
-            return (
-              <PhotoGallery
-                id="foto"
-                kicker={block.kicker ?? 'Галерея'}
-                title={block.title ?? 'Зал и мероприятия'}
-                tiles={photoTiles(photos.map((g) => g.src), venue.name)}
-              />
-            );
-          }
+          // ГАЛЕРЕЯ СНЯТА СО СТРАНИЦЫ (заказчик, 23.09.2026, «отложим, если
+          // что — вернём»): вся съёмка площадки листается в первом экране
+          // (HeroStage), внизу остаётся только ряд «Видео». Блок 'gallery'
+          // в данных площадок не трогаем — чтобы вернуть секцию, достаточно
+          // раскомментировать вызов ниже (и импорты PhotoGallery/photoTiles).
+          //   const photos = (block.photos ?? venue.gallery).filter((g) => !g.src.endsWith('.mp4'));
+          //   return <PhotoGallery id="foto" kicker={block.kicker ?? 'Галерея'}
+          //     title={block.title ?? 'Зал и мероприятия'}
+          //     tiles={photoTiles(photos.map((g) => g.src), venue.name)} />;
+          case 'gallery':
+            return null;
 
           // ОТЗЫВЫ — блок тот же, что на карточке подрядчика; без отзывов
           // в venue-reviews.ts секция просто не рисуется.
