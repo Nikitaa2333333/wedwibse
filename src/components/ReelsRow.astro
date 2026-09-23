@@ -31,12 +31,12 @@ const { reels, title = 'Видео', section = false } = Astro.props;
     <div class="preels__rail" data-reels-rail>
       {reels.map((reel) => (
         <div class="preels__cell">
-          <button class="preels__item media" type="button" data-sound-scope data-reel={reel.src} aria-label={`Смотреть: ${reel.alt}`} aria-pressed="false">
+          <button class="preels__item media" type="button" data-sound-scope data-reel={reel.src} data-reel-has-sound={reel.sound ? "" : undefined} aria-label={`Смотреть: ${reel.alt}`} aria-pressed="false">
             <Image
               src={resolveImage(posterOf(reel.src))}
               alt={reel.alt}
               widths={IMG_WIDTHS.card}
-              sizes="(min-width: 1024px) 240px, 48vw"
+              sizes="(min-width: 1024px) 340px, 72vw"
               loading="lazy"
               decoding="async"
             />
@@ -78,7 +78,13 @@ const { reels, title = 'Видео', section = false } = Astro.props;
     display: flex;
     gap: var(--s-3);
     margin-top: var(--s-5);
-    padding-right: var(--gutter);
+    /* ЛЕНТА ОТ КРАЯ ДО КРАЯ (заказчик, 23.09.2026): ролики уезжают за
+       левый край экрана, а не обрезаются по полю колонки. Поле секции
+       снимаем отрицательным отступом и возвращаем внутренним — первый
+       ролик стоит по сетке заголовка, как в «Похожих» (RelatedCards). */
+    margin-left: calc(-1 * var(--gutter));
+    padding-inline: var(--gutter);
+    scroll-padding-inline-start: var(--gutter);
     overflow-x: auto;
     overscroll-behavior-x: contain;
     /* touch-action не ставим: ось жеста выбирает браузер (см. DESIGN.md) */
@@ -92,7 +98,9 @@ const { reels, title = 'Видео', section = false } = Astro.props;
      а не сам ролик, — иначе строка вылезала бы за кадр. */
   .preels__cell {
     position: relative;
-    flex: 0 0 clamp(180px, 48vw, 240px);
+    /* крупнее прежних 48vw: ролик смотрят, а не пролистывают — на
+       телефоне кадр почти в экран, следующий виден кромкой */
+    flex: 0 0 clamp(240px, 72vw, 340px);
     scroll-snap-align: start;
   }
 
@@ -198,8 +206,11 @@ const { reels, title = 'Видео', section = false } = Astro.props;
     if (!tile || !video) return;
 
     tile.addEventListener('click', () => {
+      // Нажали play — ролик сразу со звуком, если дорожка есть: жест
+      // человека это разрешает, и ничего лишнего не качается — звук уже
+      // внутри того же mp4 (VIDEO.md). Выключить — кнопкой в углу.
       if (tile.getAttribute('aria-pressed') === 'true') stop(cell);
-      else play(cell, false);
+      else play(cell, 'reelHasSound' in tile.dataset);
     });
 
     sound?.addEventListener('click', () => {
