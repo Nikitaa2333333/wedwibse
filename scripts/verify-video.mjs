@@ -14,17 +14,20 @@
 //   3. mp4 разбирается: есть moov, видеодорожка, ненулевой размер кадра;
 //   4. moov стоит ПЕРЕД mdat (fast start) — иначе браузер не начнёт играть,
 //      пока не скачает файл целиком, и автозапуск в ленте «не работает»;
-//   5. потолки VIDEO.md: не длиннее 10 с, не выше 720p, не тяжелее 2 МБ;
+//   5. потолки VIDEO.md: не длиннее 60 с, не выше 720p, не тяжелее 8 МБ;
+//   7. один и тот же файл не стоит под двумя записями (у forest-dew так
+//      два ролика месяц показывали чужой кадр под своей подписью);
 //   6. флаг sound в данных совпадает с реальной звуковой дорожкой в файле:
 //      файл со звуком без флага — кнопка звука не появится, флаг без
 //      дорожки — кнопка есть, а нажатие ничего не даёт.
 import { readFile, stat } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { open } from 'node:fs/promises';
 
-const MAX_SECONDS = 10;
+const MAX_SECONDS = 61; // «до 60 с» + запас на округление контейнера
 const MAX_HEIGHT = 1080; // вертикаль 720×1080 — это и есть «потолок 720p» по короткой стороне
 const MAX_WIDTH = 720;
-const MAX_BYTES = 2 * 1024 * 1024;
+const MAX_BYTES = 8 * 1024 * 1024;
 
 // ---- разбор mp4 боксов: нам нужны только размеры, длительность и дорожки
 async function readBoxes(fh, start, end, onBox) {
@@ -106,6 +109,7 @@ if (rows.length === 0) {
 
 const problems = [];
 const warnings = [];
+const byHash = new Map();
 
 for (const reel of rows) {
   const file = `public${reel.src}`;
@@ -123,6 +127,10 @@ for (const reel of rows) {
   } catch {
     problems.push(`${reel.src}: нет постера ${poster}`);
   }
+
+  const hash = createHash('md5').update(await readFile(file)).digest('hex');
+  if (byHash.has(hash)) problems.push(`${reel.src}: тот же файл, что ${byHash.get(hash)} — дубль под чужой подписью`);
+  else byHash.set(hash, reel.src);
 
   let info;
   try {
