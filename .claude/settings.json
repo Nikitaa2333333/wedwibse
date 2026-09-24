@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx astro build)",
+      "Bash(npx astro check)",
+      "Bash(npx astro dev *)",
+      "Bash(npx astro preview *)",
+      "Bash(npm run build)",
+      "Bash(magick identify *)",
+      "mcp__firecrawl__firecrawl_scrape",
+      "mcp__firecrawl__firecrawl_search",
+      "mcp__firecrawl__firecrawl_map",
+      "mcp__plugin_playwright_playwright__browser_navigate",
+      "mcp__plugin_playwright_playwright__browser_snapshot",
+      "mcp__plugin_playwright_playwright__browser_take_screenshot",
+      "mcp__plugin_playwright_playwright__browser_console_messages",
+      "mcp__claude_ai_Claude_Docs__guide",
+      "mcp__claude_ai_Claude_Docs__read",
+      "mcp__claude_ai_Google_Drive__read_file_content",
+      "mcp__claude_ai_Google_Drive__search_files",
+      "mcp__claude_ai_Google_Drive__download_file_content",
+      "mcp__claude_ai_Gmail__search_threads",
+      "mcp__claude_ai_Gmail__get_thread"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node scripts/registry-watch.mjs --hook --stale 6 2>/dev/null || true",
+            "async": true,
+            "timeout": 120,
+            "statusMessage": "Смотрю реестр каталога"
+          }
+        ]
+      }
+    ]
+  }
+}
