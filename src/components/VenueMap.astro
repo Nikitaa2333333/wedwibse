@@ -269,6 +269,17 @@ const apiKey = import.meta.env.YANDEX_MAPS_API_KEY;
       // подстраивались под неё. В режиме карты выдачи на экране нет —
       // подстраивать нечего.
       sync();
+
+      // Фокус на одной площадке (data-focus ставит каталог по ?karta=,
+      // см. кнопку «На карте» в VenueHero): приближаем к ней, метку
+      // выделяем, на ПК сразу поднимаем её карточку.
+      const focus = root.dataset.focus ? bySlug.get(root.dataset.focus) : undefined;
+      if (focus) {
+        map.setCenter(focus.coords, 14);
+        if (desktop.matches) openCard(focus.slug);
+        else marks.get(focus.slug)?.properties.set('pinState', 'is-active');
+      }
+
       document.addEventListener('change', sync); // фильтры каталога — обычные input'ы
       root.addEventListener('vmap:show', sync);
     });

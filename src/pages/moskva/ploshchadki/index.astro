@@ -440,5 +440,14 @@ const mapPoints = venueMapPoints();
       mapToggle.setAttribute('aria-pressed', String(showMap));
       if (showMap) mapView.querySelector('[data-venue-map]')?.dispatchEvent(new Event('vmap:show'));
     });
+
+    // Пришли кнопкой «На карте» со страницы площадки (?karta=<slug>):
+    // сразу вид карты, наведённой на эту площадку (фокус читает VenueMap).
+    const focus = new URLSearchParams(location.search).get('karta');
+    const mapRoot = mapView.querySelector<HTMLElement>('[data-venue-map]');
+    if (focus && mapRoot) {
+      mapRoot.dataset.focus = focus;
+      mapToggle.click();
+    }
   }
 </script>
