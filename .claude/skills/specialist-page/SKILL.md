@@ -327,6 +327,10 @@ node scripts/pb-pull.mjs --all                             # проверка к
   и плитка (`PhotoRail`) рисуют инициалы общим `Avatar`. `verify` пустой
   список пропускает, ошибка — только 1–7 кадров. Строка в BACKLOG.md
   обязательна: карточка ждёт диск.
+- (24.09) `pb-pull --all` при проверке круга скачал из базы СТАРЫЕ
+  8-секундные ролики площадок поверх перегнанных минутных в `public/venues`
+  (у площадок в PB ролики не обновлены — см. BACKLOG.md). После pb-pull
+  откатывать и `public/`: `git checkout -- src/data/specialists src/data/venues public`.
 - (24.09) Haiku-субагент упал с 403 (authentication_failed) — сбор
   оркестратор доделал сам; при повторе не ждать, а сразу брать на себя.
 - (17.09) `pb-pull --all` переписывает и `src/data/venues/*.json`
