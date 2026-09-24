@@ -49,9 +49,18 @@ export function photosOnly(media: string[]): string[] {
  *
  * Живёт здесь, а не в lib/gallery: gallery тянет за собой весь каталог
  * (VENUES, ARTICLES, REELS), а идентификатор кадра нужен и самому рельсу.
+ *
+ * Кадр в подпапке зала получает имя папки впереди
+ * (`/venues/grebnevo/grand-lesnoy/p10.webp` → `grand-lesnoy-p10`): у усадьбы
+ * с девятью залами в каждой папке свои p01…p09, и по голому имени девять
+ * разных кадров были одним якорем — плитка доски открывала карточку на
+ * чужом зале. Папка `gal/` и файл прямо в папке карточки — как раньше.
  */
 export function frameId(src: string): string {
-  return src.split('/').pop()!.replace(/\.[^.]+$/, '');
+  const parts = src.split('/').filter(Boolean);
+  const name = parts.pop()!.replace(/\.[^.]+$/, '');
+  const dir = parts.length >= 3 ? parts[parts.length - 1] : '';
+  return dir && dir !== 'gal' ? `${dir}-${name}` : name;
 }
 
 /** width/height кадра — у ролика берётся с постера, файл видео Astro не читает */
