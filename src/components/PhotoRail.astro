@@ -20,6 +20,7 @@
 import { Image } from 'astro:assets';
 import { resolveImage } from '../lib/images';
 import { frameId, isVideo, posterOf } from '../lib/media';
+import Avatar from './Avatar.astro';
 
 interface Props {
   /** кадры карточки: фото и — по желанию — короткие немые лупы (.mp4) */
@@ -64,6 +65,13 @@ const {
 <div class="prail-wrap" data-prail-host>
   <div class:list={['prail', bleed && 'prail--bleed', photos.length < 2 && 'prail--single']}>
     <div class="prail__track" data-rail>
+      {/* Кадров нет — плашка с инициалами (общий Avatar), как в первом
+          экране карточки: место кадра держит сетку, ссылка работает. */}
+      {photos.length === 0 && (href ? (
+        <a class="prail__item prail__item--blank" href={href} aria-label={alt}><Avatar name={alt} size={96} /></a>
+      ) : (
+        <div class="prail__item prail__item--blank"><Avatar name={alt} size={96} /></div>
+      ))}
       {photos.map((src, n) => {
         const video = isVideo(src);
         const frameAlt = photos.length > 1 ? `${alt} — ${video ? 'видео' : 'фото'} ${n + 1}` : alt;
@@ -165,6 +173,12 @@ const {
     position: relative;
     flex: 0 0 100%;
     height: 100%;
+  }
+
+  .prail__item--blank {
+    display: grid;
+    place-items: center;
+    background: var(--surface);
   }
 
   /* Ролик лежит поверх своего постера и проявляется, когда реально пошёл:

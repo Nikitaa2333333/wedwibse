@@ -23,7 +23,12 @@ for (const k of ['slug', 'categorySlug', 'category', 'name', 'photos', 'tagline'
 if (s.slug !== slug) errors.push(`slug в файле (${s.slug}) не совпадает с именем файла`);
 if (s.categorySlug !== category) errors.push(`categorySlug (${s.categorySlug}) не совпадает с папкой ${category}`);
 if (!s.quote && !s.offers) errors.push('нет ни quote, ни offers — визитка без них не собирается');
-if (!(s.photos?.length >= 8)) errors.push(`photos: ${s.photos?.length ?? 0}, нужно не меньше 8`);
+// Пустой photos — осознанная карточка «портфолио ещё нет» (первый экран
+// рисует инициалы, 24.09.2026). Ошибка — только 1–7 кадров: такое бывает
+// от недокачанного диска, а не по решению.
+const nPhotos = s.photos?.length ?? 0;
+if (nPhotos > 0 && nPhotos < 8) errors.push(`photos: ${nPhotos}, нужно не меньше 8 (или пусто, если портфолио нет)`);
+if (nPhotos === 0) console.log(`  · ${category}/${slug}: без фото — первый экран с инициалами`);
 if (s.priceFrom == null && !s.priceNote) errors.push('нет priceFrom и нет priceNote — карточка без подписи цены');
 if (s.rating != null || s.reviews != null) errors.push('rating/reviews у реального подрядчика не ставим, пока нет собранных отзывов');
 if (s.tagline?.length > 48) errors.push(`tagline длиннее 48 знаков: «${s.tagline}»`);

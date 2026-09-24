@@ -80,7 +80,7 @@ const priceFacts = [
 // нажать, тут есть. Блок «Фотографии» ниже снят (23.09.2026) — первый
 // экран и есть галерея, поэтому в него уходит ВСЯ съёмка, а не первые 12.
 const reels = reelsOf(s.slug);
-const frames = [...new Set([s.photos[0], ...reels.map((r) => r.src), ...s.photos.slice(1)])];
+const frames = [...new Set([s.photos[0], ...reels.map((r) => r.src), ...s.photos.slice(1)])].filter(Boolean);
 
 const priceLabel = s.priceFrom ? `от ${priceFmt.format(s.priceFrom)} ₽` : 'Цена по запросу';
 const href = `/moskva/podryadchiki/${s.categorySlug}/${s.slug}/`;

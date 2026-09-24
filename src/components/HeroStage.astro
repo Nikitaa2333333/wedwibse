@@ -83,7 +83,7 @@ const {
 // листания приоткрывала не кадр, а бумагу над и под ним.
 const defaultFrame = framesProp.find(isPortrait) ?? framesProp[0];
 const rest = framesProp.filter((f) => f !== defaultFrame);
-const frames = [defaultFrame, ...rest.filter(isPortrait), ...rest.filter((f) => !isPortrait(f))];
+const frames = defaultFrame ? [defaultFrame, ...rest.filter(isPortrait), ...rest.filter((f) => !isPortrait(f))] : [];
 
 // Рейтинг и число отзывов идут ОДНОЙ строкой фактов и всегда вместе:
 // звезда без отзывов — цифра, взявшаяся ниоткуда.
@@ -92,6 +92,15 @@ const facts = rating !== null && rating !== undefined;
 
 <section class:list={['stage', extra]} data-hero-shot data-sound-scope>
   <div class="stage__window">
+    {/* Кадров нет (подрядчик ещё не прислал портфолио, 24.09.2026) — окно
+        той же пропорции держит вёрстку, в нём инициалы общим Avatar: тот же
+        приём, что у кружка без портрета. Пустой серый прямоугольник читался
+        бы сломанной картинкой. */}
+    {frames.length === 0 && (
+      <div class="stage__frame stage__frame--blank">
+        <Avatar name={title} size={160} />
+      </div>
+    )}
     {frames.map((src, n) => {
       const video = isVideo(src);
       const eager = src === defaultFrame;
@@ -263,6 +272,12 @@ const facts = rating !== null && rating !== undefined;
   }
 
   .stage__frame[hidden] { display: none; }
+
+  .stage__frame--blank {
+    display: grid;
+    place-items: center;
+    background: var(--surface);
+  }
 
   /* КРАЯ СЛЕДУЮЩЕГО КАДРА ЗДЕСЬ БОЛЬШЕ НЕТ. Полоса с соседней
      фотографией у правой кромки окна (--stage-peek) свою задачу решала —

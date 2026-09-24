@@ -82,7 +82,9 @@ export function resolveImage(path: string): ImageMetadata {
  * туда нельзя класть путь из данных — файл живёт только в src/assets и по
  * такому адресу не отдаётся. Ширина 800 — хватает на обложку папки и карточку.
  */
-export async function favoriteImage(path: string): Promise<string> {
+export async function favoriteImage(path: string | undefined): Promise<string> {
+  // карточка без фото (подрядчик не прислал портфолио) — снимок без кадра
+  if (!path) return '';
   const img = await getImage({ src: resolveImage(path), width: 800, format: 'webp' });
   return img.src;
 }
