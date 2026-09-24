@@ -43,3 +43,8 @@ pb/pb_data/
 pb/CHANGELOG.md
 pb/LICENSE.md
 .claude/.registry-watch-stamp
+
+# ролики живут на VPS (/var/www/wedsecrets-media), заливка — scripts/media-push.sh;
+# постеры (src/assets/**/*.webp) по-прежнему в git — их пережимает сборка
+public/**/*.mp4
+public/**/*.webm

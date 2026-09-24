@@ -269,8 +269,9 @@ node scripts/pb-pull.mjs --all                             # проверка к
 
 ## Фаза 6 — коммит
 
-`git add` JSON, `src/assets/specialists/<кат>/<slug>`, аватар, ролики с
-постерами, `data/reels.ts`, правки скилла → коммит → `git push origin master`
+Ролики — сначала на сервер: `bash scripts/media-push.sh` (в git mp4 не идут,
+24.09.2026, см. VIDEO.md). Потом `git add` JSON, `src/assets/specialists/<кат>/<slug>`,
+аватар, постеры роликов, `data/reels.ts`, правки скилла → коммит → `git push origin master`
 (деплой сам, около минуты). Перед пушем `git pull --rebase`: параллельные
 сессии часто пушат в master и могут захватить твои файлы в свой коммит.
 Не коммитить: `research/`, `pb/pb_data`, чужие незакоммиченные правки.
