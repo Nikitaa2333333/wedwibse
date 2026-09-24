@@ -514,6 +514,7 @@ reg.ru, NS остались регруйными). GitHub Pages отключён
 | Сервер | `193.124.47.78`, IPv6 `2a03:6f00:a::2:c0f3`, Ubuntu 26.04, нода `kvmnvm-760` |
 | Каталог сайта | `/var/www/wedsecrets` (владелец `deploy:www-data`) |
 | Конфиг nginx | `/etc/nginx/sites-available/wedsecrets` |
+| Ролики (не в git) | `/var/www/wedsecrets-media`, заливка `bash scripts/media-push.sh` |
 | Админский вход | `ssh -i ~/.ssh/timeweb_wed root@193.124.47.78` |
 | Деплой-пользователь | `deploy` — доступ только к каталогу сайта |
 | Root-пароль | в `.env` проекта (в `.gitignore`), в чат и в код не попадает |
