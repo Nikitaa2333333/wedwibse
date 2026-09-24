@@ -1,5 +1,5 @@
 // Заливает подрядчиков в PocketBase (upsert по categorySlug+slug):
-//   node scripts/pb-seed-specialists.mjs [slug ...] [--publish]
+//   node scripts/pb-seed-specialists.mjs [slug ...] [--publish] [--refresh-reels]
 // Зеркало pb-seed.mjs для площадок. Источник — src/data/specialists/<кат>/<slug>.json
 // (конвейер specialist-page); демо-подрядчики из specialists.ts в базу
 // не идут. Файлы записи: photos — галерея и портрет из
@@ -16,6 +16,7 @@ import { loadEnv, pb } from './pb-lib.mjs';
 
 const argv = process.argv.slice(2);
 const publish = argv.includes('--publish');
+const refreshReels = argv.includes('--refresh-reels');
 const only = argv.filter((a) => !a.startsWith('--'));
 
 const api = await pb(await loadEnv());
@@ -57,6 +58,12 @@ for (const s of todo) {
   const prefix = `/specialists/${s.categorySlug}/`;
   const refs = [...new Set(JSON.stringify(s).match(new RegExp(`${prefix}[\\w./-]+\\.(webp|jpg)`, 'g')) ?? [])];
   const reels = reelsOf(s.slug);
+  // --refresh-reels: ролики перегнали тем же именем (24.09 — лупы 8 с → до 60 с),
+  // а заливка пропускает всё, что уже в индексе. Снимаем старые файлы роликов
+  // с записи, дальше обычный путь зальёт текущие.
+  if (refreshReels && rec.reels?.length) {
+    Object.assign(rec, await api.update('specialists', rec.id, { 'reels-': rec.reels }));
+  }
   const index = { ...(rec.photoIndex ?? {}) };
   const present = new Set([...(rec.photos ?? []), ...(rec.reels ?? []), ...(rec.avatar ? [rec.avatar] : [])]);
   for (const k of Object.keys(index)) if (!present.has(k)) delete index[k]; // файл удалили в админке

@@ -57,9 +57,11 @@ const priceFmt = new Intl.NumberFormat('ru-RU');
 const styleLabels = s.styles ? labelsFor('style', s.styles) : [];
 const bioParagraphs = s.bio.split('\n\n');
 
-// Строка под ценой собирается из того, что есть: пустых «· ·» не остаётся
+// Строка под ценой собирается из того, что есть: пустых «· ·» не остаётся.
+// За что цена — из priceNote, если он есть: у Reels-мейкера «от 5 500 ₽»
+// это час съёмки, и общая подпись «за 6 часов» врала бы в 6 раз.
 const priceFacts = [
-  s.priceFrom ? 'за 6 часов работы' : null,
+  s.priceFrom ? (s.priceNote ?? 'за 6 часов работы') : null,
   s.experienceYears ? `${s.experienceYears} лет опыта` : null,
   s.hasOwnDJ ? 'свой диджей' : null,
   s.gender === 'pair' ? 'фото и видео' : null,

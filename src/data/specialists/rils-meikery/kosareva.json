@@ -1,0 +1,105 @@
+{
+  "slug": "kosareva",
+  "categorySlug": "rils-meikery",
+  "category": "Reels-мейкеры",
+  "name": "Екатерина Косарева",
+  "photos": [
+    "/specialists/rils-meikery/kosareva/gal/p17.webp",
+    "/specialists/rils-meikery/kosareva/gal/p05.webp",
+    "/specialists/rils-meikery/kosareva/gal/p15.webp",
+    "/specialists/rils-meikery/kosareva/gal/p06.webp",
+    "/specialists/rils-meikery/kosareva/gal/p37.webp",
+    "/specialists/rils-meikery/kosareva/gal/p36.webp",
+    "/specialists/rils-meikery/kosareva/gal/p10.webp",
+    "/specialists/rils-meikery/kosareva/gal/p07.webp",
+    "/specialists/rils-meikery/kosareva/gal/p16.webp",
+    "/specialists/rils-meikery/kosareva/gal/p19.webp",
+    "/specialists/rils-meikery/kosareva/gal/p20.webp",
+    "/specialists/rils-meikery/kosareva/gal/p21.webp",
+    "/specialists/rils-meikery/kosareva/gal/p22.webp",
+    "/specialists/rils-meikery/kosareva/gal/p24.webp",
+    "/specialists/rils-meikery/kosareva/gal/p25.webp",
+    "/specialists/rils-meikery/kosareva/gal/p29.webp",
+    "/specialists/rils-meikery/kosareva/gal/p30.webp",
+    "/specialists/rils-meikery/kosareva/gal/p31.webp",
+    "/specialists/rils-meikery/kosareva/gal/p32.webp",
+    "/specialists/rils-meikery/kosareva/gal/p33.webp",
+    "/specialists/rils-meikery/kosareva/gal/p34.webp",
+    "/specialists/rils-meikery/kosareva/gal/p35.webp",
+    "/specialists/rils-meikery/kosareva/gal/p38.webp",
+    "/specialists/rils-meikery/kosareva/gal/p39.webp",
+    "/specialists/rils-meikery/kosareva/gal/p40.webp",
+    "/specialists/rils-meikery/kosareva/gal/p01.webp",
+    "/specialists/rils-meikery/kosareva/gal/p02.webp",
+    "/specialists/rils-meikery/kosareva/gal/p03.webp",
+    "/specialists/rils-meikery/kosareva/gal/p04.webp",
+    "/specialists/rils-meikery/kosareva/gal/p08.webp",
+    "/specialists/rils-meikery/kosareva/gal/p09.webp",
+    "/specialists/rils-meikery/kosareva/gal/p11.webp",
+    "/specialists/rils-meikery/kosareva/gal/p12.webp",
+    "/specialists/rils-meikery/kosareva/gal/p13.webp",
+    "/specialists/rils-meikery/kosareva/gal/p14.webp",
+    "/specialists/rils-meikery/kosareva/gal/p18.webp"
+  ],
+  "tagline": "Свадебная видеосъёмка на iPhone",
+  "bio": "Меня зовут Екатерина и уже 5 лет я снимаю свадьбы с любовью к деталям, атмосфере и настоящим чувствам.\n\nДля меня важно не просто снять красивую картинку, а сохранить настроение вашего дня — искренние улыбки, волнение, нежные взгляды, объятия, смех и те самые моменты, которые невозможно повторить.\n\nСо мной легко, спокойно и комфортно. Я быстро нахожу контакт с парой, помогаю расслабиться в кадре и бережно ловлю живые эмоции, чтобы ваши видео получались естественными, стильными и по-настоящему вашими.\n\nСнимаю на iPhone — современно, легко и с особым вниманием к эстетике.",
+  "gender": "ж",
+  "priceFrom": 5500,
+  "priceNote": "за час съёмки",
+  "age": "25–35",
+  "experienceYears": 5,
+  "languages": [
+    "русский"
+  ],
+  "aboutTitle": "Обо мне",
+  "filters": {
+    "city": [
+      "цао",
+      "сао",
+      "свао",
+      "вао",
+      "юво",
+      "юао",
+      "юзао",
+      "зао",
+      "сзао",
+      "mo",
+      "вне-мо"
+    ],
+    "format": [
+      "shoot",
+      "edit"
+    ],
+    "minBudget": "5-10",
+    "minTime": "30-60m",
+    "deliveryTime": "48-72h"
+  },
+  "packageIncludes": [
+    "1 атмосферный ролик до 60 секунд",
+    "1–2 коротких видео — однокадровые или тренды",
+    "Все исходники на Яндекс.Диске"
+  ],
+  "quote": "Минимальная съёмка — от 30–60 минут, с двух часов час стоит дешевле. Готовые видео — через 48–72 часа.",
+  "offers": [
+    {
+      "title": "1 час съёмки — 5 500 ₽",
+      "text": "Атмосферный ролик до 60 секунд, 1–2 коротких видео — однокадровые или тренды, все исходники на Яндекс.Диске."
+    },
+    {
+      "title": "2–3 часа — 5 000 ₽ в час",
+      "text": "2 смонтированных видео по 40–60 секунд, 1–2 коротких ролика или тренда, все исходники на Яндекс.Диске."
+    },
+    {
+      "title": "4–8 часов — 4 500 ₽ в час",
+      "text": "3–5 смонтированных видео по 40–60 секунд, 2–3 коротких ролика или тренда, все исходники на Яндекс.Диске."
+    },
+    {
+      "title": "9–10 часов — 4 000 ₽ в час",
+      "text": "6–7 смонтированных видео по 40–60 секунд, 5–6 коротких видео — тренды и однокадровые, все исходники на Яндекс.Диске."
+    },
+    {
+      "title": "SDE — ролик в день свадьбы, 5 000 ₽",
+      "text": "Монтаж день в день: горизонтальный ролик на 3–4 минуты о ключевых моментах. Его можно показать на экране в конце вечера."
+    }
+  ]
+}

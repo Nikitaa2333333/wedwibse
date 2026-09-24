@@ -32,11 +32,12 @@ if (s.tagline?.length > 48) errors.push(`tagline длиннее 48 знаков:
 const src = await readFile('src/data/specialists.ts', 'utf8');
 const catList = src.match(/SPECIALIST_CATEGORIES[\s\S]*?\];/)?.[0] ?? '';
 if (!catList.includes(`slug: '${category}'`)) errors.push(`категории ${category} нет в SPECIALIST_CATEGORIES`);
-const filtersConst = src.match(new RegExp(`\\b${category}: (\\w+_FILTERS)`))?.[1];
-if (filtersConst) {
-  const block = src.match(new RegExp(`export const ${filtersConst}: FilterGroup\\[\\] = \\[[\\s\\S]*?\\n\\];`))?.[0] ?? '';
-  const groups = [...block.matchAll(/key: '([^']+)'[\s\S]*?options: \[([\s\S]*?)\n    \]/g)];
-  const allowed = Object.fromEntries(groups.map((g) => [g[1], [...g[2].matchAll(/value: '([^']+)'/g)].map((m) => m[1])]));
+// Наборы живут в specialist-filters.ts и собраны хелперами (multi/single),
+// текстом их не разобрать — импортируем как есть (Node 25 читает .ts сам).
+const { FILTERS_BY_CATEGORY } = await import('../src/data/specialist-filters.ts');
+const groupsOfCat = FILTERS_BY_CATEGORY[category];
+if (groupsOfCat) {
+  const allowed = Object.fromEntries(groupsOfCat.map((g) => [g.key, g.options.map((o) => o.value)]));
   for (const [key, val] of Object.entries(s.filters ?? {})) {
     if (!allowed[key]) { errors.push(`filters.${key}: такого фильтра нет у категории ${category}`); continue; }
     for (const v of Array.isArray(val) ? val : [val]) if (!allowed[key].includes(v)) errors.push(`filters.${key}: значение «${v}» не из списка (${allowed[key].join(', ')})`);
