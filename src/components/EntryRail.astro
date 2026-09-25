@@ -105,6 +105,7 @@ const cards = [
           widths={IMG_WIDTHS.card}
           sizes="(min-width: 640px) 320px, 50vw"
           eager
+          tag
         />
       </li>
     ))}
@@ -150,4 +151,99 @@ const cards = [
      aspect-ratio на самой плашке спорил бы с высотой ряда. */
   .entries__item { display: flex; }
 
+  /* БИРКИ ВРАЗНОБОЙ (25.09.2026): плитки-входы — бирки, как в логотипе,
+     и висят с лёгким наклоном в разные стороны. Наклон — на ячейке ряда
+     (своём элементе), а не внутри CoverTile. */
+  /* Низы навстречу друг другу, углы при обычном зазоре касаются — так
+     и оставлено по решению заказчика (25.09.2026). Пробовали и сняли:
+     тень, широкий зазор, наклон низами врозь. */
+  /* --sway — покачивание от прокрутки (скрипт ниже), поверх наклона.
+     Качается бирка вокруг ЛЮВЕРСА, будто прибита гвоздиком в дырочке:
+     наклон как был (вокруг центра), а качание — сдвиг к дырочке,
+     поворот, сдвиг обратно. --pivot (от центра до дырочки, px) ставит
+     скрипт по высоте плитки; без JS он 0 и качания всё равно нет. */
+  .entries__item {
+    --tilt: calc(var(--tag-tilt) * -1);
+    transform:
+      rotate(var(--tilt))
+      translateY(var(--pivot, 0px))
+      rotate(var(--sway, 0deg))
+      translateY(calc(var(--pivot, 0px) * -1));
+  }
+  .entries__item:nth-child(even) { --tilt: var(--tag-tilt); }
+  /* Повёрнутая бирка выступает за ячейку на несколько пикселей по бокам —
+     поле ряда шире на --s-2, иначе край уходил бы за экран и страница
+     «ездила» бы вбок (ловушка из AGENTS.md). overflow-x: clip — страховка:
+     вбок тут ездить нечему. */
+  .entries { overflow-x: clip; }
+  .entries__rail { padding-inline: calc(var(--edge-gap) + var(--s-2)); }
+
 </style>
+
+<script>
+  // БИРКИ ПОКАЧИВАЮТСЯ ОТ ПРОКРУТКИ (25.09.2026). Не появление блока
+  // (их в проекте нет), а реакция на действие: прокрутил — бирки
+  // качнулись по инерции и затухли, как подвешенные. Маятник на пружине:
+  // толчок — скорость прокрутки, дальше сам возвращается к нулю.
+  // Только transform (моушн-бюджет телефона), считается лишь пока ряд
+  // на экране, при prefers-reduced-motion не запускается вовсе.
+  // Лёгкое воздушное качание (заказчик, 25.09.2026: первая версия
+  // с потолком 3° и жёсткой пружиной была «слишком сильно»).
+  // У КАЖДОЙ бирки свой маятник: одна общая амплитуда на двоих выглядела
+  // так, будто бирки слиплись. Разная жёсткость = разная частота, поэтому
+  // от одного толчка они сразу расходятся по фазе, каждая в своём ритме.
+  //   stiff — как быстро тянет обратно (частота), damp — затухание,
+  //   push — толчок на пиксель прокрутки за кадр.
+  const SWING = [
+    { stiff: 0.026, damp: 0.075, push: 0.0040 },
+    { stiff: 0.016, damp: 0.055, push: 0.0034 },
+  ];
+  const MAX = 1.2;      // потолок отклонения, градусов
+
+  const calm = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const rail = document.querySelector<HTMLElement>('.entries');
+  const items = Array.from(document.querySelectorAll<HTMLElement>('.entries__item'));
+
+  if (rail && items.length && !calm.matches) {
+    // свой маятник на каждую бирку; бирок больше, чем настроек, — по кругу
+    const swings = items.map((_, i) => ({ ...SWING[i % SWING.length], angle: 0, speed: 0 }));
+    let lastY = window.scrollY;
+    let frame = 0;
+    let visible = true;
+
+    // Ось качания — люверс: от центра плитки до дырочки. Высоту берём
+    // живую (плитки тянутся по ширине экрана) и пересчитываем на ресайз.
+    const holeY = () => parseFloat(getComputedStyle(rail).getPropertyValue('--tag-hole-y')) || 20;
+    const setPivot = () => {
+      const y = holeY();
+      items.forEach((el) => el.style.setProperty('--pivot', `${(y - el.offsetHeight / 2).toFixed(1)}px`));
+    };
+    setPivot();
+    window.addEventListener('resize', setPivot, { passive: true });
+
+    const tick = () => {
+      const y = window.scrollY;
+      const delta = y - lastY;
+      lastY = y;
+      let moving = delta !== 0;
+      swings.forEach((s, i) => {
+        s.speed += -s.stiff * s.angle - s.damp * s.speed + delta * s.push;
+        s.angle = Math.max(-MAX, Math.min(MAX, s.angle + s.speed));
+        if (Math.abs(s.angle) < 0.01 && Math.abs(s.speed) < 0.01) { s.angle = 0; s.speed = 0; }
+        else moving = true;
+        items[i].style.setProperty('--sway', `${s.angle.toFixed(3)}deg`);
+      });
+      frame = moving ? requestAnimationFrame(tick) : 0;
+    };
+
+    new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; }).observe(rail);
+
+    window.addEventListener('scroll', () => {
+      // ряд за экраном — только запоминаем позицию, чтобы при возврате
+      // бирки не дёрнулись от всей прокрутки, накопленной вдали
+      if (!visible) { lastY = window.scrollY; return; }
+      if (frame) return;
+      frame = requestAnimationFrame(tick);
+    }, { passive: true });
+  }
+</script>

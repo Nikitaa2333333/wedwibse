@@ -194,6 +194,11 @@ export interface SpecialistGroup {
   /** тон фона обложки: под него красится сама плитка, чтобы кадр
       сливался с плашкой, а не лежал прямоугольником на сером */
   tone?: 'dark' | 'beige';
+  /** свой цвет плашки, когда кадр снят не на бежевом и не на чернилах:
+      у каждого раздела свой пыльный пастельный фон (лиловый у декоратора,
+      розовый у кондитера), иначе десять обложек сливаются в одну. Хекс
+      берётся с самого кадра — плитка обязана совпасть с ним тоном. */
+  bg?: string;
 }
 
 export const SPECIALIST_GROUPS: SpecialistGroup[] = [
@@ -220,6 +225,7 @@ export const SPECIALIST_GROUPS: SpecialistGroup[] = [
     categories: ['dekoratory'],
     cover: '/specialists/groups/dekor.webp',
     tone: 'beige',
+    bg: '#b9abc4',
   },
   {
     key: 'foto-video',
@@ -236,6 +242,7 @@ export const SPECIALIST_GROUPS: SpecialistGroup[] = [
     categories: ['keitering', 'konditery'],
     cover: '/specialists/groups/kuhnya.webp',
     tone: 'beige',
+    bg: '#c8a69f',
   },
   {
     key: 'obraz',

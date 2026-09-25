@@ -37,6 +37,7 @@ const tiles = SPECIALIST_GROUPS.map((g) => {
     name: g.label,
     cover: g.cover ? resolveImage(g.cover) : null,
     tone: g.tone ?? null,
+    bg: g.bg,
     href: `/moskva/podryadchiki/${cats[0]}/`,
     capsule: vendors.size === 0 ? 'скоро' : withCount(vendors.size, VENDORS),
   };
@@ -67,6 +68,7 @@ const tiles = SPECIALIST_GROUPS.map((g) => {
             capsule={t.capsule}
             covers={t.cover ? [t.cover] : []}
             tone={t.tone ?? 'beige'}
+            bg={t.bg}
             widths={IMG_WIDTHS.card}
             sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
             eager={i < 4}

@@ -29,21 +29,31 @@ interface Props {
   covers: ImageMetadata[];
   /** тон плашки под кадром: бежевая или чернильная */
   tone?: 'beige' | 'dark';
+  /** свой цвет плашки — хекс фона, на котором снят кадр (лиловый у
+      декоратора, розовый у кондитера). Кадр и плашка обязаны совпадать
+      тоном, иначе между ними шов; общего токена на каждый такой фон не
+      заводим — цвет живёт рядом с обложкой, в данных раздела. */
+  bg?: string;
   /** доля экрана, которую плитка занимает на брейкпоинтах (для srcset) */
   sizes: string;
   /** первый экран — грузим сразу */
   eager?: boolean;
   /** ширины srcset: роль из IMG_WIDTHS */
   widths: number[];
+  /** форма бирки (главная, 25.09.2026): срезанные верхние углы и люверс —
+      тот же знак, что бирка «wed secrets» в логотипе. Режим включается
+      пропом, а не переопределением .ctile снаружи (см. AGENTS.md) */
+  tag?: boolean;
 }
 
-const { name, href, capsule, covers, tone = 'beige', sizes, eager = false, widths } = Astro.props;
+const { name, href, capsule, covers, tone = 'beige', bg, sizes, eager = false, widths, tag = false } = Astro.props;
 ---
 
 <a
-  class:list={['ctile', tone === 'dark' && 'theme-dark']}
+  class:list={['ctile', tone === 'dark' && 'theme-dark', tag && 'ctile--tag']}
   href={href}
   aria-label={`${name} — ${capsule}`}
+  style={bg ? `--tile-bg: ${bg}` : undefined}
 >
   {/* Кадры — декорация к имени раздела: без alt, ссылка подписана целиком */}
   <span class="ctile__media" data-cover-swap={covers.length > 1 ? '' : undefined}>
@@ -77,6 +87,22 @@ const { name, href, capsule, covers, tone = 'beige', sizes, eager = false, width
     border-radius: var(--radius-card);
     overflow: hidden;
     text-decoration: none;
+  }
+
+  /* БИРКА. Верхние углы срезаны (скос постоянной величины, не процент —
+     плитки разной высоты должны резаться одинаково), нижние остаются
+     скруглёнными от border-radius. Люверс — сквозная дырка маской:
+     в неё виден фон страницы, как точка на бирке логотипа. Дырка —
+     не текст на фото, это форма самой плитки. */
+  .ctile--tag {
+    /* размеры — токены --tag-* в global.css */
+    clip-path: polygon(
+      var(--tag-cut) 0, calc(100% - var(--tag-cut)) 0,
+      100% var(--tag-cut), 100% 100%,
+      0 100%, 0 var(--tag-cut)
+    );
+    -webkit-mask: radial-gradient(circle at 50% var(--tag-hole-y), transparent var(--tag-hole), #000 calc(var(--tag-hole) + 0.5px));
+    mask: radial-gradient(circle at 50% var(--tag-hole-y), transparent var(--tag-hole), #000 calc(var(--tag-hole) + 0.5px));
   }
 
   /* Тёмная плитка: scoped-селектор .ctile сильнее глобального .theme-dark,
