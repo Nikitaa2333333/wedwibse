@@ -34,7 +34,7 @@ import Icon from '../components/Icon.astro';
       </header>
 
       <div class="hero__intro">
-        <h1 class="hero__title">Всё для Вашей свадьбы</h1>
+        <h1 class="hero__title">Свадебные секреты</h1>
 
         <a class="hero__hint" href="/izbrannoe/">
           <span class="hint__heart-wrap">
@@ -121,16 +121,20 @@ import Icon from '../components/Icon.astro';
     color: inherit;
   }
 
-  /* Логотип-леттеринг «Wed secrets». Цвет берём не из файла, а маской:
-     форма из SVG, заливка — из токена, поэтому знак сам подхватывает
-     палитру секции. Прежний каллиграфический знак лежит рядом
-     (public/logo-script.svg) — вернуть можно одной строкой.
-     Высота ниже прежней: у гротеска буквы занимают почти весь кадр,
-     а у каллиграфии половину высоты съедали поля. */
+  /* Логотип «Свадебные секреты» с биркой «wed secrets» (25.09.2026).
+     Цвет берём не из файла, а маской: форма из SVG, заливка — из токена,
+     поэтому знак сам подхватывает палитру секции и тёмную тему. Текст на
+     бирке в маске — прорезь (scripts/logo-mask.mjs собирает public/logo.svg
+     из цветного исходника), сквозь неё виден фон.
+     Прежние знаки лежат рядом — вернуть можно одной строкой:
+     public/logo-wordmark.svg (леттеринг «Wed secrets», 1614 / 210),
+     public/logo-script.svg (каллиграфия).
+     Высота выше прежней: нижние ~40 % кадра занимает бирка, и при старой
+     высоте сама надпись стала бы мельче. */
   .hero__logo {
     display: block;
-    height: clamp(15px, 1.8vw, 22px);
-    aspect-ratio: 1614 / 210;   /* пропорции самого файла logo.svg */
+    height: clamp(26px, 3vw, 38px);
+    aspect-ratio: 194 / 36;   /* пропорции самого файла logo.svg */
     background: var(--ink);
     -webkit-mask: url('/logo.svg') no-repeat center / contain;
     mask: url('/logo.svg') no-repeat center / contain;
