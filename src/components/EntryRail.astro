@@ -38,7 +38,7 @@ import {
   type Specialist,
 } from '../data/specialists';
 import { withCount, type PluralForms } from '../lib/plural';
-import { resolveImage, IMG_WIDTHS } from '../lib/images';
+import { IMG_WIDTHS } from '../lib/images';
 
 /** сколько кадров крутится в плитке */
 const COVERS = 3;
@@ -66,9 +66,10 @@ const vendorCovers = [
   ...SPECIALIST_GROUPS.filter((g) => !filled.has(g.key) && g.cover),
 ]
   .slice(0, COVERS)
-  .map((g) => resolveImage(g.cover!));
+  .map((g) => g.cover!);
 
-const VENUE_COVER = VENUES[0] ? [resolveImage(VENUES[0].hero.portrait)] : [];
+// Пути, а не ImageMetadata: CoverTile сам снимает с кадра цвет плашки
+const VENUE_COVER = VENUES[0] ? [VENUES[0].hero.portrait] : [];
 
 const VENDORS: PluralForms = ['подрядчик', 'подрядчика', 'подрядчиков'];
 

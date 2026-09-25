@@ -1,7 +1,7 @@
 // Двухцветный логотип (тёмное + светлое внутри бирки) → маска для CSS.
-//   node scripts/logo-mask.mjs logooo.svg public/logo.svg
+//   node scripts/logo-mask.mjs logooo.svg public/logo-tag.svg
 //
-// Логотип на сайте красится маской (mask: url(/logo.svg) + background:
+// Логотип на сайте красится маской (mask: url(/logo-tag.svg) + background:
 // var(--ink)) — так он сам меняет цвет в тёмной теме. Маска смотрит
 // только на непрозрачность, поэтому светлый текст на бирке в ней
 // залился бы тем же цветом и пропал. Здесь светлые части становятся

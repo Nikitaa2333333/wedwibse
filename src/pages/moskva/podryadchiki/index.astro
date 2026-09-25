@@ -19,7 +19,7 @@ import {
 } from '../../../data/specialists';
 import { withCount, type PluralForms } from '../../../lib/plural';
 import CoverTile from '../../../components/CoverTile.astro';
-import { resolveImage, IMG_WIDTHS } from '../../../lib/images';
+import { IMG_WIDTHS } from '../../../lib/images';
 
 // Описания «что внутри» с плиток сняты (18.09.2026): плитка — имя раздела
 // и счётчик, объяснять состав будет кадр, а не строка текста.
@@ -35,7 +35,7 @@ const tiles = SPECIALIST_GROUPS.map((g) => {
   return {
     key: g.key,
     name: g.label,
-    cover: g.cover ? resolveImage(g.cover) : null,
+    cover: g.cover ?? null,
     tone: g.tone ?? null,
     bg: g.bg,
     href: `/moskva/podryadchiki/${cats[0]}/`,

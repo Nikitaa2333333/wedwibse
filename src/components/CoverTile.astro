@@ -17,22 +17,28 @@
 // про одного. Смена — кроссфейд по таймеру, без свайпа и точек: это
 // вход в раздел, а не карусель для разглядывания. Только opacity —
 // моушн-бюджет телефона; при prefers-reduced-motion смены нет вовсе.
+//
+// ЦВЕТ ПЛАШКИ — С САМОГО КАДРА (заказчик, 25.09.2026): градиент по нижней
+// кромке растворяет обложку в плашку, и плашка обязана быть цвета низа
+// кадра, иначе вместо растворения полоса. Цвет каждой обложки меряет на
+// сборке lib/cover-tone, подпись сама становится белой на тёмном фоне.
+// Обложки сменились — плашка плавно перетекает в цвет новой.
 import { Image } from 'astro:assets';
-import type { ImageMetadata } from 'astro';
+import { resolveImage } from '../lib/images';
+import { coverTone } from '../lib/cover-tone';
 
 interface Props {
   name: string;
   href: string;
   /** готовая подпись счётчика: «7 подрядчиков», «скоро» */
   capsule: string;
-  /** кадры обложки: один — статичная плитка, несколько — переключаются сами */
-  covers: ImageMetadata[];
-  /** тон плашки под кадром: бежевая или чернильная */
+  /** кадры обложки — пути как в данных (/specialists/groups/x.webp):
+      один — статичная плитка, несколько — переключаются сами */
+  covers: string[];
+  /** тон плашки, когда обложки нет: бежевая или чернильная */
   tone?: 'beige' | 'dark';
-  /** свой цвет плашки — хекс фона, на котором снят кадр (лиловый у
-      декоратора, розовый у кондитера). Кадр и плашка обязаны совпадать
-      тоном, иначе между ними шов; общего токена на каждый такой фон не
-      заводим — цвет живёт рядом с обложкой, в данных раздела. */
+  /** цвет плашки руками — перебивает цвет, снятый с кадра. Нужен, только
+      если автоматический промахнулся (кадр с пёстрым низом) */
   bg?: string;
   /** доля экрана, которую плитка занимает на брейкпоинтах (для srcset) */
   sizes: string;
@@ -47,25 +53,33 @@ interface Props {
 }
 
 const { name, href, capsule, covers, tone = 'beige', bg, sizes, eager = false, widths, tag = false } = Astro.props;
+
+// Цвет с кадра на каждую обложку; руками заданный bg — только первой,
+// а смена кадров его не трогает (ручной цвет — осознанное решение).
+const tones = await Promise.all(covers.map((c) => coverTone(c)));
+const first = bg ? { bg, dark: tones[0]?.dark ?? tone === 'dark' } : tones[0];
+const dark = first ? first.dark : tone === 'dark';
 ---
 
 <a
-  class:list={['ctile', tone === 'dark' && 'theme-dark', tag && 'ctile--tag']}
+  class:list={['ctile', dark && 'theme-dark', tag && 'ctile--tag']}
   href={href}
   aria-label={`${name} — ${capsule}`}
-  style={bg ? `--tile-bg: ${bg}` : undefined}
+  style={first ? `--tile-bg: ${first.bg}` : undefined}
 >
   {/* Кадры — декорация к имени раздела: без alt, ссылка подписана целиком */}
   <span class="ctile__media" data-cover-swap={covers.length > 1 ? '' : undefined}>
     {covers.map((cover, n) => (
       <Image
         class:list={['ctile__cover', n === 0 && 'is-on']}
-        src={cover}
+        src={resolveImage(cover)}
         alt=""
         widths={widths}
         sizes={sizes}
         loading={eager && n === 0 ? 'eager' : 'lazy'}
         decoding="async"
+        data-bg={bg ? undefined : tones[n].bg}
+        data-dark={bg ? undefined : String(tones[n].dark)}
       />
     ))}
   </span>
@@ -77,16 +91,30 @@ const { name, href, capsule, covers, tone = 'beige', bg, sizes, eager = false, w
 </a>
 
 <style>
+  /* --tile-bg зарегистрирован как цвет — иначе браузер не умеет его
+     плавно менять, и при смене обложки плашка перескакивала бы рывком.
+     Регистрация делает var() всегда определённым, поэтому запасной
+     бежевый задан явно ниже, а не фолбэком var(--tile-bg, …). */
+  @property --tile-bg {
+    syntax: '<color>';
+    inherits: true;
+    initial-value: transparent;
+  }
+
   .ctile {
+    --tile-bg: var(--cover-beige);
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
     height: 100%;
-    background: var(--tile-bg, var(--cover-beige));
+    background: var(--tile-bg);
     color: var(--ink);
     border-radius: var(--radius-card);
     overflow: hidden;
     text-decoration: none;
+    transition:
+      --tile-bg var(--dur-slow) var(--ease-inout),
+      color var(--dur-slow) var(--ease-inout);
   }
 
   /* БИРКА. Верхние углы срезаны (скос постоянной величины, не процент —
@@ -215,11 +243,21 @@ const { name, href, capsule, covers, tone = 'beige', bg, sizes, eager = false, w
       // и страница выглядит моргающей, а не живой.
       const phase = Math.random() * SWAP_MS;
 
+      // Плашка перетекает в цвет новой обложки (data-bg снят с кадра на
+      // сборке). Нет data-bg — цвет задан руками, его не трогаем.
+      const tile = stack.closest<HTMLElement>('.ctile');
+      const recolor = (frame: HTMLElement) => {
+        if (!tile || !frame.dataset.bg) return;
+        tile.style.setProperty('--tile-bg', frame.dataset.bg);
+        tile.classList.toggle('theme-dark', frame.dataset.dark === 'true');
+      };
+
       window.setTimeout(() => {
         window.setInterval(() => {
           frames[i].classList.remove('is-on');
           i = (i + 1) % frames.length;
           frames[i].classList.add('is-on');
+          recolor(frames[i]);
         }, SWAP_MS);
       }, phase);
     });

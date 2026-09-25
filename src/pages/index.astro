@@ -112,7 +112,7 @@ import Icon from '../components/Icon.astro';
      он же заголовок первого экрана (см. .hero__title ниже).
      Цвет берём не из файла, а маской: форма из SVG, заливка — из токена,
      поэтому знак сам подхватывает палитру секции и тёмную тему. Текст на
-     бирке в маске — прорезь (scripts/logo-mask.mjs собирает public/logo.svg
+     бирке в маске — прорезь (scripts/logo-mask.mjs собирает public/logo-tag.svg
      из цветного исходника), сквозь неё виден фон.
      Прежние знаки лежат рядом — вернуть можно одной строкой:
      public/logo-wordmark.svg (леттеринг «Wed secrets», 1614 / 210),
@@ -127,11 +127,11 @@ import Icon from '../components/Icon.astro';
        и знак схлопывался в ноль. max-width процентом круга не создаёт. */
     width: 10.4em;
     max-width: 100%;
-    aspect-ratio: 194 / 36;   /* пропорции самого файла logo.svg */
+    aspect-ratio: 194 / 36;   /* пропорции самого файла logo-tag.svg */
     margin-inline: auto;
     background: var(--ink);
-    -webkit-mask: url('/logo.svg') no-repeat center / contain;
-    mask: url('/logo.svg') no-repeat center / contain;
+    -webkit-mask: url('/logo-tag.svg') no-repeat center / contain;
+    mask: url('/logo-tag.svg') no-repeat center / contain;
   }
 
   /* Текст h1 — для поиска и экранного диктора, глазам виден знак */
