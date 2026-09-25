@@ -90,7 +90,6 @@ const counts = filters ? countOptions(filters, cards.map((c) => c.filters)) : un
   <ScopePicker
     title={category.label}
     active={category.slug}
-    count={cards.length ? `${cards.length} найдено` : undefined}
     cityGroup={filters?.find((g) => g.key === 'city')}
   />
 

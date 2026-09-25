@@ -19,13 +19,11 @@ interface Props {
       Панель его больше не показывает, проп оставлен: страницы его передают
       и он понадобится, когда локация переедет в URL раздела. */
   active: string;
-  /** готовая строка счётчика («12 найдено»), обновляется фильтрами страницы */
-  count?: string;
   /** группа фильтра «город» этой страницы: из неё строится список локаций */
   cityGroup?: FilterGroup;
 }
 
-const { title, count, cityGroup } = Astro.props;
+const { title, cityGroup } = Astro.props;
 
 // Страницы без своих фильтров (категории-заглушки) всё равно должны давать
 // выбор локации — тут запасной список, он ничего не фильтрует.
@@ -45,10 +43,10 @@ const options = [{ value: '', label: ALL_LABEL }, ...cities.options];
 ---
 
 <header class="scope" data-scope>
-  <div class="scope__title-row">
-    <h1 class="t-h1 scope__title">{title}</h1>
-    {count && <p class="scope__count" data-results-count>{count}</p>}
-  </div>
+  <!-- Счётчика «N найдено» рядом с заголовком больше нет (заказчик,
+       25.09.2026): на телефоне он занимал целую строку, а решения не
+       давал. Число найденного остаётся в кнопке шторки фильтров. -->
+  <h1 class="t-h1 scope__title">{title}</h1>
 
   <div class="scope__tools">
     <!-- Тот же .chip, что у сортировки и «Фильтры» в полосе ниже: локация —
@@ -99,19 +97,6 @@ const options = [{ value: '', label: ALL_LABEL }, ...cities.options];
        по горизонтали (заказчик, 21.09.2026: «дыра между плашками»).
        Ряды читаются одной группой настроек, а не двумя блоками. */
     padding: var(--s-6) var(--gutter) var(--s-2);
-  }
-
-  .scope__title-row {
-    display: flex;
-    align-items: baseline;
-    flex-wrap: wrap;
-    gap: var(--s-3);
-  }
-
-  /* Счётчик — рядом с заголовком, крупно: сразу виден объём каталога */
-  .scope__count {
-    font-size: var(--fs-h3);
-    font-weight: var(--w-medium);
   }
 
   /* Инструменты (локация + слот «Фильтры»): на телефоне своей строкой,

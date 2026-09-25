@@ -1,17 +1,17 @@
 ---
-// Переключатель категорий специалистов: прилипающая под шапкой полоса
-// в ДВА уровня. Один ряд из 19 пилюль был простынёй — в кадр попадало
-// 3-4 штуки, остальное за краем экрана.
-//   ряд 1 — группы (SPECIALIST_GROUPS), помещаются в строку целиком;
-//   ряд 2 — категории только текущей группы, 3-7 пилюль.
-// Переключение групп без JS: пилюля группы ведёт в первую её категорию,
-// та рендерит свой ряд. Эта полоса — полный доступ ко всем 19 направлениям
-// изнутри каталога; экран выбора группы живёт отдельно, на корневом URL
-// раздела (хаб с шестью плитками, pages/moskva/podryadchiki/index.astro).
+// Переключатель категорий специалистов: прилипающая полоса над каталогом.
+// Раньше здесь было два ряда — группы (Организация · Ведущие · Декор …)
+// и категории группы. Ряд групп снят (заказчик, 25.09.2026): группу
+// человек уже выбрал на хабе раздела, повторять её в каталоге — лишний
+// этаж на телефоне. Вместо него — стрелка «назад» на хаб
+// (pages/moskva/podryadchiki/index.astro), а вкладки внутри группы
+// лежат на тёмной скруглённой плашке рядом со стрелкой: это главный
+// переключатель страницы, и он должен читаться сразу.
 // Живёт под SiteHeader — top берёт готовую высоту шапки из --header-h
 // (SiteHeader сам её публикует).
 import type { SpecialistCategory } from '../data/specialists';
 import { SPECIALIST_GROUPS } from '../data/specialists';
+import Icon from './Icon.astro';
 
 interface Props {
   categories: SpecialistCategory[];
@@ -28,33 +28,20 @@ const activeGroup = SPECIALIST_GROUPS.find((g) => g.categories.includes(activeSl
 // список, как раньше: лучше длинный ряд, чем пустой
 const rowSlugs = (activeGroup?.categories ?? categories.map((c) => c.slug)).filter((s) => bySlug.has(s));
 
-// Раздел без вкладок (в группе одна категория) — второй ряд не рисуем:
-// одинокая подчёркнутая пилюля повторяла бы заголовок каталога и
-// притворялась переключателем, которому не на что переключать.
+// Раздел без вкладок (в группе одна категория) — плашку не рисуем:
+// одна вкладка повторяла бы заголовок каталога и притворялась
+// переключателем, которому не на что переключать. Стрелка остаётся.
 const showCats = rowSlugs.length > 1;
-
-const groups = SPECIALIST_GROUPS.map((g) => {
-  const first = g.categories.find((s) => bySlug.has(s));
-  return { ...g, href: first ? `${basePath}${first}/` : basePath };
-}).filter((g) => g.href !== basePath);
 ---
 
 <nav class="cat-nav" aria-label="Категории специалистов">
-  <!-- РЯД 1: группы направлений -->
-  <div class:list={['cat-nav__scroll', 'cat-nav__scroll--groups', !showCats && 'is-only']}>
-    {groups.map((g) => (
-      <a
-        href={g.href}
-        class={`cat-nav__group${g.key === activeGroup?.key ? ' is-active' : ''}`}
-      >
-        {g.short}
-      </a>
-    ))}
-  </div>
+  <!-- Ссылка настоящая: назад на хаб раздела работает и без JS -->
+  <a class="icon-btn cat-nav__back" href={basePath} aria-label="Все разделы специалистов">
+    <Icon name="arrowLeft" />
+  </a>
 
-  <!-- РЯД 2: категории текущей группы (только если их больше одной) -->
   {showCats && (
-    <div class="cat-nav__scroll">
+    <div class="cat-nav__tabs">
       {rowSlugs.map((slug) => {
         const c = bySlug.get(slug)!;
         return (
@@ -76,81 +63,60 @@ const groups = SPECIALIST_GROUPS.map((g) => {
     position: sticky;
     top: var(--header-h);
     z-index: calc(var(--z-nav) - 1);
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    padding: var(--s-3) var(--gutter) 0;
     background: var(--bg);
   }
 
-  /* touch-action не ставим — ось жеста выбирает браузер
+  .cat-nav__back { border-color: transparent; background: var(--surface); }
+
+  /* ============ ПЛАШКА ВКЛАДОК ============
+     Чернильная скруглённая плашка (--radius-card, не пилюля: пилюля у нас
+     значит «кнопка-действие»), внутри — вкладки группы. Текущая вкладка —
+     светлое «окошко» в плашке, та же инверсия, что у .chip и .map-pin.
+     Вкладок больше, чем влезает, — плашка листается вбок сама, страница
+     при этом не едет (overflow только по X, ось Y закрыта явно).
+     touch-action не ставим — ось жеста выбирает браузер
      (см. DESIGN.md, «Жест на лентах»). */
-  .cat-nav__scroll {
+  .cat-nav__tabs {
+    flex: 1 1 0;
+    min-width: 0;
     display: flex;
-    gap: var(--s-3);
+    gap: 2px;
+    padding: var(--s-1);
     overflow-x: auto;
+    overflow-y: clip;
     overscroll-behavior-x: contain;
     scrollbar-width: none;
-    padding: var(--s-3) var(--gutter);
+    color: var(--bg);
+    background: var(--fg);
+    border-radius: var(--radius-card);
   }
 
-  .cat-nav__scroll::-webkit-scrollbar { display: none; }
+  .cat-nav__tabs::-webkit-scrollbar { display: none; }
 
-  /* Два ряда подряд не должны дать двойной воздух на стыке */
-  .cat-nav__scroll--groups { padding-bottom: 0; }
-
-  /* Ряда категорий нет — нижнее поле возвращаем ряду групп, иначе
-     полоса прилипает к заголовку каталога */
-  .cat-nav__scroll--groups.is-only { padding-bottom: var(--s-3); }
-
-  /* В ряду категорий подложек нет — расстояние держит только зазор,
-     поэтому он крупнее, чем между пилюлями групп */
-  .cat-nav__scroll:not(.cat-nav__scroll--groups) { gap: var(--s-4); }
-
-  /* ============ РЯД 1: ГРУППЫ ============
-     Уровень выше — поэтому без обводок: текстовое меню, у активной
-     группы заливка чернилами. Обводки остаются категориям. */
-  .cat-nav__group {
-    flex: none;
+  .cat-nav__cat {
+    flex: 1 0 auto;
     display: inline-flex;
     align-items: center;
-    padding: 8px 14px;
-    font-size: var(--fs-small);
+    justify-content: center;
+    padding: 8px 8px;
+    font-size: var(--fs-caption);
     font-weight: var(--w-medium);
-    color: var(--fg);
-    border-radius: var(--radius-pill);
+    line-height: 1;
+    color: inherit;
     text-decoration: none;
     white-space: nowrap;
+    border-radius: calc(var(--radius-card) - 4px);
     transition: background var(--dur-fast) var(--ease-out),
                 color var(--dur-fast) var(--ease-out);
   }
 
-  .cat-nav__group.is-active { background: var(--fg); color: var(--bg); }
-
-  /* ============ РЯД 2: КАТЕГОРИИ ============
-     Голый текст без обводок: полоса и так двухэтажная, две линии рамок
-     подряд делали из навигации забор. «Вы здесь» — прямоугольная
-     чернильная подложка (фирменный маркер), а не пилюля: круглая форма
-     осталась уровню групп, углы — уровню категорий. */
-  .cat-nav__cat {
-    flex: none;
-    display: inline-flex;
-    align-items: center;
-    padding: 8px 2px;
-    font-size: var(--fs-caption);
-    font-weight: var(--w-medium);
-    color: var(--fg);
-    text-decoration: none;
-    white-space: nowrap;
-  }
-
-  /* «Вы здесь» — тонкая линия под словом. Отбита от базовой линии и
-     разорвана вокруг выносных (skip-ink), чтобы не резать буквы. */
-  .cat-nav__cat.is-active,
-  .cat-nav__cat:hover {
-    text-decoration: underline;
-    text-decoration-thickness: 0.5px;
-    text-underline-offset: 6px;
-    text-decoration-skip-ink: auto;
-  }
+  .cat-nav__cat.is-active { background: var(--bg); color: var(--fg); }
 
   @media (hover: hover) {
-    .cat-nav__group:not(.is-active):hover { background: var(--fg); color: var(--bg); }
+    .cat-nav__cat:not(.is-active):hover { opacity: 0.7; }
   }
 </style>
