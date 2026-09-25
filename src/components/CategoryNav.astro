@@ -4,9 +4,12 @@
 // и категории группы. Ряд групп снят (заказчик, 25.09.2026): группу
 // человек уже выбрал на хабе раздела, повторять её в каталоге — лишний
 // этаж на телефоне. Вместо него — стрелка «назад» на хаб
-// (pages/moskva/podryadchiki/index.astro), а вкладки внутри группы
-// лежат на тёмной скруглённой плашке рядом со стрелкой: это главный
-// переключатель страницы, и он должен читаться сразу.
+// (pages/moskva/podryadchiki/index.astro), а вкладки внутри группы —
+// текстом в той же строке, текущая подчёркнута. Чернильная плашка
+// с окошками здесь уже была и снята (заказчик, 25.09.2026: «калькулятор»):
+// тёмный блок рядом с чернильной кнопкой читался пультом, а не именами
+// разделов. Текст — единственное, что не спорит ни с кнопкой, ни с рядом
+// чипов ниже.
 // Живёт под SiteHeader — top берёт готовую высоту шапки из --header-h
 // (SiteHeader сам её публикует).
 import type { SpecialistCategory } from '../data/specialists';
@@ -28,7 +31,7 @@ const activeGroup = SPECIALIST_GROUPS.find((g) => g.categories.includes(activeSl
 // список, как раньше: лучше длинный ряд, чем пустой
 const rowSlugs = (activeGroup?.categories ?? categories.map((c) => c.slug)).filter((s) => bySlug.has(s));
 
-// Раздел без вкладок (в группе одна категория) — плашку не рисуем:
+// Раздел без вкладок (в группе одна категория) — ряд не рисуем:
 // одна вкладка повторяла бы заголовок каталога и притворялась
 // переключателем, которому не на что переключать. Стрелка остаётся.
 const showCats = rowSlugs.length > 1;
@@ -65,56 +68,56 @@ const showCats = rowSlugs.length > 1;
     z-index: calc(var(--z-nav) - 1);
     display: flex;
     align-items: center;
-    gap: var(--s-2);
-    padding: var(--s-3) var(--gutter) 0;
+    gap: var(--s-4);
+    padding: var(--s-3) 0 0 var(--gutter);
     background: var(--bg);
   }
 
-  /* ============ ПЛАШКА ВКЛАДОК ============
-     Чернильная скруглённая плашка (--radius-card, не пилюля: пилюля у нас
-     значит «кнопка-действие»), внутри — вкладки группы. Текущая вкладка —
-     светлое «окошко» в плашке, та же инверсия, что у .chip и .map-pin.
-     Вкладок больше, чем влезает, — плашка листается вбок сама, страница
-     при этом не едет (overflow только по X, ось Y закрыта явно).
-     touch-action не ставим — ось жеста выбирает браузер
-     (см. DESIGN.md, «Жест на лентах»). */
+  /* ============ ВКЛАДКИ ГРУППЫ ============
+     Голый текст, без подложек и обводок: рядом чернильная кнопка «назад»,
+     ниже — ряд серых чипов, третьей форме тут тесно. «Вы здесь» —
+     подчёркивание, отбитое от базовой линии и разорванное вокруг
+     выносных. Не влезли — ряд листается вбок сам, страница не едет
+     (ось Y закрыта явно). touch-action не ставим — ось жеста выбирает
+     браузер (см. DESIGN.md, «Жест на лентах»). */
   .cat-nav__tabs {
     flex: 1 1 0;
     min-width: 0;
     display: flex;
-    gap: 2px;
-    padding: var(--s-1);
+    gap: var(--s-5);
+    padding-right: var(--gutter);
     overflow-x: auto;
     overflow-y: clip;
     overscroll-behavior-x: contain;
     scrollbar-width: none;
-    color: var(--bg);
-    background: var(--fg);
-    border-radius: var(--radius-card);
   }
 
   .cat-nav__tabs::-webkit-scrollbar { display: none; }
 
   .cat-nav__cat {
-    flex: 1 0 auto;
+    flex: none;
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    padding: 8px 8px;
-    font-size: var(--fs-caption);
+    padding: 8px 0;
+    font-size: var(--fs-small);
     font-weight: var(--w-medium);
-    line-height: 1;
-    color: inherit;
+    color: var(--fg);
     text-decoration: none;
     white-space: nowrap;
-    border-radius: calc(var(--radius-card) - 4px);
-    transition: background var(--dur-fast) var(--ease-out),
-                color var(--dur-fast) var(--ease-out);
+    opacity: 0.55;
+    transition: opacity var(--dur-fast) var(--ease-out);
   }
 
-  .cat-nav__cat.is-active { background: var(--bg); color: var(--fg); }
+  .cat-nav__cat.is-active {
+    opacity: 1;
+    font-weight: var(--w-head);
+    text-decoration: underline;
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 7px;
+    text-decoration-skip-ink: auto;
+  }
 
   @media (hover: hover) {
-    .cat-nav__cat:not(.is-active):hover { opacity: 0.7; }
+    .cat-nav__cat:hover { opacity: 1; }
   }
 </style>
