@@ -1003,9 +1003,13 @@ body.has-sticky-cta { padding-bottom: var(--float-cta-space); }
   transition: background var(--dur-fast) var(--ease-out);
 }
 
-.radio-row__input:checked + .radio-row__mark { background: var(--fg); }
+/* .is-on — та же отметка для строки-ссылки без input (переключатель
+   категорий в CategoryNav: пункты ведут на свои страницы) */
+.radio-row__input:checked + .radio-row__mark,
+.radio-row__mark.is-on { background: var(--fg); }
 
-.radio-row__input:checked + .radio-row__mark::after {
+.radio-row__input:checked + .radio-row__mark::after,
+.radio-row__mark.is-on::after {
   content: '';
   position: absolute;
   inset: 9px;
