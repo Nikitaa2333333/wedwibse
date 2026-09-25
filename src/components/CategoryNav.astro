@@ -1,20 +1,20 @@
 ---
-// ШАПКА КАТАЛОГА СПЕЦИАЛИСТОВ: чернильная панель сверху экрана со
-// скруглённым низом (эскиз заказчика, 25.09.2026). В ней — стрелка на хаб
-// раздела и имя текущей категории; нажатие по имени поднимает шторку
-// «Направление» со списком «один из» категорий этой группы.
-//
-// Что здесь было и почему снято: два ряда пилюль (группы + категории) —
-// целый этаж на телефоне; чернильная плашка с окошками-вкладками —
-// «калькулятор»; вкладки текстом в строке — три имени не влезали и
-// резались краем. Переключатель в шторке — тот же приём, что у локации
-// (ScopePicker) и сортировки: любая настройка на телефоне — .sheet,
-// не ряд, который надо листать вбок.
+// Переключатель категорий специалистов: прилипающая полоса над каталогом.
+// Раньше здесь было два ряда — группы (Организация · Ведущие · Декор …)
+// и категории группы. Ряд групп снят (заказчик, 25.09.2026): группу
+// человек уже выбрал на хабе раздела, повторять её в каталоге — лишний
+// этаж на телефоне. Вместо него — стрелка «назад» на хаб
+// (pages/moskva/podryadchiki/index.astro), а вкладки внутри группы —
+// текстом в той же строке, текущая подчёркнута. Чернильная плашка
+// с окошками здесь уже была и снята (заказчик, 25.09.2026: «калькулятор»):
+// тёмный блок рядом с чернильной кнопкой читался пультом, а не именами
+// разделов. Текст — единственное, что не спорит ни с кнопкой, ни с рядом
+// чипов ниже.
 // Живёт под SiteHeader — top берёт готовую высоту шапки из --header-h
 // (SiteHeader сам её публикует).
 import type { SpecialistCategory } from '../data/specialists';
 import { SPECIALIST_GROUPS } from '../data/specialists';
-import Icon from './Icon.astro';
+import BackButton from './BackButton.astro';
 
 interface Props {
   categories: SpecialistCategory[];
@@ -25,145 +25,99 @@ interface Props {
 const { categories, activeSlug, basePath = '/moskva/podryadchiki/' } = Astro.props;
 
 const bySlug = new Map(categories.map((c) => [c.slug, c]));
-const active = bySlug.get(activeSlug);
 const activeGroup = SPECIALIST_GROUPS.find((g) => g.categories.includes(activeSlug));
 
-// Категория вне групп (новая, ещё не разложенная) — в шторке полный
-// список, как раньше: лучше длинный, чем пустой
+// Категория вне групп (новая, ещё не разложенная) — показываем полный
+// список, как раньше: лучше длинный ряд, чем пустой
 const rowSlugs = (activeGroup?.categories ?? categories.map((c) => c.slug)).filter((s) => bySlug.has(s));
 
-// Раздел без соседей (в группе одна категория) — имя стоит текстом,
-// шторки и стрелки-каретки нет: переключать не на что.
-const showPicker = rowSlugs.length > 1;
+// Раздел без вкладок (в группе одна категория) — ряд не рисуем:
+// одна вкладка повторяла бы заголовок каталога и притворялась
+// переключателем, которому не на что переключать. Стрелка остаётся.
+const showCats = rowSlugs.length > 1;
 ---
 
-<nav class="cat-nav theme-dark" aria-label="Категории специалистов">
-  <!-- Стрелка — не BackButton (.hero-btn): тот чернильный квадрат для
-       фотографии, на чернильной панели он невидим. Здесь стрелка —
-       просто знак цветом текста панели. Ссылка настоящая, всегда на хаб:
-       после переключений в шторке шаг назад по истории вернул бы на
-       соседнюю категорию, а не к выбору раздела. -->
-  <a class="cat-nav__back" href={basePath} aria-label="Все разделы специалистов">
-    <Icon name="arrowLeft" />
-  </a>
+<nav class="cat-nav" aria-label="Категории специалистов">
+  <!-- Та же кнопка «назад», что на карточке (BackButton). Всегда по
+       ссылке на хаб, не по истории: после щелчков по вкладкам шаг назад
+       вернул бы на соседнюю вкладку, а не к выбору раздела. -->
+  <BackButton href={basePath} label="Все разделы специалистов" history={false} />
 
-  {showPicker ? (
-    <button
-      class="cat-nav__current"
-      type="button"
-      data-sheet-open="cat"
-      aria-controls="cat-sheet"
-      aria-expanded="false"
-    >
-      <span class="cat-nav__name">{active?.label}</span>
-      <Icon name="caretDown" class="cat-nav__caret" />
-    </button>
-  ) : (
-    <span class="cat-nav__current"><span class="cat-nav__name">{active?.label}</span></span>
+  {showCats && (
+    <div class="cat-nav__tabs">
+      {rowSlugs.map((slug) => {
+        const c = bySlug.get(slug)!;
+        return (
+          <a
+            href={`${basePath}${c.slug}/`}
+            class={`cat-nav__cat${c.slug === activeSlug ? ' is-active' : ''}`}
+            aria-current={c.slug === activeSlug ? 'page' : undefined}
+          >
+            {c.label}
+          </a>
+        );
+      })}
+    </div>
   )}
-
 </nav>
 
-<!-- Шторка — сиблинг панели, не её потомок: панель липкая с z-index
-     ниже дока, и внутри неё шторка легла бы под нижнее меню. -->
-{showPicker && (
-  <div class="sheet" id="cat-sheet" data-sheet="cat">
-    <div class="sheet__backdrop" data-sheet-close></div>
-    <section class="sheet__panel" role="dialog" aria-modal="true" aria-labelledby="cat-sheet-title">
-      <header class="sheet__head">
-        <h2 class="sheet__title" id="cat-sheet-title">{activeGroup?.label ?? 'Направление'}</h2>
-        <button class="icon-btn" type="button" data-sheet-close aria-label="Закрыть">
-          <Icon name="close" />
-        </button>
-      </header>
-      <div class="sheet__body" data-lenis-prevent>
-        <!-- Пункты — ссылки: каждая категория — своя страница (SEO),
-             кружок «один из» показывает, где сейчас. -->
-        <div class="radio-list">
-          {rowSlugs.map((slug) => {
-            const c = bySlug.get(slug)!;
-            const on = c.slug === activeSlug;
-            return (
-              <a class="radio-row" href={`${basePath}${c.slug}/`} aria-current={on ? 'page' : undefined}>
-                <span class:list={['radio-row__mark', { 'is-on': on }]} aria-hidden="true"></span>
-                <span class="radio-row__label">{c.label}</span>
-              </a>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  </div>
-)}
-
 <style>
-  /* Панель — чернильная (.theme-dark: цвет из --bg/--fg, руками не
-     красим) со скруглённым низом --radius-sheet: та же форма, что у
-     шторки, только сверху. */
   .cat-nav {
     position: sticky;
     top: var(--header-h);
     z-index: calc(var(--z-nav) - 1);
     display: flex;
     align-items: center;
-    gap: var(--s-2);
-    padding: calc(var(--s-4) + var(--safe-t)) var(--gutter) var(--s-4);
-    border-radius: 0 0 var(--radius-sheet) var(--radius-sheet);
+    gap: var(--s-4);
+    padding: var(--s-3) 0 0 var(--gutter);
+    background: var(--bg);
   }
 
-  .cat-nav__back {
+  /* ============ ВКЛАДКИ ГРУППЫ ============
+     Голый текст, без подложек и обводок: рядом чернильная кнопка «назад»,
+     ниже — ряд серых чипов, третьей форме тут тесно. «Вы здесь» —
+     подчёркивание, отбитое от базовой линии и разорванное вокруг
+     выносных. Не влезли — ряд листается вбок сам, страница не едет
+     (ось Y закрыта явно). touch-action не ставим — ось жеста выбирает
+     браузер (см. DESIGN.md, «Жест на лентах»). */
+  .cat-nav__tabs {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    gap: var(--s-5);
+    padding-right: var(--gutter);
+    overflow-x: auto;
+    overflow-y: clip;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .cat-nav__tabs::-webkit-scrollbar { display: none; }
+
+  .cat-nav__cat {
     flex: none;
     display: inline-flex;
-    width: 40px;
-    height: 40px;
-    margin-left: calc(-1 * var(--s-2));
     align-items: center;
-    justify-content: center;
+    padding: 8px 0;
+    font-size: var(--fs-small);
+    font-weight: var(--w-medium);
     color: var(--fg);
-  }
-
-  .cat-nav__back svg { width: 22px; height: 22px; }
-
-  /* Имя категории — кнопка шторки: крупно, как заголовок, каретка
-     рядом говорит «нажми». Своих цветов нет — всё от панели. */
-  .cat-nav__current {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--s-2);
-    min-width: 0;
-    padding: 0;
-    font: inherit;
-    font-size: var(--fs-h3);
-    font-weight: var(--w-head);
-    line-height: var(--lh-heading);
-    color: var(--fg);
-    background: none;
-    border: 0;
-    cursor: pointer;
-  }
-
-  .cat-nav__name {
-    overflow: hidden;
-    text-overflow: ellipsis;
+    text-decoration: none;
     white-space: nowrap;
+    opacity: 0.55;
+    transition: opacity var(--dur-fast) var(--ease-out);
   }
 
-  .cat-nav__current :global(svg.cat-nav__caret) { width: 18px; height: 18px; flex: none; }
+  .cat-nav__cat.is-active {
+    opacity: 1;
+    font-weight: var(--w-head);
+    text-decoration: underline;
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 7px;
+    text-decoration-skip-ink: auto;
+  }
 
-  /* Пункт-ссылка: тот же .radio-row, только без input — отметку
-     держит класс на кружке. */
-  .radio-row { text-decoration: none; color: inherit; }
+  @media (hover: hover) {
+    .cat-nav__cat:hover { opacity: 1; }
+  }
 </style>
-
-<script>
-  import { bindSheet } from '../lib/sheet';
-
-  const sheet = document.querySelector<HTMLElement>('[data-sheet="cat"]');
-  const toggle = document.querySelector<HTMLButtonElement>('[data-sheet-open="cat"]');
-  if (sheet && toggle) {
-    bindSheet(sheet, {
-      onOpen: () => toggle.setAttribute('aria-expanded', 'true'),
-      onClose: () => toggle.setAttribute('aria-expanded', 'false'),
-    });
-  }
-</script>
