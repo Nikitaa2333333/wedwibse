@@ -11,7 +11,7 @@
 // (SiteHeader сам её публикует).
 import type { SpecialistCategory } from '../data/specialists';
 import { SPECIALIST_GROUPS } from '../data/specialists';
-import Icon from './Icon.astro';
+import BackButton from './BackButton.astro';
 
 interface Props {
   categories: SpecialistCategory[];
@@ -35,10 +35,10 @@ const showCats = rowSlugs.length > 1;
 ---
 
 <nav class="cat-nav" aria-label="Категории специалистов">
-  <!-- Ссылка настоящая: назад на хаб раздела работает и без JS -->
-  <a class="icon-btn cat-nav__back" href={basePath} aria-label="Все разделы специалистов">
-    <Icon name="arrowLeft" />
-  </a>
+  <!-- Та же кнопка «назад», что на карточке (BackButton). Всегда по
+       ссылке на хаб, не по истории: после щелчков по вкладкам шаг назад
+       вернул бы на соседнюю вкладку, а не к выбору раздела. -->
+  <BackButton href={basePath} label="Все разделы специалистов" history={false} />
 
   {showCats && (
     <div class="cat-nav__tabs">
@@ -69,8 +69,6 @@ const showCats = rowSlugs.length > 1;
     padding: var(--s-3) var(--gutter) 0;
     background: var(--bg);
   }
-
-  .cat-nav__back { border-color: transparent; background: var(--surface); }
 
   /* ============ ПЛАШКА ВКЛАДОК ============
      Чернильная скруглённая плашка (--radius-card, не пилюля: пилюля у нас

@@ -1,0 +1,39 @@
+---
+// КНОПКА «НАЗАД» — одна на весь проект: чернильный квадрат со скруглением
+// карточки (.hero-btn в global.css). Стоит в ряду действий поверх первого
+// кадра карточки (HeroActions) и в полосе вкладок каталога специалистов
+// (CategoryNav). Своих стрелок по страницам не рисуем — берём эту.
+//
+// Ссылка настоящая (href на раздел-родитель): работает без JS и остаётся
+// внутренней перелинковкой. С history (по умолчанию) скрипт поверх
+// подменяет переход на history.back(), если пришли с этого же сайта —
+// так карточка возвращает ровно в ту выдачу, откуда провалились.
+// history={false} — всегда по href: в каталоге человек мог пощёлкать
+// вкладки, и «шаг назад по истории» вернул бы на соседнюю вкладку,
+// а не к выбору раздела.
+import Icon from './Icon.astro';
+
+interface Props {
+  href: string;
+  label?: string;
+  history?: boolean;
+  class?: string;
+}
+
+const { href, label = 'Назад', history = true, class: className } = Astro.props;
+---
+
+<a class:list={['hero-btn', className]} href={href} aria-label={label} data-back-btn={history ? '' : undefined}>
+  <Icon name="arrowLeft" />
+</a>
+
+<script>
+  document.querySelectorAll<HTMLAnchorElement>('[data-back-btn]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      if (window.history.length > 1 && document.referrer.startsWith(location.origin)) {
+        e.preventDefault();
+        history.back();
+      }
+    });
+  });
+</script>

@@ -19,6 +19,7 @@
 // у раздела из дока («Площадки», «Специалисты», «Избранное») своей
 // кнопки назад нет — он сам корень своей ветки.
 import Icon from './Icon.astro';
+import BackButton from './BackButton.astro';
 
 interface Props {
   /** раздел-родитель: куда ведёт «назад» при прямом заходе */
@@ -32,9 +33,7 @@ const { backHref, backLabel = 'Назад', save } = Astro.props;
 ---
 
 <div class="hero-actions">
-  <a class="hero-btn" href={backHref} data-back-btn aria-label={backLabel}>
-    <Icon name="arrowLeft" />
-  </a>
+  <BackButton href={backHref} label={backLabel} />
 
   <span class="hero-actions__group">
     <button
@@ -58,13 +57,4 @@ const { backHref, backLabel = 'Назад', save } = Astro.props;
   import { bindShareButtons } from '../lib/share';
 
   bindShareButtons();
-
-  document.querySelectorAll<HTMLAnchorElement>('[data-back-btn]').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      if (window.history.length > 1 && document.referrer.startsWith(location.origin)) {
-        e.preventDefault();
-        history.back();
-      }
-    });
-  });
 </script>
