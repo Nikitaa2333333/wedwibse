@@ -1699,6 +1699,44 @@ textarea.input {
   .map-pin.is-seen:hover { opacity: 1; }
 }
 
+/* МЕТКА-ФОКУС — площадка, с чьей страницы пришли кнопкой «На карте»
+   (см. «ФОКУС» в VenueMap). Человек ищет не цену, а «где она», поэтому
+   вместо цены — кадр сверху и название под ним. Текст по-прежнему не
+   лежит на фото: имя стоит на плашке под кадром. Та же чернильная
+   капсула, что у обычной метки, только в рост карточки — и светлой
+   инверсии ей не нужно, её и так ни с чем не спутать. */
+.map-pin--focus {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  width: 160px;
+  padding: 4px 4px 10px;
+  white-space: normal;
+}
+
+.map-pin--focus:hover { color: var(--white); background: var(--black); }
+
+.map-pin__photo {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: calc(var(--radius-card) - 4px);
+  background: var(--surface-dim);
+}
+
+.map-pin__name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  padding: 0 6px;
+  font-size: var(--fs-small);
+  font-weight: var(--w-head);
+  line-height: var(--lh-heading);
+  text-align: center;
+}
+
 /* ============ КЛАСТЕР НА КАРТЕ ============
    Отдалили — метки схлопываются в кружок с числом, клик приближает.
    Кружок, а не плашка: у него нет подписи-цены, и круглая форма сразу
