@@ -1,17 +1,20 @@
 ---
-// Переключатель категорий специалистов: прилипающая под шапкой полоса
-// в ДВА уровня. Один ряд из 19 пилюль был простынёй — в кадр попадало
-// 3-4 штуки, остальное за краем экрана.
-//   ряд 1 — группы (SPECIALIST_GROUPS), помещаются в строку целиком;
-//   ряд 2 — категории только текущей группы, 3-7 пилюль.
-// Переключение групп без JS: пилюля группы ведёт в первую её категорию,
-// та рендерит свой ряд. Эта полоса — полный доступ ко всем 19 направлениям
-// изнутри каталога; экран выбора группы живёт отдельно, на корневом URL
-// раздела (хаб с шестью плитками, pages/moskva/podryadchiki/index.astro).
+// Переключатель категорий специалистов: прилипающая полоса над каталогом.
+// Раньше здесь было два ряда — группы (Организация · Ведущие · Декор …)
+// и категории группы. Ряд групп снят (заказчик, 25.09.2026): группу
+// человек уже выбрал на хабе раздела, повторять её в каталоге — лишний
+// этаж на телефоне. Вместо него — стрелка «назад» на хаб
+// (pages/moskva/podryadchiki/index.astro), а вкладки внутри группы —
+// текстом в той же строке, текущая подчёркнута. Чернильная плашка
+// с окошками здесь уже была и снята (заказчик, 25.09.2026: «калькулятор»):
+// тёмный блок рядом с чернильной кнопкой читался пультом, а не именами
+// разделов. Текст — единственное, что не спорит ни с кнопкой, ни с рядом
+// чипов ниже.
 // Живёт под SiteHeader — top берёт готовую высоту шапки из --header-h
 // (SiteHeader сам её публикует).
 import type { SpecialistCategory } from '../data/specialists';
 import { SPECIALIST_GROUPS } from '../data/specialists';
+import BackButton from './BackButton.astro';
 
 interface Props {
   categories: SpecialistCategory[];
@@ -28,33 +31,20 @@ const activeGroup = SPECIALIST_GROUPS.find((g) => g.categories.includes(activeSl
 // список, как раньше: лучше длинный ряд, чем пустой
 const rowSlugs = (activeGroup?.categories ?? categories.map((c) => c.slug)).filter((s) => bySlug.has(s));
 
-// Раздел без вкладок (в группе одна категория) — второй ряд не рисуем:
-// одинокая подчёркнутая пилюля повторяла бы заголовок каталога и
-// притворялась переключателем, которому не на что переключать.
+// Раздел без вкладок (в группе одна категория) — ряд не рисуем:
+// одна вкладка повторяла бы заголовок каталога и притворялась
+// переключателем, которому не на что переключать. Стрелка остаётся.
 const showCats = rowSlugs.length > 1;
-
-const groups = SPECIALIST_GROUPS.map((g) => {
-  const first = g.categories.find((s) => bySlug.has(s));
-  return { ...g, href: first ? `${basePath}${first}/` : basePath };
-}).filter((g) => g.href !== basePath);
 ---
 
 <nav class="cat-nav" aria-label="Категории специалистов">
-  <!-- РЯД 1: группы направлений -->
-  <div class:list={['cat-nav__scroll', 'cat-nav__scroll--groups', !showCats && 'is-only']}>
-    {groups.map((g) => (
-      <a
-        href={g.href}
-        class={`cat-nav__group${g.key === activeGroup?.key ? ' is-active' : ''}`}
-      >
-        {g.short}
-      </a>
-    ))}
-  </div>
+  <!-- Та же кнопка «назад», что на карточке (BackButton). Всегда по
+       ссылке на хаб, не по истории: после щелчков по вкладкам шаг назад
+       вернул бы на соседнюю вкладку, а не к выбору раздела. -->
+  <BackButton href={basePath} label="Все разделы специалистов" history={false} />
 
-  <!-- РЯД 2: категории текущей группы (только если их больше одной) -->
   {showCats && (
-    <div class="cat-nav__scroll">
+    <div class="cat-nav__tabs">
       {rowSlugs.map((slug) => {
         const c = bySlug.get(slug)!;
         return (
@@ -76,81 +66,58 @@ const groups = SPECIALIST_GROUPS.map((g) => {
     position: sticky;
     top: var(--header-h);
     z-index: calc(var(--z-nav) - 1);
+    display: flex;
+    align-items: center;
+    gap: var(--s-4);
+    padding: var(--s-3) 0 0 var(--gutter);
     background: var(--bg);
   }
 
-  /* touch-action не ставим — ось жеста выбирает браузер
-     (см. DESIGN.md, «Жест на лентах»). */
-  .cat-nav__scroll {
+  /* ============ ВКЛАДКИ ГРУППЫ ============
+     Голый текст, без подложек и обводок: рядом чернильная кнопка «назад»,
+     ниже — ряд серых чипов, третьей форме тут тесно. «Вы здесь» —
+     подчёркивание, отбитое от базовой линии и разорванное вокруг
+     выносных. Не влезли — ряд листается вбок сам, страница не едет
+     (ось Y закрыта явно). touch-action не ставим — ось жеста выбирает
+     браузер (см. DESIGN.md, «Жест на лентах»). */
+  .cat-nav__tabs {
+    flex: 1 1 0;
+    min-width: 0;
     display: flex;
-    gap: var(--s-3);
+    gap: var(--s-5);
+    padding-right: var(--gutter);
     overflow-x: auto;
+    overflow-y: clip;
     overscroll-behavior-x: contain;
     scrollbar-width: none;
-    padding: var(--s-3) var(--gutter);
   }
 
-  .cat-nav__scroll::-webkit-scrollbar { display: none; }
+  .cat-nav__tabs::-webkit-scrollbar { display: none; }
 
-  /* Два ряда подряд не должны дать двойной воздух на стыке */
-  .cat-nav__scroll--groups { padding-bottom: 0; }
-
-  /* Ряда категорий нет — нижнее поле возвращаем ряду групп, иначе
-     полоса прилипает к заголовку каталога */
-  .cat-nav__scroll--groups.is-only { padding-bottom: var(--s-3); }
-
-  /* В ряду категорий подложек нет — расстояние держит только зазор,
-     поэтому он крупнее, чем между пилюлями групп */
-  .cat-nav__scroll:not(.cat-nav__scroll--groups) { gap: var(--s-4); }
-
-  /* ============ РЯД 1: ГРУППЫ ============
-     Уровень выше — поэтому без обводок: текстовое меню, у активной
-     группы заливка чернилами. Обводки остаются категориям. */
-  .cat-nav__group {
-    flex: none;
-    display: inline-flex;
-    align-items: center;
-    padding: 8px 14px;
-    font-size: var(--fs-small);
-    font-weight: var(--w-medium);
-    color: var(--fg);
-    border-radius: var(--radius-pill);
-    text-decoration: none;
-    white-space: nowrap;
-    transition: background var(--dur-fast) var(--ease-out),
-                color var(--dur-fast) var(--ease-out);
-  }
-
-  .cat-nav__group.is-active { background: var(--fg); color: var(--bg); }
-
-  /* ============ РЯД 2: КАТЕГОРИИ ============
-     Голый текст без обводок: полоса и так двухэтажная, две линии рамок
-     подряд делали из навигации забор. «Вы здесь» — прямоугольная
-     чернильная подложка (фирменный маркер), а не пилюля: круглая форма
-     осталась уровню групп, углы — уровню категорий. */
   .cat-nav__cat {
     flex: none;
     display: inline-flex;
     align-items: center;
-    padding: 8px 2px;
-    font-size: var(--fs-caption);
+    padding: 8px 0;
+    font-size: var(--fs-small);
     font-weight: var(--w-medium);
     color: var(--fg);
     text-decoration: none;
     white-space: nowrap;
+    opacity: 0.55;
+    transition: opacity var(--dur-fast) var(--ease-out);
   }
 
-  /* «Вы здесь» — тонкая линия под словом. Отбита от базовой линии и
-     разорвана вокруг выносных (skip-ink), чтобы не резать буквы. */
-  .cat-nav__cat.is-active,
-  .cat-nav__cat:hover {
+  .cat-nav__cat.is-active {
+    opacity: 1;
+    font-weight: var(--w-head);
     text-decoration: underline;
-    text-decoration-thickness: 0.5px;
-    text-underline-offset: 6px;
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 7px;
     text-decoration-skip-ink: auto;
   }
 
   @media (hover: hover) {
-    .cat-nav__group:not(.is-active):hover { background: var(--fg); color: var(--bg); }
+    .cat-nav__cat:hover { opacity: 1; }
   }
 </style>

@@ -74,7 +74,6 @@ const filtersOf = (item: FeedVenue) => ({
 
 let venueIndex = 0;
 const venues = FEED.filter((item): item is FeedVenue => item.kind === 'venue');
-const venueCount = venues.length;
 const counts = countOptions(VENUE_FILTERS, venues.map(filtersOf));
 
 // Точки для карты: только площадки, которым проставлены координаты
@@ -91,7 +90,6 @@ const mapPoints = venueMapPoints();
   <ScopePicker
     title="Площадки"
     active="ploshchadki"
-    count={`${venueCount} найдено`}
     cityGroup={VENUE_FILTERS.find((g) => g.key === 'city')}
   >
     <!-- Переключатель вида: сетка ↔ карта. Действие, а не выбор, — поэтому

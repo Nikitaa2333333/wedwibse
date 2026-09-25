@@ -286,7 +286,6 @@ const popular = groups.flatMap((g) =>
     const quickChips = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-quick-group]'));
     const badge = document.querySelector<HTMLElement>('[data-filters-badge]');
     const cards = Array.from(document.querySelectorAll<HTMLElement>('[data-card]'));
-    const countEl = document.querySelector<HTMLElement>('[data-results-count]');
     const emptyEl = document.querySelector<HTMLElement>('[data-results-empty]');
 
     // Быстрый чип («Цена ▾») открывает шторку, прокрученную к своей группе
@@ -338,7 +337,6 @@ const popular = groups.flatMap((g) =>
         if (match) visible += 1;
       });
 
-      if (countEl) countEl.textContent = `${visible} найдено`;
       if (emptyEl) emptyEl.hidden = visible !== 0;
       if (cards.length) foundEl.textContent = visible ? `Нашли ${visible} ${plural(visible, noun)}` : 'Ничего не нашли';
       syncChips(sel);
