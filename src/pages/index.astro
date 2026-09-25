@@ -5,6 +5,26 @@ import EntryRail from '../components/EntryRail.astro';
 import PhotoBoard from '../components/PhotoBoard.astro';
 import ThemeToggle from '../components/ThemeToggle.astro';
 import Icon from '../components/Icon.astro';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+// ЛОГОТИП — ВСТРОЕННЫЙ <svg>, НЕ CSS-МАСКА (25.09.2026). Маской
+// (mask: url(logo.svg)) браузер сперва растрирует svg в его собственном
+// размере 194×36 и потом растягивает до 350–520px — знак выходил
+// пиксельным. Встроенный svg рисуется вектором сразу в нужном размере.
+// Источник тот же — public/logo-tag.svg (собирает scripts/logo-mask.mjs):
+// белые фигуры маски → currentColor (цвет из темы), чёрные (текст на
+// бирке, люверс) → цвет фона страницы, как прорезь.
+const logoFile = readFileSync(join(process.cwd(), 'public/logo-tag.svg'), 'utf8');
+const logoViewBox = logoFile.match(/viewBox="([^"]+)"/)![1];
+const logoShapes = (logoFile.match(/<path\b[^>]*\/>/g) ?? [])
+  .map((p) =>
+    p.includes('fill="#000"')
+      ? p.replace('fill="#000"', 'class="logo-knock"')
+      : p.replace(/fill="#fff"/g, 'fill="currentColor"').replace(/stroke="#fff"/g, 'stroke="currentColor"'),
+  )
+  .join('');
+const logoSvg = `<svg viewBox="${logoViewBox}" xmlns="http://www.w3.org/2000/svg" focusable="false">${logoShapes}</svg>`;
 ---
 
 <Layout title="Свадебные Секреты — лучшие площадки и специалисты">
@@ -36,7 +56,7 @@ import Icon from '../components/Icon.astro';
              логотип в шапке снят — он повторял бы этот же. -->
         <h1 class="hero__title">
           <span class="hero__title-text">Свадебные секреты</span>
-          <span class="hero__logo" aria-hidden="true"></span>
+          <span class="hero__logo" aria-hidden="true" set:html={logoSvg}></span>
         </h1>
         <!-- Подпись «Сохраняйте идеи для своей свадьбы» (ссылка в избранное)
              снята 25.09.2026: рядом с логотипом-заголовком она была лишней
@@ -110,10 +130,9 @@ import Icon from '../components/Icon.astro';
 
   /* Логотип «Свадебные секреты» с биркой «wed secrets» (25.09.2026) —
      он же заголовок первого экрана (см. .hero__title ниже).
-     Цвет берём не из файла, а маской: форма из SVG, заливка — из токена,
-     поэтому знак сам подхватывает палитру секции и тёмную тему. Текст на
-     бирке в маске — прорезь (scripts/logo-mask.mjs собирает public/logo-tag.svg
-     из цветного исходника), сквозь неё виден фон.
+     Знак — встроенный svg (см. шапку файла): цвет из токена --ink через
+     currentColor, поэтому сам подхватывает палитру и тёмную тему; текст
+     на бирке и люверс — цветом фона страницы, как прорезь.
      Прежние знаки лежат рядом — вернуть можно одной строкой:
      public/logo-wordmark.svg (леттеринг «Wed secrets», 1614 / 210),
      public/logo-script.svg (каллиграфия).
@@ -127,12 +146,19 @@ import Icon from '../components/Icon.astro';
        и знак схлопывался в ноль. max-width процентом круга не создаёт. */
     width: 10.4em;
     max-width: 100%;
-    aspect-ratio: 194 / 36;   /* пропорции самого файла logo-tag.svg */
     margin-inline: auto;
-    background: var(--ink);
-    -webkit-mask: url('/logo-tag.svg') no-repeat center / contain;
-    mask: url('/logo-tag.svg') no-repeat center / contain;
+    color: var(--ink);
   }
+
+  /* svg вставлен через set:html — scoped-атрибута у него нет, поэтому
+     :global внутри своего же элемента (не чужого компонента) */
+  .hero__logo :global(svg) {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+  .hero__logo :global(.logo-knock) { fill: var(--bg); }
 
   /* Текст h1 — для поиска и экранного диктора, глазам виден знак */
   .hero__title-text {
