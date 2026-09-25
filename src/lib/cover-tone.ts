@@ -6,9 +6,11 @@
 // над чернильной плашкой). Руками подбирать хекс на каждую обложку —
 // не масштабируется, поэтому цвет берём из файла.
 //
-// Где мерить: НИЗ кадра по краям. Градиент растворяет именно нижнюю
-// кромку, а там обычно пол — он темнее стены, и цвет по верху кадра
-// снова давал бы шов. Середину низа не трогаем: там ноги человека.
+// Где мерить: ВСЯ нижняя кромка кадра. Градиент растворяет именно её,
+// а там обычно пол — он темнее стены, и цвет по верху кадра снова давал
+// бы шов. Мерить только углы пробовали: у декора в углах тёмные цветы,
+// среднее уходило темнее реального края, и под светлой кромкой вставала
+// тёмная плашка (25.09.2026).
 import sharp from 'sharp';
 import { join } from 'node:path';
 
@@ -18,6 +20,9 @@ export interface CoverTone {
   /** тёмный фон — подпись на плашке белая (.theme-dark) */
   dark: boolean;
 }
+
+/** пропорция окна кадра в CoverTile (.ctile__cover { aspect-ratio: 4 / 5 }) */
+const FRAME_RATIO = 4 / 5;
 
 const cache = new Map<string, Promise<CoverTone>>();
 
@@ -31,16 +36,17 @@ async function measure(path: string): Promise<CoverTone> {
   const img = sharp(join(process.cwd(), 'src/assets', path));
   const { width = 1, height = 1 } = await img.metadata();
 
-  // нижние 6 % высоты, по 30 % ширины слева и справа
-  const h = Math.max(1, Math.round(height * 0.06));
-  const w = Math.max(1, Math.round(width * 0.3));
-  const top = height - h;
-  const strips = await Promise.all(
-    [0, width - w].map((left) =>
-      sharp(join(process.cwd(), 'src/assets', path)).extract({ left, top, width: w, height: h }).stats(),
-    ),
-  );
-  const [r, g, b] = [0, 1, 2].map((c) => strips.reduce((sum, s) => sum + s.channels[c].mean, 0) / strips.length);
+  // Мерим у нижнего края ВИДИМОЙ части: плитка показывает кадр в окне
+  // 4:5 с object-fit: cover, и кадр выше этой пропорции обрезается
+  // поровну сверху и снизу. Низ файла тогда за кадром — у декора там
+  // тёмная полоса, и плашка по ней выходила темнее видимой кромки.
+  const shown = Math.min(height, Math.round(width / FRAME_RATIO));
+  const bottom = height - Math.round((height - shown) / 2);
+  const h = Math.max(1, Math.round(shown * 0.04));
+  const strip = await sharp(join(process.cwd(), 'src/assets', path))
+    .extract({ left: 0, top: bottom - h, width, height: h })
+    .stats();
+  const [r, g, b] = [0, 1, 2].map((c) => strip.channels[c].mean);
 
   // относительная яркость (WCAG): ниже порога — фон тёмный, подпись белая
   const lin = (v: number) => {

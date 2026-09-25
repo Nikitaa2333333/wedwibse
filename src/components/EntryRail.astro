@@ -142,7 +142,10 @@ const cards = [
      ряда, а не растягиваются по нему. */
   @media (min-width: 640px) {
     .entries__rail {
-      grid-template-columns: repeat(2, minmax(0, var(--entry-card-max)));
+      /* Ширина колонки задана явно, а не minmax(0, …) по содержимому:
+         кадр в CoverTile лежит абсолютным слоем и своей ширины не даёт,
+         и колонка по содержимому сжималась до ширины подписи (25.09.2026). */
+      grid-template-columns: repeat(2, min(var(--entry-card-max), calc((100% - var(--pin-gap)) / 2)));
       justify-content: start;
     }
   }

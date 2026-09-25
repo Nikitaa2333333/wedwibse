@@ -68,19 +68,32 @@ const dark = first ? first.dark : tone === 'dark';
   style={first ? `--tile-bg: ${first.bg}` : undefined}
 >
   {/* Кадры — декорация к имени раздела: без alt, ссылка подписана целиком */}
+  {/* КАДР = СЛОЙ НА ВСЮ ПЛИТКУ: фото, его растворение и плашка под
+      подписью — одного цвета (--frame-bg), одним слоем. Подпись лежит
+      поверх слоёв. Так стык фото и плашки всегда внутри одного слоя и
+      при смене обложки не расходится: раньше плашка перекрашивалась
+      отдельно от кадра, и на стыке мелькала линия (25.09.2026).
+      Высоту фото в потоке держит распорка .ctile__spacer. */}
+  <span class="ctile__spacer" aria-hidden="true"></span>
   <span class="ctile__media" data-cover-swap={covers.length > 1 ? '' : undefined}>
     {covers.map((cover, n) => (
-      <Image
-        class:list={['ctile__cover', n === 0 && 'is-on']}
-        src={resolveImage(cover)}
-        alt=""
-        widths={widths}
-        sizes={sizes}
-        loading={eager && n === 0 ? 'eager' : 'lazy'}
-        decoding="async"
-        data-bg={bg ? undefined : tones[n].bg}
-        data-dark={bg ? undefined : String(tones[n].dark)}
-      />
+      <span
+        class:list={['ctile__frame', n === 0 && 'is-on']}
+        style={`--frame-bg: ${bg ?? tones[n].bg}`}
+        data-dark={String(tones[n].dark)}
+      >
+        <span class="ctile__shot">
+          <Image
+            class="ctile__cover"
+            src={resolveImage(cover)}
+            alt=""
+            widths={widths}
+            sizes={sizes}
+            loading={eager && n === 0 ? 'eager' : 'lazy'}
+            decoding="async"
+          />
+        </span>
+      </span>
     ))}
   </span>
 
@@ -91,30 +104,24 @@ const dark = first ? first.dark : tone === 'dark';
 </a>
 
 <style>
-  /* --tile-bg зарегистрирован как цвет — иначе браузер не умеет его
-     плавно менять, и при смене обложки плашка перескакивала бы рывком.
-     Регистрация делает var() всегда определённым, поэтому запасной
-     бежевый задан явно ниже, а не фолбэком var(--tile-bg, …). */
-  @property --tile-bg {
-    syntax: '<color>';
-    inherits: true;
-    initial-value: transparent;
-  }
-
   .ctile {
     --tile-bg: var(--cover-beige);
+    position: relative;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
+    /* ширина явно: кадр лежит абсолютным слоем и своей ширины не даёт,
+       и во flex-ячейке плитка сжималась до ширины подписи */
+    width: 100%;
     height: 100%;
+    /* фон плитки — только подложка до загрузки кадра; цвет плашки
+       под подписью даёт слой кадра (см. .ctile__frame) */
     background: var(--tile-bg);
     color: var(--ink);
     border-radius: var(--radius-card);
     overflow: hidden;
     text-decoration: none;
-    transition:
-      --tile-bg var(--dur-slow) var(--ease-inout),
-      color var(--dur-slow) var(--ease-inout);
+    transition: color var(--dur-slow) var(--ease-inout);
   }
 
   /* БИРКА. Верхние углы срезаны (скос постоянной величины, не процент —
@@ -141,24 +148,60 @@ const dark = first ? first.dark : tone === 'dark';
     color: var(--fg);
   }
 
-  /* Кадры лежат стопкой: второй и следующие — поверх первого, видимый
-     выбирает класс. Высоту стопке задаёт первый кадр (он в потоке). */
+  /* Распорка держит в потоке высоту фото (окно 4:5) — сами слои кадров
+     лежат под всей плиткой абсолютно и высоты не дают. */
+  .ctile__spacer {
+    display: block;
+    aspect-ratio: 4 / 5;
+  }
+
+  /* Стопка слоёв на всю плитку, под подписью */
   .ctile__media {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
+
+  /* СЛОЙ КАДРА: фото сверху, ниже — плашка цвета низа этого фото
+     (--frame-bg снят на сборке, lib/cover-tone). Смена без просвета:
+     новый слой (.is-on) проявляется ПОВЕРХ старого, а старый (.is-prev)
+     стоит непрозрачным, пока новый не проявится, и гаснет мгновенно
+     уже под ним. При перекрёстном затухании оба слоя были полупрозрачны,
+     сквозь них светил фон, и на стыке фото и плашки мелькала линия.
+     Без JS .is-on стоит на первом и не меняется. */
+  .ctile__frame {
+    position: absolute;
+    inset: 0;
+    display: block;
+    background: var(--frame-bg, var(--tile-bg));
+    opacity: 0;
+  }
+
+  .ctile__frame.is-prev {
+    opacity: 1;
+    z-index: 1;
+  }
+
+  .ctile__frame.is-on {
+    opacity: 1;
+    z-index: 2;
+    transition: opacity var(--dur-slow) var(--ease-inout);
+  }
+
+  /* Фото и растворение его нижней кромки в цвет своей плашки.
+     30 %: у пёстрого низа (цветы у декора) короткое растворение
+     не успевало свести кромку к ровному цвету. */
+  .ctile__shot {
     position: relative;
     display: block;
   }
 
-  /* Кадр снят на чистом фоне и притонирован в палитру — верх и бока
-     сливаются с плиткой, а у пола остаётся естественная тень чуть темнее
-     плашки. Её закрывает короткий градиент в тон плитки по нижней кромке:
-     кадр растворяется в плашку, а не обрывается линией над подписью. */
-  .ctile__media::after {
+  .ctile__shot::after {
     content: '';
     position: absolute;
     inset: auto 0 0;
-    height: 18%;
-    z-index: 1;
-    background: linear-gradient(to bottom, transparent, var(--tile-bg, var(--cover-beige)));
+    height: 30%;
+    background: linear-gradient(to bottom, transparent, var(--frame-bg, var(--tile-bg)));
     pointer-events: none;
   }
 
@@ -170,26 +213,12 @@ const dark = first ? first.dark : tone === 'dark';
     object-fit: cover;
   }
 
-  /* Кадры после первого вынуты из потока и лежат ровно на нём */
-  .ctile__cover:not(:first-child) {
-    position: absolute;
-    inset: 0;
-    height: 100%;
-  }
-
-  /* Видимый кадр — тот, на котором стоит .is-on. Без JS класс стоит
-     на первом и не меняется: плитка просто статична. */
-  .ctile__cover {
-    opacity: 0;
-    transition: opacity var(--dur-slow) var(--ease-inout);
-  }
-
-  .ctile__cover.is-on { opacity: 1; }
-
   /* Подпись под кадром: имя сверху с местом под две строки (у соседей
      «Площадки» и «Организация и координация» капсула должна стоять на
      одной высоте), капсула — у нижней границы плитки. */
   .ctile__body {
+    position: relative;
+    z-index: 3;   /* поверх слоёв кадров */
     flex: 1 1 auto;
     display: flex;
     flex-direction: column;
@@ -235,7 +264,7 @@ const dark = first ? first.dark : tone === 'dark';
 
   if (!calm.matches) {
     document.querySelectorAll<HTMLElement>('[data-cover-swap]').forEach((stack) => {
-      const frames = Array.from(stack.querySelectorAll<HTMLElement>('.ctile__cover'));
+      const frames = Array.from(stack.querySelectorAll<HTMLElement>('.ctile__frame'));
       if (frames.length < 2) return;
 
       let i = 0;
@@ -243,21 +272,27 @@ const dark = first ? first.dark : tone === 'dark';
       // и страница выглядит моргающей, а не живой.
       const phase = Math.random() * SWAP_MS;
 
-      // Плашка перетекает в цвет новой обложки (data-bg снят с кадра на
-      // сборке). Нет data-bg — цвет задан руками, его не трогаем.
+      // Цвет плашки несёт сам слой кадра; здесь только цвет подписи:
+      // белая на тёмном кадре, чернильная на светлом.
       const tile = stack.closest<HTMLElement>('.ctile');
-      const recolor = (frame: HTMLElement) => {
-        if (!tile || !frame.dataset.bg) return;
-        tile.style.setProperty('--tile-bg', frame.dataset.bg);
-        tile.classList.toggle('theme-dark', frame.dataset.dark === 'true');
+      // длительность проявления — из токена, чтобы старый слой гас ровно
+      // тогда, когда новый уже непрозрачен
+      const fadeMs = () => {
+        const v = getComputedStyle(stack).getPropertyValue('--dur-slow').trim();
+        return v.endsWith('ms') ? parseFloat(v) : parseFloat(v) * 1000 || 600;
       };
 
       window.setTimeout(() => {
         window.setInterval(() => {
-          frames[i].classList.remove('is-on');
+          const prev = frames[i];
           i = (i + 1) % frames.length;
-          frames[i].classList.add('is-on');
-          recolor(frames[i]);
+          const next = frames[i];
+          // старый — непрозрачной подложкой, новый проявляется поверх
+          prev.classList.remove('is-on');
+          prev.classList.add('is-prev');
+          next.classList.add('is-on');
+          tile?.classList.toggle('theme-dark', next.dataset.dark === 'true');
+          window.setTimeout(() => prev.classList.remove('is-prev'), fadeMs());
         }, SWAP_MS);
       }, phase);
     });
