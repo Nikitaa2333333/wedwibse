@@ -24,7 +24,9 @@ const logoShapes = (logoFile.match(/<path\b[^>]*\/>/g) ?? [])
       : p.replace(/fill="#fff"/g, 'fill="currentColor"').replace(/stroke="#fff"/g, 'stroke="currentColor"'),
   )
   .join('');
-const logoSvg = `<svg viewBox="${logoViewBox}" xmlns="http://www.w3.org/2000/svg" focusable="false">${logoShapes}</svg>`;
+// fill="none" на корне, как в исходнике: нитка к бирке — только обводка,
+// без него браузер заливал её чёрным по умолчанию, и она становилась кляксой
+const logoSvg = `<svg viewBox="${logoViewBox}" fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false">${logoShapes}</svg>`;
 ---
 
 <Layout title="Свадебные Секреты — лучшие площадки и специалисты">
