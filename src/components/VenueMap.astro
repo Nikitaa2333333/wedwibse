@@ -13,8 +13,7 @@
 //   3. Если рядом на странице есть карточки каталога ([data-card][data-slug]),
 //      карта повторяет их фильтрацию: скрытую фильтрами площадку убираем и
 //      с карты.
-import { Image, getImage } from 'astro:assets';
-import Icon from './Icon.astro';
+import { getImage } from 'astro:assets';
 import { resolveImage, IMG_WIDTHS } from '../lib/images';
 import type { MapPoint } from '../lib/map-points';
 
@@ -56,38 +55,6 @@ const apiKey = import.meta.env.YANDEX_MAPS_API_KEY;
 >
   <div class="vmap__canvas" data-map-canvas></div>
 
-  <div class="map-cards">
-    {points.map((point) => (
-      <article class="map-card" data-map-card={point.slug} hidden>
-        <a class="map-card__link" href={point.href}>
-          <div class="map-card__media media">
-            <Image
-              src={resolveImage(point.photo)}
-              alt={point.name}
-              widths={IMG_WIDTHS.thumb}
-              sizes="110px"
-              loading="lazy"
-              decoding="async"
-            />
-          </div>
-
-          <div class="map-card__body">
-            <p class="map-card__price">{point.price}</p>
-            <h2 class="map-card__name">{point.name}</h2>
-            <p class="map-card__meta t-small">
-              {point.city}
-              {point.capacity ? ` · ${point.capacity}` : ''}
-              {point.rating ? ` · ★ ${point.rating.toFixed(1)}` : ''}
-            </p>
-          </div>
-        </a>
-
-        <button class="map-card__close" type="button" data-map-close aria-label="Закрыть карточку">
-          <Icon name="close" />
-        </button>
-      </article>
-    ))}
-  </div>
 </div>
 
 <style>
@@ -220,34 +187,105 @@ const apiKey = import.meta.env.YANDEX_MAPS_API_KEY;
         );
       });
 
-      // ——— карточка по клику: только широкий экран с мышью ———
-      const desktop = window.matchMedia('(min-width: 1024px) and (pointer: fine)');
-      const cards = Array.from(root.querySelectorAll<HTMLElement>('[data-map-card]'));
+      // ============ МИНИ-КАРТОЧКА ПО НАЖАТИЮ НА МЕТКУ ============
+      // Нажали на цену — на её месте всплывает мини-карточка: кадр сверху,
+      // название под ним (.map-pin--card в global.css). Нажали на карточку —
+      // переход на страницу площадки. Крестик в углу кадра сворачивает её
+      // обратно в цену: человек остаётся на карте и смотрит соседей — там,
+      // где площадки стоят плотно, это главный сценарий (заказчик, 26.09.2026).
+      // Одно поведение на телефоне и ПК: раньше телефон уводил на страницу
+      // с первого касания, а ПК поднимал плашку внизу карты.
+      //
+      // Карточка — отдельная метка вне кластера, поверх соседей: на любом
+      // масштабе её не схлопнет в кружок с числом. Крестик — ещё одна,
+      // невидимая метка над углом карточки: клики у меток с iconShape
+      // забирает слой карты, и понять, что нажали именно крестик, можно
+      // только его собственной меткой с более высоким zIndex.
+      //
+      // Размеры карточки заданы в CSS жёстко (CARD_W × CARD_H) и повторены
+      // здесь: по ним считаются активные области меток. Меняются — вместе.
+      const CARD_W = 116;
+      const CARD_H = 132;
+      const CLOSE_R = 14; // радиус крестика; центр — в правом верхнем углу кадра
 
-      const closeCard = () => {
-        cards.forEach((card) => { card.hidden = true; });
-        marks.forEach((mark, slug) => mark.properties.set('pinState', stateOf(slug)));
+      const CardLayout = ymaps.templateLayoutFactory.createClass(
+        '<span class="map-pin map-pin--card" title="$[properties.name]">' +
+          '<img class="map-pin__photo" src="$[properties.thumb]" srcset="$[properties.thumbSet]"' +
+          ' sizes="' + (CARD_W - 8) + 'px" alt="" decoding="async">' +
+          '<span class="map-pin__close" aria-hidden="true">' +
+            '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>' +
+          '</span>' +
+          '<span class="map-pin__name">$[properties.name]</span>' +
+          '</span>'
+      );
+      const CloseLayout = ymaps.templateLayoutFactory.createClass('<span></span>');
+
+      const closeCenter: [number, number] = [CARD_W / 2 - 4 - CLOSE_R, -CARD_H + 4 + CLOSE_R];
+
+      let openSlug: string | null = null;
+      let cardMark: any = null;
+      let closeMark: any = null;
+
+      const collapse = () => {
+        if (!openSlug) return;
+        map.geoObjects.remove(cardMark);
+        map.geoObjects.remove(closeMark);
+        const slug = openSlug;
+        openSlug = null;
+        cardMark = closeMark = null;
+        // цена возвращается в кластер, только если площадка не отфильтрована
+        const mark = marks.get(slug);
+        if (mark && visible.has(slug)) clusterer.add(mark);
       };
 
-      const openCard = (slug: string) => {
-        closeCard();
-        const card = root.querySelector<HTMLElement>(`[data-map-card="${slug}"]`);
-        if (card) card.hidden = false;
-        marks.get(slug)?.properties.set('pinState', 'is-active');
+      const expand = (slug: string) => {
+        if (openSlug === slug) return;
+        collapse();
+        const point = bySlug.get(slug);
+        if (!point) return;
+
+        openSlug = slug;
+        const mark = marks.get(slug);
+        if (mark) clusterer.remove(mark);
+
+        cardMark = new ymaps.Placemark(
+          point.coords,
+          { name: point.name, thumb: point.thumb, thumbSet: point.thumbSet },
+          {
+            iconLayout: CardLayout,
+            // карточка над точкой: CARD_W шириной, CARD_H высотой + остриё
+            iconShape: { type: 'Rectangle', coordinates: [[-CARD_W / 2, -CARD_H], [CARD_W / 2, 6]] },
+            hasBalloon: false,
+            zIndex: 1000,
+            zIndexHover: 1000,
+          }
+        );
+        cardMark.events.add('click', () => { window.location.href = point.href; });
+
+        closeMark = new ymaps.Placemark(
+          point.coords,
+          {},
+          {
+            iconLayout: CloseLayout,
+            iconShape: { type: 'Circle', coordinates: closeCenter, radius: CLOSE_R + 4 },
+            hasBalloon: false,
+            zIndex: 1100,
+            zIndexHover: 1100,
+          }
+        );
+        closeMark.events.add('click', collapse);
+
+        map.geoObjects.add(cardMark);
+        map.geoObjects.add(closeMark);
       };
 
       marks.forEach((mark, slug) => {
-        mark.events.add('click', () => {
-          if (desktop.matches) openCard(slug);
-          else window.location.href = bySlug.get(slug)!.href; // телефон — сразу на страницу
-        });
+        mark.events.add('click', () => expand(slug));
       });
 
-      root.querySelectorAll('[data-map-close]').forEach((btn) => btn.addEventListener('click', closeCard));
-
-      // клик по метке всплывает и до карты — закрываем только по подложке
+      // клик по метке всплывает и до карты — сворачиваем только по подложке
       map.events.add('click', (event: any) => {
-        if (event.get('target') === map) closeCard();
+        if (event.get('target') === map) collapse();
       });
 
       // ——— карта повторяет фильтрацию каталога ———
@@ -264,82 +302,43 @@ const apiKey = import.meta.env.YANDEX_MAPS_API_KEY;
           })
           .map((point) => point.slug);
 
-      const sync = () => {
-        const visible = new Set(visibleSlugs());
+      let visible = new Set<string>();
+
+      // fit=false — не подгонять масштаб: при заходе с фокусом карта сразу
+      // встаёт на площадку. setBounds асинхронный и отрабатывал ПОСЛЕ
+      // setCenter, перебивая его, — карта оставалась на всей области,
+      // а карточка фокуса висела у края (заказчик, 26.09.2026).
+      const sync = (fit = true) => {
+        visible = new Set(visibleSlugs());
+        if (openSlug && !visible.has(openSlug)) collapse();
 
         clusterer.removeAll();
         clusterer.add(
-          points.filter((p) => visible.has(p.slug) && marks.has(p.slug)).map((p) => marks.get(p.slug))
+          points
+            .filter((p) => visible.has(p.slug) && p.slug !== openSlug)
+            .map((p) => marks.get(p.slug))
         );
 
-        marks.forEach((_, slug) => {
-          if (visible.has(slug)) return;
-          const card = root.querySelector<HTMLElement>(`[data-map-card="${slug}"]`);
-          if (card) card.hidden = true;
-        });
-
+        if (!fit) return;
         const bounds = clusterer.getBounds();
         if (bounds) map.setBounds(bounds, { checkZoomRange: true, zoomMargin: 48 });
       };
 
-      // Отдачи видимой области наружу (vmap:bounds) тут больше нет:
-      // она нужна была, когда карточки каталога стояли под картой и
-      // подстраивались под неё. В режиме карты выдачи на экране нет —
-      // подстраивать нечего.
-
       // ============ ФОКУС: ПРИШЛИ СО СТРАНИЦЫ ПЛОЩАДКИ ============
       // data-focus ставит каталог по ?karta= (кнопка «На карте» в
-      // VenueHero). Эта площадка — не одна из цен, а ответ на вопрос «где
-      // она?», поэтому её метка другая: фото сверху, название под ним
-      // (.map-pin--focus в global.css), без цены. И живёт она вне
-      // кластера — прямо на карте, поверх соседей: на любом масштабе её
-      // не схлопнет в кружок с числом, и она не потеряется среди меток.
+      // VenueHero): карта встаёт на площадку, её карточка уже раскрыта.
       const focus = root.dataset.focus ? bySlug.get(root.dataset.focus) : undefined;
-      if (focus) {
-        const FocusLayout = ymaps.templateLayoutFactory.createClass(
-          '<span class="map-pin map-pin--focus" title="$[properties.pinTitle]">' +
-            '<img class="map-pin__photo" src="$[properties.thumb]" srcset="$[properties.thumbSet]"' +
-            ' sizes="160px" alt="" decoding="async">' +
-            '<span class="map-pin__name">$[properties.name]</span>' +
-            '</span>'
-        );
 
-        const focusMark = new ymaps.Placemark(
-          focus.coords,
-          {
-            name: focus.name,
-            pinTitle: focus.name,
-            thumb: focus.thumb,
-            thumbSet: focus.thumbSet,
-          },
-          {
-            iconLayout: FocusLayout,
-            // карточка 160 px шириной над точкой: кадр + до двух строк имени
-            iconShape: { type: 'Rectangle', coordinates: [[-80, -180], [80, 4]] },
-            hasBalloon: false,
-            zIndex: 1000,
-            zIndexHover: 1000,
-          }
-        );
-
-        // обычная метка этой площадки из кластера уходит — вместо неё фокус
-        marks.delete(focus.slug);
-        focusMark.events.add('click', () => {
-          if (desktop.matches) openCard(focus.slug);
-          else window.location.href = focus.href;
-        });
-        map.geoObjects.add(focusMark);
-      }
-
-      sync();
+      sync(!focus);
 
       if (focus) {
         map.setCenter(focus.coords, 14);
-        if (desktop.matches) openCard(focus.slug);
+        expand(focus.slug);
       }
 
-      document.addEventListener('change', sync); // фильтры каталога — обычные input'ы
-      root.addEventListener('vmap:show', sync);
+      const refit = () => sync();
+      document.addEventListener('change', refit); // фильтры каталога — обычные input'ы
+      root.addEventListener('vmap:show', refit);
     });
   }
 

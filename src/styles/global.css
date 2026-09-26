@@ -1699,41 +1699,69 @@ textarea.input {
   .map-pin.is-seen:hover { opacity: 1; }
 }
 
-/* МЕТКА-ФОКУС — площадка, с чьей страницы пришли кнопкой «На карте»
-   (см. «ФОКУС» в VenueMap). Человек ищет не цену, а «где она», поэтому
-   вместо цены — кадр сверху и название под ним. Текст по-прежнему не
-   лежит на фото: имя стоит на плашке под кадром. Та же чернильная
-   капсула, что у обычной метки, только в рост карточки — и светлой
-   инверсии ей не нужно, её и так ни с чем не спутать. */
-.map-pin--focus {
+/* МИНИ-КАРТОЧКА НА КАРТЕ — всплывает на месте цены по нажатию (и сразу
+   раскрыта у площадки, с чьей страницы пришли кнопкой «На карте»), см.
+   VenueMap. Кадр сверху, название под ним на той же чернильной капсуле:
+   текст не лежит на фото. Нажатие на карточку ведёт на страницу площадки,
+   крестик в углу кадра сворачивает её обратно в цену.
+   Размер ЖЁСТКИЙ (116 × 132) и повторён в VenueMap (CARD_W, CARD_H): по
+   нему Яндекс считает активные области карточки и крестика, а они не
+   знают, что нарисовал CSS. Имя всегда в две строки высотой — чтобы
+   крестик стоял на одном месте при любой длине названия. Меньше прежней
+   на 28% (было 160 px) — заказчик, 26.09.2026: крупная закрывала
+   соседей там, где площадки стоят плотно. */
+.map-pin--card {
   flex-direction: column;
   align-items: stretch;
-  gap: 8px;
-  width: 160px;
-  padding: 4px 4px 10px;
+  gap: 5px;
+  width: 116px;
+  height: 132px;
+  padding: 4px 4px 8px;
   white-space: normal;
 }
 
-.map-pin--focus:hover { color: var(--white); background: var(--black); }
+.map-pin--card:hover { color: var(--white); background: var(--black); }
 
 .map-pin__photo {
   display: block;
   width: 100%;
-  aspect-ratio: 4 / 3;
+  height: 81px;
+  flex: none;
   object-fit: cover;
   border-radius: calc(var(--radius-card) - 4px);
   background: var(--surface-dim);
 }
 
+/* Крестик — иконка со своей подложкой на кадре (как сердце .save), не
+   подпись: чернильный кружок читается на любом фото. Клик по нему ловит
+   отдельная невидимая метка того же размера (см. VenueMap). */
+.map-pin__close {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  color: var(--white);
+  background: var(--black);
+  border-radius: 50%;
+}
+
+.map-pin__close svg { width: 14px; height: 14px; }
+
 .map-pin__name {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+  flex: 1 1 0;
+  min-height: 0;
   overflow: hidden;
-  padding: 0 6px;
-  font-size: var(--fs-small);
+  align-content: center;
+  padding: 0 4px;
+  font-size: var(--fs-caption);
   font-weight: var(--w-head);
-  line-height: var(--lh-heading);
+  line-height: 1.2;
   text-align: center;
 }
 
@@ -1760,88 +1788,6 @@ textarea.input {
   border-radius: 50%;
   box-shadow: var(--shadow-float);
   cursor: pointer;
-}
-
-/* Карточка площадки поверх карты — только широкий экран с мышью: на телефоне
-   тап по метке ведёт прямо на страницу площадки, промежуточная плашка там
-   лишний шаг. Разметка карточек приезжает с сервера, скрипт их только
-   показывает. */
-.map-cards {
-  display: none;
-}
-
-@media (min-width: 1024px) and (pointer: fine) {
-  .map-cards {
-    display: block;
-    position: absolute;
-    inset: auto var(--s-4) var(--s-4) var(--s-4);
-    pointer-events: none;
-  }
-}
-
-.map-card {
-  position: relative;
-  width: min(360px, 100%);
-  pointer-events: auto;
-  background: var(--paper);
-  box-shadow: var(--shadow-float);
-  animation: map-card-in var(--dur-base) var(--ease-out) both;
-}
-
-@keyframes map-card-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: none; }
-}
-
-.map-card__link {
-  display: flex;
-  gap: var(--s-4);
-  color: var(--ink);
-  text-decoration: none;
-}
-
-.map-card__media {
-  flex: none;
-  width: 110px;
-  align-self: stretch;
-}
-
-.map-card__body {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 2px;
-  padding: var(--s-4) var(--s-6) var(--s-4) 0;
-}
-
-.map-card__price {
-  font-size: var(--fs-small);
-  font-weight: var(--w-medium);
-}
-
-.map-card__name {
-  font-size: var(--fs-body);
-  font-weight: var(--w-head);
-  line-height: var(--lh-heading);
-}
-
-.map-card__close {
-  position: absolute;
-  top: 0;
-  right: 0;
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  color: var(--ink);
-  background: none;
-  border: 0;
-  cursor: pointer;
-}
-
-.map-card__close svg {
-  width: 18px;
-  height: 18px;
 }
 
 /* ============ ДОСТУПНОСТЬ ============ */
