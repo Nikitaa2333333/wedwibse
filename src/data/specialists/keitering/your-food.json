@@ -1,0 +1,132 @@
+{
+  "slug": "your-food",
+  "categorySlug": "keitering",
+  "category": "Кейтеринг",
+  "name": "Your Food",
+  "photos": [
+    "/specialists/keitering/your-food/gal/p04.webp",
+    "/specialists/keitering/your-food/gal/p05.webp",
+    "/specialists/keitering/your-food/gal/p06.webp",
+    "/specialists/keitering/your-food/gal/p08.webp",
+    "/specialists/keitering/your-food/gal/p07.webp",
+    "/specialists/keitering/your-food/gal/p12.webp",
+    "/specialists/keitering/your-food/gal/p02.webp",
+    "/specialists/keitering/your-food/gal/p14.webp",
+    "/specialists/keitering/your-food/gal/p16.webp",
+    "/specialists/keitering/your-food/gal/p18.webp",
+    "/specialists/keitering/your-food/gal/p20.webp",
+    "/specialists/keitering/your-food/gal/p22.webp",
+    "/specialists/keitering/your-food/gal/p23.webp",
+    "/specialists/keitering/your-food/gal/p25.webp",
+    "/specialists/keitering/your-food/gal/p27.webp",
+    "/specialists/keitering/your-food/gal/p28.webp",
+    "/specialists/keitering/your-food/gal/p29.webp",
+    "/specialists/keitering/your-food/gal/p30.webp",
+    "/specialists/keitering/your-food/gal/p31.webp",
+    "/specialists/keitering/your-food/gal/p32.webp",
+    "/specialists/keitering/your-food/gal/p33.webp",
+    "/specialists/keitering/your-food/gal/p34.webp",
+    "/specialists/keitering/your-food/gal/p35.webp",
+    "/specialists/keitering/your-food/gal/p36.webp",
+    "/specialists/keitering/your-food/gal/p38.webp",
+    "/specialists/keitering/your-food/gal/p39.webp",
+    "/specialists/keitering/your-food/gal/p40.webp",
+    "/specialists/keitering/your-food/gal/p42.webp",
+    "/specialists/keitering/your-food/gal/p44.webp",
+    "/specialists/keitering/your-food/gal/p47.webp",
+    "/specialists/keitering/your-food/gal/p48.webp",
+    "/specialists/keitering/your-food/gal/p49.webp",
+    "/specialists/keitering/your-food/gal/p51.webp",
+    "/specialists/keitering/your-food/gal/p52.webp",
+    "/specialists/keitering/your-food/gal/p54.webp",
+    "/specialists/keitering/your-food/gal/p55.webp",
+    "/specialists/keitering/your-food/gal/p57.webp",
+    "/specialists/keitering/your-food/gal/p58.webp",
+    "/specialists/keitering/your-food/gal/p59.webp",
+    "/specialists/keitering/your-food/gal/p60.webp",
+    "/specialists/keitering/your-food/gal/p61.webp",
+    "/specialists/keitering/your-food/gal/p62.webp",
+    "/specialists/keitering/your-food/gal/p13.webp",
+    "/specialists/keitering/your-food/gal/p15.webp",
+    "/specialists/keitering/your-food/gal/p19.webp",
+    "/specialists/keitering/your-food/gal/p21.webp",
+    "/specialists/keitering/your-food/gal/p10.webp",
+    "/specialists/keitering/your-food/gal/p17.webp",
+    "/specialists/keitering/your-food/gal/p37.webp"
+  ],
+  "tagline": "Кейтеринг от 30 до 3000 гостей",
+  "bio": "Мы — молодая команда кейтеринга, работаем с 2022 года. Организуем гастрономическое сопровождение мероприятий любого формата: от уютных семейных праздников и свадеб до крупных корпоративных событий.\n\nКормим от 30 до 3000 гостей и работаем на площадках любого типа — в ресторане, в загородном доме, под открытым небом. Используем свежие ингредиенты от проверенных поставщиков, меню собираем вместе с вами: можно взять готовое или составить своё, с вегетарианскими и безглютеновыми блюдами.\n\nСреди наших проектов — события Альфа-Банка, ВТБ, X5 Retail Group, Райффайзенбанка, Очаково и Любятово.",
+  "gender": "ж",
+  "priceNote": "Стоимость считается под меню, формат и число гостей",
+  "aboutTitle": "О нас",
+  "filters": {
+    "city": [
+      "цао",
+      "сао",
+      "свао",
+      "вао",
+      "юво",
+      "юао",
+      "юзао",
+      "зао",
+      "сзао",
+      "mo"
+    ],
+    "format": [
+      "buffet",
+      "banquet",
+      "brunch",
+      "station"
+    ],
+    "cuisine": [
+      "european",
+      "vegetarian",
+      "gluten-free"
+    ],
+    "minGuests": "30-50",
+    "staff": [
+      "cooks",
+      "waiters"
+    ],
+    "options": [
+      "tasting",
+      "author-menu"
+    ],
+    "contract": "yes"
+  },
+  "packageIncludes": [
+    "Меню под ваш праздник — готовое или составленное с нуля",
+    "Повара и официанты на площадке",
+    "Банкет, фуршет, сет-меню или подача блюд в разнос",
+    "Персональный менеджер",
+    "Дегустация до свадьбы",
+    "Работа по договору"
+  ],
+  "quote": "Цен в открытом доступе нет: стоимость зависит от меню, формата подачи и числа гостей. Начать можно с заявки и дегустации.",
+  "offers": [
+    {
+      "title": "Банкет с рассадкой",
+      "text": "Гости сидят за столами, блюда подают официанты. Традиционный формат для свадьбы."
+    },
+    {
+      "title": "Фуршет и сет-меню",
+      "text": "Для неформальной части и welcome-зоны: закуски с фуршетной линии или порционная подача."
+    },
+    {
+      "title": "Выездной кейтеринг",
+      "text": "Питание на любой территории — с мобильными кухнями и станциями под ваши задачи."
+    },
+    {
+      "title": "Фуд-станции при гостях",
+      "text": "Готовим на глазах у гостей хиты уличной кухни разных стран; есть шоколадные фонтаны и нарезка хамона."
+    },
+    {
+      "title": "Фуд-траки",
+      "text": "Яркие фургоны с едой для площадки под открытым небом — отдельный повод подойти и пообщаться."
+    },
+    {
+      "title": "Меню без ограничений",
+      "text": "Вегетарианские и безглютеновые блюда, мини-бургеры, брускетты, севиче, канапе — меню регулярно обновляется."
+    }
+  ]
+}

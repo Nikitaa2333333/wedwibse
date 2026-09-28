@@ -335,6 +335,18 @@ node scripts/pb-pull.mjs --all                             # проверка к
   откатывать и `public/`: `git checkout -- src/data/specialists src/data/venues public`.
 - (24.09) Haiku-субагент упал с 403 (authentication_failed) — сбор
   оркестратор доделал сам; при повторе не ждать, а сразу брать на себя.
+- (28.09) Альбом Диска (`disk.yandex.ru/a/…`) публичный API не отдаёт
+  (`DiskNotFoundError`). Список кадров с прямыми `original`/`lPreview` лежит
+  в `<script id="store-prefetch">` страницы альбома (`curl -4`) — образец
+  `research/otrazhenie/album/get.mjs`. Отдаёт только первую порцию (40).
+- (28.09) Сессия оборвалась посреди `magick … .webp` — три файла остались
+  обрезанными и `identify` падал «insufficient image data». После любого
+  обрыва прогонять `magick identify` по свежим кадрам, а не доверять
+  списку файлов. Фоновые скачивания обрыв тоже не переживают.
+- (28.09) Пока параллельно работают субагенты, x264 падает на `malloc`
+  при 1080p-исходниках — ffmpeg с `-threads 2`.
+- (28.09) Постеры Reels-мейкера с 720p-телефона — 720×1080, как у первых
+  пяти: не растягивать до 1080×1620.
 - (17.09) `pb-pull --all` переписывает и `src/data/venues/*.json`
   (перестановка ключей) — откатывать `git checkout -- src/data/venues`
   вместе со специалистами, а свой новый JSON после pb-pull пересобирать
