@@ -1704,7 +1704,7 @@ textarea.input {
    VenueMap. Кадр сверху, название под ним на той же чернильной капсуле:
    текст не лежит на фото. Нажатие на карточку ведёт на страницу площадки,
    крестик в углу кадра сворачивает её обратно в цену.
-   Размер ЖЁСТКИЙ (116 × 132) и повторён в VenueMap (CARD_W, CARD_H): по
+   Размер ЖЁСТКИЙ (116 × 152) и повторён в VenueMap (CARD_W, CARD_H): по
    нему Яндекс считает активные области карточки и крестика, а они не
    знают, что нарисовал CSS. Имя всегда в две строки высотой — чтобы
    крестик стоял на одном месте при любой длине названия. Меньше прежней
@@ -1715,7 +1715,7 @@ textarea.input {
   align-items: stretch;
   gap: 5px;
   width: 116px;
-  height: 132px;
+  height: 152px;
   padding: 4px 4px 8px;
   white-space: normal;
 }
@@ -1763,6 +1763,22 @@ textarea.input {
   font-weight: var(--w-head);
   line-height: 1.2;
   text-align: center;
+}
+
+/* Цена под названием: площадку на карте ищут по бюджету (заказчик,
+   28.09.2026), а раскрытая карточка заменяет метку с ценой — без этой
+   строки цена пропадала ровно в момент, когда площадкой заинтересовались.
+   Та же короткая подпись, что на метке (lib/map-points, pinLabel). */
+.map-pin__card-price {
+  flex: none;
+  padding: 0 4px;
+  font-size: var(--fs-caption);
+  font-weight: var(--w-medium);
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ============ КЛАСТЕР НА КАРТЕ ============

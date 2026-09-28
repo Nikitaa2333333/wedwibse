@@ -205,7 +205,7 @@ const apiKey = import.meta.env.YANDEX_MAPS_API_KEY;
       // Размеры карточки заданы в CSS жёстко (CARD_W × CARD_H) и повторены
       // здесь: по ним считаются активные области меток. Меняются — вместе.
       const CARD_W = 116;
-      const CARD_H = 132;
+      const CARD_H = 152;
       const CLOSE_R = 14; // радиус крестика; центр — в правом верхнем углу кадра
 
       const CardLayout = ymaps.templateLayoutFactory.createClass(
@@ -216,6 +216,7 @@ const apiKey = import.meta.env.YANDEX_MAPS_API_KEY;
             '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>' +
           '</span>' +
           '<span class="map-pin__name">$[properties.name]</span>' +
+          '<span class="map-pin__card-price">$[properties.price]</span>' +
           '</span>'
       );
       const CloseLayout = ymaps.templateLayoutFactory.createClass('<span></span>');
@@ -250,7 +251,7 @@ const apiKey = import.meta.env.YANDEX_MAPS_API_KEY;
 
         cardMark = new ymaps.Placemark(
           point.coords,
-          { name: point.name, thumb: point.thumb, thumbSet: point.thumbSet },
+          { name: point.name, price: point.label, thumb: point.thumb, thumbSet: point.thumbSet },
           {
             iconLayout: CardLayout,
             // карточка над точкой: CARD_W шириной, CARD_H высотой + остриё
