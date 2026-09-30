@@ -24,7 +24,7 @@ export function bindSaveButtons(root: ParentNode = document): void {
     btn.addEventListener('click', () => {
       const nowSaved = toggleFavorite(item);
       // Плашка-пуш снизу — только на добавление; убрали — прячем её.
-      if (nowSaved) showFavToast(item);
+      if (nowSaved) showFavToast();
       else hideFavToast();
       const saved = String(nowSaved);
       // Одна карточка — несколько кнопок (сердце на кадре и «В избранное»
