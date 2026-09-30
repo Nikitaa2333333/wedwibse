@@ -403,8 +403,7 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
      отдельной колонкой (на телефоне она съедала треть ширины, а крестик
      «убрать» ехал мимо кадра), а лежит строкой над значениями и при
      горизонтальной прокрутке остаётся у левого края (sticky).
-     Крестика в таблице нет: убирают из избранного в сетке, таблица
-     только отвечает на вопрос «чем они отличаются». */
+     Крестик на кадре убирает карточку только из этой таблицы. */
   .cmp[hidden] { display: none; }
 
   .cmp__scroll {
@@ -425,18 +424,44 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
     width: max-content;
   }
 
+  /* Шапка колонки: кадр и имя — ссылка на карточку; крестик поверх кадра
+     убирает карточку из этой таблицы (заказчик, 30.09.2026: не выходить
+     из сравнения, чтобы отсеять явно неподходящий вариант). Из избранного
+     крестик в таблице НЕ удаляет — это делает крестик в сетке. */
   .cmp__head {
+    position: relative;
+    min-width: 0;
+    padding-bottom: var(--s-4);
+  }
+
+  .cmp__link {
     display: flex;
     flex-direction: column;
     gap: var(--s-2);
-    min-width: 0;
-    padding-bottom: var(--s-4);
     color: inherit;
     text-decoration: none;
   }
 
+  .cmp__drop {
+    position: absolute;
+    top: var(--s-2);
+    right: var(--s-2);
+  }
+
+  /* «Убрано: N · Вернуть» — над таблицей, а не под ней: таблица длинная,
+     и строка внизу терялась бы за краем экрана */
+  .cmp__note--top { margin: 0 0 var(--s-4); }
+
+  .cmp__note--back {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    opacity: 1;
+  }
+
   .cmp__img {
     width: 100%;
+    height: auto; /* иначе атрибут height тянет кадр в столбик и ломает квадрат */
     aspect-ratio: 1;
     object-fit: cover;
     border-radius: var(--radius-card);
@@ -817,9 +842,16 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
   /** строка сравнения нужна, только если данные есть хотя бы у двух */
   const MIN_FILLED = 2;
 
+  /** Убранные из сравнения крестиком — только на этот заход в таблицу:
+      из избранного они не удаляются. Сбрасывается при выходе из сравнения. */
+  const cmpHidden = new Set<string>();
+  let cmpCat: string | null = null;
+
   function renderCompare() {
     if (!compareEl || !activeCat) return;
-    const list = [...currentItems()].reverse();
+    if (cmpCat !== activeCat) { cmpHidden.clear(); cmpCat = activeCat; }
+    const all = [...currentItems()].reverse();
+    const list = all.filter((i) => !cmpHidden.has(i.id));
 
     // строки — объединение подписей фактов, в порядке появления
     const labels: string[] = [];
@@ -836,10 +868,13 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
     const dropped = labels.length - rows.length;
 
     const head = list.map((i) => `
-      <a class="cmp__head" href="${escapeHtml(i.href)}">
-        <img class="cmp__img" src="${escapeHtml(COVERS[i.id] || i.img)}" width="280" height="280" alt="" loading="lazy" decoding="async" />
-        <span class="cmp__name">${escapeHtml(i.name)}</span>
-      </a>
+      <div class="cmp__head">
+        <a class="cmp__link" href="${escapeHtml(i.href)}">
+          <img class="cmp__img" src="${escapeHtml(COVERS[i.id] || i.img)}" width="280" height="280" alt="" loading="lazy" decoding="async" />
+          <span class="cmp__name">${escapeHtml(i.name)}</span>
+        </a>
+        <button class="hero-btn cmp__drop" type="button" data-drop="${escapeHtml(i.id)}" aria-label="Убрать «${escapeHtml(i.name)}» из сравнения">${iconSvg('close')}</button>
+      </div>
     `).join('');
 
     const body = rows.map((label) => `
@@ -853,11 +888,21 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
     `).join('');
 
     compareEl.innerHTML = `
+      ${list.length ? '' : '<p class="t-small cmp__note">Все карточки убраны из сравнения.</p>'}
+      ${cmpHidden.size ? `<p class="t-caption cmp__note cmp__note--back cmp__note--top">Убрано из сравнения: ${cmpHidden.size} <button class="pill pill--sm" type="button" data-restore>Вернуть</button></p>` : ''}
       <div class="cmp__scroll">
         <div class="cmp__table" style="--cols:${list.length}">${head}${body}</div>
       </div>
       ${dropped ? '<p class="t-caption cmp__note">Строки, заполненные меньше чем у двух карточек, не показаны — сравнивать там нечего.</p>' : ''}
     `;
+
+    compareEl.querySelectorAll<HTMLButtonElement>('[data-drop]').forEach((btn) => {
+      btn.addEventListener('click', () => { cmpHidden.add(btn.dataset.drop!); renderCompare(); });
+    });
+    compareEl.querySelector<HTMLButtonElement>('[data-restore]')?.addEventListener('click', () => {
+      cmpHidden.clear();
+      renderCompare();
+    });
   }
 
   /* ---------- шапка и переключение уровней ---------- */
@@ -910,6 +955,7 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
 
     renderBoards();
     renderTabs();
+    if (view !== 'compare') cmpCat = null; // вышли из таблицы — убранные крестиком вернутся
     if (activeCat) {
       renderGrid();
       if (view === 'compare') renderCompare();

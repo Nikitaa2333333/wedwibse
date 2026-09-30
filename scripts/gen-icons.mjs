@@ -55,8 +55,6 @@ const MAP = {
   // а привычный по мессенджерам знак «поделиться» — именно загнутая стрелка.
   share: 'forward-bold',
   check: 'check-read-bold',
-  // кружок «Вы специалист? К нам» на плитке «Подрядчики» главной
-  plus: 'add-bold',
 };
 
 const data = require(`@iconify-json/${SET}/icons.json`);
