@@ -6,11 +6,14 @@
 // ниже — пустой каркас, который наполняет клиентский скрипт. SEO это
 // не касается: раздел открывается из BottomDock, а не приходит из поиска.
 //
-// Два уровня, как «Доски» в Pinterest:
-//   1. папки по направлениям (площадки, ведущие, …) — обложка-коллаж из трёх
-//      последних кадров, название, счётчик и давность;
-//   2. внутри папки — сетка карточек и вторичный отбор.
-// Уровень задаётся хэшем `#<cat>`, поэтому системный «назад» возвращает к папкам.
+// Два уровня:
+//   1. «Все» — по стопке на направление (площадки, ведущие, …): последние
+//      кадры веером внахлёст, четвёртый — размытый со счётчиком «+N»,
+//      под стопкой название и давность (реф. коллекции в духе iOS, 30.09.2026);
+//   2. внутри направления — сетка карточек и вторичный отбор.
+// Между уровнями — полоса чипов «Все · Площадки 15 · Ведущие 14» над
+// содержимым: она же и навигация, отдельной пилюли «← Папки» больше нет.
+// Уровень задаётся хэшем `#<cat>`, поэтому системный «назад» возвращает к «Все».
 //
 // Вторичный отбор («механика сайтов знакомств», по одной папке за раз):
 //   этап 1 — свайп: карточки по одной во весь экран, влево «мимо»,
@@ -44,11 +47,15 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
        h1 + счётчик рядом. Внутри папки h1 становится именем папки, а над ним
        появляется пилюля «← Папки». -->
   <header class="scope">
-    <a class="pill pill--sm scope__back" href="/izbrannoe/" data-back hidden>← Папки</a>
+    <a class="pill pill--sm scope__back" href="/izbrannoe/" data-back hidden>← К карточкам</a>
     <div class="scope__title-row">
       <h1 class="t-h1" data-title>Избранное</h1>
       <p class="scope__count" data-count hidden></p>
     </div>
+
+    <!-- Направления: «Все» и по чипу на каждое, с числом. Чип — ссылка на
+         хэш, поэтому переключение живёт в истории и «назад» работает. -->
+    <nav class="fav-tabs" data-tabs aria-label="Направления" hidden></nav>
 
     <!-- Полоса отбора: состояние второго захода и его действия.
          Видна только внутри папки, где есть из чего выбирать. -->
@@ -70,7 +77,7 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
       и из них можно будет отобрать финалистов и сравнить их между собой.
     </p>
 
-    <div class="boards" data-boards hidden></div>
+    <div class="stacks" data-boards hidden></div>
 
     <div class="grid" data-grid hidden></div>
 
@@ -222,72 +229,124 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
     padding: var(--s-4) clamp(8px, 1vw, 16px) calc(var(--dock-space) + var(--s-6));
   }
 
-  /* ============ ПАПКИ: СЕТКА ОБЛОЖЕК (реф. «Доски» Pinterest) ============
-     Спокойный вариант: папка — коллаж из трёх последних кадров на бумаге,
-     под ним имя направления и счётчик. Никаких цветных плашек и масок:
-     обложку делает само фото, тон — только у пустых ячеек (--surface-dim),
-     и в тёмной теме всё инвертируется само через токены.
-     На телефоне две колонки, от планшета три, на ПК четыре. */
-  .boards {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--s-6) var(--s-4);
+  /* ============ ЧИПЫ НАПРАВЛЕНИЙ ============
+     Одна строка во всю ширину, лишнее уезжает вбок пальцем. Край строки
+     выходит за поля страницы, чтобы чипы уходили под край экрана, а не
+     обрезались посреди бумаги. Вертикаль закрыта явно — см. ловушку
+     «панель ездит» в CLAUDE.md. */
+  .fav-tabs {
+    flex: 1 0 100%;
+    display: flex;
+    gap: var(--s-2);
+    margin: var(--s-2) calc(-1 * var(--gutter)) 0;
+    padding: 0 var(--gutter);
+    overflow-x: auto;
+    overflow-y: clip;
+    scrollbar-width: none;
   }
 
-  .boards[hidden] { display: none; }
+  .fav-tabs::-webkit-scrollbar { display: none; }
+  .fav-tabs[hidden] { display: none; }
+  .fav-tabs .chip { flex: none; text-decoration: none; }
+
+  /* ============ СТОПКИ НАПРАВЛЕНИЙ ============
+     Кадры направления разложены веером внахлёст, как фотографии на столе:
+     каждый чуть повёрнут, правый лежит поверх левого. Без обводки —
+     кадр отделяет от соседа только мягкая тень. Четвёртый кадр размыт
+     и несёт «+N» — сколько ещё внутри. Подпись — по центру под стопкой.
+     Телефон — одна стопка на строку (веер читается только крупно),
+     от планшета две, на ПК три. */
+  .stacks {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-6);
+    padding-top: var(--s-2);
+  }
+
+  .stacks[hidden] { display: none; }
 
   @media (min-width: 640px) {
-    .boards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .stacks { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
 
   @media (min-width: 1024px) {
-    .boards { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .stacks { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   }
 
-  .board {
+  .stack {
     display: block;
     min-width: 0;
     color: inherit;
     text-decoration: none;
+    text-align: center;
   }
 
-  .board > span { display: block; }
+  .stack > span { display: block; }
 
-  /* Обложка: слева крупный кадр 2/3, справа колонка из двух мелких.
-     Скругление — карточное, зазор между ячейками — тонкий, как у доски. */
-  .board__cover {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    grid-template-rows: 1fr 1fr;
-    gap: 2px;
-    aspect-ratio: 3 / 2;
+  /* Поле веера. Кадр — 34% ширины поля в пропорции 3:4; позицию по
+     горизонтали (--x) ставит скрипт по числу кадров, чтобы стопка из
+     одного-двух кадров стояла по центру, а не жалась влево. */
+  .stack__fan {
+    position: relative;
+    aspect-ratio: 2 / 1; /* кадр 3:4 шириной 34% — это 45% ширины по высоте, плюс запас на наклон */
+  }
+
+  .stack__card {
+    position: absolute;
+    top: 50%;
+    left: var(--x);
+    width: 34%;
+    aspect-ratio: 3 / 4;
     overflow: hidden;
     border-radius: var(--radius-card);
-  }
-
-  .board__tile {
     background: var(--surface-dim);
-    min-width: 0;
-    min-height: 0;
-    overflow: hidden;
+    box-shadow: var(--shadow-float);
+    transform: translateY(-50%) rotate(var(--r)) translateY(var(--y));
+    transition: transform var(--dur-base) var(--ease-out);
   }
 
-  .board__tile--main { grid-row: 1 / 3; }
+  /* Наклон и сдвиг по вертикали — постоянный узор по позиции в веере:
+     небрежно, но одинаково у каждой стопки, стопки не «пляшут» от раза к разу. */
+  .stack__card:nth-child(1) { --r: -4deg; --y: 2%; }
+  .stack__card:nth-child(2) { --r: 2deg;  --y: -3%; }
+  .stack__card:nth-child(3) { --r: -2deg; --y: 1%; }
+  .stack__card:nth-child(4) { --r: 4deg;  --y: -2%; }
 
-  .board__tile img {
+  .stack__card img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     border-radius: 0;
-    transition: transform var(--dur-fast) var(--ease-out);
   }
 
-  @media (hover: hover) {
-    .board:hover .board__tile img { transform: scale(1.04); }
+  /* «+N»: тот же кадр, размытый в пятно, цифра — поверх. Размытие
+     статичное (не анимируется), поэтому в моушн-бюджет телефона входит. */
+  .stack__card--more img {
+    filter: blur(6px);
+    transform: scale(1.15);
   }
 
-  .board__name {
-    margin-top: var(--s-3);
+  .stack__more {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: color-mix(in srgb, var(--paper) 20%, transparent);
+    color: var(--ink);
+    font-size: var(--fs-h2);
+    font-weight: var(--w-medium);
+  }
+
+  /* На ПК под курсором веер чуть раскрывается — кадры расходятся
+     от центра и выпрямляются, как стопка, которую взяли в руку. */
+  @media (hover: hover) and (pointer: fine) {
+    .stack:hover .stack__card { --r: 0deg; --y: 0%; }
+    .stack:hover .stack__card:nth-child(1) { transform: translate(-8%, -50%); }
+    .stack:hover .stack__card:nth-child(4) { transform: translate(8%, -50%); }
+  }
+
+  .stack__name {
+    margin-top: var(--s-4);
     font-size: var(--fs-h3);
     font-weight: var(--w-head);
     line-height: 1.15;
@@ -296,10 +355,11 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
     white-space: nowrap;
   }
 
-  .board__meta {
+  .stack__meta {
     margin-top: var(--s-1);
     font-size: var(--fs-caption);
     font-weight: var(--w-medium);
+    opacity: 0.55;
   }
 
   /* ============ СЕТКА КАРТОЧЕК ============ */
@@ -774,6 +834,7 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
   const titleEl = $('[data-title]');
   const countEl = $('[data-count]');
   const backEl = $<HTMLAnchorElement>('[data-back]');
+  const tabsEl = $('[data-tabs]');
   const compareEl = $('[data-compare]');
 
   const pickbar = $('[data-pickbar]');
@@ -882,38 +943,74 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
     return `${Math.floor(days / 365)} г.`;
   }
 
-  /* ---------- уровень папок ---------- */
+  /* ---------- уровень «Все»: стопки ---------- */
 
-  /** Одна доска на направление, обложка — три последних кадра */
+  /** сколько кадров веера показываем целиком; следующий — размытый «+N» */
+  const FAN_SHOWN = 3;
+  /** ширина кадра и шаг веера в % поля — те же 34%, что в .stack__card */
+  const FAN_CARD = 34;
+  const FAN_STEP = 20;
+
+  /** направления в порядке первого добавления */
+  function catsOf(): string[] {
+    return Array.from(new Set(items.map((i) => i.cat)));
+  }
+
+  /** Одна стопка на направление: свежие кадры веером, хвост — «+N» */
   function renderBoards() {
     if (!boardsEl) return;
-    const cats = Array.from(new Set(items.map((i) => i.cat)));
 
-    boardsEl.innerHTML = cats
+    boardsEl.innerHTML = catsOf()
       .map((cat) => {
         const list = items.filter((i) => i.cat === cat);
         const label = list[0]?.catLabel ?? cat;
         const recent = [...list].reverse();
-        const tiles = [0, 1, 2].map((n) => {
-          const it = recent[n];
-          const cls = n === 0 ? 'board__tile board__tile--main' : 'board__tile';
-          return it
-            ? `<span class="${cls}"><img src="${escapeHtml(it.img)}" width="240" height="240" alt="" loading="lazy" decoding="async" /></span>`
-            : `<span class="${cls}"></span>`;
+        const rest = recent.length - FAN_SHOWN;
+        // Четвёртый кадр веера размываем в «+N», только если за ним больше
+        // одной карточки: «+1» на месте кадра — просто спрятанный кадр,
+        // его честнее показать целиком.
+        const shown = recent.slice(0, FAN_SHOWN + 1);
+        const n = shown.length;
+        const span = FAN_CARD + FAN_STEP * (n - 1);
+        const start = (100 - span) / 2;
+
+        const cards = shown.map((it, i) => {
+          const more = rest > 1 && i === FAN_SHOWN;
+          const img = `<img src="${escapeHtml(COVERS[it.id] || it.img)}" width="240" height="320" alt="" loading="lazy" decoding="async" />`;
+          return `<span class="stack__card${more ? ' stack__card--more' : ''}" style="--x:${start + FAN_STEP * i}%">${img}${
+            more ? `<span class="stack__more">+${rest}</span>` : ''
+          }</span>`;
         }).join('');
+
         const latest = Math.max(0, ...list.map((i) => i.addedAt ?? 0));
         const when = ago(latest || undefined);
         const count = withCount(list.length, CARD_FORMS);
 
         return `
-          <a class="board" href="#${encodeURIComponent(cat)}" data-board="${escapeHtml(cat)}">
-            <span class="board__cover" aria-hidden="true">${tiles}</span>
-            <span class="board__name">${escapeHtml(label)}</span>
-            <span class="board__meta">${count}${when ? ` · ${when}` : ''}</span>
+          <a class="stack" href="#${encodeURIComponent(cat)}" data-board="${escapeHtml(cat)}">
+            <span class="stack__fan" aria-hidden="true">${cards}</span>
+            <span class="stack__name">${escapeHtml(label)}</span>
+            <span class="stack__meta">${count}${when ? ` · ${when === 'сегодня' ? 'сегодня' : `${when} назад`}` : ''}</span>
           </a>
         `;
       })
       .join('');
+  }
+
+  /** Полоса чипов: «Все» и направления с числом карточек */
+  function renderTabs() {
+    if (!tabsEl) return;
+    const chip = (href: string, label: string, n: number, on: boolean) =>
+      `<a class="chip${on ? ' is-active' : ''}" href="${href}"${on ? ' aria-current="page"' : ''}>${escapeHtml(label)} <span class="chip__count">${n}</span></a>`;
+
+    tabsEl.innerHTML = [
+      chip(location.pathname, 'Все', items.length, !activeCat),
+      ...catsOf().map((cat) =>
+        chip(`#${encodeURIComponent(cat)}`, catLabelOf(cat), items.filter((i) => i.cat === cat).length, cat === activeCat)),
+    ].join('');
+    // в сравнении чипы прячем: там своя навигация «← К карточкам»
+    tabsEl.hidden = view === 'compare';
+    tabsEl.querySelector('.is-active')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   }
 
   /* ---------- внутри папки: сетка ---------- */
@@ -934,7 +1031,7 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
           <article class="fcard" data-id="${escapeHtml(it.id)}">
             <div class="fcard__media">
               <a class="fcard__link" href="${escapeHtml(it.href)}">
-                <img src="${escapeHtml(it.img)}" width="320" height="400" alt="${escapeHtml(it.name)}" loading="lazy" decoding="async" />
+                <img src="${escapeHtml(COVERS[it.id] || it.img)}" width="320" height="400" alt="${escapeHtml(it.name)}" loading="lazy" decoding="async" />
               </a>
               <button class="hero-btn fcard__remove" type="button" data-remove="${escapeHtml(it.id)}" aria-label="Убрать «${escapeHtml(it.name)}» из избранного">${iconSvg('close')}</button>
             </div>
@@ -1075,10 +1172,11 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
         : withCount(n, CARD_FORMS);
       countEl.hidden = n === 0;
     }
+    // Пилюля «назад» осталась только у сравнения: между «Все» и
+    // направлениями переключают чипы.
     if (backEl) {
-      backEl.hidden = !inFolder;
-      backEl.textContent = view === 'compare' ? '← К карточкам' : '← Папки';
-      backEl.href = view === 'compare' && activeCat ? `#${encodeURIComponent(activeCat)}` : '/izbrannoe/';
+      backEl.hidden = !(inFolder && view === 'compare');
+      if (activeCat) backEl.href = `#${encodeURIComponent(activeCat)}`;
     }
     if (boardsEl) boardsEl.hidden = inFolder;
     if (gridEl) gridEl.hidden = !inFolder || view === 'compare';
@@ -1113,12 +1211,14 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
       if (titleEl) titleEl.textContent = 'Избранное';
       if (countEl) countEl.hidden = true;
       if (backEl) backEl.hidden = true;
+      if (tabsEl) tabsEl.hidden = true;
       if (pickbar) pickbar.hidden = true;
       if (sendbar) sendbar.hidden = true;
       return;
     }
 
     renderBoards();
+    renderTabs();
     if (activeCat) {
       renderGrid();
       if (view === 'compare') renderCompare();
