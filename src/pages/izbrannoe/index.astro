@@ -301,16 +301,33 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
     border-radius: var(--radius-card);
     background: var(--surface-dim);
     box-shadow: var(--shadow-float);
-    transform: translateY(-50%) rotate(var(--r)) translateY(var(--y));
-    transition: transform var(--dur-base) var(--ease-out);
+    /* Веер «дышит» от --o (0…1): чем больше, тем шире кадры расходятся
+       от центра (--k — место кадра относительно середины, ставит скрипт)
+       и тем круче наклон. На 0 стопка собрана плотнее, на 1 — раскрыта. */
+    transform:
+      translateY(-50%)
+      translateX(calc(var(--k, 0) * (var(--o) - 0.4) * 9%))
+      rotate(calc(var(--r) * var(--flip) * (0.7 + var(--o) * 0.6)))
+      translateY(var(--y));
+    transition: transform var(--dur-fast) var(--ease-out);
   }
 
-  /* Наклон и сдвиг по вертикали — постоянный узор по позиции в веере:
-     небрежно, но одинаково у каждой стопки, стопки не «пляшут» от раза к разу. */
+  /* Раскрытие веера: --open ставит скрипт по положению стопки на экране
+     (у середины экрана — 1, у краёв — 0), --hov — курсор на ПК. */
+  .stack {
+    --flip: 1;
+    --o: max(var(--open, 0), var(--hov, 0));
+  }
+
+  /* Наклон и сдвиг по вертикали — постоянный узор по позиции в веере.
+     Каждая вторая стопка — зеркально (--flip): иначе стопки из одного
+     кадра все валятся в одну сторону, и колонка выглядит перекошенной. */
+  .stack:nth-child(even) { --flip: -1; }
   .stack__card:nth-child(1) { --r: -4deg; --y: 2%; }
   .stack__card:nth-child(2) { --r: 2deg;  --y: -3%; }
   .stack__card:nth-child(3) { --r: -2deg; --y: 1%; }
   .stack__card:nth-child(4) { --r: 4deg;  --y: -2%; }
+  .stack__card:only-child { --r: -3deg; --y: 0%; }
 
   .stack__card img {
     width: 100%;
@@ -337,12 +354,33 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
     font-weight: var(--w-medium);
   }
 
-  /* На ПК под курсором веер чуть раскрывается — кадры расходятся
-     от центра и выпрямляются, как стопка, которую взяли в руку. */
+  /* На ПК под курсором веер раскрывается целиком. */
   @media (hover: hover) and (pointer: fine) {
-    .stack:hover .stack__card { --r: 0deg; --y: 0%; }
-    .stack:hover .stack__card:nth-child(1) { transform: translate(-8%, -50%); }
-    .stack:hover .stack__card:nth-child(4) { transform: translate(8%, -50%); }
+    .stack:hover { --hov: 1; }
+    .stack__card { transition-duration: var(--dur-base); }
+  }
+
+  /* ============ ПЕРЕХОД «СТОПКА ⇄ ПЛИТКА» ============
+     Смена уровня идёт через View Transitions: у кадров веера и у тех же
+     карточек в сетке одно имя (view-transition-name ставит скрипт по id),
+     и браузер сам перекладывает каждый кадр из веера на его место в
+     плитке — с разворотом из наклона — и обратно при возврате к «Все».
+     Остальная страница просто сменяется наплывом. Где API нет, уровень
+     меняется мгновенно, как раньше. */
+  ::view-transition-group(*) {
+    animation-duration: var(--dur-base);
+    animation-timing-function: var(--ease-out);
+  }
+
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    height: 100%;
+    object-fit: cover;
+  }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: var(--dur-fast);
   }
 
   .stack__name {
@@ -956,6 +994,23 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
     return Array.from(new Set(items.map((i) => i.cat)));
   }
 
+  /** Имена для перехода «стопка ⇄ плитка»: кадр веера и та же карточка
+   *  в сетке получают одно имя — браузер перекладывает один в другой. */
+  const vtNames = new Map<string, string>();
+
+  function collectVtNames() {
+    vtNames.clear();
+    for (const cat of catsOf()) {
+      items.filter((i) => i.cat === cat).slice(-(FAN_SHOWN + 1))
+        .forEach((it) => vtNames.set(it.id, `fvt-${vtNames.size}`));
+    }
+  }
+
+  function vtStyle(id: string): string {
+    const name = vtNames.get(id);
+    return name ? `view-transition-name:${name}` : '';
+  }
+
   /** Одна стопка на направление: свежие кадры веером, хвост — «+N» */
   function renderBoards() {
     if (!boardsEl) return;
@@ -977,7 +1032,7 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
         const cards = shown.map((it, i) => {
           const more = rest > 1 && i === FAN_SHOWN;
           const img = `<img src="${escapeHtml(COVERS[it.id] || it.img)}" width="240" height="320" alt="" loading="lazy" decoding="async" />`;
-          return `<span class="stack__card${more ? ' stack__card--more' : ''}" style="--x:${start + FAN_STEP * i}%">${img}${
+          return `<span class="stack__card${more ? ' stack__card--more' : ''}" style="--x:${start + FAN_STEP * i}%;--k:${i - (n - 1) / 2};${vtStyle(it.id)}">${img}${
             more ? `<span class="stack__more">+${rest}</span>` : ''
           }</span>`;
         }).join('');
@@ -1017,7 +1072,10 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
 
   function renderGrid() {
     if (!gridEl || !activeCat) return;
-    const list = currentItems();
+    // Свежие сверху — в том же порядке, что кадры веера: при переходе
+    // из стопки верхний кадр ложится в первую карточку, а не улетает
+    // в хвост сетки за край экрана.
+    const list = [...currentItems()].reverse();
     const verdicts = verdictsOf(activeCat);
 
     gridEl.innerHTML = list
@@ -1029,7 +1087,7 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
         const tail = [it.meta, it.price].filter(Boolean).map(escapeHtml).join(' · ');
         return `
           <article class="fcard" data-id="${escapeHtml(it.id)}">
-            <div class="fcard__media">
+            <div class="fcard__media" style="${vtStyle(it.id)}">
               <a class="fcard__link" href="${escapeHtml(it.href)}">
                 <img src="${escapeHtml(COVERS[it.id] || it.img)}" width="320" height="400" alt="${escapeHtml(it.name)}" loading="lazy" decoding="async" />
               </a>
@@ -1217,8 +1275,10 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
       return;
     }
 
+    collectVtNames();
     renderBoards();
     renderTabs();
+    requestAnimationFrame(updateFans);
     if (activeCat) {
       renderGrid();
       if (view === 'compare') renderCompare();
@@ -1523,9 +1583,55 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
     window.scrollTo({ top: 0 });
   });
 
+  /* ---------- моушн стопок ---------- */
+
+  const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Веер у середины экрана раскрыт, у краёв собран: пока листаешь,
+  // стопки мягко расходятся и сходятся — видно, что они живые.
+  // Только transform через CSS-переменную, один проход на кадр.
+  let fanFrame = 0;
+  function updateFans() {
+    fanFrame = 0;
+    if (!boardsEl || boardsEl.hidden || reducedMotion()) return;
+    const mid = innerHeight / 2;
+    boardsEl.querySelectorAll<HTMLElement>('.stack').forEach((el) => {
+      const r = el.getBoundingClientRect();
+      if (r.bottom < 0 || r.top > innerHeight) return;
+      const d = Math.abs(r.top + r.height * 0.35 - mid) / mid;
+      el.style.setProperty('--open', Math.max(0, 1 - d).toFixed(3));
+    });
+  }
+  window.addEventListener('scroll', () => { fanFrame ||= requestAnimationFrame(updateFans); }, { passive: true });
+  window.addEventListener('resize', () => { fanFrame ||= requestAnimationFrame(updateFans); });
+
+  // Смена уровня (чип, стопка, «назад») — через View Transitions, см.
+  // стили «стопка ⇄ плитка». Прокрутку «Все» запоминаем: вернувшись из
+  // направления, человек оказывается у той же стопки, а кадры летят
+  // обратно именно в неё.
+  let allScroll = 0;
   window.addEventListener('hashchange', () => {
-    render();
-    window.scrollTo({ top: 0 });
+    const wasAll = !activeCat;
+    if (wasAll) allScroll = scrollY;
+    const update = async () => {
+      render();
+      window.scrollTo({ top: !activeCat && !wasAll ? allScroll : 0 });
+      updateFans();
+      // Кадры, в которые перекладывается веер, только что созданы и ещё
+      // не раскодированы — без ожидания браузер снимет пустые серые
+      // карточки и полетит в них. Файлы те же, что у веера (уже в кэше),
+      // поэтому ждём коротко и с потолком, чтобы не держать переход.
+      if (activeCat && gridEl) {
+        const imgs = [...gridEl.querySelectorAll<HTMLImageElement>('.fcard__media[style*="view-transition-name"] img')];
+        imgs.forEach((img) => { img.loading = 'eager'; });
+        await Promise.race([
+          Promise.allSettled(imgs.map((img) => img.decode())),
+          new Promise((r) => setTimeout(r, 250)),
+        ]);
+      }
+    };
+    if (document.startViewTransition && !reducedMotion()) document.startViewTransition(update);
+    else update();
   });
 
   window.addEventListener(CHANGE_EVENT, render);
