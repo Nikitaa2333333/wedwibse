@@ -19,6 +19,7 @@ import {
 } from '../../../data/specialists';
 import { withCount, type PluralForms } from '../../../lib/plural';
 import CoverTile from '../../../components/CoverTile.astro';
+import Icon from '../../../components/Icon.astro';
 import { IMG_WIDTHS } from '../../../lib/images';
 
 // Описания «что внутри» с плиток сняты (18.09.2026): плитка — имя раздела
@@ -75,8 +76,43 @@ const tiles = SPECIALIST_GROUPS.map((g) => {
           />
         </li>
       ))}
+      {/* ПРИГЛАШЕНИЕ ПОДРЯДЧИКАМ (заказчик, 30.09.2026): кружок в общей
+          сетке разделов, а не ещё одна большая плитка — он не раздел
+          каталога и не должен с ними спорить. Серый круг (--surface, как
+          у чипов) с плюсом и подписью, стоит в ячейке по центру.
+          Открывает шторку «Вы специалист?» ниже. */}
+      <li class="hub__join-cell">
+        <button class="hub__join" type="button" data-sheet-open="join">
+          <span class="hub__join-plus" aria-hidden="true"><Icon name="plus" /></span>
+          <span class="hub__join-title">Вы специалист?</span>
+          <span class="hub__join-note">Разместим у нас</span>
+        </button>
+      </li>
     </ul>
   </main>
+
+  <!-- ШТОРКА «ВЫ СПЕЦИАЛИСТ?». Реестровая .sheet (bindSheet), не своя панель.
+       ЗАГЛУШКА (фаза дизайна): заявки от подрядчиков пока никуда не уходят —
+       кнопка просто закрывает шторку. TODO: форма/контакт, когда появится
+       приём подрядчиков (личный кабинет или менеджер). -->
+  <div class="sheet" data-sheet="join">
+    <div class="sheet__backdrop" data-sheet-close></div>
+    <section class="sheet__panel" role="dialog" aria-modal="true" aria-labelledby="join-title">
+      <header class="sheet__head">
+        <h2 class="sheet__title" id="join-title">Вы специалист?</h2>
+        <button class="icon-btn" type="button" data-sheet-close aria-label="Закрыть">
+          <Icon name="close" />
+        </button>
+      </header>
+      <div class="sheet__body" data-lenis-prevent>
+        <p class="t-lead">Ведущие, фотографы, декораторы, кейтеринг — если вы делаете свадьбы красиво, давайте к нам.</p>
+        <p class="t-small hub__join-text">Разместим вашу карточку в каталоге WED Secrets: портфолио, цены и отзывы — там, где пары Москвы и области выбирают подрядчиков на свою свадьбу.</p>
+      </div>
+      <footer class="sheet__foot">
+        <button class="pill" type="button" data-sheet-close>Оставить заявку</button>
+      </footer>
+    </section>
+  </div>
 
   <BottomDock active="vendors" />
 </Layout>
@@ -108,12 +144,16 @@ const tiles = SPECIALIST_GROUPS.map((g) => {
   /* Сетка плиток: зазор и поле от края — те же, что у доски кадров
      (--pin-gap / --edge-gap), но БЕЗ пинтерестовской череды: колонки
      равные, ряды выровнены по одной линии. Высоту ряда задаёт самая
-     высокая плитка в нём (grid-auto-rows: 1fr), плитки тянутся до неё —
+     высокая плитка в нём (align stretch), плитки тянутся до неё —
      низ ряда всегда прямой, сколько бы строк ни занял заголовок. */
   .hub__grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-auto-rows: 1fr;
+    /* Ряды по содержимому, а не 1fr: иначе строка с кружком
+       «Вы специалист?» вырастала до высоты плитки. Плитки в ряду всё
+       равно тянутся до самой высокой (align stretch), а имя в CoverTile
+       держит место под две строки — ряды выходят одной высоты и так. */
+    grid-auto-rows: auto;
     gap: var(--pin-gap);
     padding-inline: var(--edge-gap);
     list-style: none;
@@ -128,4 +168,72 @@ const tiles = SPECIALIST_GROUPS.map((g) => {
     .hub__grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   }
 
+  /* Ячейка с кружком — во всю строку сетки и своей высоты: при чётном
+     числе разделов кружок встаёт один в ряд, и строка высотой с плитку
+     оставляла под ним пустой экран. Поэтому строке — высота по кружку
+     (grid-row auto, см. .hub__grid), а круг — по центру. */
+  .hub__join-cell {
+    grid-column: 1 / -1;
+    display: grid;
+    place-items: center;
+    padding-block: var(--s-4);
+  }
+
+  .hub__join {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    width: 168px;
+    aspect-ratio: 1;
+    padding: var(--s-4);
+    border: 0;
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--ink);
+    text-align: center;
+    cursor: pointer;
+    transition: transform var(--dur-fast) var(--ease-out),
+                background var(--dur-fast) var(--ease-out);
+  }
+
+  .hub__join:active { transform: scale(0.96); }
+
+  @media (hover: hover) {
+    .hub__join:hover { background: var(--surface-dim); }
+  }
+
+  /* Плюс — просто знак над подписью, без своей чернильной подложки:
+     круг в круге спорил с самим кружком (заказчик, 30.09.2026). */
+  .hub__join-plus {
+    display: grid;
+    place-items: center;
+    margin-bottom: var(--s-2);
+  }
+
+  .hub__join-plus :global(svg) { width: 24px; height: 24px; }
+
+  .hub__join-title {
+    font-size: var(--fs-small);
+    font-weight: var(--w-head);
+    line-height: 1.15;
+  }
+
+  /* «Разместим у нас» прижата к заголовку: одна мысль, не два пункта */
+  .hub__join-note {
+    margin-top: 2px;
+    font-size: var(--fs-caption);
+    font-weight: var(--w-medium);
+    opacity: 0.6;
+  }
+
+  .hub__join-text { margin-top: var(--s-3); }
 </style>
+
+<script>
+  import { bindSheet } from '../../../lib/sheet';
+
+  const joinSheet = document.querySelector<HTMLElement>('[data-sheet="join"]');
+  if (joinSheet) bindSheet(joinSheet);
+</script>
