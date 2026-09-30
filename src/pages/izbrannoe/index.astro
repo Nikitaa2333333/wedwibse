@@ -301,7 +301,7 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
     overflow: hidden;
     border-radius: var(--radius-card);
     background: var(--surface-dim);
-    box-shadow: var(--shadow-float);
+    box-shadow: var(--shadow-stack);
     /* Веер «дышит» от --o (0…1): чем больше, тем шире кадры расходятся
        от центра (--k — место кадра относительно середины, ставит скрипт)
        и тем круче наклон. На 0 стопка собрана плотнее, на 1 — раскрыта. */
