@@ -46,13 +46,15 @@ interface Props {
   eager?: boolean;
   /** ширины srcset: роль из IMG_WIDTHS */
   widths: number[];
-  /** форма бирки (главная, 25.09.2026): срезанные верхние углы и люверс —
-      тот же знак, что бирка «wed secrets» в логотипе. Режим включается
-      пропом, а не переопределением .ctile снаружи (см. AGENTS.md) */
-  tag?: boolean;
+  /** низкая плитка (главная, 30.09.2026): кадр квадратом, а не 4:5,
+      и подпись без запаса под вторую строку — входы на главной не должны
+      занимать весь первый экран. Режим пропом, а не переопределением
+      .ctile снаружи (см. AGENTS.md). Бирка (срезанные углы, люверс,
+      наклон) снята тогда же: плитка говорит тем же языком, что в хабе. */
+  compact?: boolean;
 }
 
-const { name, href, capsule, covers, tone = 'beige', bg, sizes, eager = false, widths, tag = false } = Astro.props;
+const { name, href, capsule, covers, tone = 'beige', bg, sizes, eager = false, widths, compact = false } = Astro.props;
 
 // Цвет с кадра на каждую обложку; руками заданный bg — только первой,
 // а смена кадров его не трогает (ручной цвет — осознанное решение).
@@ -62,7 +64,7 @@ const dark = first ? first.dark : tone === 'dark';
 ---
 
 <a
-  class:list={['ctile', dark && 'theme-dark', tag && 'ctile--tag']}
+  class:list={['ctile', dark && 'theme-dark', compact && 'ctile--compact']}
   href={href}
   aria-label={`${name} — ${capsule}`}
   style={first ? `--tile-bg: ${first.bg}` : undefined}
@@ -124,22 +126,6 @@ const dark = first ? first.dark : tone === 'dark';
     transition: color var(--dur-slow) var(--ease-inout);
   }
 
-  /* БИРКА. Верхние углы срезаны (скос постоянной величины, не процент —
-     плитки разной высоты должны резаться одинаково), нижние остаются
-     скруглёнными от border-radius. Люверс — сквозная дырка маской:
-     в неё виден фон страницы, как точка на бирке логотипа. Дырка —
-     не текст на фото, это форма самой плитки. */
-  .ctile--tag {
-    /* размеры — токены --tag-* в global.css */
-    clip-path: polygon(
-      var(--tag-cut) 0, calc(100% - var(--tag-cut)) 0,
-      100% var(--tag-cut), 100% 100%,
-      0 100%, 0 var(--tag-cut)
-    );
-    -webkit-mask: radial-gradient(circle at 50% var(--tag-hole-y), transparent var(--tag-hole), #000 calc(var(--tag-hole) + 0.5px));
-    mask: radial-gradient(circle at 50% var(--tag-hole-y), transparent var(--tag-hole), #000 calc(var(--tag-hole) + 0.5px));
-  }
-
   /* Тёмная плитка: scoped-селектор .ctile сильнее глобального .theme-dark,
      поэтому тон читаем из его ручек здесь явно. */
   .ctile.theme-dark {
@@ -152,8 +138,13 @@ const dark = first ? first.dark : tone === 'dark';
      лежат под всей плиткой абсолютно и высоты не дают. */
   .ctile__spacer {
     display: block;
-    aspect-ratio: 4 / 5;
+    aspect-ratio: var(--ctile-ratio, 4 / 5);
   }
+
+  /* Низкая плитка: окно кадра квадратом, подпись в одну строку. */
+  .ctile--compact { --ctile-ratio: 1 / 1; }
+  .ctile--compact .ctile__name { min-height: 0; }
+  .ctile--compact .ctile__body { gap: var(--s-2); padding: var(--s-2) var(--s-3) var(--s-3); }
 
   /* Стопка слоёв на всю плитку, под подписью */
   .ctile__media {
@@ -209,7 +200,7 @@ const dark = first ? first.dark : tone === 'dark';
     display: block;
     width: 100%;
     height: auto;
-    aspect-ratio: 4 / 5;
+    aspect-ratio: var(--ctile-ratio, 4 / 5);
     object-fit: cover;
   }
 
