@@ -433,16 +433,9 @@
   --dur-base: 0.8s;    /* появления элементов */
   --dur-slow: 1.4s;    /* крупные экранные перекладки */
 
-  /* Полёт «в избранное» (lib/fav-flight.ts): кружок с сердцем летит
-     от кнопки к вкладке «Избранное» по параболе брошенного предмета.
-     Горизонталь — плавное торможение к цели, вертикаль — два отрезка
-     квадратичной кривой (вверх с замедлением, вниз с ускорением):
-     вместе это и есть настоящая парабола, а не дуга «на глаз».
-     Приземление — пружина с лёгким перелётом, как значок в Dock. */
-  --dur-flight: 0.78s;
-  --ease-glide: cubic-bezier(0.3, 0.1, 0.35, 1);
-  --ease-rise: cubic-bezier(0.5, 1, 0.89, 1);     /* quad-out: взлёт */
-  --ease-fall: cubic-bezier(0.11, 0, 0.5, 0);     /* quad-in: падение */
+  /* Плашка «Добавлено в избранное» (lib/fav-toast.ts): выезжает снизу
+     пружиной с лёгким перелётом, как пуш, висит --dur-toast и уезжает. */
+  --dur-toast: 2.6s;
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /* ============ СЛОИ ============ */
@@ -1818,57 +1811,95 @@ textarea.input {
   cursor: pointer;
 }
 
-/* ============ ПОЛЁТ «В ИЗБРАННОЕ» ============
-   Кружок, который lib/fav-flight.ts выпускает из кнопки сердца в сторону
-   вкладки «Избранное» нижнего дока. Три вложенных слоя, у каждого своя ось:
-   внешний едет по горизонтали, средний — по вертикали (разные кривые дают
-   параболу), сам кружок только дышит масштабом. Всё на transform/opacity —
-   в моушн-бюджет телефона укладывается. Пока летит, клики сквозь него. */
-.fav-flight {
+/* ============ ПЛАШКА «ДОБАВЛЕНО В ИЗБРАННОЕ» ============
+   Пуш снизу над доком: стеклянная капсула (--glass-*: она всплывает по
+   нажатию, постоянной не бывает — правило стекла соблюдено), слева кадр
+   карточки, текст, справа «Открыть». Спрятана под нижний край экрана;
+   .is-open (ставит lib/fav-toast.ts) выводит её пружиной. На ПК дока
+   снизу нет (--dock-h: 0) — капсула просто стоит у низа экрана. */
+.fav-toast {
   position: fixed;
-  top: 0;
-  left: 0;
+  left: 50%;
+  bottom: calc(var(--dock-h) + var(--s-3));
   z-index: var(--z-overlay);
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  width: min(calc(100% - 2 * var(--gutter)), 440px);
+  padding: var(--s-2) var(--s-2) var(--s-2) var(--s-2);
+  border: 1px solid var(--glass-line);
+  border-radius: var(--radius-card);
+  /* Стекло плотнее обычного: плашка всплывает над чем угодно, в том
+     числе над кнопками и текстом, и при --glass-bg они просвечивали
+     сквозь её надпись. Размытие оставляем — оно и даёт «пуш». */
+  background: color-mix(in srgb, var(--paper) 86%, transparent);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-sheen), var(--shadow-float);
+  color: var(--ink);
+  opacity: 0;
   pointer-events: none;
-  will-change: transform;
+  transform: translate(-50%, calc(100% + var(--s-5)));
+  transition: transform var(--dur-base) var(--ease-out),
+              opacity var(--dur-fast) var(--ease-out);
 }
 
-.fav-flight__y { will-change: transform; }
-
-.fav-flight__dot {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  margin: -20px 0 0 -20px; /* точка отсчёта — центр кружка */
-  border-radius: 50%;
-  background: var(--ink);
-  color: var(--paper);
-  box-shadow: var(--shadow-float);
-  will-change: transform, opacity;
+.fav-toast.is-open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, 0);
+  transition: transform var(--dur-base) var(--ease-spring),
+              opacity var(--dur-fast) var(--ease-out);
 }
 
-.fav-flight__dot svg {
-  width: 20px;
-  height: 20px;
-  --icon-fill: currentColor;
+@media (min-width: 1024px) {
+  .fav-toast { left: calc(50% + var(--rail-w) / 2); bottom: var(--s-5); }
 }
 
-/* Круг-отзвук вокруг вкладки в момент приземления: волосяное кольцо
-   расходится и тает — вкладка «принимает» кружок, а не просто моргает. */
-.fav-flight__ring {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: var(--z-overlay);
+.fav-toast__thumb {
+  flex: none;
   width: 44px;
   height: 44px;
-  margin: -22px 0 0 -22px;
-  border: 1.5px solid var(--ink);
-  border-radius: 50%;
-  pointer-events: none;
-  will-change: transform, opacity;
+  overflow: hidden;
+  border-radius: calc(var(--radius-card) - 4px);
+  background: var(--surface-dim);
 }
+
+.fav-toast__thumb[hidden] { display: none; }
+
+.fav-toast__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.fav-toast__text {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.2;
+}
+
+.fav-toast__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-small);
+  font-weight: var(--w-head);
+}
+
+.fav-toast__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-caption);
+  font-weight: var(--w-medium);
+  opacity: 0.6;
+}
+
+.fav-toast__open { flex: none; }
 
 /* ============ ДОСТУПНОСТЬ ============ */
 :focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }

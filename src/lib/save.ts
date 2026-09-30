@@ -6,7 +6,7 @@
 // Появится новая категория подрядчиков — её каталог не пишет свою копию.
 // ============================================================
 import { toggleFavorite, isFavorited, type FavoriteItem } from './favorites';
-import { flyToFavorites, pressPop } from './fav-flight';
+import { showFavToast, hideFavToast } from './fav-toast';
 
 /**
  * Оживляет все кнопки [data-save] внутри root.
@@ -22,12 +22,11 @@ export function bindSaveButtons(root: ParentNode = document): void {
     btn.setAttribute('aria-pressed', String(isFavorited(item.id)));
 
     btn.addEventListener('click', () => {
-      // Полёт к вкладке — только на добавление: убранная карточка
-      // никуда не летит, счётчик просто уменьшается. Запускаем ДО записи
-      // в хранилище, чтобы док успел придержать число до приземления.
-      pressPop(btn);
-      if (!isFavorited(item.id)) flyToFavorites(btn);
-      const saved = String(toggleFavorite(item));
+      const nowSaved = toggleFavorite(item);
+      // Плашка-пуш снизу — только на добавление; убрали — прячем её.
+      if (nowSaved) showFavToast(item);
+      else hideFavToast();
+      const saved = String(nowSaved);
       // Одна карточка — несколько кнопок (сердце на кадре и «В избранное»
       // под именем): все они показывают одно состояние.
       document.querySelectorAll<HTMLElement>('[data-save-bound]').forEach((b) => {
