@@ -184,7 +184,7 @@ const tiles = SPECIALIST_GROUPS.map((g) => {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: var(--s-1);
+    gap: 0;
     width: 168px;
     aspect-ratio: 1;
     padding: var(--s-4);
@@ -204,18 +204,15 @@ const tiles = SPECIALIST_GROUPS.map((g) => {
     .hub__join:hover { background: var(--surface-dim); }
   }
 
+  /* Плюс — просто знак над подписью, без своей чернильной подложки:
+     круг в круге спорил с самим кружком (заказчик, 30.09.2026). */
   .hub__join-plus {
     display: grid;
     place-items: center;
-    width: 40px;
-    height: 40px;
-    margin-bottom: var(--s-1);
-    border-radius: 50%;
-    background: var(--ink);
-    color: var(--paper);
+    margin-bottom: var(--s-2);
   }
 
-  .hub__join-plus :global(svg) { width: 20px; height: 20px; }
+  .hub__join-plus :global(svg) { width: 24px; height: 24px; }
 
   .hub__join-title {
     font-size: var(--fs-small);
@@ -223,7 +220,9 @@ const tiles = SPECIALIST_GROUPS.map((g) => {
     line-height: 1.15;
   }
 
+  /* «Разместим у нас» прижата к заголовку: одна мысль, не два пункта */
   .hub__join-note {
+    margin-top: 2px;
     font-size: var(--fs-caption);
     font-weight: var(--w-medium);
     opacity: 0.6;
