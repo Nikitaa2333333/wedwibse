@@ -16,7 +16,9 @@ import PhotoRail from '../../../components/PhotoRail.astro';
 import VenueMap from '../../../components/VenueMap.astro';
 import Icon from '../../../components/Icon.astro';
 import { FEED, VENUE_FILTERS, type FeedVenue } from '../../../data/feed';
-import { IMG_WIDTHS } from '../../../lib/images';
+import { IMG_WIDTHS, favoriteImage } from '../../../lib/images';
+import { VENUES } from '../../../data/venues';
+import { venueFavorite } from '../../../lib/favorite-snapshot';
 import { countOptions } from '../../../lib/filter-counts';
 import { venueMapPoints } from '../../../lib/map-points';
 
@@ -74,6 +76,31 @@ const filtersOf = (item: FeedVenue) => ({
 
 let venueIndex = 0;
 const venues = FEED.filter((item): item is FeedVenue => item.kind === 'venue');
+
+// Снимок для сердца на карточке — тот же, что кладёт сердце на странице
+// площадки (venueFavorite): одна площадка в избранном не двоится.
+// Демо-карточки ленты без своей страницы собирают снимок из самой ленты.
+const venueSaves = new Map(
+  await Promise.all(
+    venues.map(async (item) => {
+      const page = VENUES.find((v) => v.slug === item.slug);
+      const snap = page
+        ? await venueFavorite(page)
+        : {
+            id: `venue:${item.name}`,
+            cat: 'venue',
+            catLabel: 'Площадки',
+            name: item.name,
+            meta: item.city,
+            price: item.avgCheck,
+            rating: item.rating,
+            img: item.media[0] ? await favoriteImage(item.media[0]) : '',
+            href: `/moskva/ploshchadki/${item.slug}/`,
+          };
+      return [item.slug, JSON.stringify(snap)] as const;
+    })
+  )
+);
 const counts = countOptions(VENUE_FILTERS, venues.map(filtersOf));
 
 // Точки для карты: только площадки, которым проставлены координаты
@@ -182,6 +209,13 @@ const mapPoints = venueMapPoints();
                 priority={firstRow}
               />
 
+              {/* Сердце на кадре карточки выдачи (заказчик, 30.09.2026):
+                  отобрать площадки в избранное прямо из сетки, не заходя
+                  в каждую. Тот же .save и снимок, что на странице площадки. */}
+              <button class="save" type="button" data-save={venueSaves.get(item.slug)} aria-pressed="false" aria-label={`«${item.name}» в избранное`}>
+                <Icon name="heartOutline" />
+              </button>
+
               <!-- Подпись по принципу близости: имя и город — одно целое
                    (город вплотную под именем), рейтинг справа на строке имени,
                    цена крупно под ними. Без воздуха между строками: карточка
@@ -197,9 +231,6 @@ const mapPoints = venueMapPoints();
                   </div>
                   <span class="vcard__rate" aria-label={`Рейтинг ${item.rating}`}>★ {item.rating.toFixed(1)}</span>
                 </div>
-                <!-- Сердца в подписи НЕТ: лайк в каталоге снят (правило
-                     проекта — знака «в избранное» на карточке выдачи не
-                     держим, он есть только в самой карточке). -->
                 {item.checkFrom ? (
                   <p class="vcard__price">{item.avgCheck}</p>
                 ) : (
@@ -310,6 +341,7 @@ const mapPoints = venueMapPoints();
 
   /* ============ КАРТОЧКА ============ */
   .vcard {
+    position: relative; /* точка отсчёта для сердца .save в углу кадра */
     display: flex;
     flex-direction: column;
     gap: var(--s-2);
@@ -418,6 +450,10 @@ const mapPoints = venueMapPoints();
 </style>
 
 <script>
+  import { bindSaveButtons } from '../../../lib/save';
+
+  bindSaveButtons();
+
   // Фильтрация и шторка — внутри FilterSheet.astro, сортировка — в
   // FilterBar.astro; точки-индикаторы и автолистание — в PhotoRail.astro.
 
