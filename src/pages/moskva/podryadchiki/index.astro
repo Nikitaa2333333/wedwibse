@@ -76,17 +76,20 @@ const tiles = SPECIALIST_GROUPS.map((g) => {
           />
         </li>
       ))}
-      {/* ПРИГЛАШЕНИЕ ПОДРЯДЧИКАМ (заказчик, 30.09.2026): кружок в общей
-          сетке разделов, а не ещё одна большая плитка — он не раздел
-          каталога и не должен с ними спорить. Серый круг (--surface, как
-          у чипов) с плюсом и подписью, стоит в ячейке по центру.
-          Открывает шторку «Вы специалист?» ниже. */}
+      {/* ПРИГЛАШЕНИЕ ПОДРЯДЧИКАМ. Серая плашка во всю строку сетки после
+          разделов: заголовок, одна строка зачем, пилюля действия. Кружок
+          с плюсом на этом месте заказчик отклонил (30.09.2026: «нужно
+          что-то другое») — плашка --surface и .pill из реестра читаются
+          как часть того же каталога, а не отдельная иконка-кнопка.
+          Пилюля открывает шторку «Вы специалист?» ниже. */}
       <li class="hub__join-cell">
-        <button class="hub__join" type="button" data-sheet-open="join">
-          <span class="hub__join-plus" aria-hidden="true"><Icon name="plus" /></span>
-          <span class="hub__join-title">Вы специалист?</span>
-          <span class="hub__join-note">Разместим у нас</span>
-        </button>
+        <div class="hub__join">
+          <div class="hub__join-text">
+            <h2 class="hub__join-title">Вы специалист?</h2>
+            <p class="hub__join-note">Разместим вашу карточку в каталоге — здесь пары Москвы и области выбирают подрядчиков на свадьбу.</p>
+          </div>
+          <button class="pill hub__join-btn" type="button" data-sheet-open="join">Разместить карточку</button>
+        </div>
       </li>
     </ul>
   </main>
@@ -106,7 +109,7 @@ const tiles = SPECIALIST_GROUPS.map((g) => {
       </header>
       <div class="sheet__body" data-lenis-prevent>
         <p class="t-lead">Ведущие, фотографы, декораторы, кейтеринг — если вы делаете свадьбы красиво, давайте к нам.</p>
-        <p class="t-small hub__join-text">Разместим вашу карточку в каталоге WED Secrets: портфолио, цены и отзывы — там, где пары Москвы и области выбирают подрядчиков на свою свадьбу.</p>
+        <p class="t-small hub__join-sheet-text">Разместим вашу карточку в каталоге WED Secrets: портфолио, цены и отзывы — там, где пары Москвы и области выбирают подрядчиков на свою свадьбу.</p>
       </div>
       <footer class="sheet__foot">
         <button class="pill" type="button" data-sheet-close>Оставить заявку</button>
@@ -168,67 +171,54 @@ const tiles = SPECIALIST_GROUPS.map((g) => {
     .hub__grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   }
 
-  /* Ячейка с кружком — во всю строку сетки и своей высоты: при чётном
-     числе разделов кружок встаёт один в ряд, и строка высотой с плитку
-     оставляла под ним пустой экран. Поэтому строке — высота по кружку
-     (grid-row auto, см. .hub__grid), а круг — по центру. */
+  /* Плашка-приглашение — во всю строку сетки и своей высоты (ряды сетки
+     по содержимому, см. .hub__grid). Серая, как чипы и входы: не раздел
+     каталога, поэтому без кадра. */
   .hub__join-cell {
     grid-column: 1 / -1;
-    display: grid;
-    place-items: center;
-    padding-block: var(--s-4);
+    margin-top: var(--s-2);
   }
 
   .hub__join {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0;
-    width: 168px;
-    aspect-ratio: 1;
-    padding: var(--s-4);
-    border: 0;
-    border-radius: 50%;
+    align-items: flex-start;
+    gap: var(--s-4);
+    padding: var(--s-5);
+    border-radius: var(--radius-card);
     background: var(--surface);
-    color: var(--ink);
-    text-align: center;
-    cursor: pointer;
-    transition: transform var(--dur-fast) var(--ease-out),
-                background var(--dur-fast) var(--ease-out);
   }
 
-  .hub__join:active { transform: scale(0.96); }
-
-  @media (hover: hover) {
-    .hub__join:hover { background: var(--surface-dim); }
+  .hub__join-text {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
   }
-
-  /* Плюс — просто знак над подписью, без своей чернильной подложки:
-     круг в круге спорил с самим кружком (заказчик, 30.09.2026). */
-  .hub__join-plus {
-    display: grid;
-    place-items: center;
-    margin-bottom: var(--s-2);
-  }
-
-  .hub__join-plus :global(svg) { width: 24px; height: 24px; }
 
   .hub__join-title {
-    font-size: var(--fs-small);
+    margin: 0;
+    font-size: var(--fs-h3);
     font-weight: var(--w-head);
     line-height: 1.15;
   }
 
-  /* «Разместим у нас» прижата к заголовку: одна мысль, не два пункта */
   .hub__join-note {
-    margin-top: 2px;
-    font-size: var(--fs-caption);
-    font-weight: var(--w-medium);
-    opacity: 0.6;
+    margin: 0;
+    max-width: var(--measure-text);
+    font-size: var(--fs-small);
   }
 
-  .hub__join-text { margin-top: var(--s-3); }
+  .hub__join-sheet-text { margin-top: var(--s-3); }
+
+  @media (min-width: 640px) {
+    .hub__join {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .hub__join-btn { flex: none; }
+  }
 </style>
 
 <script>
