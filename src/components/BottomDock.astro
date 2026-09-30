@@ -58,7 +58,7 @@ const items = [
       title={it.label}
       aria-current={it.key === active ? 'page' : undefined}
     >
-      <span class="dock__icon-wrap">
+      <span class="dock__icon-wrap" data-fav-target={it.key === 'saved' ? '' : undefined}>
         <Icon name={it.icon} class="dock__icon" />
         {it.key === 'saved' && (
           <span class="dock__badge" data-fav-badge aria-hidden="true" hidden>0</span>
@@ -242,17 +242,42 @@ const items = [
 
 <script>
   import { getFavorites, CHANGE_EVENT, STORAGE_KEY } from '../lib/favorites';
+  import { FLY_EVENT, LAND_EVENT } from '../lib/fav-flight';
 
   const badge = document.querySelector<HTMLElement>('[data-fav-badge]');
 
+  // Сколько кружков «в избранное» сейчас в воздухе (lib/fav-flight):
+  // пока хоть один летит, число не трогаем — оно щёлкает в момент касания.
+  let inFlight = 0;
+  let shown = -1;
+
   function updateBadge() {
-    if (!badge) return;
+    if (!badge || inFlight > 0) return;
     const count = getFavorites().length;
+    const grew = shown >= 0 && count > shown;
+    shown = count;
     badge.textContent = String(count);
     badge.hidden = count === 0;
+
+    // Новое число вспыхивает пружиной — только на прибавку, не на загрузке.
+    if (grew && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const css = getComputedStyle(document.documentElement);
+      badge.animate(
+        [{ transform: 'scale(0.4)' }, { transform: 'scale(1.25)', offset: 0.45 }, { transform: 'scale(1)' }],
+        {
+          duration: parseFloat(css.getPropertyValue('--dur-base')) * 1000,
+          easing: css.getPropertyValue('--ease-spring').trim(),
+        },
+      );
+    }
   }
 
   updateBadge();
   window.addEventListener(CHANGE_EVENT, updateBadge);
+  window.addEventListener(FLY_EVENT, () => { inFlight++; });
+  window.addEventListener(LAND_EVENT, () => {
+    inFlight = Math.max(0, inFlight - 1);
+    updateBadge();
+  });
   window.addEventListener('storage', (e) => { if (e.key === STORAGE_KEY) updateBadge(); });
 </script>

@@ -433,6 +433,18 @@
   --dur-base: 0.8s;    /* появления элементов */
   --dur-slow: 1.4s;    /* крупные экранные перекладки */
 
+  /* Полёт «в избранное» (lib/fav-flight.ts): кружок с сердцем летит
+     от кнопки к вкладке «Избранное» по параболе брошенного предмета.
+     Горизонталь — плавное торможение к цели, вертикаль — два отрезка
+     квадратичной кривой (вверх с замедлением, вниз с ускорением):
+     вместе это и есть настоящая парабола, а не дуга «на глаз».
+     Приземление — пружина с лёгким перелётом, как значок в Dock. */
+  --dur-flight: 0.78s;
+  --ease-glide: cubic-bezier(0.3, 0.1, 0.35, 1);
+  --ease-rise: cubic-bezier(0.5, 1, 0.89, 1);     /* quad-out: взлёт */
+  --ease-fall: cubic-bezier(0.11, 0, 0.5, 0);     /* quad-in: падение */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
   /* ============ СЛОИ ============ */
   --z-nav: 50;
   --z-overlay: 100;
@@ -1804,6 +1816,58 @@ textarea.input {
   border-radius: 50%;
   box-shadow: var(--shadow-float);
   cursor: pointer;
+}
+
+/* ============ ПОЛЁТ «В ИЗБРАННОЕ» ============
+   Кружок, который lib/fav-flight.ts выпускает из кнопки сердца в сторону
+   вкладки «Избранное» нижнего дока. Три вложенных слоя, у каждого своя ось:
+   внешний едет по горизонтали, средний — по вертикали (разные кривые дают
+   параболу), сам кружок только дышит масштабом. Всё на transform/opacity —
+   в моушн-бюджет телефона укладывается. Пока летит, клики сквозь него. */
+.fav-flight {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: var(--z-overlay);
+  pointer-events: none;
+  will-change: transform;
+}
+
+.fav-flight__y { will-change: transform; }
+
+.fav-flight__dot {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin: -20px 0 0 -20px; /* точка отсчёта — центр кружка */
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--paper);
+  box-shadow: var(--shadow-float);
+  will-change: transform, opacity;
+}
+
+.fav-flight__dot svg {
+  width: 20px;
+  height: 20px;
+  --icon-fill: currentColor;
+}
+
+/* Круг-отзвук вокруг вкладки в момент приземления: волосяное кольцо
+   расходится и тает — вкладка «принимает» кружок, а не просто моргает. */
+.fav-flight__ring {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: var(--z-overlay);
+  width: 44px;
+  height: 44px;
+  margin: -22px 0 0 -22px;
+  border: 1.5px solid var(--ink);
+  border-radius: 50%;
+  pointer-events: none;
+  will-change: transform, opacity;
 }
 
 /* ============ ДОСТУПНОСТЬ ============ */
