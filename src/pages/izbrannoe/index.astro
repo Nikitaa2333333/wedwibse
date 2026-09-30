@@ -288,6 +288,7 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
      одного-двух кадров стояла по центру, а не жалась влево. */
   .stack__fan {
     position: relative;
+    isolation: isolate; /* свой слой: «+N» с z-index -1 уходит под соседей, а не под страницу */
     aspect-ratio: 2 / 1; /* кадр 3:4 шириной 34% — это 45% ширины по высоте, плюс запас на наклон */
   }
 
@@ -338,6 +339,10 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
 
   /* «+N»: тот же кадр, размытый в пятно, цифра — поверх. Размытие
      статичное (не анимируется), поэтому в моушн-бюджет телефона входит. */
+  /* Размытый «+N» лежит ПОД соседом, а не поверх: он фон стопки,
+     а не её лицо (заказчик, 30.09.2026). */
+  .stack__card--more { z-index: -1; }
+
   .stack__card--more img {
     filter: blur(6px);
     transform: scale(1.15);
@@ -348,6 +353,7 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
     inset: 0;
     display: grid;
     place-items: center;
+    padding-left: 40%; /* левую часть кадра закрывает сосед — число в видимой */
     background: color-mix(in srgb, var(--paper) 20%, transparent);
     color: var(--ink);
     font-size: var(--fs-h2);

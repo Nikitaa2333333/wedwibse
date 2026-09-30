@@ -242,17 +242,13 @@ const items = [
 
 <script>
   import { getFavorites, CHANGE_EVENT, STORAGE_KEY } from '../lib/favorites';
-  import { FLY_EVENT, LAND_EVENT } from '../lib/fav-flight';
 
   const badge = document.querySelector<HTMLElement>('[data-fav-badge]');
 
-  // Сколько кружков «в избранное» сейчас в воздухе (lib/fav-flight):
-  // пока хоть один летит, число не трогаем — оно щёлкает в момент касания.
-  let inFlight = 0;
   let shown = -1;
 
   function updateBadge() {
-    if (!badge || inFlight > 0) return;
+    if (!badge) return;
     const count = getFavorites().length;
     const grew = shown >= 0 && count > shown;
     shown = count;
@@ -274,10 +270,5 @@ const items = [
 
   updateBadge();
   window.addEventListener(CHANGE_EVENT, updateBadge);
-  window.addEventListener(FLY_EVENT, () => { inFlight++; });
-  window.addEventListener(LAND_EVENT, () => {
-    inFlight = Math.max(0, inFlight - 1);
-    updateBadge();
-  });
   window.addEventListener('storage', (e) => { if (e.key === STORAGE_KEY) updateBadge(); });
 </script>
