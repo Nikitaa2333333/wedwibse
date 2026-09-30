@@ -410,6 +410,17 @@
   --entry-thumb: clamp(42px, 12vw, 52px);
   --veil: linear-gradient(180deg, transparent, rgb(0 0 0 / 0.72)); /* затемнение под подписи на фото */
   --shadow-float: 0 12px 40px -16px rgb(0 0 0 / 0.25); /* парящая капсула (нижнее меню и т.п.) */
+  /* Тень кадра в стопке («Избранное»): несколько слоёв низкой плотности,
+     как у карточек iOS, — волосяной ореол по краю, ближняя мягкая тень
+     и дальний широкий рассеянный свет. Одна плотная тень снизу
+     (--shadow-float) не отделяла кадры внахлёст: край фото сливался
+     с соседним фото. Здесь слои расходятся во все стороны, и верхний
+     кадр ложится на нижний с тенью по своему краю. */
+  --shadow-stack:
+    0 0 0 0.5px rgb(0 0 0 / 0.04),
+    0 1px 2px rgb(0 0 0 / 0.06),
+    0 4px 10px -2px rgb(0 0 0 / 0.08),
+    0 14px 32px -8px rgb(0 0 0 / 0.16);
   /* ============ СТЕКЛО (парящие капсулы поверх контента) ============
      Материал iOS: полупрозрачная заливка + размытие того, что под ней,
      блик по верхней кромке. Крутится только здесь. Размытие статичное:
@@ -433,8 +444,7 @@
   --dur-base: 0.8s;    /* появления элементов */
   --dur-slow: 1.4s;    /* крупные экранные перекладки */
 
-  /* Плашка «Добавлено в избранное» (lib/fav-toast.ts): выезжает снизу
-     пружиной с лёгким перелётом, как пуш, висит --dur-toast и уезжает. */
+  /* Плашка «Добавлено в избранное» (lib/fav-toast.ts): сколько висит. */
   --dur-toast: 2.6s;
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
@@ -502,6 +512,11 @@
   /* Тень на тёмном фоне почти не читается — парящей капсуле нужен
      провал глубже, иначе полоса и шторка «лежат» на странице плоско. */
   --shadow-float: 0 12px 40px -14px rgb(0 0 0 / 0.7);
+  --shadow-stack:
+    0 0 0 0.5px rgb(255 255 255 / 0.06),
+    0 1px 2px rgb(0 0 0 / 0.3),
+    0 4px 10px -2px rgb(0 0 0 / 0.35),
+    0 14px 32px -8px rgb(0 0 0 / 0.55);
   /* Стекло было белой полупрозрачной плёнкой — на тёмном она молочная
      и грязная. Здесь стекло светлее фона ровно настолько, чтобы
      отделиться, блик по кромке тоньше. */
@@ -1812,94 +1827,67 @@ textarea.input {
 }
 
 /* ============ ПЛАШКА «ДОБАВЛЕНО В ИЗБРАННОЕ» ============
-   Пуш снизу над доком: стеклянная капсула (--glass-*: она всплывает по
-   нажатию, постоянной не бывает — правило стекла соблюдено), слева кадр
-   карточки, текст, справа «Открыть». Спрятана под нижний край экрана;
-   .is-open (ставит lib/fav-toast.ts) выводит её пружиной. На ПК дока
-   снизу нет (--dock-h: 0) — капсула просто стоит у низа экрана. */
+   Капсула lib/fav-toast.ts. Говорит на языке плавающей кнопки заявки
+   (StickyCta): чернильная .pill, никакого стекла и обводок — стекло
+   запрещено на всём, что не панель по нажатию, а пуш-плашка из своих
+   форм выглядела чужой. Появление — как у той капсулы: всплывает
+   снизу с проступанием, только transform/opacity.
+   Место — над доком (--dock-h), считается от вьюпорта, поэтому на ПК
+   рельс вычитается руками. Висит капсула заявки — встаём над ней. */
 .fav-toast {
   position: fixed;
-  left: 50%;
-  bottom: calc(var(--dock-h) + var(--s-3));
+  left: var(--rail-w);
+  right: 0;
+  bottom: calc(var(--dock-h) + var(--s-4));
   z-index: var(--z-overlay);
   display: flex;
-  align-items: center;
-  gap: var(--s-3);
-  width: min(calc(100% - 2 * var(--gutter)), 440px);
-  padding: var(--s-2) var(--s-2) var(--s-2) var(--s-2);
-  border: 1px solid var(--glass-line);
-  border-radius: var(--radius-card);
-  /* Стекло плотнее обычного: плашка всплывает над чем угодно, в том
-     числе над кнопками и текстом, и при --glass-bg они просвечивали
-     сквозь её надпись. Размытие оставляем — оно и даёт «пуш». */
-  background: color-mix(in srgb, var(--paper) 86%, transparent);
-  -webkit-backdrop-filter: var(--glass-blur);
-  backdrop-filter: var(--glass-blur);
-  box-shadow: var(--glass-sheen), var(--shadow-float);
-  color: var(--ink);
-  opacity: 0;
+  justify-content: center;
+  padding: 0 var(--gutter);
   pointer-events: none;
-  transform: translate(-50%, calc(100% + var(--s-5)));
-  transition: transform var(--dur-base) var(--ease-out),
-              opacity var(--dur-fast) var(--ease-out);
+  opacity: 0;
+  transform: translateY(24px);
+  /* bottom — чтобы, если капсула заявки всплывёт посреди показа,
+     плашка плавно поднялась над ней, а не перескочила */
+  transition: opacity var(--dur-fast) var(--ease-out),
+              transform var(--dur-fast) var(--ease-out),
+              bottom var(--dur-base) var(--ease-out);
 }
 
-.fav-toast.is-open {
+.fav-toast.is-shown {
   opacity: 1;
-  pointer-events: auto;
-  transform: translate(-50%, 0);
-  transition: transform var(--dur-base) var(--ease-spring),
-              opacity var(--dur-fast) var(--ease-out);
+  transform: translateY(0);
+  transition: opacity var(--dur-base) var(--ease-out),
+              transform var(--dur-base) var(--ease-out),
+              bottom var(--dur-base) var(--ease-out);
 }
 
-@media (min-width: 1024px) {
-  .fav-toast { left: calc(50% + var(--rail-w) / 2); bottom: var(--s-5); }
+body:has(.scta.is-shown) .fav-toast {
+  bottom: calc(var(--dock-h) + var(--s-4) + var(--float-cta-space));
 }
 
-.fav-toast__thumb {
+.fav-toast__pill {
+  max-width: 100%;
+  background: var(--fg);
+  color: var(--bg);
+  border-color: var(--fg);
+  box-shadow: var(--shadow-float);
+}
+
+.fav-toast.is-shown .fav-toast__pill { pointer-events: auto; }
+
+.fav-toast__icon {
+  width: 18px;
+  height: 18px;
   flex: none;
-  width: 44px;
-  height: 44px;
-  overflow: hidden;
-  border-radius: calc(var(--radius-card) - 4px);
-  background: var(--surface-dim);
+  --icon-fill: currentColor;
 }
 
-.fav-toast__thumb[hidden] { display: none; }
+.fav-toast__open { opacity: 0.6; }
 
-.fav-toast__thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+/* Капсула уже чернильная — ховер-инверсия .pill ей не нужна */
+@media (hover: hover) {
+  .fav-toast__pill:hover { background: var(--fg); color: var(--bg); }
 }
-
-.fav-toast__text {
-  flex: 1 1 0;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  line-height: 1.2;
-}
-
-.fav-toast__title {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: var(--fs-small);
-  font-weight: var(--w-head);
-}
-
-.fav-toast__name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: var(--fs-caption);
-  font-weight: var(--w-medium);
-  opacity: 0.6;
-}
-
-.fav-toast__open { flex: none; }
 
 /* ============ ДОСТУПНОСТЬ ============ */
 :focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }

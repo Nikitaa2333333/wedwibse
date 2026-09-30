@@ -1,18 +1,18 @@
 // ============================================================
 // ПЛАШКА «ДОБАВЛЕНО В ИЗБРАННОЕ» — отклик на сердце.
-// Выезжает снизу, над нижним доком, как пуш на телефоне: кадр карточки,
-// «Добавлено», её имя и «Открыть» — прямой путь в раздел. Короче, чем
-// «Добавлено в избранное»: длинная строка рядом с кнопкой на телефоне
-// обрезалась многоточием.
-// Через пару секунд уезжает сама. Заменила полёт кружка во вкладку
-// (заказчик, 30.09.2026: «просто плашечка снизу, как пуш»).
+// Всплывает снизу над доком чернильной капсулой — тем же языком, что
+// плавающая кнопка заявки (StickyCta): .pill в инверсии, без стекла
+// и без своих «пушевых» форм (заказчик, 30.09.2026: стекло в проекте
+// запрещено, собирать из наших компонентов). Вся капсула — ссылка
+// в «Избранное»: «♥ Добавлено в избранное · Открыть».
+// Если в этот момент висит капсула заявки, плашка встаёт над ней
+// (body:has(.scta.is-shown) в global.css), а не накрывает.
 //
 // Одна плашка на страницу, создаётся при первом добавлении и дальше
-// переиспользуется: быстрые нажатия подряд не громоздят стопку,
-// а обновляют текст и продлевают показ. Моушн — CSS (global.css,
-// .fav-toast), тайминги — токены; здесь только состояние.
+// переиспользуется: быстрые нажатия подряд продлевают показ, а не
+// громоздят стопку. Моушн — CSS (.fav-toast), тайминги — токены.
 // ============================================================
-import type { FavoriteItem } from './favorites';
+import { spriteVersion } from './icons';
 
 let el: HTMLElement | null = null;
 let hideTimer = 0;
@@ -23,12 +23,11 @@ function build(): HTMLElement {
   root.setAttribute('role', 'status');
   root.setAttribute('aria-live', 'polite');
   root.innerHTML =
-    '<span class="fav-toast__thumb"><img alt="" decoding="async" /></span>' +
-    '<span class="fav-toast__text">' +
-    '<span class="fav-toast__title">Добавлено</span>' +
-    '<span class="fav-toast__name"></span>' +
-    '</span>' +
-    '<a class="pill pill--sm fav-toast__open" href="/izbrannoe/">Открыть</a>';
+    '<a class="pill pill--icon fav-toast__pill" href="/izbrannoe/">' +
+    `<svg class="fav-toast__icon" fill="currentColor" aria-hidden="true"><use href="/icons.svg?v=${spriteVersion}#i-heart"/></svg>` +
+    '<span>Добавлено в избранное</span>' +
+    '<span class="fav-toast__open">Открыть</span>' +
+    '</a>';
   document.body.append(root);
   return root;
 }
@@ -40,26 +39,19 @@ function holdMs(): number {
   return v.endsWith('ms') ? n : n * 1000;
 }
 
-export function showFavToast(item: FavoriteItem): void {
+export function showFavToast(): void {
   el ??= build();
-
-  const img = el.querySelector<HTMLImageElement>('img')!;
-  const thumb = el.querySelector<HTMLElement>('.fav-toast__thumb')!;
-  thumb.hidden = !item.img;
-  if (item.img) img.src = item.img;
-  el.querySelector('.fav-toast__name')!.textContent = item.name;
-
-  // Снимаем и ставим класс через кадр — иначе выезд не проиграется,
-  // если плашка создана только что.
+  // Класс ставим через кадр — иначе у только что созданной плашки
+  // выезд не проиграется.
   const root = el;
-  requestAnimationFrame(() => root.classList.add('is-open'));
+  requestAnimationFrame(() => root.classList.add('is-shown'));
 
   clearTimeout(hideTimer);
-  hideTimer = window.setTimeout(() => root.classList.remove('is-open'), holdMs());
+  hideTimer = window.setTimeout(() => root.classList.remove('is-shown'), holdMs());
 }
 
 /** убрали из избранного, пока плашка висит — прячем сразу */
 export function hideFavToast(): void {
   clearTimeout(hideTimer);
-  el?.classList.remove('is-open');
+  el?.classList.remove('is-shown');
 }
