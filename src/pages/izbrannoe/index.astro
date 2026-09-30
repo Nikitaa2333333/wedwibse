@@ -2,7 +2,7 @@
 // ИЗБРАННОЕ — раздел «Корзина» из ТЗ (wedwibse-app-scope): копит выбранные
 // площадки и подрядчиков, даёт из них отобрать финалистов и сравнить.
 // Персональный экран без бэкенда — источник данных localStorage
-// (см. src/lib/favorites.ts, src/lib/shortlist.ts), поэтому вся разметка
+// (см. src/lib/favorites.ts), поэтому вся разметка
 // ниже — пустой каркас, который наполняет клиентский скрипт. SEO это
 // не касается: раздел открывается из BottomDock, а не приходит из поиска.
 //
@@ -10,18 +10,21 @@
 //   1. «Все» — по стопке на направление (площадки, ведущие, …): последние
 //      кадры веером внахлёст, четвёртый — размытый со счётчиком «+N»,
 //      под стопкой название и давность (реф. коллекции в духе iOS, 30.09.2026);
-//   2. внутри направления — сетка карточек и вторичный отбор.
+//   2. внутри направления — сетка карточек в две колонки и прибитая к низу
+//      полоса действий: «Сравнить» и «Написать всем».
 // Между уровнями — полоса чипов «Все · Площадки 15 · Ведущие 14» над
 // содержимым: она же и навигация, отдельной пилюли «← Папки» больше нет.
 // Уровень задаётся хэшем `#<cat>`, поэтому системный «назад» возвращает к «Все».
 //
-// Вторичный отбор («механика сайтов знакомств», по одной папке за раз):
-//   этап 1 — свайп: карточки по одной во весь экран, влево «мимо»,
-//            вправо «в финал»; на ПК — кнопки и стрелки клавиатуры;
-//   этап 2 — таблица сравнения финалистов (`#<cat>/compare`): колонки —
-//            финалисты, строки — факты из каталога (lib/compare-facts.ts);
-//   финал  — одна кнопка «Отправить заявки» на всех. Бэкенда нет —
-//            шторка-заглушка, см. TODO в скрипте.
+// Сценарий (заказчик, 30.09.2026): человек открывает направление, ещё раз
+// пробегает свои карточки и делает одно из двух —
+//   «Написать всем» — одно сообщение каждой карточке направления сразу
+//      (в шторке можно снять лишних). Бэкенда нет — отправка-заглушка;
+//   «Сравнить» (`#<cat>/compare`) — таблица по всем карточкам направления,
+//      только строки, где данные есть хотя бы у двух: сравнивать «—» с «—»
+//      незачем, а незаполненная строка у одной карточки не валидна.
+// Прежний отбор финалистов свайпом и полоса «Отобрать / Заново / Сравнить
+// финалистов» сняты: второй проход по карточкам и есть сама сетка.
 import Layout from '../../layouts/Layout.astro';
 import BottomDock from '../../components/BottomDock.astro';
 import Icon from '../../components/Icon.astro';
@@ -38,16 +41,14 @@ const factsJson = JSON.stringify(compareFacts()).replace(/</g, '\\u003c');
 const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c');
 ---
 
-<Layout title="Избранное — WED Secrets" description="Площадки и подрядчики, которые вы сохранили — отберите финалистов и сравните их между собой.">
+<Layout title="Избранное — WED Secrets" description="Площадки и подрядчики, которые вы сохранили: сравните их между собой и напишите всем сразу.">
   <Fragment slot="head">
     <meta name="robots" content="noindex" />
   </Fragment>
 
   <!-- Заголовок раздела — крупный, в контенте, как ScopePicker у каталогов:
-       h1 + счётчик рядом. Внутри папки h1 становится именем папки, а над ним
-       появляется пилюля «← Папки». -->
+       h1 + счётчик рядом. Внутри направления h1 становится его именем. -->
   <header class="scope">
-    <a class="pill pill--sm scope__back" href="/izbrannoe/" data-back hidden>← К карточкам</a>
     <div class="scope__title-row">
       <h1 class="t-h1" data-title>Избранное</h1>
       <p class="scope__count" data-count hidden></p>
@@ -57,24 +58,12 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
          хэш, поэтому переключение живёт в истории и «назад» работает. -->
     <nav class="fav-tabs" data-tabs aria-label="Направления" hidden></nav>
 
-    <!-- Полоса отбора: состояние второго захода и его действия.
-         Видна только внутри папки, где есть из чего выбирать. -->
-    <div class="pickbar" data-pickbar hidden>
-      <p class="pickbar__status t-small" data-pick-status></p>
-      <div class="pickbar__actions">
-        <button class="pill pill--sm" type="button" data-pick-start hidden>Отобрать финалистов</button>
-        <button class="pill pill--sm" type="button" data-pick-continue hidden>Продолжить отбор</button>
-        <a class="pill pill--sm" href="#" data-pick-compare hidden>Сравнить финалистов</a>
-        <a class="pill pill--sm" href="#" data-pick-grid hidden>← К карточкам</a>
-        <button class="pill pill--sm" type="button" data-pick-reset hidden>Заново</button>
-      </div>
-    </div>
   </header>
 
   <main class="wrap">
     <p class="empty t-small" data-empty>
-      Пока пусто. Добавляйте площадки и подрядчиков сердечком на карточке — они появятся здесь,
-      и из них можно будет отобрать финалистов и сравнить их между собой.
+      Пока пусто. Добавляйте площадки и подрядчиков сердечком на карточке — они появятся здесь:
+      их можно будет сравнить между собой и написать всем сразу.
     </p>
 
     <div class="stacks" data-boards hidden></div>
@@ -84,76 +73,36 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
     <div class="cmp" data-compare hidden></div>
   </main>
 
-  <!-- Финал: одна заявка на всех финалистов. Парящая капсула над доком. -->
-  <div class="sendbar" data-sendbar hidden>
-    <span class="t-small" data-send-count></span>
-    <button class="pill pill--sm" type="button" data-send>Отправить заявки</button>
+  <!-- ПОЛОСА ДЕЙСТВИЙ НАПРАВЛЕНИЯ. Прибита к низу над доком, как капсула
+       заявки на карточке (StickyCta): контент под ней растворяется в бумагу,
+       пилюли стоят на сплошном фоне. В сетке — «Сравнить» и «Написать всем»,
+       в сравнении — «К карточкам» и «Написать всем». -->
+  <div class="fav-bar" data-bar hidden>
+    <a class="pill fav-bar__ghost" href="#" data-bar-compare>Сравнить</a>
+    <a class="pill fav-bar__ghost" href="#" data-bar-back hidden>К карточкам</a>
+    <button class="pill fav-bar__main" type="button" data-write>Написать всем</button>
   </div>
 
-  <!-- ЭТАП 1 — СВАЙП. Полноэкранная сцена поверх раздела: одна карточка
-       во весь экран, под ней следующая. Жест — lib/swipe.ts, кнопки внизу
-       делают то же мышью, стрелки клавиатуры — то же с клавиатуры. -->
-  <section class="pick" data-pick role="dialog" aria-modal="true" aria-label="Отбор финалистов" hidden>
-    <header class="pick__head">
-      <button class="icon-btn" type="button" data-pick-close aria-label="Закрыть отбор">
-        <Icon name="close" />
-      </button>
-      <div class="pick__title">
-        <span class="pick__cat" data-pick-cat></span>
-        <span class="pick__progress t-caption" data-pick-progress></span>
-      </div>
-      <span class="pick__spacer" aria-hidden="true"></span>
-    </header>
-    <div class="pick__track" aria-hidden="true"><span class="pick__fill" data-pick-fill></span></div>
-
-    <div class="pick__stage" data-pick-stage></div>
-
-    <footer class="pick__foot">
-      <div class="pick__act">
-        <button class="icon-btn icon-btn--lg pick__btn pick__btn--no" type="button" data-pick-no aria-label="Мимо">
-          <Icon name="close" />
-        </button>
-        <span class="t-caption">Мимо</span>
-      </div>
-      <button class="pill pill--sm" type="button" data-pick-undo>Вернуть</button>
-      <div class="pick__act">
-        <button class="icon-btn icon-btn--lg pick__btn pick__btn--yes" type="button" data-pick-yes aria-label="В финал">
-          <Icon name="heart" />
-        </button>
-        <span class="t-caption">В финал</span>
-      </div>
-    </footer>
-
-    <!-- Очередь кончилась: итог и переход к сравнению -->
-    <div class="pick__done" data-pick-done hidden>
-      <h2 class="t-h2" data-done-title></h2>
-      <p class="t-small pick__done-text" data-done-text></p>
-      <div class="pick__done-actions">
-        <button class="pill" type="button" data-done-compare hidden>Сравнить финалистов</button>
-        <button class="pill" type="button" data-done-restart hidden>Пройти заново</button>
-        <button class="pill" type="button" data-pick-close>Закрыть</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- ЗАГЛУШКА ОТПРАВКИ. Бэкенда нет: по клику «Отправить заявки» шторка
-       показывает, куда заявка «ушла». Временно до бэкенда — см. TODO в скрипте. -->
-  <div class="sheet" data-sheet="sent">
+  <!-- «НАПИСАТЬ ВСЕМ». Реестровая шторка: список карточек направления,
+       все отмечены — лишних можно снять; после отправки та же шторка
+       показывает, кому ушло. ЗАГЛУШКА: бэкенда нет, см. TODO в скрипте. -->
+  <div class="sheet" data-sheet="write">
     <div class="sheet__backdrop" data-sheet-close></div>
-    <section class="sheet__panel" role="dialog" aria-modal="true" aria-labelledby="sent-title">
+    <section class="sheet__panel" role="dialog" aria-modal="true" aria-labelledby="write-title">
       <header class="sheet__head">
-        <h2 class="sheet__title" id="sent-title" data-sent-title>Заявки отправлены</h2>
+        <h2 class="sheet__title" id="write-title" data-write-title>Написать всем</h2>
         <button class="icon-btn" type="button" data-sheet-close aria-label="Закрыть">
           <Icon name="close" />
         </button>
       </header>
       <div class="sheet__body" data-lenis-prevent>
-        <p class="t-small" data-sent-lead></p>
-        <ul class="sent-list" data-sent-list></ul>
-        <p class="t-small sent-note">Ответы соберутся в чате — по одному диалогу на каждого.</p>
+        <p class="t-small" data-write-lead></p>
+        <ul class="write-list" data-write-list></ul>
+        <p class="t-small write-note" data-write-note hidden>Ответы соберутся в чате — по одному диалогу на каждого.</p>
       </div>
       <footer class="sheet__foot">
-        <button class="pill" type="button" data-sheet-close>Готово</button>
+        <button class="pill" type="button" data-write-send>Отправить</button>
+        <button class="pill" type="button" data-sheet-close data-write-ok hidden>Готово</button>
       </footer>
     </section>
   </div>
@@ -174,9 +123,6 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
     padding: var(--s-6) var(--gutter) var(--s-2);
   }
 
-  .scope__back { flex: 1 0 100%; align-self: start; width: max-content; }
-  .scope__back[hidden] { display: none; }
-
   .scope__title-row {
     display: flex;
     align-items: baseline;
@@ -190,30 +136,6 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
   }
 
   .scope__count[hidden] { display: none; }
-
-  /* ============ ПОЛОСА ОТБОРА ============
-     Строка состояния и пилюли действий — на бумаге под заголовком папки,
-     той же строкой, где у каталогов стоят инструменты. */
-  .pickbar {
-    flex: 1 0 100%;
-    display: flex;
-    flex-direction: column;
-    gap: var(--s-3);
-    margin-top: var(--s-2);
-  }
-
-  .pickbar[hidden] { display: none; }
-
-  .pickbar__status { max-width: var(--measure-lead); }
-  .pickbar__status:empty { display: none; }
-
-  .pickbar__actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--s-2);
-  }
-
-  .pickbar__actions > [hidden] { display: none; }
 
   /* ============ ПУСТОЕ СОСТОЯНИЕ ============ */
   .empty {
@@ -397,27 +319,33 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
   }
 
   /* ============ СЕТКА КАРТОЧЕК ============ */
+  /* Две колонки уже на телефоне (заказчик, 30.09.2026): направление
+     пробегают глазами целиком, по одной карточке во весь экран это
+     была лента, а не обзор. От планшета три, на ПК четыре. */
   .grid {
     display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--s-6) clamp(8px, 1vw, 12px);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s-5) var(--pin-gap);
   }
 
   .grid[hidden] { display: none; }
 
   @media (min-width: 640px) {
-    .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   }
 
   @media (min-width: 1024px) {
-    .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   }
+
+  /* Под прибитой полосой действий последний ряд не должен прятаться */
+  .wrap.has-bar { padding-bottom: calc(var(--dock-space) + var(--float-cta-space) + var(--s-6)); }
 
   /* ============ КАРТОЧКА ИЗБРАННОГО ============ */
   .fcard {
     display: flex;
     flex-direction: column;
-    gap: var(--s-3);
+    gap: var(--s-2);
     min-width: 0;
   }
 
@@ -442,8 +370,8 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
      допустима только иконка, и та в языке кнопок первого экрана. */
   .fcard__remove {
     position: absolute;
-    top: var(--s-3);
-    right: var(--s-3);
+    top: var(--s-2);
+    right: var(--s-2);
     z-index: 1;
   }
 
@@ -454,8 +382,10 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
     gap: var(--s-3);
   }
 
+  /* Кегль под половину экрана: в две колонки --fs-h3 рвал имя на три строки */
   .fcard__name {
-    font-size: var(--fs-h3);
+    min-width: 0;
+    font-size: var(--fs-body);
     font-weight: var(--w-head);
     line-height: 1.15;
   }
@@ -468,246 +398,18 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
 
   .fcard__meta { margin-top: 2px; }
 
-  /* Вердикт отбора — строкой на бумаге, не на кадре */
-  .fcard__state {
-    margin-top: var(--s-1);
-    font-size: var(--fs-caption);
-    font-weight: var(--w-medium);
-  }
-
-  .fcard__state--yes { color: var(--accent); }
-
-  /* ============ СЦЕНА СВАЙПА (этап 1) ============
-     Поверх всего раздела, во весь экран, на бумаге. На ПК рельс
-     навигации слева остаётся виден — сцена отступает на его ширину. */
-  .pick {
-    position: fixed;
-    inset: 0 0 0 var(--rail-w);
-    z-index: var(--z-overlay);
-    display: flex;
-    flex-direction: column;
-    background: var(--paper);
-    color: var(--ink);
-  }
-
-  .pick[hidden] { display: none; }
-
-  .pick__head {
-    display: flex;
-    align-items: center;
-    gap: var(--s-3);
-    padding: calc(var(--s-4) + env(safe-area-inset-top, 0px)) var(--gutter) var(--s-3);
-  }
-
-  .pick__title {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    text-align: center;
-    min-width: 0;
-  }
-
-  .pick__cat {
-    font-size: var(--fs-small);
-    font-weight: var(--w-medium);
-  }
-
-  .pick__spacer { width: 40px; flex: none; }
-
-  /* Ход отбора: тонкая полоса, заливка — чернила, движение — только scale */
-  .pick__track {
-    height: 3px;
-    margin: 0 var(--gutter);
-    border-radius: var(--radius-pill);
-    background: var(--surface-dim);
-    overflow: hidden;
-  }
-
-  .pick__fill {
-    display: block;
-    height: 100%;
-    background: var(--ink);
-    transform-origin: left center;
-    transform: scaleX(var(--p, 0));
-    transition: transform var(--dur-fast) var(--ease-out);
-  }
-
-  .pick__stage {
-    position: relative;
-    flex: 1;
-    min-height: 0;
-    margin: var(--s-4) var(--gutter) 0;
-  }
-
-  /* Карточка: кадр занимает всё, что осталось от экрана, подпись — под ним
-     на бумаге. Верхняя карточка следует за пальцем через переменные
-     (--dx/--dy/--rot), следующая лежит под ней чуть меньше. */
-  .pick__card {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    max-width: 440px;
-    margin-inline: auto;
-    display: flex;
-    flex-direction: column;
-    gap: var(--s-3);
-    touch-action: none;
-    user-select: none;
-    -webkit-user-select: none;
-    will-change: transform;
-    transform: translate(var(--dx, 0px), var(--dy, 0px)) rotate(var(--rot, 0deg));
-  }
-
-  .pick__card--top { cursor: grab; }
-  .pick__card--top:active { cursor: grabbing; }
-
-  .pick__card--next {
-    transform: scale(calc(0.94 + 0.06 * var(--reveal, 0))) translateY(calc(12px * (1 - var(--reveal, 0))));
-    transition: transform var(--dur-base) var(--ease-out);
-    pointer-events: none;
-  }
-
-  /* Карточки лежат стопкой друг на друге, и у подписи нет своей заливки —
-     без этого имя, строка и кнопка нижней карточки просвечивали сквозь
-     верхнюю, и на экране стояли два-три имени внахлёст. У нижней карточки
-     подпись не нужна вовсе: из-под верхней видно только край кадра. */
-  .pick__card--next .pick__body { visibility: hidden; }
-
-  .pick__card .pick__body { background: var(--bg); }
-
-  .pick__stage.is-drag .pick__card--next { transition: none; }
-
-  /* Возврат на место и вылет за экран — одна кривая проекта */
-  .pick__card.is-settle {
-    transition: transform var(--dur-base) var(--ease-out);
-  }
-
-  .pick__card.is-fly {
-    transition: transform var(--dur-base) var(--ease-out),
-                opacity var(--dur-base) var(--ease-out);
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .pick__media {
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-    border-radius: var(--radius-card);
-    background: var(--surface-dim);
-  }
-
-  .pick__media img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 0;
-    pointer-events: none;
-  }
-
-  .pick__body {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: var(--s-3);
-  }
-
-  .pick__text { min-width: 0; }
-
-  .pick__name {
-    font-size: var(--fs-h3);
-    font-weight: var(--w-head);
-    line-height: 1.15;
-  }
-
-  .pick__meta { margin-top: 2px; }
-
-  .pick__open { flex: none; }
-
-  /* Кнопки-вердикты: два круга, между ними «Вернуть». Кнопка растёт,
-     пока палец тянет карточку в её сторону (--lift 0…1). */
-  .pick__foot {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--s-6);
-    padding: var(--s-4) var(--gutter) calc(var(--s-5) + var(--safe-b));
-  }
-
-  .pick__act {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--s-2);
-  }
-
-  /* «Вернуть» нечего — кнопка гаснет целиком (opacity на элементе, не на тексте) */
-  .pick__foot .pill:disabled {
-    opacity: 0.35;
-    pointer-events: none;
-  }
-
-  /* Круг — из реестра (.icon-btn + .icon-btn--lg в global.css), тут только
-     то, что у этой сцены своё: цвет литералом ink/paper (сцена стоит на
-     бумаге независимо от тумблера темы — см. background у .pick выше, тем
-     же приёмом, не через --fg/--bg) и лифт-анимация под палец. */
-  .pick__btn {
-    border-color: var(--ink);
-    color: var(--ink);
-    transform: scale(calc(1 + 0.18 * var(--lift, 0)));
-    transition: transform var(--dur-fast) var(--ease-out),
-                background var(--dur-fast) var(--ease-out),
-                color var(--dur-fast) var(--ease-out);
-  }
-
-  .pick__btn:active { transform: scale(0.9); }
-
-  /* Единственный цвет проекта — алый — у единственного «да» на экране */
-  .pick__btn--yes {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: var(--accent-fg);
-  }
-
-  /* заливка контурного сердца из спрайта — через ручку --icon-fill (gen-icons.mjs) */
-  .pick__btn--yes svg { --icon-fill: currentColor; }
-
-  @media (hover: hover) {
-    .pick__btn--no:hover { background: var(--ink); color: var(--paper); }
-  }
-
-  .pick.is-done .pick__stage,
-  .pick.is-done .pick__foot { display: none; }
-
-  .pick__done {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: var(--s-4);
-    padding: var(--s-6) var(--gutter) calc(var(--s-7) + var(--safe-b));
-  }
-
-  .pick__done[hidden] { display: none; }
-
-  .pick__done-text { max-width: var(--measure-lead); }
-
-  .pick__done-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--s-2);
-    margin-top: var(--s-2);
-  }
-
-  .pick__done-actions > [hidden] { display: none; }
-
-  /* ============ ТАБЛИЦА СРАВНЕНИЯ (этап 2) ============ */
+  /* ============ ТАБЛИЦА СРАВНЕНИЯ ============
+     Колонки — карточки, строки — факты. Подпись факта не стоит слева
+     отдельной колонкой (на телефоне она съедала треть ширины, а крестик
+     «убрать» ехал мимо кадра), а лежит строкой над значениями и при
+     горизонтальной прокрутке остаётся у левого края (sticky).
+     Крестика в таблице нет: убирают из избранного в сетке, таблица
+     только отвечает на вопрос «чем они отличаются». */
   .cmp[hidden] { display: none; }
 
   .cmp__scroll {
     overflow-x: auto;
+    overflow-y: clip;
     scrollbar-width: none;
   }
 
@@ -715,118 +417,145 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
 
   .cmp__table {
     display: grid;
-    grid-template-columns: minmax(96px, 128px) repeat(var(--cols), minmax(168px, 1fr));
-    border-top: 1px solid var(--hairline);
+    /* Колонка — чуть меньше половины экрана: на телефоне видно две
+       карточки и край третьей, который и зовёт листать вбок. */
+    grid-template-columns: repeat(var(--cols), min(42vw, 220px));
+    column-gap: var(--pin-gap);
     min-width: 100%;
     width: max-content;
   }
 
-  .cmp__row { display: contents; }
-
-  /* Линии между строками — структура таблицы, единственное место,
-     где разделители разрешены. */
-  .cmp__label,
-  .cmp__cell {
-    padding: var(--s-4) var(--s-3);
-    border-bottom: 1px solid var(--hairline);
-  }
-
-  .cmp__label {
-    position: sticky;
-    left: 0;
-    z-index: 1;
-    font-size: var(--fs-caption);
-    font-weight: var(--w-medium);
-    background: var(--bg);
-  }
-
-  .cmp__cell {
+  .cmp__head {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
     min-width: 0;
-    font-size: var(--fs-small);
-  }
-
-  .cmp__name {
-    font-size: var(--fs-body);
-    font-weight: var(--w-head);
+    padding-bottom: var(--s-4);
+    color: inherit;
     text-decoration: none;
-  }
-
-  .cmp__media {
-    position: relative;
-    overflow: hidden;
-    border-radius: var(--radius-card);
-    background: var(--surface-dim);
   }
 
   .cmp__img {
     width: 100%;
-    aspect-ratio: 4 / 5;
+    aspect-ratio: 1;
     object-fit: cover;
-    border-radius: 0;
+    border-radius: var(--radius-card);
+    background: var(--surface-dim);
   }
 
-  .cmp__drop {
-    position: absolute;
-    top: var(--s-3);
-    right: var(--s-3);
-    z-index: 1;
+  .cmp__name {
+    font-size: var(--fs-small);
+    font-weight: var(--w-head);
+    line-height: 1.2;
   }
 
-  /* ============ КАПСУЛА «ОТПРАВИТЬ ЗАЯВКИ» ============ */
-  .sendbar {
+  /* Подпись строки — во всю ширину таблицы, волосяная линия сверху
+     (линии — структура таблицы, единственное место, где они уместны). */
+  .cmp__label {
+    grid-column: 1 / -1;
+    padding-top: var(--s-4);
+    border-top: 1px solid var(--hairline);
+  }
+
+  .cmp__label span {
+    position: sticky;
+    left: 0;
+    font-size: var(--fs-caption);
+    font-weight: var(--w-medium);
+    opacity: 0.6;
+  }
+
+  .cmp__cell {
+    min-width: 0;
+    padding: var(--s-1) 0 var(--s-4);
+    font-size: var(--fs-small);
+  }
+
+  .cmp__cell--empty { opacity: 0.35; }
+
+  .cmp__note {
+    margin-top: var(--s-4);
+    max-width: var(--measure-text);
+    opacity: 0.6;
+  }
+
+  /* ============ ПОЛОСА ДЕЙСТВИЙ ============
+     Прибита к низу над доком, как капсула заявки StickyCta: контент под
+     ней растворяется в цвет бумаги, пилюли стоят на сплошном фоне.
+     Считается от вьюпорта — место рельса на ПК вычитается руками. */
+  .fav-bar {
     position: fixed;
-    left: 50%;
-    bottom: calc(var(--safe-b) + var(--s-5) + 64px);
-    transform: translateX(-50%);
+    left: var(--rail-w);
+    right: 0;
+    bottom: var(--dock-h);
     z-index: var(--z-nav);
     display: flex;
-    align-items: center;
-    gap: var(--s-4);
-    padding: var(--s-2) var(--s-2) var(--s-2) var(--s-4);
-    border-radius: var(--radius-pill);
-    background: var(--invert-bg);
-    color: var(--invert-fg);
-    box-shadow: var(--shadow-float);
-    /* Панель фиксирована, то есть считается от вьюпорта, а не от контента —
-       ширину полосы навигации (на ПК она слева) вычитаем руками, иначе
-       панель встаёт мимо центра каталога и упирается в её край. */
-    max-width: calc(100vw - var(--rail-w) - var(--s-5) * 2);
-    margin-left: calc(var(--rail-w) / 2);
+    gap: var(--s-2);
+    padding: var(--s-7) var(--gutter) var(--s-3);
+    background: linear-gradient(
+      to bottom,
+      transparent 0,
+      color-mix(in srgb, var(--bg) 60%, transparent) calc(var(--s-7) * 0.5),
+      var(--bg) var(--s-7)
+    );
+    pointer-events: none;
   }
 
-  .sendbar[hidden] { display: none; }
+  .fav-bar[hidden] { display: none; }
 
-  .sendbar .pill {
-    border-color: var(--invert-fg);
-    color: var(--invert-fg);
+  .fav-bar > * {
+    flex: 1 1 0;
+    min-width: 0;
+    text-align: center;
     white-space: nowrap;
+    pointer-events: auto;
   }
+
+  .fav-bar > [hidden] { display: none; }
+
+  /* Главное действие — чернильная капсула, как «Забронировать» */
+  .fav-bar__main {
+    background: var(--fg);
+    color: var(--bg);
+    border-color: var(--fg);
+  }
+
+  .fav-bar__ghost { background: var(--bg); }
 
   @media (hover: hover) {
-    .sendbar .pill:hover { background: var(--invert-fg); color: var(--invert-bg); }
+    .fav-bar__main:hover { background: var(--fg); color: var(--bg); }
   }
 
-  .sendbar .pill:active { background: var(--invert-fg); color: var(--invert-bg); }
-
-  @media (min-width: 1024px) {
-    .sendbar { bottom: var(--s-6); }
+  @media (min-width: 640px) {
+    .fav-bar { justify-content: center; }
+    .fav-bar > * { flex: 0 0 auto; padding-inline: 40px; }
   }
 
-  /* ============ ШТОРКА-ЗАГЛУШКА ============ */
-  .sent-list {
+  /* ============ ШТОРКА «НАПИСАТЬ ВСЕМ» ============ */
+  .write-list {
     list-style: none;
     display: grid;
     gap: var(--s-3);
-    margin: var(--s-4) 0;
+    margin: var(--s-4) 0 0;
   }
 
-  .sent-item {
+  .write-item {
     display: flex;
     align-items: center;
     gap: var(--s-3);
+    min-width: 0;
+    cursor: pointer;
   }
 
-  .sent-item__pic {
+  .write-item input {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    accent-color: var(--ink);
+  }
+
+  .write-item__pic {
     width: 44px;
     height: 44px;
     flex: none;
@@ -835,27 +564,29 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
     background: var(--surface-dim);
   }
 
-  .sent-item__pic img {
+  .write-item__pic img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     border-radius: 0;
   }
 
-  .sent-item__name { font-weight: var(--w-medium); }
+  .write-item__name {
+    min-width: 0;
+    font-weight: var(--w-medium);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 
-  .sent-note { margin-top: var(--s-4); }
+  .write-note { margin-top: var(--s-4); }
+
+  .sheet__foot > [hidden] { display: none; }
 </style>
 
 <script>
   import { getFavorites, removeFavorite, CHANGE_EVENT, STORAGE_KEY, type FavoriteItem } from '../../lib/favorites';
-  import {
-    getVerdicts, decide, undoLast, resetShortlist,
-    SHORTLIST_EVENT, SHORTLIST_KEY, type Verdict,
-  } from '../../lib/shortlist';
-  import { bindSwipe } from '../../lib/swipe';
   import { bindSheet } from '../../lib/sheet';
-  import { bindHistoryOverlay } from '../../lib/viewer';
   import { withCount } from '../../lib/plural';
   import { icons, type IconName } from '../../lib/icons';
   import type { Fact } from '../../lib/compare-facts';
@@ -867,40 +598,22 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
   const boardsEl = $('[data-boards]');
   const titleEl = $('[data-title]');
   const countEl = $('[data-count]');
-  const backEl = $<HTMLAnchorElement>('[data-back]');
   const tabsEl = $('[data-tabs]');
   const compareEl = $('[data-compare]');
 
-  const pickbar = $('[data-pickbar]');
-  const pickStatus = $('[data-pick-status]');
-  const pickStartBtn = $<HTMLButtonElement>('[data-pick-start]');
-  const pickContinueBtn = $<HTMLButtonElement>('[data-pick-continue]');
-  const pickCompareLink = $<HTMLAnchorElement>('[data-pick-compare]');
-  const pickGridLink = $<HTMLAnchorElement>('[data-pick-grid]');
-  const pickResetBtn = $<HTMLButtonElement>('[data-pick-reset]');
+  const wrapEl = $('main.wrap');
+  const barEl = $('[data-bar]');
+  const barCompare = $<HTMLAnchorElement>('[data-bar-compare]');
+  const barBack = $<HTMLAnchorElement>('[data-bar-back]');
+  const writeBtn = $<HTMLButtonElement>('[data-write]');
 
-  const sendbar = $('[data-sendbar]');
-  const sendCount = $('[data-send-count]');
-  const sendBtn = $<HTMLButtonElement>('[data-send]');
-
-  const pickEl = $('[data-pick]');
-  const pickStage = $('[data-pick-stage]');
-  const pickCat = $('[data-pick-cat]');
-  const pickProgress = $('[data-pick-progress]');
-  const pickFill = $('[data-pick-fill]');
-  const pickNoBtn = $<HTMLButtonElement>('[data-pick-no]');
-  const pickYesBtn = $<HTMLButtonElement>('[data-pick-yes]');
-  const pickUndoBtn = $<HTMLButtonElement>('[data-pick-undo]');
-  const pickDone = $('[data-pick-done]');
-  const doneTitle = $('[data-done-title]');
-  const doneText = $('[data-done-text]');
-  const doneCompareBtn = $<HTMLButtonElement>('[data-done-compare]');
-  const doneRestartBtn = $<HTMLButtonElement>('[data-done-restart]');
-
-  const sentSheetEl = $('[data-sheet="sent"]');
-  const sentTitle = $('[data-sent-title]');
-  const sentLead = $('[data-sent-lead]');
-  const sentList = $('[data-sent-list]');
+  const writeSheetEl = $('[data-sheet="write"]');
+  const writeTitle = $('[data-write-title]');
+  const writeLead = $('[data-write-lead]');
+  const writeList = $('[data-write-list]');
+  const writeNote = $('[data-write-note]');
+  const writeSend = $<HTMLButtonElement>('[data-write-send]');
+  const writeOk = $<HTMLButtonElement>('[data-write-ok]');
 
   /** факты для таблицы — id → строки; собраны на сборке (lib/compare-facts.ts) */
   const FACTS: Record<string, Fact[]> = JSON.parse($('[data-facts]')?.textContent || '{}');
@@ -910,11 +623,11 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
   // кадр берём отсюда, а снимок оставляем запасным.
   const COVERS: Record<string, string> = JSON.parse($('[data-covers]')?.textContent || '{}');
 
-  /** папки, где отбор не имеет смысла: булавки из галереи — не подрядчики */
-  const NO_PICK = new Set(['board']);
+  /** направления без действий: булавки из галереи — не подрядчики,
+      писать и сравнивать там некого */
+  const NO_ACTIONS = new Set(['board']);
 
   const CARD_FORMS: [string, string, string] = ['карточка', 'карточки', 'карточек'];
-  const FINALIST_FORMS: [string, string, string] = ['финалист', 'финалиста', 'финалистов'];
 
   let items: FavoriteItem[] = [];
   /** открытая папка (cat) или null — уровень папок; читается из location.hash */
@@ -946,24 +659,6 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
 
   function currentItems(): FavoriteItem[] {
     return activeCat ? items.filter((i) => i.cat === activeCat) : [];
-  }
-
-  /** вердикты папки только по карточкам, которые ещё в избранном */
-  function verdictsOf(cat: string): Map<string, Verdict> {
-    const ids = new Set(items.filter((i) => i.cat === cat).map((i) => i.id));
-    const all = getVerdicts(cat);
-    for (const id of all.keys()) if (!ids.has(id)) all.delete(id);
-    return all;
-  }
-
-  function finalistsOf(cat: string): FavoriteItem[] {
-    const v = verdictsOf(cat);
-    return items.filter((i) => i.cat === cat && v.get(i.id) === 'yes');
-  }
-
-  function pendingOf(cat: string): FavoriteItem[] {
-    const v = verdictsOf(cat);
-    return items.filter((i) => i.cat === cat && !v.has(i.id));
   }
 
   /** давность последнего добавления в папку: «сегодня», «3 дн.», «2 нед.», «1 мес.» */
@@ -1055,14 +750,9 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
     // из стопки верхний кадр ложится в первую карточку, а не улетает
     // в хвост сетки за край экрана.
     const list = [...currentItems()].reverse();
-    const verdicts = verdictsOf(activeCat);
 
     gridEl.innerHTML = list
       .map((it) => {
-        const v = verdicts.get(it.id);
-        const state = v === 'yes'
-          ? '<p class="fcard__state fcard__state--yes">В финалистах</p>'
-          : v === 'no' ? '<p class="fcard__state">Мимо</p>' : '';
         const tail = [it.meta, it.price].filter(Boolean).map(escapeHtml).join(' · ');
         return `
           <article class="fcard" data-id="${escapeHtml(it.id)}">
@@ -1078,7 +768,6 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
                 ${it.rating ? `<span class="fcard__rate">★ ${it.rating.toFixed(1)}</span>` : ''}
               </div>
               ${tail ? `<p class="fcard__meta t-caption">${tail}</p>` : ''}
-              ${state}
             </div>
           </article>
         `;
@@ -1090,41 +779,29 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
     });
   }
 
-  /* ---------- полоса отбора ---------- */
+  /* ---------- полоса действий ---------- */
 
-  function renderPickbar() {
-    if (!pickbar) return;
+  function renderBar() {
+    if (!barEl) return;
     const cat = activeCat;
-    const list = currentItems();
-    const eligible = !!cat && !NO_PICK.has(cat) && list.length >= 2;
-    pickbar.hidden = !eligible;
-    if (!eligible || !cat) return;
+    const n = cat ? currentItems().length : 0;
+    const show = !!cat && !NO_ACTIONS.has(cat) && n > 0;
+    barEl.hidden = !show;
+    wrapEl?.classList.toggle('has-bar', show);
+    if (!show || !cat) return;
 
-    const n = list.length;
-    const yes = finalistsOf(cat).length;
-    const pending = pendingOf(cat).length;
-    const decided = n - pending;
-
-    if (pickStatus) {
-      pickStatus.textContent = decided === 0
-        ? `Второй заход: пройдите ${withCount(n, CARD_FORMS)} по одной — кого мимо, кого в финал.`
-        : `Финалисты: ${yes} из ${n}${pending ? ` · не решено ${pending}` : ''}`;
+    const inCompare = view === 'compare';
+    if (barCompare) {
+      barCompare.hidden = inCompare || n < 2;
+      barCompare.href = `#${encodeURIComponent(cat)}/compare`;
     }
-
-    if (pickStartBtn) pickStartBtn.hidden = decided !== 0;
-    if (pickContinueBtn) pickContinueBtn.hidden = decided === 0 || pending === 0;
-    if (pickCompareLink) {
-      pickCompareLink.hidden = view === 'compare' || yes === 0;
-      pickCompareLink.href = `#${encodeURIComponent(cat)}/compare`;
+    if (barBack) {
+      barBack.hidden = !inCompare;
+      barBack.href = `#${encodeURIComponent(cat)}`;
     }
-    if (pickGridLink) {
-      pickGridLink.hidden = view !== 'compare';
-      pickGridLink.href = `#${encodeURIComponent(cat)}`;
-    }
-    if (pickResetBtn) pickResetBtn.hidden = decided === 0;
   }
 
-  /* ---------- этап 2: таблица сравнения ---------- */
+  /* ---------- сравнение ---------- */
 
   /** факты карточки: из реестра сборки, иначе — что есть в снимке */
   function factsOf(it: FavoriteItem): Fact[] {
@@ -1137,15 +814,17 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
     return out;
   }
 
+  /** строка сравнения нужна, только если данные есть хотя бы у двух */
+  const MIN_FILLED = 2;
+
   function renderCompare() {
     if (!compareEl || !activeCat) return;
-    const cat = activeCat;
-    const chosen = finalistsOf(cat);
+    const list = [...currentItems()].reverse();
 
-    // строки — объединение подписей фактов всех финалистов, в порядке появления
+    // строки — объединение подписей фактов, в порядке появления
     const labels: string[] = [];
     const byItem = new Map<string, Map<string, string>>();
-    for (const it of chosen) {
+    for (const it of list) {
       const m = new Map<string, string>();
       for (const f of factsOf(it)) {
         if (!labels.includes(f.label)) labels.push(f.label);
@@ -1153,48 +832,32 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
       }
       byItem.set(it.id, m);
     }
+    const rows = labels.filter((l) => list.filter((i) => byItem.get(i.id)?.has(l)).length >= MIN_FILLED);
+    const dropped = labels.length - rows.length;
 
-    const head = `
-      <div class="cmp__row">
-        <div class="cmp__label">Фото</div>
-        ${chosen.map((i) => `
-          <div class="cmp__cell">
-            <div class="cmp__media">
-              <img class="cmp__img" src="${escapeHtml(i.img)}" width="320" height="400" alt="${escapeHtml(i.name)}" loading="lazy" decoding="async" />
-              <button class="hero-btn cmp__drop" type="button" data-drop="${escapeHtml(i.id)}" aria-label="Убрать «${escapeHtml(i.name)}» из финалистов">${iconSvg('close')}</button>
-            </div>
-          </div>
-        `).join('')}
-      </div>
-      <div class="cmp__row">
-        <div class="cmp__label">Название</div>
-        ${chosen.map((i) => `<div class="cmp__cell"><a class="cmp__name" href="${escapeHtml(i.href)}">${escapeHtml(i.name)}</a></div>`).join('')}
-      </div>
-    `;
+    const head = list.map((i) => `
+      <a class="cmp__head" href="${escapeHtml(i.href)}">
+        <img class="cmp__img" src="${escapeHtml(COVERS[i.id] || i.img)}" width="280" height="280" alt="" loading="lazy" decoding="async" />
+        <span class="cmp__name">${escapeHtml(i.name)}</span>
+      </a>
+    `).join('');
 
-    const body = labels.map((label) => `
-      <div class="cmp__row">
-        <div class="cmp__label">${escapeHtml(label)}</div>
-        ${chosen.map((i) => `<div class="cmp__cell">${escapeHtml(byItem.get(i.id)?.get(label) ?? '—')}</div>`).join('')}
-      </div>
+    const body = rows.map((label) => `
+      <div class="cmp__label"><span>${escapeHtml(label)}</span></div>
+      ${list.map((i) => {
+        const v = byItem.get(i.id)?.get(label);
+        return v
+          ? `<div class="cmp__cell">${escapeHtml(v)}</div>`
+          : '<div class="cmp__cell cmp__cell--empty">нет данных</div>';
+      }).join('')}
     `).join('');
 
     compareEl.innerHTML = `
       <div class="cmp__scroll">
-        <div class="cmp__table" style="--cols:${chosen.length}">${head}${body}</div>
+        <div class="cmp__table" style="--cols:${list.length}">${head}${body}</div>
       </div>
+      ${dropped ? '<p class="t-caption cmp__note">Строки, заполненные меньше чем у двух карточек, не показаны — сравнивать там нечего.</p>' : ''}
     `;
-
-    compareEl.querySelectorAll<HTMLButtonElement>('[data-drop]').forEach((btn) => {
-      btn.addEventListener('click', () => decide(cat, btn.dataset.drop!, 'no'));
-    });
-  }
-
-  function updateSendbar() {
-    if (!sendbar) return;
-    const show = view === 'compare' && !!activeCat && finalistsOf(activeCat).length > 0;
-    sendbar.hidden = !show;
-    if (show && sendCount && activeCat) sendCount.textContent = withCount(finalistsOf(activeCat).length, FINALIST_FORMS);
   }
 
   /* ---------- шапка и переключение уровней ---------- */
@@ -1204,16 +867,8 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
     const n = inFolder ? currentItems().length : items.length;
     if (titleEl) titleEl.textContent = inFolder && activeCat ? catLabelOf(activeCat) : 'Избранное';
     if (countEl) {
-      countEl.textContent = view === 'compare' && activeCat
-        ? withCount(finalistsOf(activeCat).length, FINALIST_FORMS)
-        : withCount(n, CARD_FORMS);
+      countEl.textContent = withCount(n, CARD_FORMS);
       countEl.hidden = n === 0;
-    }
-    // Пилюля «назад» осталась только у сравнения: между «Все» и
-    // направлениями переключают чипы.
-    if (backEl) {
-      backEl.hidden = !(inFolder && view === 'compare');
-      if (activeCat) backEl.href = `#${encodeURIComponent(activeCat)}`;
     }
     if (boardsEl) boardsEl.hidden = inFolder;
     if (gridEl) gridEl.hidden = !inFolder || view === 'compare';
@@ -1235,8 +890,8 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
       view = 'grid';
       history.replaceState(null, '', location.pathname);
     }
-    // сравнивать некого — назад к сетке папки
-    if (activeCat && view === 'compare' && finalistsOf(activeCat).length === 0) {
+    // сравнивать некого (меньше двух карточек) — назад к сетке
+    if (activeCat && view === 'compare' && currentItems().length < 2) {
       view = 'grid';
       history.replaceState(null, '', `${location.pathname}#${encodeURIComponent(activeCat)}`);
     }
@@ -1247,10 +902,9 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
       if (compareEl) compareEl.hidden = true;
       if (titleEl) titleEl.textContent = 'Избранное';
       if (countEl) countEl.hidden = true;
-      if (backEl) backEl.hidden = true;
       if (tabsEl) tabsEl.hidden = true;
-      if (pickbar) pickbar.hidden = true;
-      if (sendbar) sendbar.hidden = true;
+      if (barEl) barEl.hidden = true;
+      wrapEl?.classList.remove('has-bar');
       return;
     }
 
@@ -1262,303 +916,70 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
     }
     applyLevel();
     updateFans(); // до первой отрисовки: стопки сразу в своём положении, а не «раскрываются» при открытии
-    renderPickbar();
-    updateSendbar();
+    renderBar();
   }
 
-  /* ---------- этап 1: свайп ---------- */
-
-  let queue: FavoriteItem[] = [];
-  let pickCatId: string | null = null;
-  let unbindSwipe: (() => void) | null = null;
-  let flying = false;
-
-  function setLift(progress: number) {
-    pickYesBtn?.style.setProperty('--lift', String(Math.max(0, progress)));
-    pickNoBtn?.style.setProperty('--lift', String(Math.max(0, -progress)));
-  }
-
-  function cardHtml(it: FavoriteItem, cls: string): string {
-    const tail = [it.meta, it.price].filter(Boolean).map(escapeHtml).join(' · ');
-    return `
-      <article class="pick__card ${cls}" data-id="${escapeHtml(it.id)}">
-        <div class="pick__media"><img src="${escapeHtml(COVERS[it.id] || it.img)}" alt="${escapeHtml(it.name)}" draggable="false" decoding="async" onerror="this.remove()" /></div>
-        <div class="pick__body">
-          <div class="pick__text">
-            <h2 class="pick__name">${escapeHtml(it.name)}</h2>
-            ${tail || it.rating ? `<p class="pick__meta t-small">${[tail, it.rating ? `★ ${it.rating.toFixed(1)}` : ''].filter(Boolean).join(' · ')}</p>` : ''}
-          </div>
-          <a class="pill pill--sm pick__open" href="${escapeHtml(it.href)}" target="_blank" rel="noopener">Открыть</a>
-        </div>
-      </article>
-    `;
-  }
-
-  function renderDeck(enterFrom: 'left' | 'right' | null = null) {
-    if (!pickStage || !pickCatId || !pickEl) return;
-    unbindSwipe?.();
-    unbindSwipe = null;
-    flying = false;
-    setLift(0);
-
-    const total = items.filter((i) => i.cat === pickCatId).length;
-    const done = total - queue.length;
-    if (pickCat) pickCat.textContent = catLabelOf(pickCatId);
-    if (pickProgress) pickProgress.textContent = queue.length ? `${done + 1} из ${total}` : `${total} из ${total}`;
-    pickFill?.style.setProperty('--p', String(total ? done / total : 0));
-    if (pickUndoBtn) pickUndoBtn.disabled = done === 0;
-
-    if (queue.length === 0) {
-      pickStage.innerHTML = '';
-      showDone(total);
-      return;
-    }
-
-    pickEl.classList.remove('is-done');
-    if (pickDone) pickDone.hidden = true;
-
-    // следующая — под верхней, поэтому в разметке первой
-    pickStage.innerHTML =
-      (queue[1] ? cardHtml(queue[1], 'pick__card--next') : '') +
-      cardHtml(queue[0], 'pick__card--top');
-
-    const top = pickStage.querySelector<HTMLElement>('.pick__card--top');
-    const next = pickStage.querySelector<HTMLElement>('.pick__card--next');
-    if (!top) return;
-
-    // вернувшаяся карточка въезжает с той стороны, куда улетела
-    if (enterFrom) {
-      const w = pickStage.offsetWidth * 1.5;
-      top.style.setProperty('--dx', `${enterFrom === 'right' ? w : -w}px`);
-      top.style.setProperty('--rot', enterFrom === 'right' ? '18deg' : '-18deg');
-      requestAnimationFrame(() => requestAnimationFrame(() => {
-        top.classList.add('is-settle');
-        top.style.setProperty('--dx', '0px');
-        top.style.setProperty('--rot', '0deg');
-        top.addEventListener('transitionend', () => top.classList.remove('is-settle'), { once: true });
-      }));
-    }
-
-    unbindSwipe = bindSwipe(top, {
-      onStart() {
-        top.classList.remove('is-settle');
-        pickStage.classList.add('is-drag');
-      },
-      onMove({ dx, dy, progress }) {
-        top.style.setProperty('--dx', `${dx}px`);
-        top.style.setProperty('--dy', `${dy * 0.2}px`);
-        top.style.setProperty('--rot', `${dx * 0.04}deg`);
-        next?.style.setProperty('--reveal', String(Math.abs(progress)));
-        setLift(progress);
-      },
-      onEnd(verdict) {
-        pickStage.classList.remove('is-drag');
-        if (verdict) { fly(verdict); return; }
-        top.classList.add('is-settle');
-        top.style.setProperty('--dx', '0px');
-        top.style.setProperty('--dy', '0px');
-        top.style.setProperty('--rot', '0deg');
-        next?.style.setProperty('--reveal', '0');
-        setLift(0);
-        top.addEventListener('transitionend', () => top.classList.remove('is-settle'), { once: true });
-      },
-    });
-  }
-
-  /** карточка улетает за экран, вердикт пишется, очередь двигается */
-  function fly(side: 'left' | 'right') {
-    if (flying || !pickStage || !pickCatId) return;
-    const top = pickStage.querySelector<HTMLElement>('.pick__card--top');
-    const next = pickStage.querySelector<HTMLElement>('.pick__card--next');
-    const it = queue[0];
-    if (!top || !it) return;
-    flying = true;
-    pickStage.classList.remove('is-drag');
-    unbindSwipe?.();
-    unbindSwipe = null;
-
-    const w = pickStage.offsetWidth * 1.5;
-    top.classList.remove('is-settle');
-    top.classList.add('is-fly');
-    top.style.setProperty('--dx', `${side === 'right' ? w : -w}px`);
-    top.style.setProperty('--rot', side === 'right' ? '18deg' : '-18deg');
-    next?.style.setProperty('--reveal', '1');
-    setLift(side === 'right' ? 1 : -1);
-
-    const cat = pickCatId;
-    let finished = false;
-    const finish = () => {
-      if (finished) return;
-      finished = true;
-      decide(cat, it.id, side === 'right' ? 'yes' : 'no');
-      queue.shift();
-      renderDeck();
-    };
-    top.addEventListener('transitionend', finish, { once: true });
-    // страховка: transitionend может не прийти (reduced-motion, скрытая вкладка)
-    setTimeout(finish, 900);
-  }
-
-  function showDone(total: number) {
-    if (!pickEl || !pickCatId) return;
-    const yes = finalistsOf(pickCatId).length;
-    pickEl.classList.add('is-done');
-    if (pickDone) pickDone.hidden = false;
-    if (doneTitle) doneTitle.textContent = yes ? `${withCount(yes, FINALIST_FORMS)} из ${total}` : 'Никого не оставили';
-    if (doneText) {
-      doneText.textContent = yes
-        ? 'Дальше — таблица: финалисты в колонках, цена, место и рейтинг в строках. Оттуда уходит одна заявка на всех.'
-        : 'Можно пройти папку заново или вернуться к карточкам.';
-    }
-    if (doneCompareBtn) doneCompareBtn.hidden = yes === 0;
-    if (doneRestartBtn) doneRestartBtn.hidden = yes !== 0;
-  }
-
-  // Сцена отбора — полноэкранная, поверх раздела, но открывалась без записи
-  // в историю: системное «назад»/жест на телефоне уводили со страницы вместо
-  // закрытия сцены. Приём — тот же, что у просмотра кадра доски (lib/viewer.ts
-  // bindViewer): открытие кладёт маркер в историю, закрытие — либо явный шаг
-  // назад по нему (кнопка-крестик, Escape), либо popstate снаружи (кнопка
-  // браузера/жест) сам закрывает сцену. afterPickClose — что сделать СРАЗУ
-  // ПОСЛЕ закрытия (переход к сравнению из карточки «Готово»): дожидаемся,
-  // чтобы история не осталась с висящей записью сцены под текущим экраном.
-  let afterPickClose: (() => void) | null = null;
-
-  const pickHistory = bindHistoryOverlay('pick', () => {
-    closePick();
-    const after = afterPickClose;
-    afterPickClose = null;
-    after?.();
-  });
-
-  /** закрыть сцену отбора «изнутри» (крестик, Escape) вместо прямого closePick —
-   *  сцена сама себе положила запись в историю, дозакрывать её нужно тем же
-   *  путём, что и системное «назад», иначе в стеке истории останется висящий
-   *  маркер сцены. after — опциональный переход сразу по закрытии. */
-  function dismissPick(after?: () => void) {
-    afterPickClose = after ?? null;
-    pickHistory.dismiss();
-  }
-
-  function openPick(cat: string) {
-    if (!pickEl) return;
-    pickCatId = cat;
-    queue = pendingOf(cat);
-    pickEl.hidden = false;
-    // страница под сценой не листается — тот же приём, что у шторки (lib/sheet.ts)
-    document.documentElement.style.overflow = 'hidden';
-    pickHistory.push();
-    renderDeck();
-    $<HTMLButtonElement>('[data-pick-close]')?.focus({ preventScroll: true });
-  }
-
-  function closePick() {
-    if (!pickEl || pickEl.hidden) return;
-    unbindSwipe?.();
-    unbindSwipe = null;
-    pickEl.hidden = true;
-    pickEl.classList.remove('is-done');
-    document.documentElement.style.overflow = '';
-    pickCatId = null;
-    queue = [];
-  }
-
-  function undo() {
-    if (!pickCatId || flying) return;
-    const last = undoLast(pickCatId);
-    if (!last) return;
-    const it = items.find((i) => i.id === last.id);
-    if (it) queue.unshift(it);
-    renderDeck(last.verdict === 'yes' ? 'right' : 'left');
-  }
-
-  pickNoBtn?.addEventListener('click', () => fly('left'));
-  pickYesBtn?.addEventListener('click', () => fly('right'));
-  pickUndoBtn?.addEventListener('click', undo);
-  document.querySelectorAll<HTMLButtonElement>('[data-pick-close]').forEach((b) => b.addEventListener('click', () => dismissPick()));
-
-  doneCompareBtn?.addEventListener('click', () => {
-    const cat = pickCatId;
-    dismissPick(() => {
-      if (cat) location.hash = `${encodeURIComponent(cat)}/compare`;
-    });
-  });
-
-  doneRestartBtn?.addEventListener('click', () => {
-    const cat = pickCatId;
-    if (!cat) return;
-    resetShortlist(cat);
-    queue = pendingOf(cat);
-    renderDeck();
-  });
-
-  // ПК: стрелки — вердикт, Backspace — вернуть, Esc — закрыть
-  document.addEventListener('keydown', (e) => {
-    if (!pickEl || pickEl.hidden) return;
-    if (e.key === 'Escape') { dismissPick(); return; }
-    if (queue.length === 0) return;
-    if (e.key === 'ArrowLeft') { e.preventDefault(); fly('left'); }
-    else if (e.key === 'ArrowRight') { e.preventDefault(); fly('right'); }
-    else if (e.key === 'Backspace') { e.preventDefault(); undo(); }
-  });
-
-  /* ---------- полоса отбора: действия ---------- */
-
-  pickStartBtn?.addEventListener('click', () => { if (activeCat) openPick(activeCat); });
-  pickContinueBtn?.addEventListener('click', () => { if (activeCat) openPick(activeCat); });
-  pickResetBtn?.addEventListener('click', () => {
-    if (!activeCat) return;
-    resetShortlist(activeCat);
-    if (view === 'compare') location.hash = encodeURIComponent(activeCat);
-  });
-
-  /* ---------- финал: «Отправить заявки» ---------- */
+  /* ---------- «Написать всем» ---------- */
 
   // TODO(бэкенд): заглушка. Настоящая отправка — один запрос со списком id
-  // финалистов папки; здесь только показываем, куда заявка «ушла».
-  const sentSheet = sentSheetEl ? bindSheet(sentSheetEl) : null;
+  // отмеченных карточек; здесь только показываем, кому сообщение «ушло».
+  const writeSheet = writeSheetEl ? bindSheet(writeSheetEl) : null;
 
-  sendBtn?.addEventListener('click', () => {
-    if (!activeCat || !sentSheet) return;
-    const chosen = finalistsOf(activeCat);
-    const n = chosen.length;
-    if (sentTitle) {
-      sentTitle.textContent = activeCat === 'venue'
-        ? `Заявка ушла в ${withCount(n, ['место', 'места', 'мест'])}`
-        : `Заявка ушла ${withCount(n, ['адресату', 'адресатам', 'адресатам'])}`;
+  function pic(i: FavoriteItem): string {
+    return `<span class="write-item__pic" aria-hidden="true"><img src="${escapeHtml(COVERS[i.id] || i.img)}" alt="" loading="lazy" decoding="async" /></span>`;
+  }
+
+  function checkedIds(): string[] {
+    return [...(writeList?.querySelectorAll<HTMLInputElement>('input:checked') ?? [])].map((c) => c.value);
+  }
+
+  function syncSendLabel() {
+    const n = checkedIds().length;
+    if (writeSend) {
+      writeSend.textContent = n ? `Отправить · ${n}` : 'Отметьте, кому';
+      writeSend.disabled = n === 0;
     }
-    if (sentLead) sentLead.textContent = `Папка «${catLabelOf(activeCat)}» — ${withCount(n, FINALIST_FORMS)}:`;
-    if (sentList) {
-      sentList.innerHTML = chosen.map((i) => `
-        <li class="sent-item">
-          <span class="sent-item__pic" aria-hidden="true"><img src="${escapeHtml(i.img)}" alt="" loading="lazy" decoding="async" /></span>
-          <span class="sent-item__name">${escapeHtml(i.name)}</span>
+  }
+
+  writeBtn?.addEventListener('click', () => {
+    if (!activeCat || !writeSheet) return;
+    const list = [...currentItems()].reverse();
+    if (writeTitle) writeTitle.textContent = 'Написать всем';
+    if (writeLead) writeLead.textContent = `Одно сообщение уйдёт каждой отмеченной карточке раздела «${catLabelOf(activeCat)}». Лишних можно снять.`;
+    if (writeList) {
+      writeList.innerHTML = list.map((i) => `
+        <li>
+          <label class="write-item">
+            <input type="checkbox" value="${escapeHtml(i.id)}" checked />
+            ${pic(i)}
+            <span class="write-item__name">${escapeHtml(i.name)}</span>
+          </label>
         </li>
       `).join('');
+      writeList.querySelectorAll('input').forEach((c) => c.addEventListener('change', syncSendLabel));
     }
-    sentSheet.open(sendBtn);
+    if (writeNote) writeNote.hidden = true;
+    if (writeSend) writeSend.hidden = false;
+    if (writeOk) writeOk.hidden = true;
+    syncSendLabel();
+    writeSheet.open(writeBtn);
   });
 
-  /* ---------- навигация ---------- */
-
-  // Экран сравнения (view === 'compare') отдельного маркера истории не
-  // просит: он не оверлей поверх страницы, а обычный уровень хэш-роутера
-  // (`#cat/compare`, см. parseHash/render выше) — переход туда уже кладёт
-  // настоящую запись в историю сам, тем же образом, что и переход между
-  // папками. Системное «назад» с экрана сравнения уже возвращает к сетке
-  // папки штатно, через 'hashchange' ниже — второй механизм (как у сцены
-  // отбора выше) тут просто не нужен.
-
-  // «← Папки» / «← К карточкам»: без перезагрузки, только хэш
-  backEl?.addEventListener('click', (e) => {
-    e.preventDefault();
-    if (view === 'compare' && activeCat) {
-      location.hash = encodeURIComponent(activeCat);
-      return;
+  writeSend?.addEventListener('click', () => {
+    const ids = new Set(checkedIds());
+    // в том же порядке, что список в шторке (свежие сверху)
+    const sent = [...items].reverse().filter((i) => ids.has(i.id));
+    if (!sent.length) return;
+    if (writeTitle) writeTitle.textContent = `Отправлено: ${withCount(sent.length, ['адресат', 'адресата', 'адресатов'])}`;
+    if (writeLead) writeLead.textContent = 'Сообщение ушло:';
+    if (writeList) {
+      writeList.innerHTML = sent.map((i) => `
+        <li class="write-item">${pic(i)}<span class="write-item__name">${escapeHtml(i.name)}</span></li>
+      `).join('');
     }
-    history.pushState(null, '', location.pathname);
-    render();
-    window.scrollTo({ top: 0 });
+    if (writeNote) writeNote.hidden = false;
+    writeSend.hidden = true;
+    if (writeOk) writeOk.hidden = false;
   });
 
   /* ---------- моушн стопок ---------- */
@@ -1598,9 +1019,8 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
   });
 
   window.addEventListener(CHANGE_EVENT, render);
-  window.addEventListener(SHORTLIST_EVENT, render);
   window.addEventListener('storage', (e) => {
-    if (e.key === STORAGE_KEY || e.key === SHORTLIST_KEY) render();
+    if (e.key === STORAGE_KEY) render();
   });
 
   render();
