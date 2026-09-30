@@ -25,6 +25,7 @@
 import { Image } from 'astro:assets';
 import PhotoRail from './PhotoRail.astro';
 import Avatar from './Avatar.astro';
+import Icon from './Icon.astro';
 import type { SpecialistCard } from '../lib/specialist-card';
 import { resolveImage, IMG_WIDTHS } from '../lib/images';
 import { photosOnly } from '../lib/media';
@@ -40,7 +41,7 @@ const { cards } = Astro.props;
      каталог листается спокойно, карточки стоят на месте. -->
 <main class="wrap">
   <div class="vgrid" data-sort-grid>
-    {cards.map(({ s, variant, styleTag, filters, sortKey, price, href }, i) => {
+    {cards.map(({ s, variant, styleTag, filters, sortKey, price, href, save }, i) => {
       // Первый ряд — LCP каталога: первый кадр без lazy и с
       // fetchpriority="high", как у доски главной и каталога площадок.
       const firstRow = i < 2;
@@ -83,6 +84,14 @@ const { cards } = Astro.props;
             priority={firstRow}
           />
         )}
+
+        {/* Сердце на кадре карточки выдачи (заказчик, 30.09.2026): отфильтровал —
+            отметил нужных прямо в сетке, не проваливаясь в каждую карточку.
+            Тот же .save и тот же снимок, что у сердца на странице карточки
+            (lib/save.ts): избранное не двоится, плашка «Добавлено» та же. */}
+        <button class="save" type="button" data-save={save} aria-pressed="false" aria-label={`«${s.name}» в избранное`}>
+          <Icon name="heartOutline" />
+        </button>
 
         <!-- Цена и стиль — в подписи под кадром на любой ширине.
              Одно правило на весь сайт: текст не кладём на фотографию. -->
@@ -159,6 +168,7 @@ const { cards } = Astro.props;
 
   /* ============ КАРТОЧКА ============ */
   .scard {
+    position: relative; /* точка отсчёта для сердца .save в углу кадра */
     display: flex;
     flex-direction: column;
     gap: var(--s-2);
@@ -283,3 +293,9 @@ const { cards } = Astro.props;
     .scard__tagline { font-size: var(--fs-small); }
   }
 </style>
+
+<script>
+  import { bindSaveButtons } from '../lib/save';
+
+  bindSaveButtons();
+</script>

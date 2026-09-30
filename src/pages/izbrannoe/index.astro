@@ -498,6 +498,57 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
 
   .cmp__cell--empty { opacity: 0.35; }
 
+  /* Прибитая полоса имён — от вьюпорта (место рельса на ПК вычитается
+     руками), выезжает сверху, когда шапка с кадрами ушла за экран.
+     Колонки — те же, что у таблицы (класс .cmp__table), вбок полосу
+     двигает скрипт вслед за таблицей. */
+  .cmp__pin {
+    position: fixed;
+    top: 0;
+    left: var(--rail-w);
+    right: 0;
+    z-index: var(--z-nav);
+    padding: calc(var(--safe-t) + var(--s-2)) clamp(8px, 1vw, 16px) var(--s-2);
+    background: var(--bg);
+    border-bottom: 1px solid var(--hairline);
+    transform: translateY(-100%);
+    transition: transform var(--dur-fast) var(--ease-out);
+    pointer-events: none;
+  }
+
+  .cmp__pin.is-on { transform: translateY(0); }
+
+  .cmp__pin-row {
+    overflow-x: hidden;
+    min-width: 0;
+    width: auto;
+  }
+
+  .cmp__pin-cell {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    min-width: 0;
+    font-size: var(--fs-small);
+    font-weight: var(--w-head);
+  }
+
+  .cmp__pin-cell img {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    object-fit: cover;
+    border-radius: 50%;
+    background: var(--surface-dim);
+  }
+
+  .cmp__pin-cell span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .cmp__note {
     margin-top: var(--s-4);
     max-width: var(--measure-text);
@@ -847,6 +898,39 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
   const cmpHidden = new Set<string>();
   let cmpCat: string | null = null;
 
+  /** Полоса имён: показывается, когда шапка с кадрами ушла за верх экрана,
+      и двигается вбок синхронно с таблицей. */
+  let pinCleanup: (() => void) | null = null;
+
+  function bindComparePin() {
+    pinCleanup?.();
+    pinCleanup = null;
+    if (!compareEl) return;
+    const pinEl = compareEl.querySelector<HTMLElement>('[data-cmp-pin]');
+    const row = pinEl?.firstElementChild as HTMLElement | null;
+    const scroller = compareEl.querySelector<HTMLElement>('.cmp__scroll');
+    const head = compareEl.querySelector<HTMLElement>('.cmp__head');
+    if (!pinEl || !row || !scroller || !head) return;
+
+    let frame = 0;
+    const sync = () => {
+      frame = 0;
+      const headBottom = head.getBoundingClientRect().bottom;
+      const tableBottom = scroller.getBoundingClientRect().bottom;
+      pinEl.classList.toggle('is-on', headBottom < 0 && tableBottom > pinEl.offsetHeight * 2);
+    };
+    const onScroll = () => { frame ||= requestAnimationFrame(sync); };
+    const onSide = () => { row.scrollLeft = scroller.scrollLeft; };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    scroller.addEventListener('scroll', onSide, { passive: true });
+    sync();
+    pinCleanup = () => {
+      window.removeEventListener('scroll', onScroll);
+      scroller.removeEventListener('scroll', onSide);
+    };
+  }
+
   function renderCompare() {
     if (!compareEl || !activeCat) return;
     if (cmpCat !== activeCat) { cmpHidden.clear(); cmpCat = activeCat; }
@@ -887,7 +971,19 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
       }).join('')}
     `).join('');
 
+    // Прибитая полоса имён: при прокрутке вниз шапка с кадрами уходит за
+    // верх экрана, и в строках «нет данных / Да / 70 гостей» уже не понять,
+    // чья колонка. Полоса повторяет имена теми же колонками и едет вбок
+    // вместе с таблицей (заказчик, 30.09.2026).
+    const pin = list.map((i) => `
+      <span class="cmp__pin-cell">
+        <img src="${escapeHtml(COVERS[i.id] || i.img)}" width="28" height="28" alt="" loading="lazy" decoding="async" />
+        <span>${escapeHtml(i.name)}</span>
+      </span>
+    `).join('');
+
     compareEl.innerHTML = `
+      ${list.length ? `<div class="cmp__pin" data-cmp-pin aria-hidden="true"><div class="cmp__pin-row cmp__table" style="--cols:${list.length}">${pin}</div></div>` : ''}
       ${list.length ? '' : '<p class="t-small cmp__note">Все карточки убраны из сравнения.</p>'}
       ${cmpHidden.size ? `<p class="t-caption cmp__note cmp__note--back cmp__note--top">Убрано из сравнения: ${cmpHidden.size} <button class="pill pill--sm" type="button" data-restore>Вернуть</button></p>` : ''}
       <div class="cmp__scroll">
@@ -895,6 +991,8 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
       </div>
       ${dropped ? '<p class="t-caption cmp__note">Строки, заполненные меньше чем у двух карточек, не показаны — сравнивать там нечего.</p>' : ''}
     `;
+
+    bindComparePin();
 
     compareEl.querySelectorAll<HTMLButtonElement>('[data-drop]').forEach((btn) => {
       btn.addEventListener('click', () => { cmpHidden.add(btn.dataset.drop!); renderCompare(); });
@@ -955,7 +1053,11 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
 
     renderBoards();
     renderTabs();
-    if (view !== 'compare') cmpCat = null; // вышли из таблицы — убранные крестиком вернутся
+    if (view !== 'compare') {
+      cmpCat = null; // вышли из таблицы — убранные крестиком вернутся
+      pinCleanup?.();
+      pinCleanup = null;
+    }
     if (activeCat) {
       renderGrid();
       if (view === 'compare') renderCompare();
