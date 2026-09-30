@@ -31,6 +31,7 @@
 // тех же данных, из которых собираются каталоги: завели площадку или
 // карточку специалиста — главная подхватила сама.
 import CoverTile from './CoverTile.astro';
+import Icon from './Icon.astro';
 import { VENUES } from '../data/venues';
 import {
   SPECIALIST_GROUPS,
@@ -80,6 +81,7 @@ const cards = [
     capsule: VENUES.length === 0 ? 'скоро' : withCount(VENUES.length, ['площадка', 'площадки', 'площадок']),
     covers: VENUE_COVER,
     tone: 'beige' as const,
+    join: false,
   },
   {
     // Ведём на хаб раздела — экран с плитками групп, а не сразу в каталог
@@ -89,6 +91,8 @@ const cards = [
     capsule: vendors.size === 0 ? 'скоро' : withCount(vendors.size, VENDORS),
     covers: vendorCovers,
     tone: 'dark' as const,
+    // кружок «Вы специалист? К нам» — приглашение подрядчикам в каталог
+    join: true,
   },
 ];
 ---
@@ -106,12 +110,50 @@ const cards = [
           widths={IMG_WIDTHS.card}
           sizes="(min-width: 640px) 320px, 50vw"
           eager
-          compact
         />
+        {/* Кружок с плюсом посреди плитки — вход для самих подрядчиков:
+            «вы специалист — разместитесь у нас». Отдельная кнопка рядом
+            с плиткой, а не внутри неё: плитка — ссылка, вложить в неё
+            вторую ссылку или кнопку нельзя. Текста на кадре нет —
+            только знак со своей тенью, как сердце .save; сама
+            просьба живёт в шторке. */}
+        {card.join && (
+          <button
+            class="entries__join"
+            type="button"
+            data-sheet-open="join"
+            aria-label="Вы специалист? Разместите карточку в каталоге"
+          >
+            <Icon name="plus" />
+          </button>
+        )}
       </li>
     ))}
   </ul>
 </section>
+
+<!-- ШТОРКА «ВЫ СПЕЦИАЛИСТ?». Реестровая .sheet (bindSheet), не своя панель.
+     ЗАГЛУШКА (фаза дизайна): заявки от подрядчиков пока никуда не уходят —
+     кнопка просто закрывает шторку. TODO: форма/контакт, когда появится
+     приём подрядчиков (личный кабинет или менеджер). -->
+<div class="sheet" data-sheet="join">
+  <div class="sheet__backdrop" data-sheet-close></div>
+  <section class="sheet__panel" role="dialog" aria-modal="true" aria-labelledby="join-title">
+    <header class="sheet__head">
+      <h2 class="sheet__title" id="join-title">Вы специалист?</h2>
+      <button class="icon-btn" type="button" data-sheet-close aria-label="Закрыть">
+        <Icon name="close" />
+      </button>
+    </header>
+    <div class="sheet__body" data-lenis-prevent>
+      <p class="t-lead">Ведущие, фотографы, декораторы, кейтеринг — если вы делаете свадьбы красиво, давайте к нам.</p>
+      <p class="t-small join-note">Разместим вашу карточку в каталоге WED Secrets: портфолио, цены и отзывы — там, где пары Москвы и области выбирают подрядчиков на свою свадьбу.</p>
+    </div>
+    <footer class="sheet__foot">
+      <button class="pill" type="button" data-sheet-close>Оставить заявку</button>
+    </footer>
+  </section>
+</div>
 
 <style>
   /* Поля до края экрана держит сам ряд (--edge-gap ниже). */
@@ -153,7 +195,35 @@ const cards = [
   /* Плитка тянется на всю высоту своей ячейки — вид и пропорцию кадра
      держит сам CoverTile (4/5 у обложки), поэтому здесь высоты нет:
      aspect-ratio на самой плашке спорил бы с высотой ряда. */
-  .entries__item { display: flex; }
+  .entries__item { display: flex; position: relative; }
+
+  /* Кружок «к нам» посреди плитки: бумажный круг с чернильным плюсом
+     и своей тенью — читается на любом кадре, как сердце .save. */
+  .entries__join {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: var(--paper);
+    color: var(--ink);
+    box-shadow: var(--shadow-float);
+    cursor: pointer;
+    transform: translate(-50%, -50%);
+    transition: transform var(--dur-fast) var(--ease-out);
+  }
+
+  .entries__join:active { transform: translate(-50%, -50%) scale(0.92); }
+
+  .entries__join :global(svg) { width: 22px; height: 22px; }
+
+  .join-note { margin-top: var(--s-3); }
 
   /* ПОКАЧИВАНИЕ ОТ ПРОКРУТКИ. Бирки (срезанные углы, люверс, наклон
      вразнобой, 25.09.2026) сняты 30.09.2026 — входы теперь обычные
@@ -176,6 +246,11 @@ const cards = [
 </style>
 
 <script>
+  import { bindSheet } from '../lib/sheet';
+
+  const joinSheet = document.querySelector<HTMLElement>('[data-sheet="join"]');
+  if (joinSheet) bindSheet(joinSheet);
+
   // ВХОДЫ ПОКАЧИВАЮТСЯ ОТ ПРОКРУТКИ (25.09.2026, пережило снятие плиток). Не появление блока
   // (их в проекте нет), а реакция на действие: прокрутил — плитки
   // качнулись по инерции и затухли, как подвешенные. Маятник на пружине:
