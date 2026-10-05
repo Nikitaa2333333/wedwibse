@@ -168,7 +168,8 @@ JSON подхватывается автоматически. Сырьё леж�
 
 Подрядчики — тем же путём, скилл `.claude/skills/specialist-page/SKILL.md`:
 один заход оркестратора без субагентов, JSON в `src/data/specialists/<категория>/<slug>.json`,
-материалы с диска — `yadisk-previews` → `yadisk-pick` (диск целиком не качаем),
+материалы с диска — через сервер: `research.sh list` → `preview` → `pick` (диск целиком не качаем,
+см. `CONTENT-PIPELINE.md`),
 проверка `verify-specialist`, раскладка `place-specialist-photos`, ролики по VIDEO.md,
 и обязательно запись в базу — `pb-seed-specialists` (карточка без записи
 в PocketBase не считается заведённой).
