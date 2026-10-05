@@ -58,8 +58,8 @@ const saveData = JSON.stringify(favorite);
 // Рядом с оценкой стоит число отзывов С ТЕКСТОМ, а не число оценок:
 // «5,0 · 279» под значком сообщения обещает 279 прочитываемых мнений.
 const row = FEED.find((f) => f.kind === 'venue' && f.slug === venue.slug);
-const feedRating = row?.kind === 'venue' ? row.rating : null;
-const feedReviews = row?.kind === 'venue' ? row.reviews : null;
+const feedRating = row?.kind === 'venue' ? row.rating ?? null : null;
+const feedReviews = row?.kind === 'venue' ? row.reviews ?? null : null;
 
 const block = venueReviews(venue.slug);
 const rating = block?.rating ?? feedRating;

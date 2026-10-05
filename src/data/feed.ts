@@ -25,8 +25,10 @@ export interface FeedVenue {
   /** нет открытого прайса — поля нет, и карточка не попадает в бакеты чека */
   checkFrom?: number;
   avgCheck: string;
-  rating: number;
-  reviews: number;
+  /** нет отзывов (площадку ещё не оценивали на Картах) — полей нет,
+      и звезда с нулём на карточке не рисуется */
+  rating?: number;
+  reviews?: number;
   /** фото или видео площадки: листаются вбок */
   media: string[];
 }
@@ -46,6 +48,7 @@ const FD = '/venues/forest-dew';
 const DTL = '/venues/due-to-love';
 const SPARK = '/venues/spark-hall';
 const LED = '/venues/led';
+const VB = '/venues/villa-barvikha';
 const FP = '/venues/fish-point';
 const OTR = '/venues/otrazhenie';
 const GRB = '/venues/grebnevo';
@@ -161,6 +164,20 @@ const venues: FeedVenue[] = [
     rating: 4.9,
     reviews: 55,
     media: [`${GRB}/grand-lesnoy/p10.webp`, `${GRB}/barsky/p04.webp`, `${GRB}/pushkin/p13.webp`, `${GRB}/trubetskoy-hall/p13.webp`],
+  },
+  {
+    // Отзывов нет: на Картах заведён только дом 135, без организации —
+    // rating/reviews не ставим, звезда с нулём не рисуется
+    kind: 'venue',
+    slug: 'villa-barvikha',
+    name: 'Villa Barvikha 135',
+    city: 'Барвиха',
+    type: 'Усадьба',
+    capacityMax: 450,
+    capacity: 'до 450 гостей',
+    checkFrom: 8500,
+    avgCheck: 'от 8 500 ₽',
+    media: [`${VB}/p37.webp`, `${VB}/p21.webp`, `${VB}/p01.webp`, `${VB}/p16.webp`],
   },
 ];
 

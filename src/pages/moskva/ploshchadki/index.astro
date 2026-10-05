@@ -185,7 +185,7 @@ const mapPoints = venueMapPoints();
           const firstRow = venueIndex < 2;
           venueIndex += 1;
           const filters = filtersOf(item);
-          const sortKey = { price: item.checkFrom ?? Number.MAX_SAFE_INTEGER, rating: item.rating };
+          const sortKey = { price: item.checkFrom ?? Number.MAX_SAFE_INTEGER, rating: item.rating ?? 0 };
 
           const sizes =
             cardVariant === 'vcard--wide'
@@ -229,7 +229,9 @@ const mapPoints = venueMapPoints();
                     </h2>
                     <p class="vcard__meta">{item.city}</p>
                   </div>
-                  <span class="vcard__rate" aria-label={`Рейтинг ${item.rating}`}>★ {item.rating.toFixed(1)}</span>
+                  {item.rating && (
+                    <span class="vcard__rate" aria-label={`Рейтинг ${item.rating}`}>★ {item.rating.toFixed(1)}</span>
+                  )}
                 </div>
                 {item.checkFrom ? (
                   <p class="vcard__price">{item.avgCheck}</p>
