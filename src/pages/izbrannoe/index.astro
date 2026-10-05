@@ -949,7 +949,6 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
       byItem.set(it.id, m);
     }
     const rows = labels.filter((l) => list.filter((i) => byItem.get(i.id)?.has(l)).length >= MIN_FILLED);
-    const dropped = labels.length - rows.length;
 
     const head = list.map((i) => `
       <div class="cmp__head">
@@ -989,7 +988,6 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
       <div class="cmp__scroll">
         <div class="cmp__table" style="--cols:${list.length}">${head}${body}</div>
       </div>
-      ${dropped ? '<p class="t-caption cmp__note">Строки, заполненные меньше чем у двух карточек, не показаны — сравнивать там нечего.</p>' : ''}
     `;
 
     bindComparePin();

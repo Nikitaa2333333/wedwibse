@@ -54,7 +54,6 @@ const tiles = SPECIALIST_GROUPS.map((g) => {
   <main class="hub">
     <header class="hub__head">
       <h1 class="t-h1">Специалисты</h1>
-      <p class="hub__lead">Команда свадьбы по разделам: выберите, кто нужен, — внутри направления и фильтры.</p>
     </header>
 
     <ul class="hub__grid" aria-label="Разделы специалистов">
@@ -86,7 +85,7 @@ const tiles = SPECIALIST_GROUPS.map((g) => {
         <div class="hub__join">
           <div class="hub__join-text">
             <h2 class="hub__join-title">Вы специалист?</h2>
-            <p class="hub__join-note">Разместим вашу карточку в каталоге — здесь пары Москвы и области выбирают подрядчиков на свадьбу.</p>
+            <p class="hub__join-note">Разместим вашу карточку в каталоге.</p>
           </div>
           <button class="pill hub__join-btn" type="button" data-sheet-open="join">Разместить карточку</button>
         </div>
@@ -133,15 +132,6 @@ const tiles = SPECIALIST_GROUPS.map((g) => {
     gap: var(--s-3);
     margin-bottom: var(--s-5);
     padding-inline: var(--gutter);
-  }
-
-  /* Мера в ch считается от кегля САМОГО элемента: --measure-lead подобран
-     под крупный лид, а тут кегль мелкий — те же 52ch дали бы колонку
-     заметно уже задуманной. Для текста этого кегля мера текстовая. */
-  .hub__lead {
-    margin: 0;
-    max-width: var(--measure-text);
-    font-size: var(--fs-small);
   }
 
   /* Сетка плиток: зазор и поле от края — те же, что у доски кадров
