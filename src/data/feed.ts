@@ -166,8 +166,6 @@ const venues: FeedVenue[] = [
     media: [`${GRB}/grand-lesnoy/p10.webp`, `${GRB}/barsky/p04.webp`, `${GRB}/pushkin/p13.webp`, `${GRB}/trubetskoy-hall/p13.webp`],
   },
   {
-    // Отзывов нет: на Картах заведён только дом 135, без организации —
-    // rating/reviews не ставим, звезда с нулём не рисуется
     kind: 'venue',
     slug: 'villa-barvikha',
     name: 'Villa Barvikha 135',
@@ -177,6 +175,8 @@ const venues: FeedVenue[] = [
     capacity: 'до 450 гостей',
     checkFrom: 8500,
     avgCheck: 'от 8 500 ₽',
+    rating: 5,
+    reviews: 368,
     media: [`${VB}/p37.webp`, `${VB}/p21.webp`, `${VB}/p01.webp`, `${VB}/p16.webp`],
   },
 ];

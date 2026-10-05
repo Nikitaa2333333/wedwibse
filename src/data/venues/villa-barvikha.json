@@ -212,6 +212,9 @@
       "dark": true
     },
     {
+      "type": "reviews"
+    },
+    {
       "type": "terms",
       "kicker": "Условия",
       "title": "Сколько стоит",
@@ -513,8 +516,8 @@
     "address": "Московская область, Одинцовский район, посёлок Барвиха, дом 135",
     "addressNote": "Частная территория в сосновом лесу, 5 км от МКАД по Минскому шоссе",
     "geo": {
-      "lat": 55.718503,
-      "lon": 37.283909
+      "lat": 55.718406,
+      "lon": 37.283948
     },
     "phone": "+7 901 574-84-13",
     "phoneHref": "tel:+79015748413",
@@ -546,6 +549,10 @@
       {
         "label": "Instagram",
         "href": "https://www.instagram.com/villa_barvikha135"
+      },
+      {
+        "label": "Яндекс Карты",
+        "href": "https://yandex.ru/maps/org/villa_barvikha_135/89145166160/"
       }
     ]
   },
