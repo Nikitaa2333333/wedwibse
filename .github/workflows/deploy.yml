@@ -68,3 +68,18 @@ jobs:
           code=$(curl -sL -o /dev/null -w '%{http_code}' https://wed-secrets.ru/)
           echo "Главная отдала $code"
           test "$code" = "200"
+
+      # РОЛИКИ НЕ В GIT (VIDEO.md): они живут на сервере отдельно и заливаются
+      # scripts/media-push.sh руками. 28.09 код с роликами Балашовой и
+      # Косаревой ушёл без заливки — неделю страницы ссылались на файлы,
+      # которых на сервере не было, и видео «не работало». Теперь каждый
+      # ролик, на который ссылается собранный сайт, должен отдаваться
+      # сервером, иначе деплой красный.
+      - name: Reels on server
+        run: |
+          missing=0
+          for u in $(grep -rhoE '/[A-Za-z0-9/_.-]+\.mp4' dist --include=*.html | sort -u); do
+            code=$(curl -s -o /dev/null -r 0-1 -w '%{http_code}' "https://wed-secrets.ru$u")
+            if [ "$code" != "206" ] && [ "$code" != "200" ]; then echo "нет на сервере ($code): $u"; missing=1; fi
+          done
+          test "$missing" = "0" || { echo "Залить: bash scripts/media-push.sh"; exit 1; }

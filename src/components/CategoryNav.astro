@@ -50,7 +50,7 @@ const showCats = rowSlugs.length > 1;
         return (
           <a
             href={`${basePath}${c.slug}/`}
-            class={`cat-nav__cat${c.slug === activeSlug ? ' is-active' : ''}`}
+            class={`chip cat-nav__cat${c.slug === activeSlug ? ' is-active' : ''}`}
             aria-current={c.slug === activeSlug ? 'page' : undefined}
           >
             {c.label}
@@ -74,17 +74,17 @@ const showCats = rowSlugs.length > 1;
   }
 
   /* ============ ВКЛАДКИ ГРУППЫ ============
-     Голый текст, без подложек и обводок: рядом чернильная кнопка «назад»,
-     ниже — ряд серых чипов, третьей форме тут тесно. «Вы здесь» —
-     подчёркивание, отбитое от базовой линии и разорванное вокруг
-     выносных. Не влезли — ряд листается вбок сам, страница не едет
-     (ось Y закрыта явно). touch-action не ставим — ось жеста выбирает
-     браузер (см. DESIGN.md, «Жест на лентах»). */
+     Пилюли-переключатели — общий .chip, текущая в чернильной инверсии
+     (заказчик, 05.10.2026: голый текст с подчёркиванием не читался как
+     переключатель внутри подгруппы). Не влезли — ряд листается вбок сам,
+     страница не едет (ось Y закрыта явно). touch-action не ставим — ось
+     жеста выбирает браузер (см. DESIGN.md, «Жест на лентах»). */
   .cat-nav__tabs {
     flex: 1 1 0;
     min-width: 0;
     display: flex;
-    gap: var(--s-5);
+    align-items: center;
+    gap: var(--s-2);
     padding-right: var(--gutter);
     overflow-x: auto;
     overflow-y: clip;
@@ -94,30 +94,5 @@ const showCats = rowSlugs.length > 1;
 
   .cat-nav__tabs::-webkit-scrollbar { display: none; }
 
-  .cat-nav__cat {
-    flex: none;
-    display: inline-flex;
-    align-items: center;
-    padding: 8px 0;
-    font-size: var(--fs-small);
-    font-weight: var(--w-medium);
-    color: var(--fg);
-    text-decoration: none;
-    white-space: nowrap;
-    opacity: 0.55;
-    transition: opacity var(--dur-fast) var(--ease-out);
-  }
-
-  .cat-nav__cat.is-active {
-    opacity: 1;
-    font-weight: var(--w-head);
-    text-decoration: underline;
-    text-decoration-thickness: 1.5px;
-    text-underline-offset: 7px;
-    text-decoration-skip-ink: auto;
-  }
-
-  @media (hover: hover) {
-    .cat-nav__cat:hover { opacity: 1; }
-  }
+  .cat-nav__cat { flex: none; }
 </style>
