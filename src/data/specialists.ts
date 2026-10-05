@@ -415,7 +415,10 @@ export const SPECIALISTS_BY_CATEGORY: Record<string, Specialist[]> = (() => {
   };
   for (const s of jsonSpecialists) (map[s.categorySlug] ??= []).push(s);
 
-  for (const list of Object.values({ ...map })) {
+  // снимок списков: пока своей категории не было, «Видеографы» собирались
+  // только из alsoCategories; с первым JSON-видеографом цикл стал дописывать
+  // в тот же массив, по которому идёт, и уходил в бесконечность
+  for (const list of Object.values(map).map((l) => [...l])) {
     for (const s of list) {
       for (const extra of s.alsoCategories ?? []) {
         (map[extra] ??= []).push(s);
