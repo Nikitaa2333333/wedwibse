@@ -216,7 +216,8 @@ export const SPECIALIST_GROUPS: SpecialistGroup[] = [
     short: 'Ведущие',
     categories: ['vedushchie'],
     cover: '/specialists/groups/vedushchie.webp',
-    tone: 'dark',
+    tone: 'beige',
+    bg: '#b4c3d3',
   },
   {
     key: 'dekor',
