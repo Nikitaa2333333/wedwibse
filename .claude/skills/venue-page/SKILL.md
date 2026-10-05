@@ -73,6 +73,20 @@ public/venues/<slug>/og-cover.jpg
 
 ## Фаза 0 — материалы (скрипты)
 
+Яндекс.Диск — **через сервер** (с 05.10.2026; почему — `CONTENT-PIPELINE.md`:
+через VPN диск тянется минутами и рвётся, с VPS — секунды). Из Git Bash:
+
+```
+bash scripts/research.sh list    <public_url>               # дерево диска с весом
+bash scripts/research.sh preview <slug> <public_url>        # превью → research/specialists/<slug>/prev/
+bash scripts/research.sh pick    <slug> "004 017 …"         # оригиналы отобранных → research/specialists/<slug>/raw
+bash scripts/research.sh all     <slug> <public_url> --only=video   # ролики целиком на сервер, потом pull
+```
+
+`research.sh` кладёт в `research/specialists/<slug>/` — для площадки
+перенести в `research/<slug>/raw` (или звать `prep-photos` по этому пути).
+Запасной путь с ноутбука, если сервер недоступен:
+
 ```
 node --dns-result-order=ipv6first scripts/fetch-yadisk.mjs <public_url> research/<slug>/raw
 gdown --folder <drive_url> -O research/<slug>/raw          # Google Drive
