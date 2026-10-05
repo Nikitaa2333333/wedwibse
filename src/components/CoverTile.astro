@@ -25,7 +25,7 @@
 // Обложки сменились — плашка плавно перетекает в цвет новой.
 import { Image } from 'astro:assets';
 import { resolveImage } from '../lib/images';
-import { coverTone } from '../lib/cover-tone';
+import { coverTone, isDarkHex } from '../lib/cover-tone';
 
 interface Props {
   name: string;
@@ -53,7 +53,7 @@ const { name, href, capsule, covers, tone = 'beige', bg, sizes, eager = false, w
 // Цвет с кадра на каждую обложку; руками заданный bg — только первой,
 // а смена кадров его не трогает (ручной цвет — осознанное решение).
 const tones = await Promise.all(covers.map((c) => coverTone(c)));
-const first = bg ? { bg, dark: tones[0]?.dark ?? tone === 'dark' } : tones[0];
+const first = bg ? { bg, dark: isDarkHex(bg) } : tones[0];
 const dark = first ? first.dark : tone === 'dark';
 ---
 

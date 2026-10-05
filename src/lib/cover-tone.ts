@@ -48,13 +48,23 @@ async function measure(path: string): Promise<CoverTone> {
     .stats();
   const [r, g, b] = [0, 1, 2].map((c) => strip.channels[c].mean);
 
-  // относительная яркость (WCAG): ниже порога — фон тёмный, подпись белая
+  const hex = (v: number) => Math.round(v).toString(16).padStart(2, '0');
+  return { bg: `#${hex(r)}${hex(g)}${hex(b)}`, dark: isDark(r, g, b) };
+}
+
+/** относительная яркость (WCAG): ниже порога — фон тёмный, подпись белая */
+function isDark(r: number, g: number, b: number): boolean {
   const lin = (v: number) => {
     const x = v / 255;
     return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4;
   };
-  const luminance = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b) < 0.2;
+}
 
-  const hex = (v: number) => Math.round(v).toString(16).padStart(2, '0');
-  return { bg: `#${hex(r)}${hex(g)}${hex(b)}`, dark: luminance < 0.2 };
+/** тёмная ли плашка, заданная руками (#rrggbb): подпись решает цвет
+    самой плашки, а не низ кадра — у скрипачки внизу чёрное платье,
+    а плашка сиреневая */
+export function isDarkHex(hex: string): boolean {
+  const n = parseInt(hex.slice(1), 16);
+  return isDark((n >> 16) & 255, (n >> 8) & 255, n & 255);
 }

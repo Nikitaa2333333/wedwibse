@@ -259,7 +259,8 @@ export const SPECIALIST_GROUPS: SpecialistGroup[] = [
     short: 'Музыка',
     categories: ['dj', 'kaver-gruppy', 'vokalisty', 'muzykanty'],
     cover: '/specialists/groups/muzyka.webp',
-    tone: 'dark',
+    tone: 'beige',
+    bg: '#b59ea7',
   },
   {
     key: 'oborudovanie',
@@ -268,6 +269,7 @@ export const SPECIALIST_GROUPS: SpecialistGroup[] = [
     categories: ['speceffekty', 'arenda-zvuka', 'arenda-sveta'],
     cover: '/specialists/groups/oborudovanie.webp',
     tone: 'dark',
+    bg: '#5f8a7c',
   },
   {
     key: 'shou',
@@ -276,6 +278,7 @@ export const SPECIALIST_GROUPS: SpecialistGroup[] = [
     categories: ['horeografy', 'animatory', 'shou', 'fokusniki'],
     cover: '/specialists/groups/shou.webp',
     tone: 'beige',
+    bg: '#dcc7a5',
   },
   {
     key: 'avto',
