@@ -126,6 +126,11 @@ const logoCreamSvg = `<svg viewBox="${creamViewBox}" xmlns="http://www.w3.org/20
   .hero__logo {
     display: block;
     width: clamp(172px, 48vw, 280px);
+    /* Левый край знака — вровень с карточками под ним: шапка стоит
+       в поле --home-edge, а ряд входов — в волоске --edge-gap. Разница
+       гасится здесь, кнопки справа остаются в своём поле. У svg поля
+       нет — левая кромка «С» и есть край знака. */
+    margin-inline-start: calc(var(--edge-gap) - var(--home-edge));
     color: var(--ink);
   }
 
