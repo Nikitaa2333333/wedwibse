@@ -79,12 +79,13 @@ public/venues/<slug>/og-cover.jpg
 ```
 bash scripts/research.sh list    <public_url>               # дерево диска с весом
 bash scripts/research.sh preview <slug> <public_url>        # превью → research/specialists/<slug>/prev/
-bash scripts/research.sh pick    <slug> "004 017 …"         # оригиналы отобранных → research/specialists/<slug>/raw
+bash scripts/research.sh pick    <slug> "004 017 …"         # скачать и пережать на сервере → research/specialists/<slug>/photos + photos.json
 bash scripts/research.sh all     <slug> <public_url> --only=video   # ролики целиком на сервер, потом pull
 ```
 
 `research.sh` кладёт в `research/specialists/<slug>/` — для площадки
-перенести в `research/<slug>/raw` (или звать `prep-photos` по этому пути).
+перенести `photos/` и `photos.json` в `research/<slug>/` (там их ищут
+`verify-venue` и `place-photos`). Локальный `prep-photos` не нужен.
 Запасной путь с ноутбука, если сервер недоступен:
 
 ```

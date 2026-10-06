@@ -94,16 +94,18 @@ Maria Decor) и в текстах на диске (`обо мне.docx`, `усл
 bash scripts/research.sh list    <ссылка>                 # всё дерево диска рекурсивно, с весом
 bash scripts/research.sh preview <slug> <ссылка>          # превью 600px → research/specialists/<slug>/prev/ + index.tsv
 magick montage $(ls research/specialists/<slug>/prev/*.jpg | sort) -tile 9x -geometry 150x150+3+3 research/_sheets/<slug>.jpg
-bash scripts/research.sh pick    <slug> "004 017 …"       # оригиналы отобранных → raw/ (ссылку помнит сам)
-node scripts/prep-photos.mjs research/specialists/<slug>  # webp 2400–3000 px q88, манифест photos.json
+bash scripts/research.sh pick    <slug> "004 017 …"       # скачивает И пережимает на сервере → photos/ + photos.json
+                                                          # (ссылку помнит сам; prep-photos больше не нужен)
 ```
 
 - **Сначала `list`, а не вывод субагента.** 05.10 Haiku доложил «на диске
   только видео», а `list` показал папку «/Фото» на 46 свадебных кадров
   и пять портретов — карточку чуть не выпустили без фото и аватара.
-- Узкое место теперь — не диск, а `pull` оригиналов на ноутбук через VPN
-  (45 кадров, ~400 МБ — 4 минуты). Пережимать на сервере и тянуть готовый
-  webp — в BACKLOG.md.
+- С 06.10.2026 `pick` пережимает кадры на сервере (`prep-photos-server.mjs`,
+  sharp, под `nice`): Матрешка — 51 кадр за 42 с, 208 МБ оригиналов
+  превратились в 27 МБ webp, на ноутбук за 5 с вместо ~4 минут.
+  Оригиналы остаются на сервере — `research.sh pull <slug> raw`, если
+  понадобятся (вырезать аватар из полного кадра и т.п.).
 - Ролики — тоже на сервере (с 06.10.2026): там лежит статический ffmpeg
   `/srv/wed-research/bin/ffmpeg`. `research.sh all <slug> <url> --only=video`
   кладёт исходники в `/srv/wed-research/out/<slug>/`, там же полоса кадров

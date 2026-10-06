@@ -36,6 +36,7 @@
 | Node | 22.22.1, npm 9.2.0 — ставились под этот конвейер |
 | Загрузчик | `/srv/wed-research/bin/fetch-yadisk.mjs` (пишет потоком: файл любого размера не держит в памяти) |
 | Видео | `/srv/wed-research/bin/ffmpeg`, `ffprobe` — статическая сборка (06.10.2026), пережатие роликов прямо на сервере, `nice -n 19` |
+| Фото | `/srv/wed-research/bin/prep-photos-server.mjs` + sharp в `/srv/wed-research/node_modules` — `research.sh pick` пережимает на сервере и отдаёт готовые webp (51 кадр: 42 с, 208 → 27 МБ) |
 | Скачанное сырьё | `/srv/wed-research/out/<слаг>/` |
 | Владелец | `deploy:deploy` |
 
