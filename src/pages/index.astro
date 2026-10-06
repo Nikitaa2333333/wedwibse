@@ -33,7 +33,7 @@ const logoSvg = `<svg viewBox="${logoViewBox}" fill="none" xmlns="http://www.w3.
 // Показывается только при data-look="cream" (см. global.css, LOOK: CREAM).
 const creamFile = readFileSync(join(process.cwd(), 'public/logo-unicase.svg'), 'utf8');
 const creamViewBox = creamFile.match(/viewBox="([^"]+)"/)![1];
-const creamShapes = (creamFile.match(/<path[^>]*\/>/g) ?? []).join('');
+const creamShapes = (creamFile.match(/<path\b[^>]*\/>/g) ?? []).join('');
 const logoCreamSvg = `<svg viewBox="${creamViewBox}" xmlns="http://www.w3.org/2000/svg" focusable="false">${creamShapes}</svg>`;
 ---
 
@@ -88,9 +88,9 @@ const logoCreamSvg = `<svg viewBox="${creamViewBox}" xmlns="http://www.w3.org/20
          вход в блог целиком. -->
     <PhotoBoard />
 
-    <div class="journal-more container--wide">
-      <a class="pill" href="/blog/">Весь журнал</a>
-    </div>
+    {/* Вход в журнал снят вместе со статьями в доске (06.10.2026):
+        журнал пока не показываем. Вернуть — блок .journal-more
+        с пилюлей «Весь журнал» на /blog/ (стили ниже оставлены). */}
 
     <BottomDock active="feed" />
   </div>

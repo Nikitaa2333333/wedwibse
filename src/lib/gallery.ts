@@ -398,6 +398,10 @@ export type Tile = ({ kind: 'photo' } & Pin) | ArticleTile;
 /** через сколько фото-плиток в поток вклинивается статья */
 const ARTICLE_EVERY = 5;
 
+/** Статьи в доске главной. Выключены по просьбе заказчика (06.10.2026):
+    журнал пока не берём — вернуть одной строкой. */
+const ARTICLES_IN_BOARD = false;
+
 // Пропорция плашки статьи = кадр каталога на телефоне (--card-ratio 2:3):
 // в колонке из вертикальных кадров она читается как ещё один кадр.
 const ARTICLE_RATIO = 2 / 3;
@@ -505,7 +509,7 @@ export function collectTiles(): Tile[] {
     cards,
     reelPins().filter((pin) => !used.has(pin.photos[0]))
   );
-  const articles = ARTICLES.map(articleTile);
+  const articles = ARTICLES_IN_BOARD ? ARTICLES.map(articleTile) : [];
   const out: Tile[] = [];
 
   let a = 0;
