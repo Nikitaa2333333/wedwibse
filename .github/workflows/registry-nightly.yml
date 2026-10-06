@@ -1,0 +1,70 @@
+name: Реестр ↔ сайт (каждое утро)
+
+# Утренняя сверка Google-таблицы модератора с сайтом: кто новый
+# (registry-watch) и что разошлось у заведённых (registry-diff) — цены,
+# фильтры, снятые, битые ссылки на диск, Карты на дом вместо организации.
+# Отчёт — в одну задачу (issue) с меткой «реестр»: её видно с телефона,
+# и она переписывается каждое утро, а не плодит новые. Всё сошлось —
+# задача закрывается сама.
+#
+# Ничего не меняет на сайте и в коде: только читает таблицу и данные
+# репозитория. Заводить и править карточки по отчёту — по-прежнему
+# скиллами specialist-page / venue-page.
+
+on:
+  schedule:
+    - cron: '0 4 * * *'   # 07:00 по Москве
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Скрипты импортируют .ts напрямую (наборы фильтров, лента) — Node 24
+      # снимает типы сам, npm ci не нужен: зависимостей у сверки нет.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Сверка
+        run: |
+          {
+            echo "Проверено: $(TZ=Europe/Moscow date '+%d.%m.%Y %H:%M') МСК"
+            echo
+            echo '## Новые в таблице'
+            echo '```'
+            node scripts/registry-watch.mjs --all
+            echo '```'
+            echo
+            echo '## Расхождения с сайтом'
+            echo '```'
+            node scripts/registry-diff.mjs
+            echo '```'
+            echo
+            echo 'Локально то же: `node scripts/registry-watch.mjs --all` и `node scripts/registry-diff.mjs`.'
+          } > report.md
+          cat report.md
+
+      - name: Отчёт в задачу
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create 'реестр' --color 'C2B8A3' --description 'Сверка реестра с сайтом' 2>/dev/null || true
+          num=$(gh issue list --label 'реестр' --state all --limit 1 --json number -q '.[0].number')
+          clean=$(grep -c 'новых подрядчиков нет\|Реестр и сайт сходятся' report.md || true)
+          if [ -z "$num" ]; then
+            gh issue create --title 'Реестр ↔ сайт: что поменять' --label 'реестр' --body-file report.md
+          else
+            gh issue edit "$num" --body-file report.md
+            if [ "$clean" -ge 2 ]; then
+              gh issue close "$num" --comment 'Всё сошлось — закрываю до следующих расхождений.' 2>/dev/null || true
+            else
+              gh issue reopen "$num" 2>/dev/null || true
+            fi
+          fi
