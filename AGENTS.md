@@ -171,7 +171,8 @@ JSON подхватывается автоматически. Сырьё леж�
 материалы с диска — через сервер: `research.sh list` → `preview` → `pick` (диск целиком не качаем,
 см. `CONTENT-PIPELINE.md`),
 проверка `verify-specialist`, раскладка `place-specialist-photos`, ролики по VIDEO.md,
-и обязательно запись в базу — `pb-seed-specialists` (карточка без записи
+и обязательно запись в базу — `pb-seed-specialists` через `bash scripts/pb-tunnel.sh`
+(база на VPS с 06.10.2026, не на ноутбуке; карточка без записи
 в PocketBase не считается заведённой).
 
 ## Фильтры подрядчиков и реестр каталога — один источник

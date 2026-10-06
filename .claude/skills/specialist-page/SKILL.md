@@ -278,7 +278,7 @@ offers не пересказывают packageIncludes.
 Карточка не считается заведённой, пока не лежит в коллекции `specialists`:
 
 ```
-./pb/pocketbase.exe serve --http 127.0.0.1:8090 --dir pb/pb_data --migrationsDir pb/pb_migrations   # если не запущен
+bash scripts/pb-tunnel.sh   # база на VPS с 06.10.2026 — туннель на 127.0.0.1:8090; локальный pocketbase.exe не запускать
 node scripts/pb-seed-specialists.mjs <slug> [--publish]   # upsert записи + фото + аватар + ролики, photoIndex
 node scripts/pb-pull.mjs --all                             # проверка круга: файлы должны совпасть, git status чистый
 ```
