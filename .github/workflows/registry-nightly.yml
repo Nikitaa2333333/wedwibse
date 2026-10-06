@@ -55,6 +55,19 @@ jobs:
           } > report.md
           cat report.md
 
+      # Тот же отчёт машинным видом — на сервер, wed-secrets.ru/registry/report.json.
+      # Его забирает Apps Script в самой Google-таблице (scripts/registry-notes.gs)
+      # и вешает заметки на ячейки с именами: модератор видит расхождения прямо
+      # в таблице. В отчёте только то, что и так есть в таблице (она открыта по ссылке).
+      - name: Отчёт для таблицы
+        run: |
+          node scripts/registry-diff.mjs --json > registry.json
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "${{ secrets.DEPLOY_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          ssh -i ~/.ssh/id_ed25519 -o BatchMode=yes "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}"             "mkdir -p ${{ secrets.DEPLOY_PATH }}/registry && cat > ${{ secrets.DEPLOY_PATH }}/registry/report.json" < registry.json
+
       - name: Отчёт в задачу
         env:
           GH_TOKEN: ${{ github.token }}

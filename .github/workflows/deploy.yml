@@ -56,7 +56,9 @@ jobs:
         # --delete: удалённые страницы исчезают и на сервере,
         # иначе каталог копит мусор от прошлых сборок.
         run: |
-          rsync -az --delete --exclude '.write-test' \
+          # registry/ — отчёт утренней сверки (registry-nightly.yml): его кладут
+          # на сервер отдельно, и --delete стирал бы его каждым деплоем
+          rsync -az --delete --exclude '.write-test' --exclude 'registry/' \
             -e "ssh -i ~/.ssh/id_ed25519" \
             dist/ "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_PATH }}/"
 
