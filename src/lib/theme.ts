@@ -21,7 +21,7 @@ export const DEFAULT_THEME: Theme = 'light';
 
 /** Цвет адресной строки мобильного браузера — совпадает с --paper темы. */
 const BAR_COLOR: Record<Theme, string> = {
-  light: '#ffffff',
+  light: '#f6efe5', // крем, см. блок образа в global.css
   dark: '#1c1815',
 };
 

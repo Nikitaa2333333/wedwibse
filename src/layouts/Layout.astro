@@ -25,7 +25,7 @@ const indexable = process.env.SITE_INDEXABLE === 'true';
 ---
 
 <!doctype html>
-<html lang="ru">
+<html lang="ru" data-look="cream">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -35,7 +35,7 @@ const indexable = process.env.SITE_INDEXABLE === 'true';
         и что выбрал человек, сервер знать не может. Системные части,
         которые CSS не красит (резинка скролла, встроенные контролы),
         держит color-scheme в global.css — он меняется вместе с палитрой. */}
-    <meta name="theme-color" content="#ffffff" />
+    <meta name="theme-color" content="#f6efe5" />
     {!indexable && <meta name="robots" content="noindex, nofollow" />}
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     {/* Самохостинг Onest (public/fonts/, @font-face — src/styles/global.css).
@@ -79,22 +79,6 @@ const indexable = process.env.SITE_INDEXABLE === 'true';
         }
       } catch (e) {
         // приватный режим — едем на светлой, это не повод ронять страницу
-      }
-
-      // ОБРАЗ ДЛЯ СРАВНЕНИЯ (06.10.2026): ?look=cream включает кремовый
-      // образ (блок LOOK: CREAM в global.css) и запоминает его, чтобы
-      // переходы по сайту шли в нём же; ?look=base возвращает обычный.
-      try {
-        var look = new URLSearchParams(location.search).get('look');
-        if (look === 'cream' || look === 'base') localStorage.setItem('wed:look', look);
-        if (localStorage.getItem('wed:look') === 'cream') {
-          document.documentElement.dataset.look = 'cream';
-          if (document.documentElement.dataset.theme !== 'dark') {
-            document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f6efe5');
-          }
-        }
-      } catch (e) {
-        // нет localStorage — показываем базовый образ
       }
     </script>
   </head>

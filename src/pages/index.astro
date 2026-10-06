@@ -8,29 +8,11 @@ import Icon from '../components/Icon.astro';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-// ЛОГОТИП — ВСТРОЕННЫЙ <svg>, НЕ CSS-МАСКА (25.09.2026). Маской
-// (mask: url(logo.svg)) браузер сперва растрирует svg в его собственном
-// размере 194×36 и потом растягивает до 350–520px — знак выходил
-// пиксельным. Встроенный svg рисуется вектором сразу в нужном размере.
-// Источник тот же — public/logo-tag.svg (собирает scripts/logo-mask.mjs):
-// белые фигуры маски → currentColor (цвет из темы), чёрные (текст на
-// бирке, люверс) → цвет фона страницы, как прорезь.
-const logoFile = readFileSync(join(process.cwd(), 'public/logo-tag.svg'), 'utf8');
-const logoViewBox = logoFile.match(/viewBox="([^"]+)"/)![1];
-const logoShapes = (logoFile.match(/<path\b[^>]*\/>/g) ?? [])
-  .map((p) =>
-    p.includes('fill="#000"')
-      ? p.replace('fill="#000"', 'class="logo-knock"')
-      : p.replace(/fill="#fff"/g, 'fill="currentColor"').replace(/stroke="#fff"/g, 'stroke="currentColor"'),
-  )
-  .join('');
-// fill="none" на корне, как в исходнике: нитка к бирке — только обводка,
-// без него браузер заливал её чёрным по умолчанию, и она становилась кляксой
-const logoSvg = `<svg viewBox="${logoViewBox}" fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false">${logoShapes}</svg>`;
-
-// Знак для образа «крем» (сравнение для заказчика, 06.10.2026): набран
-// Cormorant Unicase + Tenor Sans и переведён в кривые, цвет — currentColor.
-// Показывается только при data-look="cream" (см. global.css, LOOK: CREAM).
+// ЛОГОТИП — встроенный <svg>, не CSS-маска (маской браузер растрирует
+// svg в родном размере и растягивает — знак выходил пиксельным).
+// Знак «крем» (06.10.2026): Cormorant Unicase + Tenor Sans в кривых,
+// цвет — currentColor, сам берёт --ink и тёмную тему. Прежний знак
+// с биркой лежит в public/logo-tag.svg.
 const creamFile = readFileSync(join(process.cwd(), 'public/logo-unicase.svg'), 'utf8');
 const creamViewBox = creamFile.match(/viewBox="([^"]+)"/)![1];
 const creamShapes = (creamFile.match(/<path\b[^>]*\/>/g) ?? []).join('');
@@ -50,6 +32,15 @@ const logoCreamSvg = `<svg viewBox="${creamViewBox}" xmlns="http://www.w3.org/20
            многоточием). Выбор темы запоминается, поэтому одной точки
            переключения хватает — на внутренних страницах тема уже стоит. -->
       <header class="hero__bar">
+        <!-- Знак в левом углу шапки, как у сайтов обычно (заказчик,
+             06.10.2026), а не крупно по центру: первый экран сразу
+             начинается с разделов. Он же h1 главной: текст остаётся
+             в HTML для поиска и экранного диктора, глазам виден знак. -->
+        <h1 class="hero__title">
+          <span class="hero__title-text">Свадебные секреты</span>
+          <span class="hero__logo" aria-hidden="true" set:html={logoCreamSvg}></span>
+        </h1>
+
         <div class="hero__actions">
           <ThemeToggle />
 
@@ -58,21 +49,6 @@ const logoCreamSvg = `<svg viewBox="${creamViewBox}" xmlns="http://www.w3.org/20
           </a>
         </div>
       </header>
-
-      <div class="hero__intro">
-        <!-- Заголовок И ЕСТЬ логотип (25.09.2026): «Свадебные секреты»
-             с биркой «wed secrets». Текст h1 остаётся в HTML для поиска
-             и экранного диктора, глазам показывается знак. Маленький
-             логотип в шапке снят — он повторял бы этот же. -->
-        <h1 class="hero__title">
-          <span class="hero__title-text">Свадебные секреты</span>
-          <span class="hero__logo hero__logo--base" aria-hidden="true" set:html={logoSvg}></span>
-          <span class="hero__logo hero__logo--cream" aria-hidden="true" set:html={logoCreamSvg}></span>
-        </h1>
-        <!-- Подпись «Сохраняйте идеи для своей свадьбы» (ссылка в избранное)
-             снята 25.09.2026: рядом с логотипом-заголовком она была лишней
-             строкой — ни под ним, ни над ним не встала. -->
-      </div>
     </section>
 
     <!-- ВХОДЫ: цветные карточки разделов и направлений, лента вбок.
@@ -121,43 +97,35 @@ const logoCreamSvg = `<svg viewBox="${creamViewBox}" xmlns="http://www.w3.org/20
        входов под ним между подписью и плитками стояло 40px — дыра,
        из-за которой первый экран читался двумя разными блоками,
        а не одним. Теперь 16px: плитки идут сразу за обещанием. */
-    padding-block: var(--s-5) var(--s-1);
+    padding-block: var(--s-5) var(--s-3);
   }
 
-  /* Три колонки: логотип стоит ровно по центру экрана независимо от того,
-     что справа (кабинет), — крайние колонки одинаковой ширины. */
-  /* Логотипа в шапке нет с 25.09.2026 — знаком стал заголовок героя.
-     В строке остались тумблер темы и кабинет справа. */
+  /* Шапка: знак прижат к левому краю, тумблер темы и кабинет — к правому
+     (заказчик, 06.10.2026: «как обычно стоит»). До этого знак крупно
+     стоял по центру под шапкой и съедал полэкрана телефона. */
   .hero__bar {
-    display: grid;
-    grid-template-columns: auto 1fr auto;
+    display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: var(--s-4);
-    /* Поджато с 16/16 (25.09.2026): в строке остались только тумблер
-       и кабинет, и её поля вместе с полем заголовка давали пустую полосу
-       над логотипом. */
     padding-block: var(--s-1) 0;
   }
 
-  /* Логотип «Свадебные секреты» с биркой «wed secrets» (25.09.2026) —
-     он же заголовок первого экрана (см. .hero__title ниже).
-     Знак — встроенный svg (см. шапку файла): цвет из токена --ink через
-     currentColor, поэтому сам подхватывает палитру и тёмную тему; текст
-     на бирке и люверс — цветом фона страницы, как прорезь.
-     Прежние знаки лежат рядом — вернуть можно одной строкой:
-     public/logo-wordmark.svg (леттеринг «Wed secrets», 1614 / 210),
-     public/logo-script.svg (каллиграфия).
-     Ширина в em от кегля заголовка: надпись в знаке занимает ~91 % его
-     ширины, и 10.4em дают ту же физическую величину букв, что у прежнего
-     текстового h1 того же кегля. 100% — потолок на узком телефоне. */
+  /* h1 главной — это знак: обнуляем типографику заголовка, размер
+     задаёт ширина знака. min-width: 0 — во flex элемент иначе не
+     сжимается меньше содержимого и выталкивает кнопки за экран. */
+  .hero__title {
+    min-width: 0;
+    margin: 0;
+    line-height: 0;
+  }
+
+  /* Знак двухстрочный, пропорция ~3:1: на телефоне ~130px в ширину —
+     по высоте как кнопки справа; на ПК крупнее, но тоже в строке шапки.
+     Цвет из --ink через currentColor — сам берёт тёмную тему. */
   .hero__logo {
     display: block;
-    /* width и потолок раздельно, а не min(10.4em, 100%): процент внутри
-       width во flex даёт круг (h1 сжимается до знака, знак — от h1),
-       и знак схлопывался в ноль. max-width процентом круга не создаёт. */
-    width: 10.4em;
-    max-width: 100%;
-    margin-inline: auto;
+    width: clamp(128px, 34vw, 184px);
     color: var(--ink);
   }
 
@@ -169,13 +137,6 @@ const logoCreamSvg = `<svg viewBox="${creamViewBox}" xmlns="http://www.w3.org/20
     height: auto;
     overflow: visible;
   }
-  .hero__logo :global(.logo-knock) { fill: var(--bg); }
-
-  /* Образ «крем»: свой знак вместо бирки. Знак двухстрочный и выше,
-     поэтому уже по ширине, чтобы не раздувать первый экран. */
-  .hero__logo--cream { display: none; width: 8.4em; }
-  :global(:root[data-look='cream']) .hero__logo--base { display: none; }
-  :global(:root[data-look='cream']) .hero__logo--cream { display: block; }
 
   /* Текст h1 — для поиска и экранного диктора, глазам виден знак */
   .hero__title-text {
@@ -187,46 +148,12 @@ const logoCreamSvg = `<svg viewBox="${creamViewBox}" xmlns="http://www.w3.org/20
     white-space: nowrap;
   }
 
-  /* Кружки справа — .icon-btn из реестра (раньше шапка держала свою
-     копию кнопки, на 1.5px обводки: рядом с тумблером разнобой был бы
-     виден). Здесь остаётся только их место в строке. */
+  /* Кружки справа — .icon-btn из реестра. */
   .hero__actions {
-    grid-column: 3;
-    justify-self: end;
+    flex: none;
     display: flex;
     align-items: center;
     gap: var(--s-2);
-  }
-
-  /* В блоке только знак-заголовок (подпись снята 25.09.2026) — обычный
-     блок, без flex: во flex h1 с авто-полями сжимался до ширины знака,
-     и знак схлопывался в ноль (см. .hero__logo). */
-  .hero__intro { padding-top: var(--s-2); }
-
-  /* Крупный заголовок — сразу виден, без прокрутки пустого экрана.
-     Цветом не красится: на первом экране акцент несёт логотип, и второй
-     оранжевый узел рядом с ним отбирает у него внимание. */
-  .hero__title {
-    /* сжиматься обязаны оба: с flex-shrink: 0 у заголовка и подсказки
-       их сумма на 1280 не влезала в строку и подсказку выносило за экран */
-    min-width: 0;
-    /* потолки кеглей героя и плашек = −10% от прежних: ровно тот масштаб,
-       в котором главная читалась при зуме браузера 90%.
-       Нижняя граница поднята с 30 до 34, резина считается от ширины экрана
-       (8.6vw): на 390px заголовок первого экрана шёл вровень с именем
-       плашки под ним — две ступени иерархии схлопывались в одну. */
-    font-size: clamp(34px, 8.6vw, 50px);
-    font-weight: var(--w-head-lg);
-    line-height: 0.9;
-    letter-spacing: -0.03em;
-    max-width: var(--measure-head);
-    margin-inline: auto;
-  }
-
-  /* На ПК знак прижат к левому краю, на телефоне — по центру */
-  @media (min-width: 768px) {
-    .hero__title { margin-inline: 0; }
-    .hero__logo { margin-inline: 0; }
   }
 
   /* ============ ВХОД В БЛОГ ============
