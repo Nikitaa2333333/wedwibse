@@ -226,7 +226,7 @@ export const SPECIALIST_GROUPS: SpecialistGroup[] = [
     categories: ['dekoratory'],
     cover: '/specialists/groups/dekor.webp',
     tone: 'beige',
-    bg: '#b9abc4',
+    bg: '#c6b0c0',
   },
   {
     key: 'foto-video',
@@ -252,6 +252,7 @@ export const SPECIALIST_GROUPS: SpecialistGroup[] = [
     categories: ['stilisty'],
     cover: '/specialists/groups/obraz.webp',
     tone: 'beige',
+    bg: '#d9b49c',
   },
   {
     key: 'muzyka',
@@ -269,7 +270,7 @@ export const SPECIALIST_GROUPS: SpecialistGroup[] = [
     categories: ['speceffekty', 'arenda-zvuka', 'arenda-sveta'],
     cover: '/specialists/groups/oborudovanie.webp',
     tone: 'dark',
-    bg: '#5f8a7c',
+    bg: '#73958a',
   },
   {
     key: 'shou',
