@@ -80,6 +80,22 @@ const indexable = process.env.SITE_INDEXABLE === 'true';
       } catch (e) {
         // приватный режим — едем на светлой, это не повод ронять страницу
       }
+
+      // ОБРАЗ ДЛЯ СРАВНЕНИЯ (06.10.2026): ?look=cream включает кремовый
+      // образ (блок LOOK: CREAM в global.css) и запоминает его, чтобы
+      // переходы по сайту шли в нём же; ?look=base возвращает обычный.
+      try {
+        var look = new URLSearchParams(location.search).get('look');
+        if (look === 'cream' || look === 'base') localStorage.setItem('wed:look', look);
+        if (localStorage.getItem('wed:look') === 'cream') {
+          document.documentElement.dataset.look = 'cream';
+          if (document.documentElement.dataset.theme !== 'dark') {
+            document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f6efe5');
+          }
+        }
+      } catch (e) {
+        // нет localStorage — показываем базовый образ
+      }
     </script>
   </head>
   <body>

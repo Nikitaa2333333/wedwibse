@@ -27,6 +27,14 @@ const logoShapes = (logoFile.match(/<path\b[^>]*\/>/g) ?? [])
 // fill="none" на корне, как в исходнике: нитка к бирке — только обводка,
 // без него браузер заливал её чёрным по умолчанию, и она становилась кляксой
 const logoSvg = `<svg viewBox="${logoViewBox}" fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false">${logoShapes}</svg>`;
+
+// Знак для образа «крем» (сравнение для заказчика, 06.10.2026): набран
+// Cormorant Unicase + Tenor Sans и переведён в кривые, цвет — currentColor.
+// Показывается только при data-look="cream" (см. global.css, LOOK: CREAM).
+const creamFile = readFileSync(join(process.cwd(), 'public/logo-unicase.svg'), 'utf8');
+const creamViewBox = creamFile.match(/viewBox="([^"]+)"/)![1];
+const creamShapes = (creamFile.match(/<path[^>]*\/>/g) ?? []).join('');
+const logoCreamSvg = `<svg viewBox="${creamViewBox}" xmlns="http://www.w3.org/2000/svg" focusable="false">${creamShapes}</svg>`;
 ---
 
 <Layout title="Свадебные Секреты — лучшие площадки и специалисты">
@@ -58,7 +66,8 @@ const logoSvg = `<svg viewBox="${logoViewBox}" fill="none" xmlns="http://www.w3.
              логотип в шапке снят — он повторял бы этот же. -->
         <h1 class="hero__title">
           <span class="hero__title-text">Свадебные секреты</span>
-          <span class="hero__logo" aria-hidden="true" set:html={logoSvg}></span>
+          <span class="hero__logo hero__logo--base" aria-hidden="true" set:html={logoSvg}></span>
+          <span class="hero__logo hero__logo--cream" aria-hidden="true" set:html={logoCreamSvg}></span>
         </h1>
         <!-- Подпись «Сохраняйте идеи для своей свадьбы» (ссылка в избранное)
              снята 25.09.2026: рядом с логотипом-заголовком она была лишней
@@ -161,6 +170,12 @@ const logoSvg = `<svg viewBox="${logoViewBox}" fill="none" xmlns="http://www.w3.
     overflow: visible;
   }
   .hero__logo :global(.logo-knock) { fill: var(--bg); }
+
+  /* Образ «крем»: свой знак вместо бирки. Знак двухстрочный и выше,
+     поэтому уже по ширине, чтобы не раздувать первый экран. */
+  .hero__logo--cream { display: none; width: 8.4em; }
+  :global(:root[data-look='cream']) .hero__logo--base { display: none; }
+  :global(:root[data-look='cream']) .hero__logo--cream { display: block; }
 
   /* Текст h1 — для поиска и экранного диктора, глазам виден знак */
   .hero__title-text {
