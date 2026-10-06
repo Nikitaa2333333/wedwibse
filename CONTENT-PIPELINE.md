@@ -34,7 +34,8 @@
 | Что | Где |
 | --- | --- |
 | Node | 22.22.1, npm 9.2.0 — ставились под этот конвейер |
-| Загрузчик | `/srv/wed-research/bin/fetch-yadisk.mjs` |
+| Загрузчик | `/srv/wed-research/bin/fetch-yadisk.mjs` (пишет потоком: файл любого размера не держит в памяти) |
+| Видео | `/srv/wed-research/bin/ffmpeg`, `ffprobe` — статическая сборка (06.10.2026), пережатие роликов прямо на сервере, `nice -n 19` |
 | Скачанное сырьё | `/srv/wed-research/out/<слаг>/` |
 | Владелец | `deploy:deploy` |
 
