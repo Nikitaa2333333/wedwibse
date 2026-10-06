@@ -7,9 +7,12 @@ name: Реестр ↔ сайт (каждое утро)
 # и она переписывается каждое утро, а не плодит новые. Всё сошлось —
 # задача закрывается сама.
 #
-# Ничего не меняет на сайте и в коде: только читает таблицу и данные
-# репозитория. Заводить и править карточки по отчёту — по-прежнему
-# скиллами specialist-page / venue-page.
+# Второй этап (06.10.2026): если расхождения есть и в секретах репозитория
+# лежит CLAUDE_CODE_OAUTH_TOKEN, Claude сразу берёт отчёт в работу по
+# скиллам specialist-page / venue-page — правит данные, заводит карточки,
+# проверяет сборку — и открывает PR. В master не пушит: на сайт правки
+# попадают, только когда PR сливает человек. Нет токена — этап молча
+# пропускается, сверка работает как раньше.
 
 on:
   schedule:
@@ -17,8 +20,9 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   issues: write
+  pull-requests: write
 
 jobs:
   check:
@@ -68,3 +72,56 @@ jobs:
               gh issue reopen "$num" 2>/dev/null || true
             fi
           fi
+
+      # ============ ВТОРОЙ ЭТАП: CLAUDE ВЕРСТАЕТ ПО ОТЧЁТУ ============
+      - name: Есть ли что верстать
+        id: gate
+        env:
+          TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          clean=$(grep -c 'новых подрядчиков нет\|Реестр и сайт сходятся' report.md || true)
+          if [ -n "$TOKEN" ] && [ "$clean" -lt 2 ]; then echo "run=true" >> "$GITHUB_OUTPUT"; else echo "run=false" >> "$GITHUB_OUTPUT"; fi
+          [ -n "$TOKEN" ] || echo "Токена CLAUDE_CODE_OAUTH_TOKEN нет — второй этап пропущен"
+
+      - name: Зависимости для сборки
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          npm ci
+          command -v magick >/dev/null || (sudo apt-get update -qq && sudo apt-get install -y -qq imagemagick ffmpeg)
+          git config user.name 'Claude (сверка реестра)'
+          git config user.email 'noreply@anthropic.com'
+
+      - name: Claude берёт отчёт в работу
+        if: steps.gate.outputs.run == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ github.token }}
+          claude_args: '--max-turns 250 --allowedTools "Bash,Read,Write,Edit,Glob,Grep,WebFetch,WebSearch"'
+          prompt: |
+            Ты в репозитории WED Secrets (свадебный каталог, Astro). Правила проекта — AGENTS.md
+            (он же CLAUDE.md), конвейеры — .claude/skills/specialist-page/SKILL.md и
+            .claude/skills/venue-page/SKILL.md. Прочитай их до работы.
+
+            Утренняя сверка Google-таблицы с сайтом дала отчёт: report.md в корне.
+            Возьми его в работу:
+            1. «Разошлось с сайтом» — поправь данные карточек (JSON в src/data/…, feed.ts)
+               так, чтобы совпадали с таблицей; цифры в тексты — только из таблицы.
+               Если сайт сознательно шире таблицы (данные с сайта подрядчика) — не трогай,
+               опиши в PR.
+            2. «Новые в таблице» с материалами — заведи по скиллу. Таблица читается
+               скриптами из scripts/registry-lib.mjs (fetchTab). Диск качай здесь же:
+               `node scripts/fetch-yadisk.mjs <url> <папка> --mode=preview|--pick=…`
+               (research.sh и сервер отсюда недоступны), пережатие — scripts/prep-photos.mjs.
+               Кадры отбирай по контактному листу (magick montage + Read).
+            3. Нельзя отсюда, только перечисли в PR как ручные шаги: ролики (их надо
+               залить на VPS media-push.sh — ролики в карточку не добавляй), запись
+               в PocketBase (pb-seed), правки самой Google-таблицы, материалы из
+               Telegram/iCloud, всё, где нет годных фото (меньше 1200 px).
+            4. «Ссылки» и «Сняты из таблицы» — ничего не удаляй, только перечисли в PR.
+            Проверка: verify-specialist / verify-venue по каждой тронутой карточке
+            и `npx astro build` без ошибок.
+            Итог — ветка `registry/${{ github.run_id }}`, коммиты с понятными сообщениями,
+            `gh pr create` в master с меткой «реестр»: что сделано, что требует человека.
+            В master НЕ пушить и PR НЕ сливать. Если правок не потребовалось — PR не создавай.
+
