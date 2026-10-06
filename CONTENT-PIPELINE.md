@@ -171,8 +171,14 @@ bash scripts/research.sh ls      [слаг]                что уже выг�
    9 площадок), миграции и пустая папка хуков под кабинет (PR #40).
    Пароль суперпользователя — `/srv/wedsecrets-pb/.env` (chmod 600).
    Доступ — `bash scripts/pb-tunnel.sh` (ноутбук и утренняя сверка в Actions).
-   Не сделано: бэкапы вне сервера и `api.wed-secrets.ru` через nginx —
-   это в плане кабинета (PR #40). Локальный `pb/pb_data` — теперь копия
+   Бэкапы: каждую ночь в 03:30 `/srv/wedsecrets-pb/backup.sh` (cron deploy) снимает
+   `data.db` + `auxiliary.db` через `sqlite3 .backup` с проверкой целостности,
+   14 последних — в `/srv/wedsecrets-pb/backups/`; утренняя сверка забирает
+   свежий в артефакт GitHub на 90 дней. Фото базы не бэкапятся — это копии
+   кадров из git, восстанавливаются `pb-seed`.
+   Восстановить: распаковать `pb-<дата>.tar.gz`, `systemctl stop wedsecrets-pb`,
+   положить `data.db`/`auxiliary.db` в `pb_data/`, `systemctl start wedsecrets-pb`.
+   Не сделано: `api.wed-secrets.ru` через nginx — это в плане кабинета (PR #40). Локальный `pb/pb_data` — теперь копия
    на 06.10, не источник правды.
 3. **Сохранить уникальное** — `ВЫБОРКА ФД`. (`pb_data` теперь на сервере; исходники,
    которых больше нет на дисках-источниках, — в `/srv/wed-research/archive/`.)
