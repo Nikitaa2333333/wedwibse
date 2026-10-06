@@ -41,7 +41,7 @@ const logoCreamSvg = `<svg viewBox="${creamViewBox}" xmlns="http://www.w3.org/20
   <div class="page">
     <!-- ГЕРОЙ: шапка (бренд / меню / метка) + крупный заголовок с лидом
          сразу под ней — без пустого экрана, плашки идут следующим блоком. -->
-    <section class="hero container--wide">
+    <section class="hero hero--row container--wide">
       <!-- Шапка главной: логотип по центру, справа тумблер темы и вход
            в кабинет. Разделы живут в BottomDock — дублировать их сверху
            не нужно.
@@ -128,6 +128,20 @@ const logoCreamSvg = `<svg viewBox="${creamViewBox}" xmlns="http://www.w3.org/20
      что справа (кабинет), — крайние колонки одинаковой ширины. */
   /* Логотипа в шапке нет с 25.09.2026 — знаком стал заголовок героя.
      В строке остались тумблер темы и кабинет справа. */
+  /* Шапка и знак — одна строка (заказчик, 06.10.2026): отдельный ряд
+     под тумблер и кабинет давал пустую полосу над логотипом. Знак слева
+     и сжимается под оставшуюся ширину, кнопки — справа, по верху. */
+  .hero--row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    column-gap: var(--s-3);
+  }
+  .hero--row .hero__bar { grid-column: 2; grid-row: 1; padding-block: 0; }
+  .hero--row .hero__intro { grid-column: 1; grid-row: 1; padding-top: 0; }
+  .hero--row .hero__title,
+  .hero--row .hero__logo { margin-inline: 0; }
+
   .hero__bar {
     display: grid;
     grid-template-columns: auto 1fr auto;
