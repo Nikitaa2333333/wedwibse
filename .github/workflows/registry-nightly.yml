@@ -68,6 +68,22 @@ jobs:
           echo "${{ secrets.DEPLOY_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
           ssh -i ~/.ssh/id_ed25519 -o BatchMode=yes "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}"             "mkdir -p ${{ secrets.DEPLOY_PATH }}/registry && cat > ${{ secrets.DEPLOY_PATH }}/registry/report.json" < registry.json
 
+      # Бэкап базы ВНЕ сервера. На VPS снимок в 03:30 (/srv/wedsecrets-pb/backup.sh,
+      # хранит 14 последних); здесь свежий забирается в артефакт GitHub на 90 дней —
+      # умрёт сервер, записи каталога останутся. Только data.db + auxiliary.db
+      # (~200 КБ); фото базы — копии кадров из git, восстанавливаются pb-seed.
+      - name: Бэкап базы
+        run: |
+          ssh -i ~/.ssh/id_ed25519 -o BatchMode=yes "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}"             'cat /srv/wedsecrets-pb/backups/latest.tar.gz' > pb-backup.tar.gz
+          tar -tzf pb-backup.tar.gz | grep -q 'data.db$'
+          ls -la pb-backup.tar.gz
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pb-backup-${{ github.run_id }}
+          path: pb-backup.tar.gz
+          retention-days: 90
+
       - name: Отчёт в задачу
         env:
           GH_TOKEN: ${{ github.token }}
