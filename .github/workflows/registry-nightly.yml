@@ -91,6 +91,19 @@ jobs:
           git config user.name 'Claude (сверка реестра)'
           git config user.email 'noreply@anthropic.com'
 
+      # Доступ к VPS тем же ключом, что у деплоя: пользователь deploy владеет
+      # и папкой сайта, и папкой роликов /var/www/wedsecrets-media — этого
+      # хватает, чтобы Claude залил ролики новой карточки (media-push.sh).
+      - name: SSH к серверу
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "${{ secrets.DEPLOY_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          echo "MEDIA_KEY=$HOME/.ssh/id_ed25519" >> "$GITHUB_ENV"
+          echo "MEDIA_HOST=${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" >> "$GITHUB_ENV"
+
       - name: Claude берёт отчёт в работу
         if: steps.gate.outputs.run == 'true'
         uses: anthropics/claude-code-action@v1
@@ -114,10 +127,14 @@ jobs:
                `node scripts/fetch-yadisk.mjs <url> <папка> --mode=preview|--pick=…`
                (research.sh и сервер отсюда недоступны), пережатие — scripts/prep-photos.mjs.
                Кадры отбирай по контактному листу (magick montage + Read).
-            3. Нельзя отсюда, только перечисли в PR как ручные шаги: ролики (их надо
-               залить на VPS media-push.sh — ролики в карточку не добавляй), запись
-               в PocketBase (pb-seed), правки самой Google-таблицы, материалы из
-               Telegram/iCloud, всё, где нет годных фото (меньше 1200 px).
+            3. Ролики — можно: до 5 на подрядчика (Reels-мейкерам больше), пережатие
+               командой из VIDEO.md (ffmpeg есть), постер .webp, запись в src/data/reels.ts,
+               `node scripts/verify-video.mjs`, затем `bash scripts/media-push.sh` —
+               SSH к серверу уже настроен переменными MEDIA_KEY/MEDIA_HOST. Ролики
+               заливаются ДО открытия PR: деплой после слияния проверит, что они на месте.
+               Нельзя отсюда, только перечисли в PR как ручные шаги: запись в PocketBase
+               (pb-seed), правки самой Google-таблицы, материалы из Telegram/iCloud,
+               всё, где нет годных фото (меньше 1200 px).
             4. «Ссылки» и «Сняты из таблицы» — ничего не удаляй, только перечисли в PR.
             Проверка: verify-specialist / verify-venue по каждой тронутой карточке
             и `npx astro build` без ошибок.
