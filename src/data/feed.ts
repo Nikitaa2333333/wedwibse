@@ -147,7 +147,7 @@ const venues: FeedVenue[] = [
     avgCheck: 'от 9 000 ₽',
     rating: 4.4,
     reviews: 10,
-    media: [`${OTR}/p31.webp`, `${OTR}/p33.webp`, `${OTR}/p12.webp`, `${OTR}/p21.webp`],
+    media: [`${OTR}/p56.webp`, `${OTR}/p31.webp`, `${OTR}/p12.webp`, `${OTR}/p21.webp`],
   },
   {
     // Усадьба с девятью залами — в каталоге одна карточка; вместимость
@@ -177,7 +177,7 @@ const venues: FeedVenue[] = [
     avgCheck: 'от 8 500 ₽',
     rating: 5,
     reviews: 368,
-    media: [`${VB}/p37.webp`, `${VB}/p21.webp`, `${VB}/p01.webp`, `${VB}/p16.webp`],
+    media: [`${VB}/p21.webp`, `${VB}/p37.webp`, `${VB}/p01.webp`, `${VB}/p16.webp`],
   },
 ];
 

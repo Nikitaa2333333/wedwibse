@@ -9,8 +9,8 @@
   "title": "Villa Barvikha 135",
   "lead": "Загородная вилла на частной территории в сосновом лесу, в 5 км от МКАД по Минскому шоссе. Большой зал на 500 м² с потолками 7 метров принимает до 450 гостей, в саду проходит выездная церемония у арки в белых цветах.",
   "hero": {
-    "image": "/venues/villa-barvikha/p37.webp",
-    "alt": "Молодожёны у белой цветочной арки в саду",
+    "image": "/venues/villa-barvikha/p21.webp",
+    "alt": "Невеста в зале между столами под люстрами",
     "portrait": "/venues/villa-barvikha/p21.webp",
     "portraitAlt": "Невеста в зале между столами под люстрами"
   },
@@ -319,12 +319,12 @@
   "rules": [],
   "gallery": [
     {
-      "src": "/venues/villa-barvikha/p37.webp",
-      "alt": "Молодожёны у белой цветочной арки в саду"
-    },
-    {
       "src": "/venues/villa-barvikha/p21.webp",
       "alt": "Невеста в зале между столами под люстрами"
+    },
+    {
+      "src": "/venues/villa-barvikha/p37.webp",
+      "alt": "Молодожёны у белой цветочной арки в саду"
     },
     {
       "src": "/venues/villa-barvikha/p01.webp",
