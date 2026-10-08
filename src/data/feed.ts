@@ -66,7 +66,7 @@ const venues: FeedVenue[] = [
     avgCheck: 'от 5 000 ₽',
     rating: 5,
     reviews: 151,
-    media: [`${RL}/gal/g8.webp`, `${RL}/gal/g2.webp`, `${RL}/gal/g5.webp`, `${RL}/welcome/w1.webp`],
+    media: [`${RL}/gal/g13.webp`, `${RL}/gal/g8.webp`, `${RL}/gal/g2.webp`, `${RL}/gal/g5.webp`],
   },
   {
     kind: 'venue',
