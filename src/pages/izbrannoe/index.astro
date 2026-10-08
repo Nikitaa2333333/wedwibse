@@ -383,10 +383,15 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
   }
 
   /* Кегль под половину экрана: в две колонки --fs-h3 рвал имя на три строки */
-  .fcard__name {
+  /* Имя — жирным гротеском, как в карточках каталога (08.10.2026):
+     антиква образа «крем» мелким кеглем тонкая. :root поднимает вес
+     селектора над правилом образа (:root[data-look] :is(h2)). */
+  :root .fcard .fcard__name {
     min-width: 0;
+    font-family: var(--font-sans);
     font-size: var(--fs-body);
-    font-weight: var(--w-head);
+    font-weight: var(--w-head-lg);
+    letter-spacing: 0;
     line-height: 1.15;
   }
 

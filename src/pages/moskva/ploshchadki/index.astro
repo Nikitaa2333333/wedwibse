@@ -383,9 +383,14 @@ const mapPoints = venueMapPoints();
 
   /* На телефоне имя в кегле корпуса: h3 (21px) в колонке 190px ломал
      «Усадьба Дубровицы» на две строки и раздувал подпись. */
-  .vcard__name {
+  /* Имя — жирным гротеском, как в карточке подрядчика (08.10.2026):
+     антиква образа «крем» мелким кеглем тонкая. Двойной класс
+     перебивает правило образа для h2. */
+  .vcard .vcard__name {
+    font-family: var(--font-sans);
     font-size: var(--fs-body);
-    font-weight: var(--w-head);
+    font-weight: var(--w-head-lg);
+    letter-spacing: 0;
     line-height: 1.1;
   }
 
@@ -416,7 +421,7 @@ const mapPoints = venueMapPoints();
   .vcard__tag { margin-top: 4px; }
 
   @media (min-width: 640px) {
-    .vcard__name { font-size: var(--fs-h3); line-height: 1.05; }
+    .vcard .vcard__name { font-size: var(--fs-h3); line-height: 1.05; }
     .vcard__meta { font-size: var(--fs-small); line-height: 1.1; }
     .vcard__rate { font-size: var(--fs-small); padding-top: 0.2em; }
     /* цена сразу под городом, без отрыва: крупный кегль сам даёт воздух */

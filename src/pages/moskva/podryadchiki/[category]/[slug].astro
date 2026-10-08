@@ -61,11 +61,11 @@ const bioParagraphs = s.bio.split('\n\n');
 // Строка под ценой собирается из того, что есть: пустых «· ·» не остаётся.
 // За что цена — из priceNote, если он есть: у Reels-мейкера «от 5 500 ₽»
 // это час съёмки, и общая подпись «за 6 часов» врала бы в 6 раз.
+// Только про саму цену — за что она и от чего зависит. Опыт, свой
+// диджей и прочие метки сюда больше не вливаются (заказчик, 08.10.2026):
+// «10 лет опыта» под «от 100 000 ₽» читалось как условие цены.
 const priceFacts = [
-  s.priceFrom ? (s.priceNote ?? 'за 6 часов работы') : null,
-  s.experienceYears ? `${s.experienceYears} лет опыта` : null,
-  s.hasOwnDJ ? 'свой диджей' : null,
-  s.gender === 'pair' ? 'фото и видео' : null,
+  s.priceFrom ? (s.priceNote ?? 'за 6 часов работы') : s.priceNote ?? null,
 ].filter(Boolean);
 
 // ПЕРВЫЙ ЭКРАН — общий компонент HeroStage, тот же, что у карточки
@@ -158,7 +158,7 @@ const saveData = JSON.stringify({
          идут в том порядке и под теми заголовками, что прислал он сам.
          Раздел без заголовка — продолжение предыдущего, а не «О нас»
          по умолчанию. Шаблонные секции ниже у такой карточки не выводятся. -->
-    {s.story && <StoryText sections={s.story} portrait={s.portrait} name={s.name} />}
+    {s.story && <StoryText sections={s.story} portrait={s.portrait} name={s.name} photos={s.photos} />}
 
     {!s.story && (
     <section class="pabout">
