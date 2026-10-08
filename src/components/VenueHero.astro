@@ -168,14 +168,19 @@ const reviews = block?.total ?? feedReviews;
 
   /* Две колонки и на телефоне, без линий (заказчик, 08.10.2026):
      характеристики короткие, столбик с линиями растягивал их на экран. */
+  /* Значения здесь — фразы («большой зал 500 м², потолки 7 м, сад»),
+     в две узкие колонки они рвались по слову в строку: на телефоне один
+     столбец без линий, две колонки — с 720px (заказчик, 08.10.2026). */
   .specs__grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--s-5) var(--s-5);
+    gap: var(--s-4);
   }
 
   @media (min-width: 720px) {
-    .specs__grid { gap: var(--s-6) var(--s-8); }
+    .specs__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--s-6) var(--s-8);
+    }
   }
 
   .spec__label {
@@ -185,7 +190,7 @@ const reviews = block?.total ?? feedReviews;
   }
 
   .spec__value {
-    font-size: clamp(24px, 2.2vw, 32px);
+    font-size: clamp(20px, 2vw, 28px);
     font-weight: var(--w-head);
     line-height: var(--lh-heading);
     letter-spacing: var(--ls-display);

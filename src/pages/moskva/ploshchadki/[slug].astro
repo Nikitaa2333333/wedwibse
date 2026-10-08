@@ -167,7 +167,7 @@ const reels = reelsOfVenue(venue.slug);
 
           // РАССКАЗ ПЛОЩАДКИ её же структурой — общий модуль с подрядчиком
           case 'story':
-            return <StoryText sections={block.sections} />;
+            return <StoryText sections={block.sections} block />;
 
           case 'faq':
             return (

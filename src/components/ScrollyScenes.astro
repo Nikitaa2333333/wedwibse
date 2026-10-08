@@ -1,4 +1,5 @@
 ---
+import { rowsClass } from '../lib/rows';
 // СЦЕНЫ — главный модуль карточки подрядчика.
 // ПК: справа кадр во весь экран, он «висит» неподвижно, пока слева
 // листается текст сцены; на границе сцен кадр сменяется следующим.
@@ -8,7 +9,6 @@
 import { Image } from 'astro:assets';
 import type { VenueScene } from '../data/venues';
 import { resolveImage, IMG_WIDTHS } from '../lib/images';
-import PhotoRail from './PhotoRail.astro';
 
 interface Props {
   kicker: string;
@@ -22,7 +22,6 @@ const { kicker, title, scenes } = Astro.props;
 <section class="scenes section" id="o-ploshchadke">
   <div class="container container--wide">
     <header class="scenes__head">
-      <p class="scenes__kicker t-caption">{kicker}</p>
       <h2 class="scenes__title">{title}</h2>
     </header>
 
@@ -30,23 +29,15 @@ const { kicker, title, scenes } = Astro.props;
       {
         scenes.map((scene, i) => (
           <article class={`scene scene--${scene.layout ?? 'split'}`} style={`--row:${i + 1}`}>
-            {scene.layout === 'gallery' ? (
-              <div class="scene__rail">
-                <PhotoRail
-                  bleed
-                  photos={scene.images?.length ? scene.images : [scene.image]}
-                  alt={scene.alt}
-                  sizes="100vw"
-                  widths={IMG_WIDTHS.stage}
-                />
-              </div>
-            ) : (
-              <figure class="scene__shot media media--bleed">
+            {/* Слайдер у сцены-галереи снят: один кадр тем же элементом .shot,
+                что у подрядчика (заказчик, 08.10.2026). */}
+            {(
+              <figure class="scene__shot shot">
                 {/* Все кадры ленивые, первый тоже: сцены стоят ниже первого
                     экрана, а eager у первой (2560 px, sizes 100vw) качал её
                     вместе с дежурным кадром карточки и делил с ним канал. */}
                 <Image
-                  src={resolveImage(scene.image)}
+                  src={resolveImage(scene.images?.[0] ?? scene.image)}
                   alt={scene.alt}
                   widths={IMG_WIDTHS.stage}
                   sizes={scene.layout === 'wide' ? '100vw' : '(min-width: 1024px) 55vw, 100vw'}
@@ -64,7 +55,7 @@ const { kicker, title, scenes } = Astro.props;
               ))}
 
               {scene.facts && (
-                <dl class="rows scene__facts">
+                <dl class={`${rowsClass(scene.facts)} scene__facts`}>
                   {scene.facts.map((fact) => (
                     <div class="rows__row">
                       <dt class="rows__label">{fact.label}</dt>
@@ -104,14 +95,8 @@ const { kicker, title, scenes } = Astro.props;
   /* ============ МОБИЛКА: кадр, потом текст ============ */
   .scene + .scene { margin-top: var(--section-gap); }
 
-  .scene__shot,
-  .scene__rail {
-    /* кадр в край экрана: гасим боковые поля контейнера */
-    margin-inline: calc(var(--gutter) * -1);
-    margin-bottom: var(--s-6);
-  }
-
-  .scene__shot { aspect-ratio: 4 / 5; }
+  /* кадр в полях страницы, со скруглением (.shot) — как у подрядчика */
+  .scene__shot { margin-bottom: var(--s-5); }
 
   /* Номера сцен 01, 02, 03 сняты (заказчик, 08.10.2026): «выглядит
      отвратительно» — порядок и так виден по прокрутке. */
@@ -168,6 +153,7 @@ const { kicker, title, scenes } = Astro.props;
       margin-left: 0;
       /* правым краем кадр выходит в край экрана */
       margin-right: calc(var(--gutter) * -1);
+      border-radius: 0; /* на ПК кадр липкой колонкой в край экрана */
     }
 
     /* ============ СЦЕНА ВО ВСЮ ШИРИНУ ============
