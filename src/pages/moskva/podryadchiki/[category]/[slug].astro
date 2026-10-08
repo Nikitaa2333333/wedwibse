@@ -153,6 +153,39 @@ const saveData = JSON.stringify({
          в полный рост на 30–64 px читается пятном; здесь тот же снимок
          показан как он снят. Нет портрета — секция просто текстовая,
          как была. -->
+    <!-- ТЕКСТ ПОДРЯДЧИКА ЕГО ЖЕ СТРУКТУРОЙ (story, CHARACTER.md): разделы
+         идут в том порядке и под теми заголовками, что прислал он сам.
+         Раздел без заголовка — продолжение предыдущего, а не «О нас»
+         по умолчанию. Шаблонные секции ниже у такой карточки не выводятся. -->
+    {s.story && (
+      <div class="pstory">
+        {s.story.map((sec) => (
+          <section class:list={['pstory__sec', !sec.title && 'pstory__sec--cont']}>
+            {sec.title && <h2 class="t-h2">{sec.title}</h2>}
+            {sec.lead && <p class="pstory__lead">{sec.lead}</p>}
+            {sec.text?.map((p) => <p class="pstory__text">{p}</p>)}
+            {sec.list && (
+              <ul class="pstory__list list">
+                {sec.list.map((li) => <li>{li}</li>)}
+              </ul>
+            )}
+            {sec.items && (
+              <div class="pstory__items">
+                {sec.items.map((it) => (
+                  <article>
+                    <h3 class="pstory__item-title">{it.title}</h3>
+                    <p class="pstory__text">{it.text}</p>
+                  </article>
+                ))}
+              </div>
+            )}
+            {sec.after?.map((p) => <p class="pstory__text">{p}</p>)}
+          </section>
+        ))}
+      </div>
+    )}
+
+    {!s.story && (
     <section class="pabout">
       <h2 class="t-h2">{s.aboutTitle ?? 'О подрядчике'}</h2>
 
@@ -175,10 +208,11 @@ const saveData = JSON.stringify({
         </div>
       </div>
     </section>
+    )}
 
     <!-- ПОЧЕМУ ВЫБИРАЮТ: причины формулирует сам подрядчик. Заголовок
          пункта — отдельной строкой h3, а не жирной фразой внутри абзаца. -->
-    {s.offers && (
+    {!s.story && s.offers && (
       <section class="pwhy">
         <h2 class="t-h2">Почему выбирают</h2>
         <div class="pwhy__grid">
@@ -193,7 +227,7 @@ const saveData = JSON.stringify({
     )}
 
     <!-- ЧТО ВХОДИТ В ПАКЕТ -->
-    {s.packageIncludes && (
+    {!s.story && s.packageIncludes && (
       <section class="ppack">
         <h2 class="t-h2">Что входит</h2>
         <ul class="ppack__list list">
@@ -240,7 +274,7 @@ const saveData = JSON.stringify({
     )}
 
     <!-- ПРЕДЛОЖЕНИЕ ОТ ПОДРЯДЧИКА: формулирует сам, подаём цитатой -->
-    {s.quote && (
+    {!s.story && s.quote && (
       <section class="pquote">
         <p class="t-caption pquote__kicker">Предложение</p>
         <blockquote class="pquote__body">
@@ -392,6 +426,49 @@ const saveData = JSON.stringify({
   }
 
   .ppack__list { margin-top: var(--s-5); }
+
+  /* ============ ТЕКСТ ПОДРЯДЧИКА РАЗДЕЛАМИ (story) ============
+     Тот же ритм, что у шаблонных секций выше: заголовок h2, отбивка
+     --s-5, мера чтения на тексте. Раздел без своего заголовка —
+     продолжение предыдущего, поэтому отбивка у него меньше секционной. */
+  .pstory__sec {
+    padding: 0 var(--gutter) var(--section-gap-tight);
+  }
+
+  .pstory__sec:has(+ .pstory__sec--cont) { padding-bottom: var(--s-6); }
+
+  .pstory__sec > :not(:first-child) { margin-top: var(--s-4); }
+  .pstory__sec > h2 + * { margin-top: var(--s-5); }
+
+  .pstory__text { max-width: var(--measure-text); }
+
+  /* Фраза, которую подрядчик сам вынес отдельной строкой (премия,
+     девиз), — кеглем h2, как цитата-предложение: вес размером,
+     не жирностью внутри абзаца. */
+  .pstory__lead {
+    font-size: var(--fs-h2);
+    font-weight: var(--w-head);
+    line-height: var(--lh-heading);
+    letter-spacing: var(--ls-display);
+    max-width: var(--measure-lead);
+  }
+
+  .pstory__items {
+    display: grid;
+    gap: var(--s-6) var(--s-7);
+  }
+
+  @media (min-width: 720px) {
+    .pstory__items { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  .pstory__item-title {
+    font-size: var(--fs-h3);
+    font-weight: var(--w-head);
+    line-height: var(--lh-heading);
+  }
+
+  .pstory__item-title + .pstory__text { margin-top: var(--s-2); }
 
   /* Стили галереи уехали в PhotoGallery.astro — секция общая с площадкой. */
 
