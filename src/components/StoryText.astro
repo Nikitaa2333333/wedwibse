@@ -111,6 +111,8 @@ sections.forEach((_, i) => {
             </div>
           )}
           {sec.after?.map((p) => <p class="story__text">{p}</p>)}
+          {/* подпись автора: тёмная плашка — его слова, и читается цитатой */}
+          {sec.tone === 'dark' && name && <p class="story__sign">— {name}</p>}
         </section>
         {pause && (
           <figure class="story__shot media media--bleed">
@@ -340,6 +342,25 @@ sections.forEach((_, i) => {
   }
 
   .story__sec:has(+ .story__sec--dark) { padding-bottom: var(--section-gap); }
+
+  /* Фраза на шоколаде — крупной антиквой, как заголовки тёмных блоков
+     площадки: Cormorant хорош именно крупно (заказчик, 08.10.2026),
+     гротеском плашка читалась цветным прямоугольником, а не цитатой. */
+  .story .story__sec--dark .story__lead {
+    font-family: var(--font-serif);
+    font-size: clamp(32px, 7vw, 52px);
+    font-weight: var(--w-head-lg);
+    line-height: var(--lh-display);
+    letter-spacing: 0;
+  }
+
+  .story__sec--dark .story__lead + .story__text { margin-top: var(--s-5); }
+
+  .story__sign {
+    margin-top: var(--s-5);
+    font-size: var(--fs-small);
+    font-weight: var(--w-medium);
+  }
 
   /* ============ ПОРТРЕТ ============ */
   .story__portrait {
