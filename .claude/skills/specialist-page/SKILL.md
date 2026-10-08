@@ -225,7 +225,26 @@ dekoratory. Другая категория — сначала завести `<
 
 ## Фаза 3 — JSON и текст
 
-Образец — `leshakovy` в `specialists.ts` (~996–1080) и готовые JSON
+**С 08.10.2026 главный текст визитки — поле `story`, а не `bio/offers/quote`**
+(AGENTS.md, «Текст карточки»; CHARACTER.md). Порядок работы:
+
+1. Разметить исходник: какие у подрядчика разделы, в каком порядке, под
+   какими заголовками, первое лицо или нет, что он сам выделил (жирное,
+   отдельная строка, эмодзи-акцент → `lead`).
+2. Переписать в `story.json` (массив StorySection) один к одному: свои
+   разделы не досочинять, факты не выкидывать. Убрать только призывы
+   («звоните», «переходите в соцсети»), контакты, ссылки; поправить
+   опечатки и капс. Тарифы — разделами со своими заголовками и списками.
+3. `mark` — одна-две его короткие фразы на раздел (опыт, «бесплатно…»).
+4. `node scripts/story-put.mjs <кат>/<slug> story.json` → `verify-specialist`
+   → `node scripts/text-coverage.mjs` (по его исходнику ≥ 95 %, остаток —
+   только отзывы, меню сайта, личные пометки).
+
+Поля `bio/tagline/offers/packageIncludes/quote` по-прежнему заполняются:
+по ним живут карточка каталога, «Похожие», SEO-описание. Образцы story —
+`stilisty/nazarova`, `vedushchie/solnechnaya`, `vedushchie/galkin`.
+
+Образец старых полей — `leshakovy` в `specialists.ts` (~996–1080) и готовые JSON
 (`fotografy/suhorada`, `vedushchie/galkin`, `dekoratory/maria-decor`, `dekoratory/push-decor`).
 
 ```json

@@ -31,6 +31,23 @@ for (const [i, sec] of story.entries()) {
   for (const m of sec.mark ?? []) if (!text.includes(JSON.stringify(m).slice(1, -1))) throw new Error(`раздел ${i}: фразы маркера нет в тексте — «${m}»`);
 }
 
+// ПЛОЩАДКА: node scripts/story-put.mjs venue:<slug> <story.json> <после блока №>
+// Блок { type: 'story' } встаёт в venue.blocks после указанного индекса
+// (0 — после первого блока). Уже стоящий story-блок с тем же первым
+// заголовком заменяется, а не дублируется.
+if (card.startsWith('venue:')) {
+  const vpath = `src/data/venues/${card.slice(6)}.json`;
+  const v = JSON.parse(readFileSync(vpath, 'utf8').replace(/\r\n/g, '\n'));
+  const key = (b) => b.type === 'story' && (b.sections[0]?.title ?? b.sections[0]?.lead);
+  const mine = story[0]?.title ?? story[0]?.lead;
+  v.blocks = v.blocks.filter((b) => key(b) !== mine);
+  const at = Number(process.argv[4] ?? v.blocks.length - 1);
+  v.blocks.splice(at + 1, 0, { type: 'story', sections: story });
+  writeFileSync(vpath, JSON.stringify(v, null, 2) + '\n');
+  console.log(`${card}: story после блока ${at} (${v.blocks[at].type}) — ${story.length} разделов`);
+  process.exit(0);
+}
+
 const path = `src/data/specialists/${card}.json`;
 const raw = readFileSync(path, 'utf8').replace(/\r\n/g, '\n');
 const j = JSON.parse(raw);
