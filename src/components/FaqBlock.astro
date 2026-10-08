@@ -55,15 +55,20 @@ const { kicker, title, items } = Astro.props;
     max-width: var(--measure-head);
   }
 
+  /* Между вопросами --s-6, вопрос к своему ответу --s-2: пара «вопрос —
+     ответ» читается группой, а не тонет в пустоте (заказчик, 08.10.2026). */
   .faq__grid {
     display: grid;
-    gap: var(--s-7) var(--s-8);
+    gap: var(--s-6) var(--s-8);
   }
 
+  /* Антиква образа «крем» читается только крупно: вопрос — кеглем
+     сцены, а не мелким h3. */
   .qa__q {
-    font-size: var(--fs-h3);
-    font-weight: var(--w-head);
-    margin-bottom: var(--s-4);
+    font-size: clamp(24px, 2.8vw, 32px);
+    font-weight: var(--w-head-lg);
+    line-height: var(--lh-heading);
+    margin-bottom: var(--s-2);
   }
 
   .qa__a { max-width: var(--measure-text); }

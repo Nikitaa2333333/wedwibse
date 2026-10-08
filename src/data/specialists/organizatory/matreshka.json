@@ -4,9 +4,9 @@
   "category": "Организаторы",
   "name": "Матрешка",
   "photos": [
+    "/specialists/organizatory/matreshka/gal/p03.webp",
     "/specialists/organizatory/matreshka/gal/p06.webp",
     "/specialists/organizatory/matreshka/gal/p01.webp",
-    "/specialists/organizatory/matreshka/gal/p03.webp",
     "/specialists/organizatory/matreshka/gal/p05.webp",
     "/specialists/organizatory/matreshka/gal/p07.webp",
     "/specialists/organizatory/matreshka/gal/p08.webp",
@@ -93,7 +93,10 @@
         "Такой бюджет позволяет реализовать продуманную концепцию, качественный продакшн и надёжную команду подрядчиков.",
         "Стоимость наших услуг — 10% от общего бюджета проекта. Минимальная стоимость работы организаторов — 100 000 ₽."
       ],
-      "mark": ["10% от общего бюджета проекта"]
+      "mark": [
+        "10% от общего бюджета проекта"
+      ],
+      "tone": "dark"
     }
   ],
   "filters": {

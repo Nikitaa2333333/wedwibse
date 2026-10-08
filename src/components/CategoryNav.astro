@@ -13,7 +13,7 @@
 // Живёт под SiteHeader — top берёт готовую высоту шапки из --header-h
 // (SiteHeader сам её публикует).
 import type { SpecialistCategory } from '../data/specialists';
-import { SPECIALIST_GROUPS } from '../data/specialists';
+import { SPECIALIST_GROUPS, SPECIALISTS_BY_CATEGORY } from '../data/specialists';
 import BackButton from './BackButton.astro';
 
 interface Props {
@@ -54,6 +54,8 @@ const showCats = rowSlugs.length > 1;
             aria-current={c.slug === activeSlug ? 'page' : undefined}
           >
             {c.label}
+            {/* сколько карточек в разделе — тот же список, что у сетки каталога */}
+            <span class="chip__count">{SPECIALISTS_BY_CATEGORY[c.slug]?.length ?? 0}</span>
           </a>
         );
       })}

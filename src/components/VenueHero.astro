@@ -166,23 +166,22 @@ const reviews = block?.total ?? feedReviews;
      Линия сверху здесь структурная (граница ячейки), а не декоративная. */
   .specs :global(.container) { max-width: none; }
 
+  /* Две колонки и на телефоне, без линий (заказчик, 08.10.2026):
+     характеристики короткие, столбик с линиями растягивал их на экран. */
   .specs__grid {
     display: grid;
-    gap: var(--s-6) var(--s-8);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s-5) var(--s-5);
   }
 
   @media (min-width: 720px) {
-    .specs__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  }
-
-  .spec {
-    padding-top: var(--s-4);
-    border-top: 1px solid var(--hairline);
+    .specs__grid { gap: var(--s-6) var(--s-8); }
   }
 
   .spec__label {
     font-weight: var(--w-medium);
-    margin-bottom: var(--s-3);
+    line-height: var(--lh-caption);
+    margin-bottom: var(--s-1);
   }
 
   .spec__value {
