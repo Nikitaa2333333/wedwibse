@@ -1,0 +1,156 @@
+---
+// ТЕКСТ КАРТОЧКИ СТРУКТУРОЙ ИСХОДНИКА (CHARACTER.md, 08.10.2026).
+// Один модуль на подрядчика (поле story) и площадку (блок type: 'story'):
+// разделы идут в том порядке и под теми заголовками, что прислал автор
+// текста. Это не каталог блоков — раздел умеет только текстовые формы
+// (заголовок, крупная фраза, абзацы, список, пункты с именем), набор
+// и порядок переписываются из исходника.
+//
+// Фирменный маркер <mark> (подложка цвета выделения, global.css): фразы
+// из sec.mark подсвечиваются там, где встречаются в тексте раздела.
+// Правило проекта — короткая фраза в одну строку, одна-две на раздел.
+import { Image } from 'astro:assets';
+import type { StorySection } from '../data/specialists';
+import { resolveImage, IMG_WIDTHS } from '../lib/images';
+
+interface Props {
+  sections: StorySection[];
+  /** портрет автора: на телефоне над текстом, на ПК липким столбцом слева */
+  portrait?: string;
+  name?: string;
+}
+
+const { sections, portrait, name = '' } = Astro.props;
+
+/** режет строку на куски «обычный / под маркером» по фразам раздела */
+function marked(text: string, marks: string[] = []): { t: string; m: boolean }[] {
+  let parts = [{ t: text, m: false }];
+  for (const phrase of marks) {
+    parts = parts.flatMap((p) => {
+      if (p.m || !p.t.includes(phrase)) return [p];
+      const [before, ...rest] = p.t.split(phrase);
+      return [{ t: before, m: false }, { t: phrase, m: true }, { t: rest.join(phrase), m: false }];
+    });
+  }
+  return parts.filter((p) => p.t);
+}
+---
+
+<div class:list={['story', portrait && 'story--portrait']}>
+  {portrait && (
+    <figure class="story__portrait media">
+      <Image
+        src={resolveImage(portrait)}
+        alt={`${name} — портрет`}
+        widths={IMG_WIDTHS.card}
+        sizes="(min-width: 900px) 320px, 100vw"
+        loading="lazy"
+        decoding="async"
+      />
+    </figure>
+  )}
+  {sections.map((sec) => {
+    const M = (t: string) => marked(t, sec.mark).map((p) => (p.m ? <mark>{p.t}</mark> : p.t));
+    return (
+      <section class:list={['story__sec', !sec.title && 'story__sec--cont']}>
+        {sec.title && <h2 class="t-h2">{sec.title}</h2>}
+        {sec.lead && <p class="story__lead">{sec.lead}</p>}
+        {sec.text?.map((p) => <p class="story__text">{M(p)}</p>)}
+        {sec.list && (
+          <ul class="story__list list">
+            {sec.list.map((li) => <li>{M(li)}</li>)}
+          </ul>
+        )}
+        {sec.items && (
+          <div class="story__items">
+            {sec.items.map((it) => (
+              <article>
+                <h3 class="story__item-title">{it.title}</h3>
+                {it.text && <p class="story__text">{M(it.text)}</p>}
+              </article>
+            ))}
+          </div>
+        )}
+        {sec.after?.map((p) => <p class="story__text">{M(p)}</p>)}
+      </section>
+    );
+  })}
+</div>
+
+<style>
+  /* Тот же ритм, что у остальных секций карточки: заголовок h2, отбивка
+     --s-5, мера чтения на тексте. Раздел без своего заголовка —
+     продолжение предыдущего, поэтому отбивка перед ним меньше секционной. */
+  .story__sec {
+    padding: 0 var(--gutter) var(--section-gap-tight);
+  }
+
+  .story__sec:has(+ .story__sec--cont) { padding-bottom: var(--s-6); }
+
+  .story__sec > :not(:first-child) { margin-top: var(--s-4); }
+  .story__sec > h2 + * { margin-top: var(--s-5); }
+
+  .story__text { max-width: var(--measure-text); }
+
+  /* Фраза, которую автор сам вынес отдельно (премия, девиз, финал), —
+     кеглем h2: вес размером, не жирностью внутри абзаца. */
+  .story__lead {
+    font-size: var(--fs-h2);
+    font-weight: var(--w-head);
+    line-height: var(--lh-heading);
+    letter-spacing: var(--ls-display);
+    max-width: var(--measure-lead);
+  }
+
+  .story__items {
+    display: grid;
+    gap: var(--s-6) var(--s-7);
+  }
+
+  @media (min-width: 720px) {
+    .story__items { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  .story__item-title {
+    font-size: var(--fs-h3);
+    font-weight: var(--w-head);
+    line-height: var(--lh-heading);
+  }
+
+  .story__item-title + .story__text { margin-top: var(--s-2); }
+
+  /* Портрет автора: на телефоне над текстом во всю колонку, на ПК слева
+     фиксированным столбцом и едет вместе с прокруткой разделов. */
+  .story__portrait {
+    margin: 0 var(--gutter) var(--s-6);
+  }
+
+  .story__portrait :global(img) {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  @media (min-width: 900px) {
+    .story--portrait {
+      display: grid;
+      grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+      column-gap: var(--s-7);
+      padding-left: var(--gutter);
+    }
+
+    .story--portrait .story__portrait {
+      grid-column: 1;
+      grid-row: 1 / span 20;
+      align-self: start;
+      position: sticky;
+      top: var(--s-6);
+      margin: 0;
+    }
+
+    .story--portrait .story__sec {
+      grid-column: 2;
+      padding-left: 0;
+    }
+  }
+</style>
