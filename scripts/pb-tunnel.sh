@@ -17,7 +17,14 @@ HOST=${PB_SSH_HOST:-root@193.124.47.78}
 PORT=${PB_LOCAL_PORT:-8090}
 
 if [[ "${1:-}" == "--stop" ]]; then
-  pkill -f "ssh .*-L ${PORT}:127.0.0.1:8090" && echo "туннель закрыт" || echo "туннеля не было"
+  if command -v pkill >/dev/null; then
+    pkill -f "ssh .*-L ${PORT}:127.0.0.1:8090" && echo "туннель закрыт" || echo "туннеля не было"
+    exit 0
+  fi
+  # Git Bash на Windows: pkill нет, командной строки процесса ps не показывает —
+  # ищем ssh с этим пробросом через PowerShell и гасим только его PID
+  n=$(powershell.exe -NoProfile -Command "\$p = @(Get-CimInstance Win32_Process -Filter \"Name='ssh.exe'\" | Where-Object { \$_.CommandLine -match '-L ${PORT}:127.0.0.1:8090' }); \$p | ForEach-Object { Stop-Process -Id \$_.ProcessId }; \$p.Count" | tr -d '\r')
+  [[ "$n" != "0" ]] && echo "туннель закрыт" || echo "туннеля не было"
   exit 0
 fi
 

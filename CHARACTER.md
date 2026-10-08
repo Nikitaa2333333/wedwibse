@@ -132,8 +132,8 @@
 
 Что открыто (в порядке важности):
 
-1. **PocketBase:** досеять переставленные `photos` Push Decor, Maria Decor,
-   Your Food — `bash scripts/pb-tunnel.sh` + `pb-seed-specialists`.
+1. ~~PocketBase: досеять переставленные `photos` Push Decor, Maria Decor,
+   Your Food~~ — сделано 08.10 на ноутбуке, первый кадр в базе сверен с JSON.
 2. **Пилот** WHY NOT + Push Decor (раздел 4 выше).
 3. **Голева** — фото из ZIP-архива (Телеграм), на сайте 0 кадров.
 4. **Назарова** — контент из Телеграма, на сайте 0 кадров, текст урезан.
