@@ -40,10 +40,12 @@ const PILL_MAX = 44;
 // с середины съёмки; только вертикальные. Пауза — после каждого второго
 // раздела, но не после последнего: текст заканчивается текстом.
 const pool = photos.filter((p) => !isVideo(p) && isPortrait(p)).slice(3);
-const pauseAfter = new Map<number, string>();
+const pairs: string[][] = [];
+for (let i = 0; i + 1 < pool.length; i += 2) pairs.push([pool[i], pool[i + 1]]);
+const pauseAfter = new Map<number, string[]>();
 let next = 0;
 sections.forEach((_, i) => {
-  if (i % 2 === 1 && i < sections.length - 1 && next < pool.length) pauseAfter.set(i, pool[next++]);
+  if (i % 2 === 1 && i < sections.length - 1 && next < pairs.length) pauseAfter.set(i, pairs[next++]);
 });
 ---
 
@@ -115,16 +117,20 @@ sections.forEach((_, i) => {
           {sec.tone === 'dark' && name && <p class="story__sign">— {name}</p>}
         </section>
         {pause && (
-          <figure class="story__shot media media--bleed">
-            <Image
-              src={resolveImage(pause)}
-              alt={`${name} — работа`}
-              widths={IMG_WIDTHS.wide}
-              sizes="(min-width: 900px) 640px, 100vw"
-              loading="lazy"
-              decoding="async"
-            />
-          </figure>
+          <div class="story__pause">
+            {pause.map((src) => (
+              <figure class="story__shot media">
+                <Image
+                  src={resolveImage(src)}
+                  alt={`${name} — работа`}
+                  widths={IMG_WIDTHS.card}
+                  sizes="(min-width: 900px) 320px, 50vw"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </figure>
+            ))}
+          </div>
         )}
       </>
     );
@@ -307,22 +313,23 @@ sections.forEach((_, i) => {
   }
 
   /* ============ ПАУЗА ФОТО ============
-     Тот же формат, что у кадров сцен площадки (ScrollyScenes): кадр во всю
-     ширину экрана, без скругления, 4:5 (заказчик, 08.10.2026: «фото
-     привести к единому формату, работать в одних компонентах»). На ПК —
-     по колонке текста, не во весь монитор. */
-  .story__shot {
-    aspect-ratio: 4 / 5;
-    overflow: hidden;
-    background: var(--surface-dim);
-    margin: 0 0 var(--section-gap);
+     Два кадра в ряд со скруглением карточки, в полях страницы — тем же
+     видом, что портрет автора над текстом (заказчик, 08.10.2026: «нравилось
+     как было — две фотки в ряд и закруглённые»; кадр во всю ширину
+     без скругления выглядел другим компонентом). */
+  .story__pause {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s-2);
+    padding: 0 var(--gutter) var(--section-gap);
+    max-width: calc(var(--measure-text) + 2 * var(--gutter));
   }
 
-  @media (min-width: 900px) {
-    .story__shot {
-      max-width: calc(var(--measure-text) * 0.8);
-      margin-inline: var(--gutter);
-    }
+  .story__shot {
+    aspect-ratio: 4 / 5;
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    background: var(--surface-dim);
   }
 
   .story__shot :global(img) {
@@ -391,7 +398,7 @@ sections.forEach((_, i) => {
     }
 
     .story--portrait .story__sec,
-    .story--portrait .story__shot {
+    .story--portrait .story__pause {
       grid-column: 2;
       padding-left: 0;
     }
