@@ -69,7 +69,7 @@ sections.forEach((_, i) => {
     const faces = sec.items?.some((it) => it.photo);
     return (
       <>
-        <section class:list={['story__sec', !sec.title && 'story__sec--cont', sec.tone === 'dark' && 'story__sec--dark theme-dark']}>
+        <section class:list={['story__sec', !sec.title && 'story__sec--cont', !sec.title && !sec.lead && 'story__sec--plain', sec.tone === 'dark' && 'story__sec--dark theme-dark']}>
           {sec.title && <h2 class="t-h2 story__title">{sec.title}</h2>}
           {sec.lead && <p class:list={[sec.title ? 'story__sublead' : 'story__lead']}>{sec.lead}</p>}
           {sec.text?.map((p) => <p class="story__text">{p}</p>)}
@@ -147,6 +147,11 @@ sections.forEach((_, i) => {
   }
 
   .story__sec:has(+ .story__sec--cont) { padding-bottom: var(--s-6); }
+
+  /* Продолжение без заголовка и без крупной фразы — это просто следующий
+     абзац того же рассказа: зазор абзацный, иначе посреди текста дыра
+     (заказчик, 08.10.2026, у Солнечной). */
+  .story__sec:has(+ .story__sec--plain) { padding-bottom: var(--s-4); }
 
   .story__sec > * + * { margin-top: var(--s-4); }
 
