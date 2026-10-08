@@ -3,7 +3,27 @@
   "categorySlug": "stilisty",
   "category": "Стилисты и визажисты",
   "name": "Анна Назарова",
-  "photos": [],
+  "avatar": "/specialists/stilisty/avatars/nazarova.webp",
+  "portrait": "/specialists/stilisty/nazarova/portrait.webp",
+  "photos": [
+    "/specialists/stilisty/nazarova/gal/p13.webp",
+    "/specialists/stilisty/nazarova/gal/p14.webp",
+    "/specialists/stilisty/nazarova/gal/p02.webp",
+    "/specialists/stilisty/nazarova/gal/p06.webp",
+    "/specialists/stilisty/nazarova/gal/p11.webp",
+    "/specialists/stilisty/nazarova/gal/p05.webp",
+    "/specialists/stilisty/nazarova/gal/p03.webp",
+    "/specialists/stilisty/nazarova/gal/p12.webp",
+    "/specialists/stilisty/nazarova/gal/p15.webp",
+    "/specialists/stilisty/nazarova/gal/p07.webp",
+    "/specialists/stilisty/nazarova/gal/p08.webp",
+    "/specialists/stilisty/nazarova/gal/p10.webp",
+    "/specialists/stilisty/nazarova/gal/p04.webp",
+    "/specialists/stilisty/nazarova/gal/p09.webp",
+    "/specialists/stilisty/nazarova/gal/p16.webp",
+    "/specialists/stilisty/nazarova/gal/p17.webp",
+    "/specialists/stilisty/nazarova/gal/p18.webp"
+  ],
   "tagline": "Свадебные образы невест, 13 лет в beauty",
   "bio": "Свадебный стилист-визажист с 13-летним опытом в beauty-индустрии. Специализация — свадебные образы для невест; кроме свадеб — образы для профессиональных съёмок, показов и кино, обучение мастеров.\n\nТакой опыт позволяет собрать не просто красивый макияж и причёску, а цельный образ, который одинаково хорошо смотрится в жизни, на фото и видео. Каждый образ строится с учётом внешности невесты, стилистики платья, формата мероприятия и общей концепции свадьбы.",
   "gender": "ж",
@@ -11,11 +31,79 @@
   "priceNote": "макияж и причёска невесты с выездом по Подольску; в Москву — 15 000 ₽",
   "age": "35–50",
   "experienceYears": 13,
-  "cities": ["цао", "сао", "свао", "вао", "юво", "юао", "юзао", "зао", "сзао", "mo", "вне-мо"],
+  "cities": [
+    "цао",
+    "сао",
+    "свао",
+    "вао",
+    "юво",
+    "юао",
+    "юзао",
+    "зао",
+    "сзао",
+    "mo",
+    "вне-мо"
+  ],
   "aboutTitle": "О стилисте",
+  "story": [
+    {
+      "lead": "Свадебный стилист-визажист с 13-летним опытом в beauty-индустрии.",
+      "text": [
+        "Специализация — создание свадебных образов для невест. За годы работы реализовано большое количество свадебных проектов, а также образы для профессиональных съёмок, показов и кино.",
+        "Профессиональный опыт включает работу с невестами, fashion- и beauty-съёмками, показами и обучение мастеров. Такой широкий опыт позволяет создавать не просто красивый макияж и причёску, а цельный, выверенный образ, который гармонично выглядит в жизни, на фото и видео.",
+        "В работе — современная эстетика, безупречная техника, стойкость и внимание к деталям. Каждый свадебный образ создаётся с учётом внешности невесты, стилистики платья, формата мероприятия и общей концепции свадьбы."
+      ]
+    },
+    {
+      "lead": "Пока все волнуются, моя задача — сделать так, чтобы невеста почувствовала себя самой красивой."
+    },
+    {
+      "title": "Свадебный образ",
+      "items": [
+        {
+          "title": "12 000 ₽ — выезд по Подольску",
+          "text": "Макияж + причёска"
+        },
+        {
+          "title": "15 000 ₽ — выезд в Москву",
+          "text": "Макияж + причёска"
+        },
+        {
+          "title": "Репетиция свадебного образа — 6 500 ₽",
+          "text": "Проходит у меня в студии в Подольске."
+        }
+      ]
+    },
+    {
+      "title": "Образы для гостей",
+      "items": [
+        {
+          "title": "6 000 ₽",
+          "text": "Макияж + причёска"
+        }
+      ]
+    }
+  ],
   "filters": {
-    "city": ["цао", "сао", "свао", "вао", "юво", "юао", "юзао", "зао", "сзао", "mo", "вне-мо"],
-    "service": ["makeup", "hair", "bridal-look", "escort"],
+    "city": [
+      "цао",
+      "сао",
+      "свао",
+      "вао",
+      "юво",
+      "юао",
+      "юзао",
+      "зао",
+      "сзао",
+      "mo",
+      "вне-мо"
+    ],
+    "service": [
+      "makeup",
+      "hair",
+      "bridal-look",
+      "escort"
+    ],
     "minBudget": "10-15",
     "leadTime": "3-7d",
     "groom": "no",

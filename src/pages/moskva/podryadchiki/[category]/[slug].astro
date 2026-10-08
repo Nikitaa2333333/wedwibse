@@ -158,7 +158,19 @@ const saveData = JSON.stringify({
          Раздел без заголовка — продолжение предыдущего, а не «О нас»
          по умолчанию. Шаблонные секции ниже у такой карточки не выводятся. -->
     {s.story && (
-      <div class="pstory">
+      <div class:list={['pstory', s.portrait && 'pstory--portrait']}>
+        {s.portrait && (
+          <figure class="pstory__portrait media">
+            <Image
+              src={resolveImage(s.portrait)}
+              alt={`${s.name} — портрет`}
+              widths={IMG_WIDTHS.card}
+              sizes="(min-width: 900px) 320px, 100vw"
+              loading="lazy"
+              decoding="async"
+            />
+          </figure>
+        )}
         {s.story.map((sec) => (
           <section class:list={['pstory__sec', !sec.title && 'pstory__sec--cont']}>
             {sec.title && <h2 class="t-h2">{sec.title}</h2>}
@@ -441,6 +453,42 @@ const saveData = JSON.stringify({
   .pstory__sec > h2 + * { margin-top: var(--s-5); }
 
   .pstory__text { max-width: var(--measure-text); }
+
+  /* Портрет автора — тот же, что в старой секции «О подрядчике»: на
+     телефоне над текстом во всю колонку, на ПК слева фиксированным
+     столбцом и едет вместе с прокруткой, пока читаются разделы. */
+  .pstory__portrait {
+    margin: 0 var(--gutter) var(--s-6);
+  }
+
+  .pstory__portrait :global(img) {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  @media (min-width: 900px) {
+    .pstory--portrait {
+      display: grid;
+      grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+      column-gap: var(--s-7);
+      padding-left: var(--gutter);
+    }
+
+    .pstory--portrait .pstory__portrait {
+      grid-column: 1;
+      grid-row: 1 / span 20;
+      align-self: start;
+      position: sticky;
+      top: var(--s-6);
+      margin: 0;
+    }
+
+    .pstory--portrait .pstory__sec {
+      grid-column: 2;
+      padding-left: 0;
+    }
+  }
 
   /* Фраза, которую подрядчик сам вынес отдельной строкой (премия,
      девиз), — кеглем h2, как цитата-предложение: вес размером,
