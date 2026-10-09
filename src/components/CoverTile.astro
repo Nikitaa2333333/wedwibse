@@ -53,9 +53,13 @@ interface Props {
   /** имя группы синхронной смены: плитки с одним именем меняют кадр
       в один момент (входы на главной), без него — каждая в своей фазе */
   sync?: string;
+  /** короткая плашка (входы на главной, 09.10.2026): имена разделов
+      в одно слово, запас под вторую строку не нужен — капсула встаёт
+      сразу под имя, и плашка меньше закрывает кадр */
+  compact?: boolean;
 }
 
-const { name, href, capsule, covers, tone = 'beige', bg, bgs, sizes, eager = false, widths, sync } = Astro.props;
+const { name, href, capsule, covers, tone = 'beige', bg, bgs, sizes, eager = false, widths, sync, compact = false } = Astro.props;
 
 // Цвет с кадра на каждую обложку; руками заданный bg — только первой,
 // а смена кадров его не трогает (ручной цвет — осознанное решение).
@@ -70,7 +74,7 @@ const dark = first ? first.dark : tone === 'dark';
 ---
 
 <a
-  class:list={['ctile', dark && 'theme-dark']}
+  class:list={['ctile', compact && 'ctile--compact', dark && 'theme-dark']}
   href={href}
   aria-label={`${name} — ${capsule}`}
   style={first ? `--tile-bg: ${first.bg}` : undefined}
@@ -247,6 +251,28 @@ const dark = first ? first.dark : tone === 'dark';
     white-space: nowrap;
     border-radius: var(--radius-pill);
     background: color-mix(in srgb, currentColor 12%, transparent);
+  }
+
+  /* КОРОТКАЯ ПЛАШКА (входы на главной): заказчик, 09.10.2026 — «большой
+     пробел между названием и количеством, шторка сильно перекрывает
+     фото». Имя без запаса под вторую строку, капсула сразу под ним,
+     поля плашки и растворение кадра короче. */
+  .ctile--compact .ctile__body {
+    flex: 0 0 auto;
+    gap: var(--s-2);
+    padding: var(--s-2) var(--s-4) var(--s-3);
+  }
+
+  .ctile--compact .ctile__name {
+    min-height: 0;
+  }
+
+  .ctile--compact .ctile__count {
+    margin-top: 0;
+  }
+
+  .ctile--compact .ctile__shot::after {
+    height: 18%;
   }
 </style>
 
