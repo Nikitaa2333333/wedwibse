@@ -433,6 +433,11 @@
      число обязана уместиться в половину ширины. */
   --entry-thumb: clamp(42px, 12vw, 52px);
   --shadow-float: 0 12px 40px -16px rgb(0 0 0 / 0.25); /* парящая капсула (нижнее меню и т.п.) */
+  /* Сердце .save на кадре: тёмная полупрозрачная заливка внутри контура
+     и плотная тень — читается и на светлом, и на пёстром фото. Одно
+     значение на обе темы: под сердцем всегда фотография, а не бумага. */
+  --save-fill: rgb(0 0 0 / 0.35);
+  --save-shadow: drop-shadow(0 1px 2px rgb(0 0 0 / 0.55)) drop-shadow(0 0 6px rgb(0 0 0 / 0.25));
   /* Тень кадра в стопке («Избранное»): несколько слоёв низкой плотности,
      как у карточек iOS, — волосяной ореол по краю, ближняя мягкая тень
      и дальний широкий рассеянный свет. Одна плотная тень снизу
@@ -1532,11 +1537,14 @@ textarea.input {
   background: none;
   color: var(--white);
   cursor: pointer;
-  filter: drop-shadow(0 1px 8px rgb(0 0 0 / 0.45));
+  filter: var(--save-shadow);
   transition: transform var(--dur-fast) var(--ease-out);
 }
 
-.save svg { width: 24px; height: 24px; }
+/* Тонкий белый контур с одной размытой тенью тонул на светлых и пёстрых
+   кадрах обложек (заказчик, 09.10.2026): внутри контура теперь тёмная
+   полупрозрачная заливка, как у сердца Airbnb/Pinterest. */
+.save svg { width: 28px; height: 28px; --icon-fill: var(--save-fill); }
 .save:active { transform: scale(0.85); }
 
 /* Сердце В ПОДПИСИ под кадром (карточка каталога, ролик): обычный элемент
@@ -1552,7 +1560,7 @@ textarea.input {
   filter: none;
 }
 
-.save--inline svg { width: 22px; height: 22px; }
+.save--inline svg { width: 22px; height: 22px; --icon-fill: none; }
 
 /* Сердце Solar: контур — «не в избранном», заливка тем же цветом —
    «сохранено». Иконка идёт из спрайта через <use>, внутрь которого
