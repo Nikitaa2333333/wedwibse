@@ -91,6 +91,7 @@ sections.forEach((_, i) => {
                   <div>
                     <h3 class="story__item-title">{it.title}</h3>
                     {it.text && <p class="story__item-text">{it.text}</p>}
+                    {it.list && <ul class="list story__item-list">{it.list.map((t) => <li>{t}</li>)}</ul>}
                   </div>
                 </article>
               ))}
@@ -221,6 +222,14 @@ sections.forEach((_, i) => {
 
   .story__item-text {
     margin-top: var(--s-1);
+    max-width: var(--measure-text);
+  }
+
+  /* Перечисление внутри пункта (образование, путь по годам): у подрядчика
+     это строки, а не абзац — склеенные в одну фразу, годы терялись
+     (заказчик, 09.10.2026). */
+  .story__item-list {
+    margin-top: var(--s-2);
     max-width: var(--measure-text);
   }
 

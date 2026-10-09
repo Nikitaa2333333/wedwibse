@@ -500,7 +500,7 @@ export interface StorySection {
   tiles?: string[];
   /** пункты с собственным именем (участники группы, позиции прайса): имя — h3;
       photo — портрет в кружке слева (участники группы) */
-  items?: { title: string; text?: string; photo?: string }[];
+  items?: { title: string; text?: string; list?: string[]; photo?: string }[];
   /** тарифы карточками: шапка «название — цена», что входит, примечание.
       Всё, что относится к тарифу, — внутри него, а не абзацем между тарифами */
   tariffs?: { name: string; price: string; unit?: string; lead?: string; includes?: string[]; note?: string }[];
