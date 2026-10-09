@@ -9,9 +9,9 @@
 // элемент страницы зала: кадры → тип и имя → три числа → таблица тарифа
 // → что входит → 1–2 абзаца. Таблица — единственное место, где линии
 // между строками разрешены (это структура, а не разделители списка).
-import PhotoRail from './PhotoRail.astro';
+import { Image } from 'astro:assets';
 import type { VenueHall } from '../data/venues';
-import { IMG_WIDTHS } from '../lib/images';
+import { IMG_WIDTHS, resolveImage } from '../lib/images';
 
 interface Props {
   halls: VenueHall[];
@@ -21,6 +21,19 @@ const { halls } = Astro.props;
 ---
 
 <div class="halls">
+  {/* НАВИГАЦИЯ ПО ЗАЛАМ (заказчик, 08.10.2026: «человек листает залы — чтобы
+      не запутаться, сверху высвечивается навигация»). Липкая полоса пилюль
+      под кнопками первого экрана; текущий зал подсвечивает скрипт ниже.
+      Ссылки настоящие — без JS это просто оглавление по якорям. */}
+  {halls.length > 2 && (
+    <nav class="halls__nav" aria-label="Залы">
+      <div class="halls__rail">
+        {halls.map((hall) => (
+          <a class="chip halls__link" href={`#hall-${hall.id}`} data-hall-link={hall.id}>{hall.name}</a>
+        ))}
+      </div>
+    </nav>
+  )}
   {halls.map((hall, i) => (
     <section class="hall section" id={`hall-${hall.id}`}>
       <div class="container container--wide">
@@ -29,23 +42,22 @@ const { halls } = Astro.props;
               (заказчик, 17.09): в полях страницы он читался вставкой, а
               двенадцать точек под ним — полосой прокрутки. Листается
               свайпом как раньше. */}
-          <div class="hall__media">
-            <PhotoRail
-              photos={hall.photos}
+          {/* Один кадр зала элементом .shot, без слайдера: тот же вид фото,
+              что у подрядчика (заказчик, 08.10.2026). Остальные кадры зала
+              листаются в первом экране площадки. */}
+          <figure class="hall__media shot">
+            <Image
+              src={resolveImage(hall.photos[0])}
               alt={hall.alt}
-              sizes="(min-width: 900px) 42vw, 100vw"
               widths={IMG_WIDTHS.card}
-              bleed
-              dots={false}
+              sizes="(min-width: 900px) 42vw, 100vw"
+              loading="lazy"
+              decoding="async"
             />
-          </div>
+          </figure>
 
           <div class="hall__body">
             <header class="hall__head">
-              <p class="hall__kicker t-caption">
-                <span class="hall__num">{String(i + 1).padStart(2, '0')}</span>
-                {hall.kicker}
-              </p>
               <h2 class="hall__title">{hall.name}</h2>
             </header>
 
@@ -57,11 +69,11 @@ const { halls } = Astro.props;
               </div>
               <div class="hall__stat">
                 <dd class="hall__val">{hall.banquet}</dd>
-                <dt class="hall__lbl t-caption">гостей банкетом</dt>
+                <dt class="hall__lbl t-caption">гостей на банкете</dt>
               </div>
               <div class="hall__stat">
                 <dd class="hall__val">{hall.buffet}</dd>
-                <dt class="hall__lbl t-caption">гостей фуршетом</dt>
+                <dt class="hall__lbl t-caption">гостей на фуршете</dt>
               </div>
             </dl>
 
@@ -85,12 +97,11 @@ const { halls } = Astro.props;
               </tbody>
             </table>
 
-            <p class="hall__included">
+            <div class="hall__text">
+              <p class="hall__included">
               <span class="hall__included-label">В аренду входит: </span>
               {hall.included.join(', ')}
-            </p>
-
-            <div class="hall__text">
+              </p>
               {hall.body.map((p) => <p class="hall__p">{p}</p>)}
             </div>
 
@@ -103,6 +114,39 @@ const { halls } = Astro.props;
 </div>
 
 <style>
+  /* ============ НАВИГАЦИЯ ПО ЗАЛАМ ============
+     Под фиксированными кнопками первого экрана (--s-4 + 40px + зазор):
+     полоса не налезает на «назад» и сердце. Вбок листается сама, ось Y
+     закрыта явно — иначе ряд «ездит» пальцем (ловушка из CLAUDE.md). */
+  /* Сплошная бумажная шапка от верха экрана: фиксированные кнопки
+     первого экрана лежат на ней, пилюли — под ними. Фото больше не
+     проглядывает полосой между краем экрана и пилюлями (заказчик, 08.10). */
+  .halls__nav {
+    position: sticky;
+    top: 0;
+    z-index: calc(var(--z-nav) - 1);
+    background: var(--bg);
+    padding-top: calc(var(--s-4) + 40px + var(--s-2) + var(--safe-t));
+    padding-bottom: var(--s-2);
+  }
+
+  @media (min-width: 1024px) {
+    .halls__nav { padding-top: var(--s-2); }
+  }
+
+  .halls__rail {
+    display: flex;
+    gap: var(--s-2);
+    padding-inline: var(--gutter);
+    overflow-x: auto;
+    overflow-y: clip;
+    scrollbar-width: none;
+  }
+
+  .halls__rail::-webkit-scrollbar { display: none; }
+
+  .halls__link { flex: none; white-space: nowrap; }
+
   .hall :global(.container) { max-width: none; }
 
   /* Секции залов идут подряд: между ними обычный ритм секции, а не
@@ -120,7 +164,7 @@ const { halls } = Astro.props;
 
   /* Кадр в край экрана: вычитаем поле контейнера с обеих сторон. На ПК
      (сетка ниже) поле возвращается — там кадр стоит колонкой. */
-  .hall__media { margin-inline: calc(-1 * var(--gutter)); }
+  /* кадр в полях страницы (.shot) — как у подрядчика */
 
   .hall__body {
     display: flex;
@@ -136,7 +180,6 @@ const { halls } = Astro.props;
     margin-bottom: var(--s-3);
   }
 
-  .hall__num { font-variant-numeric: tabular-nums; }
 
   .hall__title {
     font-size: var(--fs-h1);
@@ -168,7 +211,7 @@ const { halls } = Astro.props;
 
   .hall__unit { font-size: var(--fs-small); }
 
-  .hall__lbl { font-weight: var(--w-medium); }
+  .hall__lbl { font-weight: var(--w-medium); line-height: var(--lh-caption); }
 
   /* ТАРИФ. Таблица во всю ширину колонки, линии между строками —
      структура таблицы (единственное разрешённое место для линий). */
@@ -217,7 +260,8 @@ const { halls } = Astro.props;
     max-width: var(--measure-text);
   }
 
-  .hall__p + .hall__p { margin-top: var(--s-4); }
+  /* «В аренду входит» и описание — одна группа: абзацный зазор, без дыры */
+  .hall__text > * + * { margin-top: var(--s-4); }
 
   .hall__up {
     align-self: flex-start;
@@ -237,9 +281,36 @@ const { halls } = Astro.props;
     .hall__media {
       position: sticky;
       top: var(--s-6);
-      margin-inline: 0;
     }
 
     .hall__up { display: none; }
   }
 </style>
+
+<script>
+  // Текущий зал в полосе навигации: тот, чья секция пересекает верхнюю
+  // треть экрана. Активная пилюля доезжает в видимую часть ряда сама.
+  const links = new Map(
+    [...document.querySelectorAll<HTMLAnchorElement>('[data-hall-link]')].map((a) => [`hall-${a.dataset.hallLink}`, a]),
+  );
+  if (links.size) {
+    const rail = document.querySelector<HTMLElement>('.halls__rail');
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (!e.isIntersecting) continue;
+          links.forEach((a) => a.classList.remove('is-active'));
+          const a = links.get(e.target.id);
+          if (!a) continue;
+          a.classList.add('is-active');
+          if (rail) rail.scrollTo({ left: a.offsetLeft - rail.clientWidth / 2 + a.clientWidth / 2, behavior: 'smooth' });
+        }
+      },
+      { rootMargin: '-30% 0px -60% 0px' },
+    );
+    links.forEach((_, id) => {
+      const s = document.getElementById(id);
+      if (s) io.observe(s);
+    });
+  }
+</script>

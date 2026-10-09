@@ -1,0 +1,409 @@
+---
+// ТЕКСТ КАРТОЧКИ СТРУКТУРОЙ ИСХОДНИКА (CHARACTER.md, 08.10.2026).
+// Один модуль на подрядчика (поле story) и площадку (блок type: 'story'):
+// разделы идут в том порядке и под теми заголовками, что прислал автор
+// текста. Это не каталог блоков — раздел умеет только текстовые формы
+// (заголовок, крупная фраза, абзацы, пилюли, пункты с именем, меню,
+// тарифы), набор и порядок переписываются из исходника.
+//
+// Решения заказчика 08.10.2026:
+// - маркер <mark> не выводим («не нравится, давай без выделения»):
+//   поле mark в данных остаётся, модуль его игнорирует;
+// - короткие перечисления — пилюлями .plates; длинные пункты (больше
+//   одной строки) — обычным списком .list: четырёхстрочная пилюля
+//   разваливается в кирпич;
+// - крупная фраза (lead) кеглем h2 — только у раздела без заголовка;
+// - тарифы — карточками: шапка «название — цена», внутри что входит,
+//   внизу примечание; всё, что относится к тарифу, лежит в его карточке;
+// - меню кейтеринга — одной плашкой; фото работ между разделами пазлом.
+import { Image } from 'astro:assets';
+import type { StorySection } from '../data/specialists';
+import { resolveImage, IMG_WIDTHS } from '../lib/images';
+import { isPortrait, isVideo } from '../lib/media';
+import Avatar from './Avatar.astro';
+
+interface Props {
+  sections: StorySection[];
+  /** портрет автора: на телефоне над текстом, на ПК липким столбцом слева */
+  portrait?: string;
+  name?: string;
+  /** кадры работ для пауз между разделами (берутся вертикальные) */
+  photos?: string[];
+  /** блок среди других секций (площадка): свой верхний отступ секции */
+  block?: boolean;
+}
+
+const { sections, portrait, name = '', photos = [], block = false } = Astro.props;
+
+/** пилюля держит одну строку: длиннее — пункт уходит в обычный список */
+const PILL_MAX = 44;
+
+// ПАУЗЫ ФОТО. Первые кадры человек уже листал в первом экране — берём
+// с середины съёмки; только вертикальные. Пауза — после каждого второго
+// раздела, но не после последнего: текст заканчивается текстом.
+const pool = photos.filter((p) => !isVideo(p) && isPortrait(p)).slice(3);
+const pairs: string[][] = [];
+// по одному кадру на паузу (заказчик, 08.10.2026: пара в ряд на телефоне
+// выходила мелкой) — вид тот же, что у портрета автора: скругление, в полях
+for (const p of pool) pairs.push([p]);
+const pauseAfter = new Map<number, string[]>();
+let next = 0;
+sections.forEach((_, i) => {
+  if (i % 2 === 1 && i < sections.length - 1 && next < pairs.length) pauseAfter.set(i, pairs[next++]);
+});
+---
+
+<div class:list={['story', portrait && 'story--portrait', block && 'story--block']}>
+  {portrait && (
+    <figure class="story__portrait media">
+      <Image
+        src={resolveImage(portrait)}
+        alt={`${name} — портрет`}
+        widths={IMG_WIDTHS.card}
+        sizes="(min-width: 900px) 320px, 100vw"
+        loading="lazy"
+        decoding="async"
+      />
+    </figure>
+  )}
+  {sections.map((sec, i) => {
+    const points = [...(sec.list ?? []), ...(sec.tiles ?? [])];
+    const pills = points.length > 0 && points.every((t) => t.length <= PILL_MAX);
+    const pause = pauseAfter.get(i);
+    const faces = sec.items?.some((it) => it.photo);
+    return (
+      <>
+        <section class:list={['story__sec', !sec.title && 'story__sec--cont', !sec.title && !sec.lead && 'story__sec--plain', sec.tone === 'dark' && 'story__sec--dark theme-dark']}>
+          {sec.title && <h2 class="t-h2 story__title">{sec.title}</h2>}
+          {sec.lead && <p class:list={[sec.title ? 'story__sublead' : 'story__lead']}>{sec.lead}</p>}
+          {sec.text?.map((p) => <p class="story__text">{p}</p>)}
+          {points.length > 0 && (pills ? (
+            <ul class="plates">{points.map((t) => <li>{t}</li>)}</ul>
+          ) : (
+            <ul class="list story__list">{points.map((t) => <li>{t}</li>)}</ul>
+          ))}
+          {sec.items && (
+            <div class:list={['story__items', sec.kind === 'menu' && 'story__items--menu']}>
+              {sec.items.map((it) => (
+                <article class:list={['story__item', faces && 'story__item--face']}>
+                  {/* портрет есть хоть у одного — кружок у всех: без фото Avatar ставит инициалы */}
+                  {faces && <Avatar src={it.photo} name={it.title} size={72} class="story__face" />}
+                  <div>
+                    <h3 class="story__item-title">{it.title}</h3>
+                    {it.text && <p class="story__item-text">{it.text}</p>}
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+          {sec.tariffs && (
+            <div class="tariffs">
+              {sec.tariffs.map((t) => (
+                <article class="tariff">
+                  <header class="tariff__head">
+                    <h3 class="tariff__name">{t.name}</h3>
+                    <p class="tariff__price">
+                      {t.price}
+                      {t.unit && <span class="tariff__unit">{t.unit}</span>}
+                    </p>
+                  </header>
+                  {t.lead && <p class="tariff__lead">{t.lead}</p>}
+                  {t.includes && (
+                    <ul class="list tariff__list">{t.includes.map((x) => <li>{x}</li>)}</ul>
+                  )}
+                  {t.note && <p class="tariff__note">{t.note}</p>}
+                </article>
+              ))}
+            </div>
+          )}
+          {sec.after?.map((p) => <p class="story__text">{p}</p>)}
+          {/* подпись автора: тёмная плашка — его слова, и читается цитатой */}
+          {sec.tone === 'dark' && name && <p class="story__sign">— {name}</p>}
+        </section>
+        {pause && (
+          <div class="story__pause">
+            {pause.map((src) => (
+              <figure class="story__shot shot">
+                <Image
+                  src={resolveImage(src)}
+                  alt={`${name} — работа`}
+                  widths={IMG_WIDTHS.card}
+                  sizes="(min-width: 900px) 560px, 100vw"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </figure>
+            ))}
+          </div>
+        )}
+      </>
+    );
+  })}
+</div>
+
+<style>
+  /* ============ РИТМ ============
+     Внешнее больше внутреннего: между разделами — секционный отступ,
+     внутри раздела — --s-4. Раздел без заголовка — продолжение
+     предыдущего, перед ним меньше воздуха, чем перед новым заголовком. */
+  .story__sec {
+    padding: 0 var(--gutter) var(--section-gap);
+  }
+
+  /* Среди секций площадки у модуля свой верхний отступ — иначе он
+     прилипает к полосе цифр (заказчик, 08.10.2026, Барвиха). */
+  .story--block { padding-top: var(--section-gap); }
+
+  .story__sec:has(+ .story__sec--cont) { padding-bottom: var(--s-6); }
+
+  /* Продолжение без заголовка и без крупной фразы — это просто следующий
+     абзац того же рассказа: зазор абзацный, иначе посреди текста дыра
+     (заказчик, 08.10.2026, у Солнечной). */
+  .story__sec:has(+ .story__sec--plain) { padding-bottom: var(--s-4); }
+
+  .story__sec > * + * { margin-top: var(--s-4); }
+
+  /* Заголовок раздела антиквой образа, но плотнее: Cormorant 600 на
+     бумаге читался бледным. Шрифт переменный 300–700. */
+  .story .story__title {
+    font-weight: var(--w-head-lg);
+    max-width: var(--measure-head);
+  }
+
+  .story__text { max-width: var(--measure-text); }
+
+  /* Фраза, которую автор сам вынес отдельно, — кеглем h2, когда своего
+     заголовка у раздела нет: она и есть заголовок. */
+  /* Крупное — антиквой, как все заголовки страницы: фраза без заголовка
+     и есть заголовок раздела (заказчик, 08.10.2026: «много разных
+     начертаний»). Кегль заголовка секции h2 образа. */
+  .story .story__lead {
+    font-family: var(--font-serif);
+    font-size: clamp(30px, 4vw, 44px);
+    font-weight: var(--w-head-lg);
+    line-height: var(--lh-heading);
+    letter-spacing: 0;
+    max-width: var(--measure-lead);
+  }
+
+  /* Та же фраза под заголовком — лид, кегль меньше h2. */
+  .story__sublead {
+    font-size: var(--fs-lead);
+    font-weight: var(--w-medium);
+    line-height: var(--lh-heading);
+    max-width: var(--measure-lead);
+  }
+
+  .story__sec > .plates,
+  .story__list { max-width: var(--measure-text); }
+
+  /* ============ ПУНКТЫ С ИМЕНЕМ ============ */
+  .story__items {
+    display: grid;
+    gap: var(--s-5) var(--s-7);
+  }
+
+  @media (min-width: 720px) {
+    .story__items { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  /* Имя пункта — жирная строка гротеском в кегле текста. Двойной класс
+     перебивает правило образа «крем» для h3. */
+  .story .story__item-title {
+    font-family: var(--font-sans);
+    font-size: var(--fs-body);
+    font-weight: var(--w-head-lg);
+    line-height: var(--lh-heading);
+    letter-spacing: 0;
+  }
+
+  .story__item-text {
+    margin-top: var(--s-1);
+    max-width: var(--measure-text);
+  }
+
+  /* Пункт с портретом (участники группы): кружок слева, имя и текст
+     справа — одна группа. */
+  .story__item--face {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: var(--s-4);
+    align-items: start;
+  }
+
+  /* ============ МЕНЮ ============ */
+  .story__items--menu {
+    background: var(--surface);
+    border-radius: var(--radius-card);
+    padding: var(--s-5) var(--s-4);
+    gap: var(--s-4) var(--s-6);
+    max-width: var(--measure-text);
+  }
+
+  @media (min-width: 720px) {
+    .story__items--menu { padding: var(--s-6); }
+  }
+
+  .story__items--menu .story__item-text {
+    margin-top: 2px;
+    font-size: var(--fs-small);
+    line-height: var(--lh-heading);
+  }
+
+  /* ============ ТАРИФЫ ============
+     Каждый тариф — своя карточка-папка на --surface: шапка «название —
+     цена» одной строкой, под ней что входит, внизу примечание мелко.
+     Всё, что относится к тарифу, — внутри его карточки, поэтому ни один
+     абзац не висит между тарифами неизвестно чей. */
+  .tariffs {
+    display: grid;
+    gap: var(--s-3);
+    max-width: var(--measure-text);
+  }
+
+  @media (min-width: 900px) {
+    .tariffs {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      max-width: none;
+    }
+  }
+
+  .tariff {
+    background: var(--surface);
+    border-radius: var(--radius-card);
+    padding: var(--s-5);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .tariff__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--s-1) var(--s-4);
+  }
+
+  /* Название тарифа — гротеском, как имена пунктов; цена — крупнее,
+     она и есть причина открыть карточку. */
+  .story .tariff__name {
+    font-family: var(--font-sans);
+    font-size: var(--fs-body);
+    font-weight: var(--w-head-lg);
+    letter-spacing: 0;
+    line-height: var(--lh-heading);
+  }
+
+  .tariff__price {
+    font-size: var(--fs-h3);
+    font-weight: var(--w-head-lg);
+    line-height: var(--lh-heading);
+    white-space: nowrap;
+  }
+
+  .tariff__unit {
+    margin-left: var(--s-1);
+    font-size: var(--fs-small);
+    font-weight: var(--w-body);
+  }
+
+  .tariff__lead {
+    margin-top: var(--s-2);
+    font-size: var(--fs-small);
+    line-height: var(--lh-caption);
+  }
+
+  .tariff__list {
+    margin-top: var(--s-4);
+    gap: var(--s-2);
+    font-size: var(--fs-small);
+    line-height: var(--lh-heading);
+  }
+
+  /* примечание прижато к низу карточки: в ряду из двух тарифов
+     «до 7 часов» и «доплата» стоят на одной линии */
+  .tariff__note {
+    margin-top: auto;
+    padding-top: var(--s-4);
+    font-size: var(--fs-small);
+    line-height: var(--lh-heading);
+  }
+
+  /* ============ ПАУЗА ФОТО ============
+     Один кадр со скруглением карточки, в полях страницы — тем же
+     видом, что портрет автора над текстом (заказчик, 08.10.2026: «нравилось
+     как было — две фотки в ряд и закруглённые»; кадр во всю ширину
+     без скругления выглядел другим компонентом). */
+  .story__pause {
+    display: grid;
+    padding: 0 var(--gutter) var(--section-gap);
+    max-width: calc(var(--measure-text) * 0.8 + 2 * var(--gutter));
+  }
+
+  /* сам кадр — общий элемент .shot из global.css (тот же у площадки) */
+
+  /* ============ ТЁМНЫЙ РАЗДЕЛ ============
+     Инверсия .theme-dark — тот же приём, что у тёмного блока площадки
+     (VenueStatement dark): фраза, ради которой автор пишет, на шоколаде.
+     Один-два на страницу, не больше — иначе плашка перестаёт выделять. */
+  .story__sec--dark {
+    padding-block: var(--section-gap);
+    margin-bottom: var(--section-gap);
+  }
+
+  .story__sec:has(+ .story__sec--dark) { padding-bottom: var(--section-gap); }
+
+  /* Фраза на шоколаде — крупной антиквой, как заголовки тёмных блоков
+     площадки: Cormorant хорош именно крупно (заказчик, 08.10.2026),
+     гротеском плашка читалась цветным прямоугольником, а не цитатой. */
+  .story .story__sec--dark .story__lead {
+    font-family: var(--font-serif);
+    font-size: clamp(32px, 7vw, 52px);
+    font-weight: var(--w-head-lg);
+    line-height: var(--lh-display);
+    letter-spacing: 0;
+  }
+
+  .story__sec--dark .story__lead + .story__text { margin-top: var(--s-5); }
+
+  .story__sign {
+    margin-top: var(--s-5);
+    font-size: var(--fs-small);
+    font-weight: var(--w-medium);
+  }
+
+  /* ============ ПОРТРЕТ ============ */
+  .story__portrait {
+    margin: 0 var(--gutter) var(--s-6);
+  }
+
+  .story__portrait :global(img) {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  @media (min-width: 900px) {
+    .story--portrait {
+      display: grid;
+      grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+      column-gap: var(--s-7);
+      padding-left: var(--gutter);
+    }
+
+    .story--portrait .story__portrait {
+      grid-column: 1;
+      grid-row: 1 / span 40;
+      align-self: start;
+      position: sticky;
+      top: var(--s-6);
+      margin: 0;
+    }
+
+    .story--portrait .story__sec,
+    .story--portrait .story__pause {
+      grid-column: 2;
+      padding-left: 0;
+    }
+  }
+</style>

@@ -79,14 +79,17 @@ await slurp(base);
 const norm = (t) => t.replace(/[\s ]/g, '');
 const corpusN = norm(corpus) + '\n' + corpus.replace(/[^\d\n]/g, '');
 const strings = [];
+// story — слова самого подрядчика его же структурой (CHARACTER.md): штампы
+// в них не правим, это его голос. Числа и типографику проверяем как везде.
+const own = new Set();
 // Значения фильтров и бакеты («35–50», «15+») — ключи закрытых списков,
 // а не текст подрядчика: их в сырье не ищем. Проверяются пунктом 2.
 const ENUM_KEYS = new Set(['filters', 'age', 'cities', 'styles', 'formats', 'languages']);
-(function walk(v, key) {
+(function walk(v, key, inStory) {
   if (ENUM_KEYS.has(key)) return;
-  if (typeof v === 'string') strings.push(v);
-  else if (Array.isArray(v)) v.forEach((x) => walk(x));
-  else if (v && typeof v === 'object') Object.entries(v).forEach(([k, x]) => walk(x, k));
+  if (typeof v === 'string') { strings.push(v); if (inStory) own.add(v); }
+  else if (Array.isArray(v)) v.forEach((x) => walk(x, undefined, inStory));
+  else if (v && typeof v === 'object') Object.entries(v).forEach(([k, x]) => walk(x, k, inStory || k === 'story'));
 })(s);
 const seen = new Set();
 for (const t of strings) {
@@ -106,7 +109,7 @@ for (const t of strings) {
   if (/<\/?(b|strong)>/.test(t)) errors.push(`жирность в тексте: «${t.slice(0, 60)}»`);
   if (/\b[А-ЯЁA-Z]{4,}\b/.test(t) && !/\b(LED|HDMI|DMX|VIP|FHD|4K|DJ|RAW|JPEG|МКАД)\b/.test(t)) errors.push(`капс: «${t.slice(0, 60)}»`);
   if (/ {2,}/.test(t)) errors.push(`двойной пробел: «${t.slice(0, 60)}»`);
-  if (CLICHE.test(t)) errors.push(`штамп: «${t.slice(0, 70)}»`);
+  if (CLICHE.test(t) && !own.has(t)) errors.push(`штамп: «${t.slice(0, 70)}»`);
 }
 
 if (errors.length) {

@@ -1,4 +1,5 @@
 ---
+import { rowsClass } from '../lib/rows';
 // УТВЕРЖДЕНИЕ НА БУМАГЕ — текстовый блок карточки без кадра.
 // Нужен, когда у площадки есть мысль, которую не хочется прятать под
 // фото: формат работы («только под закрытие»), устройство прайса,
@@ -20,7 +21,6 @@ const { kicker, title, body, facts, dark = false } = Astro.props;
 <section class:list={['statement', 'section', { 'theme-dark': dark }]}>
   <div class="container container--wide">
     <header class="statement__head">
-      {kicker && <p class="statement__kicker t-caption">{kicker}</p>}
       <h2 class="statement__title">{title}</h2>
     </header>
 
@@ -31,7 +31,7 @@ const { kicker, title, body, facts, dark = false } = Astro.props;
 
       {
         facts && facts.length > 0 && (
-          <dl class="rows statement__facts">
+          <dl class={`${rowsClass(facts)} statement__facts`}>
             {facts.map((fact) => (
               <div class="rows__row">
                 <dt class="rows__label">{fact.label}</dt>

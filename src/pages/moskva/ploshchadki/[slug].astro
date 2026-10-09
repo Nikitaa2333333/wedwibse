@@ -25,6 +25,7 @@ import ReelsRow from '../../../components/ReelsRow.astro';
 import HallsIndex from '../../../components/HallsIndex.astro';
 import VenueHalls from '../../../components/VenueHalls.astro';
 import BottomDock from '../../../components/BottomDock.astro';
+import StoryText from '../../../components/StoryText.astro';
 import RelatedCards from '../../../components/RelatedCards.astro';
 import { VENUES, type Venue } from '../../../data/venues';
 import { similarVenues } from '../../../lib/similar';
@@ -163,6 +164,10 @@ const reels = reelsOfVenue(venue.slug);
 
           case 'halls':
             return venue.halls?.length && <VenueHalls halls={venue.halls} />;
+
+          // РАССКАЗ ПЛОЩАДКИ её же структурой — общий модуль с подрядчиком
+          case 'story':
+            return <StoryText sections={block.sections} block />;
 
           case 'faq':
             return (

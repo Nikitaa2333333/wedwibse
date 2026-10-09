@@ -1,4 +1,5 @@
 ---
+import { rowsClass } from '../lib/rows';
 // Условия площадки: деньги, бронирование, что входит в стоимость,
 // что считается отдельно. Всё «метка — значение» идёт строками (.rows),
 // чистые перечисления — маркированным списком (.list).
@@ -18,7 +19,6 @@ const { kicker, title, terms, included, extras } = Astro.props;
 <section class="terms section" id="usloviya">
   <div class="container container--wide">
     <header class="terms__head">
-      <p class="terms__kicker t-caption">{kicker}</p>
       <h2 class="terms__title">{title}</h2>
     </header>
 
@@ -29,7 +29,7 @@ const { kicker, title, terms, included, extras } = Astro.props;
         terms.map((group) => (
           <div class="group">
             <h3 class="group__name">{group.title}</h3>
-            <dl class="rows">
+            <dl class={rowsClass(group.rows)}>
               {group.rows.map((row) => (
                 <div class="rows__row">
                   <dt class="rows__label">{row.label}</dt>

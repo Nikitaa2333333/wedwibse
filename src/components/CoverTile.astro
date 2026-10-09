@@ -46,9 +46,12 @@ interface Props {
   eager?: boolean;
   /** ширины srcset: роль из IMG_WIDTHS */
   widths: number[];
+  /** имя группы синхронной смены: плитки с одним именем меняют кадр
+      в один момент (входы на главной), без него — каждая в своей фазе */
+  sync?: string;
 }
 
-const { name, href, capsule, covers, tone = 'beige', bg, sizes, eager = false, widths } = Astro.props;
+const { name, href, capsule, covers, tone = 'beige', bg, sizes, eager = false, widths, sync } = Astro.props;
 
 // Цвет с кадра на каждую обложку; руками заданный bg — только первой,
 // а смена кадров его не трогает (ручной цвет — осознанное решение).
@@ -71,7 +74,11 @@ const dark = first ? first.dark : tone === 'dark';
       отдельно от кадра, и на стыке мелькала линия (25.09.2026).
       Высоту фото в потоке держит распорка .ctile__spacer. */}
   <span class="ctile__spacer" aria-hidden="true"></span>
-  <span class="ctile__media" data-cover-swap={covers.length > 1 ? '' : undefined}>
+  <span
+    class="ctile__media"
+    data-cover-swap={covers.length > 1 ? '' : undefined}
+    data-cover-sync={covers.length > 1 ? sync : undefined}
+  >
     {covers.map((cover, n) => (
       <span
         class:list={['ctile__frame', n === 0 && 'is-on']}
@@ -243,6 +250,10 @@ const dark = first ? first.dark : tone === 'dark';
   const calm = window.matchMedia('(prefers-reduced-motion: reduce)');
 
   if (!calm.matches) {
+    // Фаза на группу data-cover-sync: плитки одной группы (входы на
+    // главной) меняют кадр разом, как одна витрина.
+    const groupPhase = new Map<string, number>();
+
     document.querySelectorAll<HTMLElement>('[data-cover-swap]').forEach((stack) => {
       const frames = Array.from(stack.querySelectorAll<HTMLElement>('.ctile__frame'));
       if (frames.length < 2) return;
@@ -250,7 +261,10 @@ const dark = first ? first.dark : tone === 'dark';
       let i = 0;
       // Разводим плитки по фазе: иначе все обложки на экране мигают разом,
       // и страница выглядит моргающей, а не живой.
-      const phase = Math.random() * SWAP_MS;
+      // Плитки одной группы data-cover-sync — наоборот, в одной фазе.
+      const group = stack.dataset.coverSync;
+      if (group && !groupPhase.has(group)) groupPhase.set(group, Math.random() * SWAP_MS);
+      const phase = group ? groupPhase.get(group)! : Math.random() * SWAP_MS;
 
       // Цвет плашки несёт сам слой кадра; здесь только цвет подписи:
       // белая на тёмном кадре, чернильная на светлом.

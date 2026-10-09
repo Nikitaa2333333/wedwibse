@@ -96,6 +96,18 @@ const { cards } = Astro.props;
         <!-- Цена и стиль — в подписи под кадром на любой ширине.
              Одно правило на весь сайт: текст не кладём на фотографию. -->
         <div class="scard__body">
+          {/* Имя — первой строкой и жирным гротеском (08.10.2026): под ценой
+              и антиквой мелкого кегля оно читалось вторым планом, хотя
+              карточку ищут по человеку, а не по цифре. */}
+          <div class="scard__top">
+            <h2 class="scard__name">
+              {s.avatar && <Avatar src={s.avatar} name={s.name} size={30} />}
+              <a href={href}>{s.name}</a>
+            </h2>
+            {s.rating && (
+              <span class="scard__rate" aria-label={`Рейтинг ${s.rating}`}>★ {s.rating.toFixed(1)}</span>
+            )}
+          </div>
           {s.priceFrom ? (
             <p class="scard__price">
               {price}
@@ -109,15 +121,6 @@ const { cards } = Astro.props;
               {styleTag && <span class="scard__style">{styleTag}</span>}
             </p>
           )}
-          <div class="scard__top">
-            <h2 class="scard__name">
-              {s.avatar && <Avatar src={s.avatar} name={s.name} size={30} />}
-              <a href={href}>{s.name}</a>
-            </h2>
-            {s.rating && (
-              <span class="scard__rate" aria-label={`Рейтинг ${s.rating}`}>★ {s.rating.toFixed(1)}</span>
-            )}
-          </div>
           <p class="scard__tagline t-small">{s.tagline}</p>
         </div>
       </article>
@@ -230,12 +233,11 @@ const { cards } = Astro.props;
     font-weight: var(--w-medium);
   }
 
-  /* Стиль — вторым планом: приглушение прозрачностью, не цветом.
+  /* Стиль — в строке с ценой тем же цветом (приглушать текст нельзя).
      На телефоне колонка ~190px, и стиль в строке с ценой переносится
      и рвёт подпись — там его нет. */
   .scard__style {
     display: none;
-    opacity: 0.6;
   }
 
   @media (min-width: 640px) {
@@ -255,15 +257,23 @@ const { cards } = Astro.props;
 
   /* На телефоне имя в кегле корпуса: h3 в колонке 190px ломал имена
      на две строки и раздувал подпись. */
-  .scard__name {
+  /* Гротеск, а не антиква образа «крем»: Cormorant мелким кеглем на
+     экране тонкий и бледный. Двойной класс перебивает правило образа
+     (:root[data-look] :is(h2)). */
+  .scard .scard__name {
     display: flex;
     align-items: center;
     gap: var(--s-2);
     min-width: 0;
+    font-family: var(--font-sans);
     font-size: var(--fs-body);
-    font-weight: var(--w-head);
+    font-weight: var(--w-head-lg);
     line-height: 1.2;
   }
+
+  /* Цена — под именем, весом корпуса: она продолжает подпись, а не
+     спорит с именем за первую строку. */
+  .scard .scard__price { font-weight: var(--w-body); }
 
   /* Аватарка в каталоге появляется ТОЛЬКО с реальным портретом: кружок
      с инициалами на каждой карточке сетки — шум, а не смысл (на визитке,
@@ -288,7 +298,7 @@ const { cards } = Astro.props;
   }
 
   @media (min-width: 640px) {
-    .scard__name { font-size: var(--fs-h3); line-height: 1.15; }
+    .scard .scard__name { font-size: var(--fs-h3); line-height: 1.15; }
     .scard__rate { font-size: var(--fs-small); }
     .scard__tagline { font-size: var(--fs-small); }
   }

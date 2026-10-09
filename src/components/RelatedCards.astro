@@ -56,13 +56,15 @@ const items = cards.slice(0, 6);
             <!-- Цена и тип — в подписи под кадром, а не плашками на фото:
                  одно правило на весь сайт, текст не кладём на фотографию. -->
             <div class="vmini__body">
+              {/* Имя первым и жирным гротеском — как в карточке каталога
+                  (08.10.2026): под ценой и антиквой оно терялось. */}
+              <h3 class="vmini__name">
+                <a href={card.href}>{card.name}</a>
+              </h3>
               <p class="vmini__price">
                 {card.price}
                 {card.type && <span class="vmini__type">{card.type}</span>}
               </p>
-              <h3 class="vmini__name">
-                <a href={card.href}>{card.name}</a>
-              </h3>
               {card.meta && <p class="vmini__meta t-small">{card.meta}</p>}
             </div>
           </article>
@@ -125,7 +127,7 @@ const items = cards.slice(0, 6);
     align-items: baseline;
     gap: 0 var(--s-2);
     font-size: var(--fs-body);
-    font-weight: var(--w-medium);
+    font-weight: var(--w-body);
   }
 
   /* тип — тем же цветом, вторым планом только кеглем: приглушённого
@@ -134,9 +136,13 @@ const items = cards.slice(0, 6);
 
   .vmini :global(.veil) { display: none; }
 
-  .vmini__name {
+  /* Гротеск, а не антиква образа «крем»: мелким кеглем Cormorant тонкий.
+     Двойной класс перебивает правило образа для h3. */
+  .vmini .vmini__name {
+    font-family: var(--font-sans);
     font-size: var(--fs-h3);
-    font-weight: var(--w-head);
+    font-weight: var(--w-head-lg);
+    letter-spacing: 0;
     line-height: 1.15;
   }
 

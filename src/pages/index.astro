@@ -24,7 +24,7 @@ const logoCreamSvg = `<svg viewBox="${creamViewBox}" xmlns="http://www.w3.org/20
     <!-- ГЕРОЙ: шапка (бренд / меню / метка) + крупный заголовок с лидом
          сразу под ней — без пустого экрана, плашки идут следующим блоком. -->
     <section class="hero container--wide">
-      <!-- Шапка главной: логотип по центру, справа тумблер темы и вход
+      <!-- Шапка главной: логотип по центру, под ним тумблер темы и вход
            в кабинет. Разделы живут в BottomDock — дублировать их сверху
            не нужно.
            Тумблер стоит здесь, а не в доке: док — это разделы сайта,
@@ -32,22 +32,22 @@ const logoCreamSvg = `<svg viewBox="${creamViewBox}" xmlns="http://www.w3.org/20
            многоточием). Выбор темы запоминается, поэтому одной точки
            переключения хватает — на внутренних страницах тема уже стоит. -->
       <header class="hero__bar">
-        <!-- Знак в левом углу шапки, как у сайтов обычно (заказчик,
-             06.10.2026), а не крупно по центру: первый экран сразу
-             начинается с разделов. Он же h1 главной: текст остаётся
-             в HTML для поиска и экранного диктора, глазам виден знак. -->
+        <!-- Знак по центру, чуть крупнее; тумблер темы — под ним слева,
+             кабинет — под ним справа (заказчик, 06.10.2026). Он же h1
+             главной: текст остаётся в HTML для поиска и экранного
+             диктора, глазам виден знак. -->
         <h1 class="hero__title">
           <span class="hero__title-text">Свадебные секреты</span>
           <span class="hero__logo" aria-hidden="true" set:html={logoCreamSvg}></span>
         </h1>
 
-        <div class="hero__actions">
+        <div class="hero__theme">
           <ThemeToggle />
-
-          <a class="icon-btn" href="#" aria-label="Личный кабинет">
-            <Icon name="account" />
-          </a>
         </div>
+
+        <a class="icon-btn hero__account" href="#" aria-label="Личный кабинет">
+          <Icon name="account" />
+        </a>
       </header>
     </section>
 
@@ -100,43 +100,39 @@ const logoCreamSvg = `<svg viewBox="${creamViewBox}" xmlns="http://www.w3.org/20
     padding-block: var(--s-5) var(--s-3);
   }
 
-  /* Шапка: знак прижат к левому краю, тумблер темы и кабинет — к правому
-     (заказчик, 06.10.2026: «как обычно стоит»). До этого знак крупно
-     стоял по центру под шапкой и съедал полэкрана телефона. */
+  /* Шапка в две строки (заказчик, 06.10.2026): знак по центру, под ним
+     слева тумблер темы, справа кабинет. Раньше знак стоял в левом углу
+     в одну строку с кнопками и не мог вырасти — кнопки подпирали его. */
   .hero__bar {
-    display: flex;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas:
+      'logo logo logo'
+      'theme . account';
     align-items: center;
-    justify-content: space-between;
-    gap: var(--s-4);
+    row-gap: var(--s-1);
     padding-block: var(--s-1) 0;
   }
 
   /* h1 главной — это знак: обнуляем типографику заголовка, размер
-     задаёт ширина знака. min-width: 0 — во flex элемент иначе не
-     сжимается меньше содержимого и выталкивает кнопки за экран. */
+     задаёт ширина знака. min-width: 0 — в гриде элемент иначе не
+     сжимается меньше содержимого. */
   .hero__title {
+    grid-area: logo;
+    justify-self: center;
     min-width: 0;
+    max-width: 100%;
     margin: 0;
     line-height: 0;
   }
 
-  /* Знак двухстрочный, пропорция ~3:1. В шапке, но не мелко (заказчик,
-     06.10.2026): на телефоне растянут почти до тумблера — ~64% ширины
-     экрана, на ПК до 280px. Цвет из --ink через currentColor — сам берёт
-     тёмную тему. Сжаться при нехватке места даёт min-width: 0 у h1. */
+  /* Знак двухстрочный, пропорция ~3:1. По центру и крупнее прежнего
+     (64vw / 280px): строка теперь его целиком, кнопки ушли ниже.
+     Цвет из --ink через currentColor — сам берёт тёмную тему. */
   .hero__logo {
     display: block;
-    width: clamp(172px, 64vw, 280px);
-    /* Левый край знака — вровень с карточками под ним: шапка стоит
-       в поле --home-edge, а ряд входов — в волоске --edge-gap. Разница
-       гасится здесь, кнопки справа остаются в своём поле. У svg поля
-       нет — левая кромка «С» и есть край знака. */
-    margin-inline-start: calc(var(--edge-gap) - var(--home-edge));
-    /* Левый край знака — вровень с карточками под ним: шапка стоит
-       в поле --home-edge, а ряд входов — в волоске --edge-gap. Разница
-       гасится здесь, кнопки справа остаются в своём поле. У svg поля
-       нет — левая кромка «С» и есть край знака. */
-    margin-inline-start: calc(var(--edge-gap) - var(--home-edge));
+    width: clamp(200px, 76vw, 340px);
+    max-width: 100%;
     color: var(--ink);
   }
 
@@ -159,13 +155,10 @@ const logoCreamSvg = `<svg viewBox="${creamViewBox}" xmlns="http://www.w3.org/20
     white-space: nowrap;
   }
 
-  /* Кружки справа — .icon-btn из реестра. */
-  .hero__actions {
-    flex: none;
-    display: flex;
-    align-items: center;
-    gap: var(--s-2);
-  }
+  .hero__theme { grid-area: theme; justify-self: start; display: flex; }
+
+  /* Кружок кабинета — .icon-btn из реестра. */
+  .hero__account { grid-area: account; justify-self: end; }
 
   /* ============ ВХОД В БЛОГ ============
      Сами статьи попадаются в доске выше; тут только ссылка на журнал

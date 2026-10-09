@@ -25,6 +25,7 @@ import ReelsRow from '../../../../components/ReelsRow.astro';
 import RelatedCards from '../../../../components/RelatedCards.astro';
 import BookingSheet from '../../../../components/BookingSheet.astro';
 import StickyCta from '../../../../components/StickyCta.astro';
+import StoryText from '../../../../components/StoryText.astro';
 import { similarSpecialists } from '../../../../lib/similar';
 import { specialistCard } from '../../../../lib/similar-cards';
 import { SPECIALISTS_BY_CATEGORY, FILTERS_BY_CATEGORY, specialistRole, hasProfile, type Specialist } from '../../../../data/specialists';
@@ -60,12 +61,26 @@ const bioParagraphs = s.bio.split('\n\n');
 // Строка под ценой собирается из того, что есть: пустых «· ·» не остаётся.
 // За что цена — из priceNote, если он есть: у Reels-мейкера «от 5 500 ₽»
 // это час съёмки, и общая подпись «за 6 часов» врала бы в 6 раз.
+// Только про саму цену — за что она и от чего зависит. Опыт, свой
+// диджей и прочие метки сюда больше не вливаются (заказчик, 08.10.2026):
+// «10 лет опыта» под «от 100 000 ₽» читалось как условие цены.
 const priceFacts = [
-  s.priceFrom ? (s.priceNote ?? 'за 6 часов работы') : null,
-  s.experienceYears ? `${s.experienceYears} лет опыта` : null,
-  s.hasOwnDJ ? 'свой диджей' : null,
-  s.gender === 'pair' ? 'фото и видео' : null,
+  s.priceFrom
+    ? (s.priceNote ?? 'за 6 часов работы')
+    // без цены «Стоимость — по запросу» под «Цена по запросу» — дубль
+    : s.priceNote && !/по запросу/i.test(s.priceNote) ? s.priceNote : null,
 ].filter(Boolean);
+
+// СТАРЫЕ КАРТОЧКИ (без story: демо, АРТ Невеста) идут тем же модулем
+// StoryText, разделы собираются из полей — один вид текста на все визитки,
+// а не два шаблона рядом (заказчик, 08.10.2026: «почему выбирают нас»
+// у Лешаковых выглядел другим заголовком).
+const story = s.story ?? [
+  { title: s.aboutTitle ?? 'О подрядчике', text: bioParagraphs },
+  ...(s.offers ? [{ title: 'Почему выбирают', items: s.offers }] : []),
+  ...(s.packageIncludes ? [{ title: 'Что входит', list: s.packageIncludes }] : []),
+  ...(s.quote ? [{ lead: s.quote }] : []),
+];
 
 // ПЕРВЫЙ ЭКРАН — общий компонент HeroStage, тот же, что у карточки
 // площадки: работа подрядчика во весь экран телефона, на матовом стекле
@@ -136,71 +151,21 @@ const saveData = JSON.stringify({
         backLabel={`К списку «${s.category}»`}
         save={saveData}
       />
-      <!-- Заказ и избранное — сразу под именем, а не под ценой (см. HeroCta) -->
-      <HeroCta slot="cta" orderLabel="Заказать" orderHref="#zayavka" save={saveData} />
+      <!-- Цена — над кнопками, в первом экране (заказчик, 08.10.2026):
+           сначала «сколько», потом «заказать». Подпись под ценой только
+           о самой цене; «Цена по запросу» без дубля «Стоимость — по запросу». -->
+      <div slot="cta" class="phero">
+        <p class="phero__price">{priceLabel}</p>
+        {priceFacts.length > 0 && <p class="t-caption phero__price-note">{priceFacts.join(' · ')}</p>}
+        <HeroCta orderLabel="Заказать" orderHref="#zayavka" save={saveData} />
+      </div>
     </HeroStage>
 
-    <!-- УСЛОВИЯ — ровно та же логика, что у площадки (VenueHero): строка
-         продолжает подпись первого экрана прямо на бумаге. Кнопка заказа
-         переехала выше, в ряд действий под именем. -->
-    <section class="phero">
-      <p class="phero__price">{priceLabel}</p>
-      <p class="t-caption phero__price-note">{priceFacts.join(' · ')}</p>
-    </section>
-
-    <!-- О ПОДРЯДЧИКЕ: рассказ о себе и портрет автора целиком.
-         В кружок-аватарку идёт кроп по головам и плечам — студийный кадр
-         в полный рост на 30–64 px читается пятном; здесь тот же снимок
-         показан как он снят. Нет портрета — секция просто текстовая,
-         как была. -->
-    <section class="pabout">
-      <h2 class="t-h2">{s.aboutTitle ?? 'О подрядчике'}</h2>
-
-      <div class="pabout__body">
-        {s.portrait && (
-          <figure class="pabout__portrait media">
-            <Image
-              src={resolveImage(s.portrait)}
-              alt={`${s.name} — портрет`}
-              widths={IMG_WIDTHS.card}
-              sizes="(min-width: 900px) 320px, 100vw"
-              loading="lazy"
-              decoding="async"
-            />
-          </figure>
-        )}
-
-        <div class="pabout__story">
-          {bioParagraphs.map((p) => <p class="pabout__text">{p}</p>)}
-        </div>
-      </div>
-    </section>
-
-    <!-- ПОЧЕМУ ВЫБИРАЮТ: причины формулирует сам подрядчик. Заголовок
-         пункта — отдельной строкой h3, а не жирной фразой внутри абзаца. -->
-    {s.offers && (
-      <section class="pwhy">
-        <h2 class="t-h2">Почему выбирают</h2>
-        <div class="pwhy__grid">
-          {s.offers.map((offer) => (
-            <article class="pwhy__item">
-              <h3 class="pwhy__title">{offer.title}</h3>
-              <p class="pwhy__text">{offer.text}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-    )}
-
-    <!-- ЧТО ВХОДИТ В ПАКЕТ -->
-    {s.packageIncludes && (
-      <section class="ppack">
-        <h2 class="t-h2">Что входит</h2>
-        <ul class="ppack__list list">
-          {s.packageIncludes.map((item) => <li>{item}</li>)}
-        </ul>
-      </section>
-    )}
+    <!-- ТЕКСТ ПОДРЯДЧИКА ЕГО ЖЕ СТРУКТУРОЙ (StoryText, CHARACTER.md): разделы
+         в том порядке и под теми заголовками, что прислал он сам; у старых
+         карточек без story разделы собраны из полей выше — вид один на всех.
+         Портрет автора и паузы фото из его работ рисует сам модуль. -->
+    <StoryText sections={story} portrait={s.portrait} name={s.name} photos={s.photos} />
 
     {/* ГАЛЕРЕЯ СНЯТА (заказчик, 23.09.2026, «отложим, если что — вернём»):
          вся съёмка листается в первом экране (HeroStage — туда теперь уходят
@@ -236,17 +201,6 @@ const saveData = JSON.stringify({
             </figure>
           ))}
         </div>
-      </section>
-    )}
-
-    <!-- ПРЕДЛОЖЕНИЕ ОТ ПОДРЯДЧИКА: формулирует сам, подаём цитатой -->
-    {s.quote && (
-      <section class="pquote">
-        <p class="t-caption pquote__kicker">Предложение</p>
-        <blockquote class="pquote__body">
-          <p class="pquote__text">{s.quote}</p>
-          <footer class="pquote__author t-small">{s.name} · {s.category.toLowerCase()}</footer>
-        </blockquote>
       </section>
     )}
 
@@ -300,15 +254,16 @@ const saveData = JSON.stringify({
      (.theme-accent): на телефоне она шла сразу под подписью первого
      экрана и била в глаз раньше самой работы подрядчика — цветной
      прямоугольник в проекте, где всё остальное живёт на бумаге.
-     Устройство теперь ровно как у площадки (VenueHero): текст-продолжение
-     подписи по полям --gutter и одна пилюля под ним. Вес даёт кегль. */
+     С 08.10.2026 цена стоит в первом экране НАД кнопками (слот cta
+     HeroStage): сначала «сколько», потом «заказать». Поля задаёт подпись
+     HeroStage, свой отступ снизу — до текста подрядчика. */
   .phero {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
-    padding: var(--s-4) var(--gutter) 0;
     margin-bottom: var(--section-gap-tight);
   }
+
+  .phero :global(.hero-cta) { margin-top: var(--s-4); }
 
   /* Цена — крупно: якорь блока условий */
   .phero__price {
@@ -322,76 +277,6 @@ const saveData = JSON.stringify({
      внешнего), воздух остаётся только перед пилюлей. */
   .phero__price-note { margin-top: var(--s-1); }
 
-  /* ============ О ПОДРЯДЧИКЕ ============ */
-  .pabout {
-    padding: 0 var(--gutter) var(--section-gap-tight);
-  }
-
-  /* Портрет слева, рассказ справа — но только на ПК: на телефоне кадр
-     идёт над текстом во всю ширину колонки. Колонка текста не шире меры
-     чтения, поэтому портрет получает фиксированный столбец, а не долю. */
-  .pabout__body {
-    display: grid;
-    gap: var(--s-5);
-    margin-top: var(--s-5);
-  }
-
-  @media (min-width: 900px) {
-    .pabout__body {
-      grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
-      align-items: start;
-      gap: var(--s-7);
-    }
-  }
-
-  /* Пропорция кадра своя, из файла: портрет не кропим под общую рамку
-     (то же правило, что на первом экране и в галерее). */
-  .pabout__portrait :global(img) {
-    display: block;
-    width: 100%;
-    height: auto;
-  }
-
-  .pabout__text { max-width: var(--measure-text); }
-
-  /* Отбивка между абзацами, а не над первым: сверху расстояние уже
-     задал сам блок (--s-5 от заголовка). */
-  .pabout__text + .pabout__text { margin-top: var(--s-4); }
-
-  /* ============ ПОЧЕМУ ВЫБИРАЮТ ============
-     Две колонки на ПК, одна на телефоне. Ни рамок, ни линий между
-     пунктами: их разделяет воздух, заголовок пункта — сам себе знак. */
-  .pwhy {
-    padding: 0 var(--gutter) var(--section-gap-tight);
-  }
-
-  .pwhy__grid {
-    display: grid;
-    gap: var(--s-6) var(--s-7);
-    margin-top: var(--s-5);
-  }
-
-  @media (min-width: 720px) {
-    .pwhy__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  }
-
-  .pwhy__title {
-    font-size: var(--fs-h3);
-    font-weight: var(--w-head);
-    line-height: var(--lh-heading);
-  }
-
-  .pwhy__text {
-    margin-top: var(--s-2);
-    max-width: var(--measure-text);
-  }
-
-  /* ============ ЧТО ВХОДИТ ============ */
-  .ppack {
-    padding: 0 var(--gutter) var(--section-gap-tight);
-  }
-
-  .ppack__list { margin-top: var(--s-5); }
 
   /* Стили галереи уехали в PhotoGallery.astro — секция общая с площадкой. */
 
@@ -414,27 +299,6 @@ const saveData = JSON.stringify({
     background: var(--surface-dim);
   }
 
-  /* ============ ПРЕДЛОЖЕНИЕ-ЦИТАТА ============ */
-  .pquote {
-    padding: 0 var(--gutter) var(--section-gap-tight);
-  }
-
-  .pquote__kicker { font-weight: var(--w-medium); }
-
-  .pquote__body { margin-top: var(--s-4); }
-
-  .pquote__text {
-    font-size: var(--fs-h2);
-    font-weight: var(--w-head);
-    line-height: var(--lh-heading);
-    letter-spacing: var(--ls-display);
-    max-width: var(--measure-lead);
-  }
-
-  .pquote__author {
-    margin-top: var(--s-4);
-    font-weight: var(--w-medium);
-  }
 
   /* Стили отзывов уехали в Reviews.astro — блок общий с карточкой
      площадки, и вид у него должен быть один. */
