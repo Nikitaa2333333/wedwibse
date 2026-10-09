@@ -186,11 +186,13 @@ sections.forEach((_, i) => {
     max-width: var(--measure-lead);
   }
 
-  /* Та же фраза под заголовком — лид, кегль меньше h2. */
+  /* Та же фраза под заголовком — лид, кегль меньше h2. Межстрочное
+     --lh-snug, не заголовочное: лид идёт в три-четыре строки, и на
+     1.12 строки слипались (заказчик, 09.10.2026). */
   .story__sublead {
     font-size: var(--fs-lead);
     font-weight: var(--w-medium);
-    line-height: var(--lh-heading);
+    line-height: var(--lh-snug);
     max-width: var(--measure-lead);
   }
 
