@@ -80,11 +80,11 @@ export type VenueBlock =
   /** полоса крупных цифр */
   | { type: 'stats'; items: { value: string; label: string }[] }
   /** группа сцен «текст + кадр»; групп может быть несколько, каждая со своим заголовком */
-  | { type: 'scenes'; kicker?: string; title: string; scenes: VenueScene[] }
+  | { type: 'scenes'; title: string; scenes: VenueScene[] }
   /** утверждение на бумаге без кадра: заголовок, абзацы, факты; dark — инверсия */
   | {
       type: 'statement';
-      kicker?: string;
+     
       title: string;
       body: string[];
       facts?: VenueRow[];
@@ -93,18 +93,16 @@ export type VenueBlock =
   /** прайс / что входит / за доплату */
   | {
       type: 'terms';
-      kicker?: string;
+     
       title?: string;
       terms: Venue['terms'];
       included: Venue['included'];
       extras: Venue['extras'];
     }
   /** ограничения площадки, тёмная секция */
-  | { type: 'rules'; kicker?: string; title?: string; rules: Venue['rules'] }
+  | { type: 'rules'; title?: string; rules: Venue['rules'] }
   /** документы для подрядчиков */
-  | { type: 'docs'; kicker?: string; title?: string; lead?: string; docs: NonNullable<Venue['docs']> }
-  /** доска фото; без photos берётся venue.gallery */
-  | { type: 'gallery'; kicker?: string; title?: string; photos?: Venue['gallery'] }
+  | { type: 'docs'; title?: string; lead?: string; docs: NonNullable<Venue['docs']> }
   /** отзывы из venue-reviews.ts — блок сам пропадает, если их нет */
   | { type: 'reviews' }
   /** ряд роликов площадки (ReelsRow): берутся из data/reels.ts по venue = slug,
@@ -112,15 +110,15 @@ export type VenueBlock =
   | { type: 'reels'; title?: string }
   /** плитка-оглавление залов комплекса (venue.halls): имя, тип, гости, аренда «от»;
    *  нажатие ведёт к секции зала на этой же странице */
-  | { type: 'halls-index'; kicker?: string; title?: string; lead?: string }
+  | { type: 'halls-index'; title?: string; lead?: string }
   /** секции залов комплекса по порядку venue.halls: рельс кадров, метрики,
    *  тариф по дням, что входит, текст */
-  | { type: 'halls'; kicker?: string }
+  | { type: 'halls' }
   /** рассказ площадки её же структурой (StoryText, CHARACTER.md): разделы
    *  с заголовками из исходника, абзацы, списки, маркер. Ставится туда,
    *  где в материалах площадки идёт её рассказ, а не в фиксированное место */
   | { type: 'story'; sections: StorySection[] }
-  | { type: 'faq'; kicker?: string; title?: string; items: Venue['faq'] };
+  | { type: 'faq'; title?: string; items: Venue['faq'] };
 
 export interface Venue {
   slug: string;

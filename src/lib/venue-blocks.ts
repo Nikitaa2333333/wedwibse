@@ -13,7 +13,7 @@ export function venueBlocks(venue: Venue): VenueBlock[] {
 
   const blocks: VenueBlock[] = [
     { type: 'stats', items: venue.stats },
-    { type: 'scenes', kicker: 'Сцены', title: 'Как устроена площадка', scenes: venue.scenes },
+    { type: 'scenes', title: 'Как устроена площадка', scenes: venue.scenes },
     {
       type: 'terms',
       title: venue.termsTitle,
@@ -24,7 +24,6 @@ export function venueBlocks(venue: Venue): VenueBlock[] {
     { type: 'rules', rules: venue.rules },
   ];
   if (venue.docs?.length) blocks.push({ type: 'docs', docs: venue.docs });
-  blocks.push({ type: 'gallery' });
   // ряд «Видео» — только если у площадки есть ролики в data/reels.ts;
   // ReelsRow без роликов не рисуется, но пустой блок в списке не нужен
   if (reelsOfVenue(venue.slug).length) blocks.push({ type: 'reels', title: 'Видео' });

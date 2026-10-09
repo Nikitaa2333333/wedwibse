@@ -14,7 +14,6 @@ import { Image } from 'astro:assets';
 import Layout from '../../../../layouts/Layout.astro';
 import SiteHeader from '../../../../components/SiteHeader.astro';
 import BottomDock from '../../../../components/BottomDock.astro';
-// import PhotoGallery from '../../../../components/PhotoGallery.astro'; — галерея отложена
 import Avatar from '../../../../components/Avatar.astro';
 import Reviews from '../../../../components/Reviews.astro';
 import Icon from '../../../../components/Icon.astro';
@@ -30,7 +29,6 @@ import { similarSpecialists } from '../../../../lib/similar';
 import { specialistCard } from '../../../../lib/similar-cards';
 import { SPECIALISTS_BY_CATEGORY, FILTERS_BY_CATEGORY, specialistRole, hasProfile, type Specialist } from '../../../../data/specialists';
 import { reelsOf } from '../../../../data/reels';
-// import { photoTiles } from '../../../../lib/gallery'; — галерея отложена
 import { resolveImage, favoriteImage, IMG_WIDTHS } from '../../../../lib/images';
 import { frameId, isPortrait, isVideo, photosOnly, posterOf } from '../../../../lib/media';
 
@@ -82,18 +80,10 @@ const story = s.story ?? [
   ...(s.quote ? [{ lead: s.quote }] : []),
 ];
 
-// ПЕРВЫЙ ЭКРАН — общий компонент HeroStage, тот же, что у карточки
-// площадки: работа подрядчика во весь экран телефона, на матовом стекле
-// внизу портрет, имя, специальность и рейтинг, поверх кадра — кнопки
-// «назад · в избранное · поделиться». Условия (цена, заявка) идут сразу
-// под ним, при прокрутке.
-//
-// Кадры отдаём все: по адресу `#foto-<кадр>` из доски главной открывается
-// именно тот снимок или ролик, по которому нажали (якорь разбирает сам
-// HeroStage). Кадров ровно столько, сколько их уходит в доску главной
-// (PER_SPECIALIST в lib/gallery): любой кадр, по которому там можно
-// нажать, тут есть. Блок «Фотографии» ниже снят (23.09.2026) — первый
-// экран и есть галерея, поэтому в него уходит ВСЯ съёмка, а не первые 12.
+// ПЕРВЫЙ ЭКРАН — общий HeroStage (тот же, что у площадки): кадры, под ними
+// на бумаге портрет, имя, специальность, рейтинг; цена и кнопки — в слоте
+// cta. Кадры отдаём ВСЕ: первый экран и есть галерея карточки, и по адресу
+// `#foto-<кадр>` из доски главной открывается тот кадр, по которому нажали.
 const reels = reelsOf(s.slug);
 const frames = [...new Set([s.photos[0], ...reels.map((r) => r.src), ...s.photos.slice(1)])].filter(Boolean);
 
@@ -166,18 +156,6 @@ const saveData = JSON.stringify({
          карточек без story разделы собраны из полей выше — вид один на всех.
          Портрет автора и паузы фото из его работ рисует сам модуль. -->
     <StoryText sections={story} portrait={s.portrait} name={s.name} photos={s.photos} />
-
-    {/* ГАЛЕРЕЯ СНЯТА (заказчик, 23.09.2026, «отложим, если что — вернём»):
-         вся съёмка листается в первом экране (HeroStage — туда теперь уходят
-         ВСЕ кадры), внизу остаётся только ряд «Видео». Вернуть секцию —
-         раскомментировать:
-    <PhotoGallery
-      kicker="Портфолио"
-      title="Фотографии"
-      tiles={photoTiles(photosOnly(s.photos), s.name)}
-      tight
-    />
-    */}
 
     <!-- ВИДЕО: свои ролики подрядчика отдельным рядом (ReelsRow, тот же
          компонент, что у площадки): рилсы это то, за чем к видеографу и
@@ -277,8 +255,6 @@ const saveData = JSON.stringify({
      внешнего), воздух остаётся только перед пилюлей. */
   .phero__price-note { margin-top: var(--s-1); }
 
-
-  /* Стили галереи уехали в PhotoGallery.astro — секция общая с площадкой. */
 
   /* Демо-ряд постеров-заглушек (s.reels) — только рамка, ролики не играют */
   .preels { padding: 0 0 var(--section-gap-tight) var(--gutter); }

@@ -5,12 +5,11 @@
 import type { Venue } from '../data/venues';
 
 interface Props {
-  kicker: string;
   title: string;
   rules: Venue['rules'];
 }
 
-const { kicker, title, rules } = Astro.props;
+const { title, rules } = Astro.props;
 ---
 
 <section class="rules section theme-dark" id="pravila">
@@ -38,10 +37,6 @@ const { kicker, title, rules } = Astro.props;
 
   .rules__head { margin-bottom: var(--section-gap-tight); }
 
-  .rules__kicker {
-    font-weight: var(--w-medium);
-    margin-bottom: var(--s-3);
-  }
 
   .rules__title {
     font-size: var(--fs-h1);

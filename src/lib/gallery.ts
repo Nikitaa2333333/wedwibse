@@ -35,7 +35,7 @@ import { frameId, isPortrait, isVideo, ratioOf } from './media';
 import { isWide, pickColumn } from './masonry';
 
 /** ЧЕЙ КАДР — подпись под фотографией в просмотре на весь экран
- *  (PhotoMasonry → lib/viewer). Ровно тот набор, что уже стоит на карточке
+ *  (PhotoMasonry). Ровно тот набор, что уже стоит на карточке
  *  каталога: имя, строка под именем (город у площадки, tagline у
  *  специалиста — как в vcard/scard) и звезда рейтинга. Нового не придумываем. */
 export interface PinOwner {
@@ -525,32 +525,6 @@ export function collectTiles(): Tile[] {
   // детерминирован (данные статичные, никакого Math.random) — HTML
   // одинаковый от сборки к сборке.
   return out.slice(0, BOARD_TILE_LIMIT).map((tile, index) => ({ ...tile, index }));
-}
-
-/** Плитки доски из простого списка кадров — галерея карточки подрядчика.
- *  Тут нет ни мини-галерей, ни подписей, ни статей: подпись под каждым
- *  кадром своей же съёмки — шум, а не смысл. Единственное, что берём
- *  от доски главной, — настоящую пропорцию файла и тот же зажим крайних
- *  пропорций (clampRatio): совсем узкая вертикаль в колонке вырастает
- *  на два экрана, панорама — сжимается в щель. Горизонтальный кадр, как
- *  и на доске главной, — просто низкая плитка, колонки он не рвёт.
- */
-export function photoTiles(photos: string[], alt: string): Tile[] {
-  return photos.map((src, index) => {
-    const ratio = clampRatio(src);
-
-    return {
-      kind: 'photo',
-      owner: null,
-      photos: [src],
-      alt: `${alt} — фото ${index + 1}`,
-      href: null,
-      caption: null,
-      ratio: `${ratio.toFixed(3)} / 1`,
-      index,
-      height: 1 / ratio,
-    };
-  });
 }
 
 // ЖАДНАЯ РАСКЛАДКА — тот же алгоритм, что у Masonry.js/MiniMasonry:

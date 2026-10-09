@@ -11,12 +11,11 @@ import type { VenueScene } from '../data/venues';
 import { resolveImage, IMG_WIDTHS } from '../lib/images';
 
 interface Props {
-  kicker: string;
   title: string;
   scenes: VenueScene[];
 }
 
-const { kicker, title, scenes } = Astro.props;
+const { title, scenes } = Astro.props;
 ---
 
 <section class="scenes section" id="o-ploshchadke">
@@ -79,10 +78,6 @@ const { kicker, title, scenes } = Astro.props;
 
   .scenes__head { margin-bottom: var(--section-gap-tight); }
 
-  .scenes__kicker {
-    font-weight: var(--w-medium);
-    margin-bottom: var(--s-3);
-  }
 
   .scenes__title {
     font-size: var(--fs-h1);
@@ -186,7 +181,6 @@ const { kicker, title, scenes } = Astro.props;
       margin-bottom: var(--s-7);
     }
 
-    .scene--gallery .scene__rail { margin-bottom: var(--s-7); }
 
     /* текст такой сцены — обычная колонка под кадром, меру держат абзацы */
     .scene--wide .scene__text,
@@ -195,12 +189,5 @@ const { kicker, title, scenes } = Astro.props;
       min-height: 0;
       padding-block: 0;
     }
-  }
-
-  /* Лента кадров: на узком экране вертикальный кадр, на широком — панорама */
-  .scene__rail :global(.prail) { aspect-ratio: 4 / 5; }
-
-  @media (min-width: 1024px) {
-    .scene__rail :global(.prail) { aspect-ratio: 21 / 9; }
   }
 </style>

@@ -8,14 +8,13 @@ import { rowsClass } from '../lib/rows';
 import type { VenueRow } from '../data/venues';
 
 interface Props {
-  kicker?: string;
   title: string;
   body: string[];
   facts?: VenueRow[];
   dark?: boolean;
 }
 
-const { kicker, title, body, facts, dark = false } = Astro.props;
+const { title, body, facts, dark = false } = Astro.props;
 ---
 
 <section class:list={['statement', 'section', { 'theme-dark': dark }]}>
@@ -51,10 +50,6 @@ const { kicker, title, body, facts, dark = false } = Astro.props;
 
   .statement__head { margin-bottom: var(--section-gap-tight); }
 
-  .statement__kicker {
-    font-weight: var(--w-medium);
-    margin-bottom: var(--s-3);
-  }
 
   .statement__title {
     font-size: var(--fs-h1);

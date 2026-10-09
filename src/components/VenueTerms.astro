@@ -6,14 +6,13 @@ import { rowsClass } from '../lib/rows';
 import type { Venue } from '../data/venues';
 
 interface Props {
-  kicker: string;
   title: string;
   terms: Venue['terms'];
   included: Venue['included'];
   extras: Venue['extras'];
 }
 
-const { kicker, title, terms, included, extras } = Astro.props;
+const { title, terms, included, extras } = Astro.props;
 ---
 
 <section class="terms section" id="usloviya">
@@ -87,10 +86,6 @@ const { kicker, title, terms, included, extras } = Astro.props;
 
   .terms__head { margin-bottom: var(--section-gap-tight); }
 
-  .terms__kicker {
-    font-weight: var(--w-medium);
-    margin-bottom: var(--s-3);
-  }
 
   .terms__title {
     font-size: var(--fs-h1);

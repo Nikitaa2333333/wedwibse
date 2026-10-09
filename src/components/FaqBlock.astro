@@ -4,12 +4,11 @@
 import type { Venue } from '../data/venues';
 
 interface Props {
-  kicker: string;
   title: string;
   items: Venue['faq'];
 }
 
-const { kicker, title, items } = Astro.props;
+const { title, items } = Astro.props;
 ---
 
 <section class="faq section" id="voprosy">
@@ -41,10 +40,6 @@ const { kicker, title, items } = Astro.props;
 
   .faq__head { margin-bottom: var(--section-gap-tight); }
 
-  .faq__kicker {
-    font-weight: var(--w-medium);
-    margin-bottom: var(--s-3);
-  }
 
   .faq__title {
     font-size: var(--fs-h1);

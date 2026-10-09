@@ -15,7 +15,6 @@ import VenueStatement from '../../../components/VenueStatement.astro';
 import VenueTerms from '../../../components/VenueTerms.astro';
 import VenueRules from '../../../components/VenueRules.astro';
 import VenueDocs from '../../../components/VenueDocs.astro';
-// import PhotoGallery from '../../../components/PhotoGallery.astro'; — галерея отложена, см. case 'gallery'
 import FaqBlock from '../../../components/FaqBlock.astro';
 import VenueContacts from '../../../components/VenueContacts.astro';
 import BookingSheet from '../../../components/BookingSheet.astro';
@@ -71,13 +70,12 @@ const reels = reelsOfVenue(venue.slug);
 
           case 'scenes':
             return (
-              <ScrollyScenes kicker={block.kicker ?? 'Сцены'} title={block.title} scenes={block.scenes} />
+              <ScrollyScenes title={block.title} scenes={block.scenes} />
             );
 
           case 'statement':
             return (
               <VenueStatement
-                kicker={block.kicker}
                 title={block.title}
                 body={block.body}
                 facts={block.facts}
@@ -88,7 +86,6 @@ const reels = reelsOfVenue(venue.slug);
           case 'terms':
             return (
               <VenueTerms
-                kicker={block.kicker ?? 'Условия'}
                 title={block.title ?? 'Сколько стоит и как забронировать'}
                 terms={block.terms}
                 included={block.included}
@@ -99,7 +96,6 @@ const reels = reelsOfVenue(venue.slug);
           case 'rules':
             return (
               <VenueRules
-                kicker={block.kicker ?? 'Ограничения'}
                 title={block.title ?? 'Что важно знать заранее'}
                 rules={block.rules}
               />
@@ -108,7 +104,6 @@ const reels = reelsOfVenue(venue.slug);
           case 'docs':
             return (
               <VenueDocs
-                kicker={block.kicker ?? 'Документы'}
                 title={block.title ?? 'Техническое сопровождение'}
                 lead={
                   block.lead ??
@@ -117,18 +112,6 @@ const reels = reelsOfVenue(venue.slug);
                 docs={block.docs}
               />
             );
-
-          // ГАЛЕРЕЯ СНЯТА СО СТРАНИЦЫ (заказчик, 23.09.2026, «отложим, если
-          // что — вернём»): вся съёмка площадки листается в первом экране
-          // (HeroStage), внизу остаётся только ряд «Видео». Блок 'gallery'
-          // в данных площадок не трогаем — чтобы вернуть секцию, достаточно
-          // раскомментировать вызов ниже (и импорты PhotoGallery/photoTiles).
-          //   const photos = (block.photos ?? venue.gallery).filter((g) => !g.src.endsWith('.mp4'));
-          //   return <PhotoGallery id="foto" kicker={block.kicker ?? 'Галерея'}
-          //     title={block.title ?? 'Зал и мероприятия'}
-          //     tiles={photoTiles(photos.map((g) => g.src), venue.name)} />;
-          case 'gallery':
-            return null;
 
           // ОТЗЫВЫ — блок тот же, что на карточке подрядчика; без отзывов
           // в venue-reviews.ts секция просто не рисуется.
@@ -154,7 +137,6 @@ const reels = reelsOfVenue(venue.slug);
             return (
               venue.halls?.length && (
                 <HallsIndex
-                  kicker={block.kicker ?? 'Залы'}
                   title={block.title ?? 'Какой зал под вашу свадьбу'}
                   lead={block.lead}
                   halls={venue.halls}
@@ -172,7 +154,6 @@ const reels = reelsOfVenue(venue.slug);
           case 'faq':
             return (
               <FaqBlock
-                kicker={block.kicker ?? 'Вопросы'}
                 title={block.title ?? 'Что спрашивают чаще всего'}
                 items={block.items}
               />

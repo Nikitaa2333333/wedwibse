@@ -1,8 +1,7 @@
 // Вставляет текст карточки структурой исходника (поле story, CHARACTER.md):
 //   node scripts/story-put.mjs <категория>/<slug> <story.json>
 // story.json — массив StorySection. Скрипт расставляет неразрывные пробелы
-// (после слов в 1–2 буквы, перед тире, в числах и перед ₽), проверяет, что
-// каждая фраза маркера (mark) реально есть в тексте раздела, и кладёт story
+// (после слов в 1–2 буквы, перед тире, в числах и перед ₽) и кладёт story
 // в JSON карточки после aboutTitle — остальные поля и их порядок не трогает.
 import { readFileSync, writeFileSync } from 'node:fs';
 
@@ -25,11 +24,6 @@ const walk = (v) =>
 
 const story = walk(JSON.parse(readFileSync(storyFile, 'utf8')));
 
-// маркер, которого нет в тексте раздела, молча не подсветится — ловим сразу
-for (const [i, sec] of story.entries()) {
-  const text = JSON.stringify({ ...sec, mark: undefined });
-  for (const m of sec.mark ?? []) if (!text.includes(JSON.stringify(m).slice(1, -1))) throw new Error(`раздел ${i}: фразы маркера нет в тексте — «${m}»`);
-}
 
 // ПЛОЩАДКА: node scripts/story-put.mjs venue:<slug> <story.json> <после блока №>
 // Блок { type: 'story' } встаёт в venue.blocks после указанного индекса

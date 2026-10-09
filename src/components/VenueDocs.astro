@@ -7,13 +7,12 @@
 import type { Venue } from '../data/venues';
 
 interface Props {
-  kicker: string;
   title: string;
   lead?: string;
   docs: NonNullable<Venue['docs']>;
 }
 
-const { kicker, title, lead, docs } = Astro.props;
+const { title, lead, docs } = Astro.props;
 ---
 
 <section class="docs section" id="dokumenty">
@@ -46,10 +45,6 @@ const { kicker, title, lead, docs } = Astro.props;
 
   .docs__head { margin-bottom: var(--section-gap-tight); }
 
-  .docs__kicker {
-    font-weight: var(--w-medium);
-    margin-bottom: var(--s-3);
-  }
 
   .docs__title {
     font-size: var(--fs-h1);
