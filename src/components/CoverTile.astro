@@ -40,6 +40,10 @@ interface Props {
   /** цвет плашки руками — перебивает цвет, снятый с кадра. Нужен, только
       если автоматический промахнулся (кадр с пёстрым низом) */
   bg?: string;
+  /** цвет плашки на каждый кадр (по индексу covers): кадры меняются —
+      меняется и плашка. Перебивает bg и цвет, снятый с кадра; пустое
+      место в списке — цвет с кадра, как обычно */
+  bgs?: (string | undefined)[];
   /** доля экрана, которую плитка занимает на брейкпоинтах (для srcset) */
   sizes: string;
   /** первый экран — грузим сразу */
@@ -51,11 +55,16 @@ interface Props {
   sync?: string;
 }
 
-const { name, href, capsule, covers, tone = 'beige', bg, sizes, eager = false, widths, sync } = Astro.props;
+const { name, href, capsule, covers, tone = 'beige', bg, bgs, sizes, eager = false, widths, sync } = Astro.props;
 
 // Цвет с кадра на каждую обложку; руками заданный bg — только первой,
 // а смена кадров его не трогает (ручной цвет — осознанное решение).
-const tones = await Promise.all(covers.map((c) => coverTone(c)));
+const measured = await Promise.all(covers.map((c) => coverTone(c)));
+// Свой цвет кадра (bgs) — его же тон решает, светлая или тёмная подпись.
+const tones = measured.map((t, n) => {
+  const own = bgs?.[n];
+  return own ? { bg: own, dark: isDarkHex(own) } : t;
+});
 const first = bg ? { bg, dark: isDarkHex(bg) } : tones[0];
 const dark = first ? first.dark : tone === 'dark';
 ---

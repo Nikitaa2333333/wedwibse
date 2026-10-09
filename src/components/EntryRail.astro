@@ -57,12 +57,13 @@ for (const g of SPECIALIST_GROUPS) {
   if (has) filled.add(g.key);
 }
 
-const vendorCovers = [
+const vendorGroups = [
   ...SPECIALIST_GROUPS.filter((g) => filled.has(g.key) && g.cover),
   ...SPECIALIST_GROUPS.filter((g) => !filled.has(g.key) && g.cover),
-]
-  .slice(0, COVERS)
-  .map((g) => g.cover!);
+].slice(0, COVERS);
+const vendorCovers = vendorGroups.map((g) => g.cover!);
+// цвет плашки — тот же, что у плитки группы в хабе (bg из specialists.ts)
+const vendorBgs = vendorGroups.map((g) => g.bg);
 
 // Пути, а не ImageMetadata: CoverTile сам снимает с кадра цвет плашки.
 // ОБЛОЖКИ ПЛОЩАДОК — отдельная серия (заказчик, 09.10.2026): на плитке
@@ -72,17 +73,21 @@ const vendorCovers = [
 // поменяны только свет и плёночная отделка, у каждого кадра свой свет.
 // Новая обложка — файл в src/assets/entry/venues/ и строка здесь.
 // Нет серии — плитка берёт вертикальные кадры самих площадок, как раньше.
-const VENUE_ENTRY_COVERS = [
-  '/entry/venues/led.webp',
-  '/entry/venues/due-to-love.webp',
-  '/entry/venues/forest-dew.webp',
-  '/entry/venues/otrazhenie.webp',
+// Цвет плашки на каждый кадр — свой, снят с самого кадра на глаз: низ
+// у этих фото — тёмный пол и настил, и цвет края давал бурую плашку,
+// которая не менялась вместе с настроением кадра.
+const VENUE_ENTRY_COVERS: { cover: string; bg: string }[] = [
+  { cover: '/entry/venues/led.webp', bg: '#98926e' },         // олива леса
+  { cover: '/entry/venues/due-to-love.webp', bg: '#ddd2be' }, // слоновая кость драпировок
+  { cover: '/entry/venues/forest-dew.webp', bg: '#ad6341' },  // терракота текстиля
+  { cover: '/entry/venues/otrazhenie.webp', bg: '#d6b4a8' },  // пыльная роза дорожки
 ];
 const venueCovers = VENUE_ENTRY_COVERS.length
-  ? VENUE_ENTRY_COVERS
+  ? VENUE_ENTRY_COVERS.map((c) => c.cover)
   : VENUES.map((v) => v.hero.portrait)
       .filter((p): p is string => Boolean(p))
       .slice(0, COVERS);
+const venueBgs = VENUE_ENTRY_COVERS.map((c) => c.bg);
 
 const VENDORS: PluralForms = ['подрядчик', 'подрядчика', 'подрядчиков'];
 
@@ -92,6 +97,7 @@ const cards = [
     href: '/moskva/ploshchadki/',
     capsule: VENUES.length === 0 ? 'скоро' : withCount(VENUES.length, ['площадка', 'площадки', 'площадок']),
     covers: venueCovers,
+    bgs: venueBgs,
     tone: 'beige' as const,
   },
   {
@@ -101,6 +107,7 @@ const cards = [
     href: '/moskva/podryadchiki/',
     capsule: vendors.size === 0 ? 'скоро' : withCount(vendors.size, VENDORS),
     covers: vendorCovers,
+    bgs: vendorBgs,
     tone: 'dark' as const,
   },
 ];
@@ -115,6 +122,7 @@ const cards = [
           href={card.href}
           capsule={card.capsule}
           covers={card.covers}
+          bgs={card.bgs}
           tone={card.tone}
           widths={IMG_WIDTHS.card}
           sizes="(min-width: 640px) 320px, 50vw"
