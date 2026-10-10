@@ -52,6 +52,7 @@ const VB = '/venues/villa-barvikha';
 const FP = '/venues/fish-point';
 const OTR = '/venues/otrazhenie';
 const GRB = '/venues/grebnevo';
+const VD = '/venues/villa-dovil';
 
 const venues: FeedVenue[] = [
   {
@@ -178,6 +179,20 @@ const venues: FeedVenue[] = [
     rating: 5,
     reviews: 368,
     media: [`${VB}/p21.webp`, `${VB}/p37.webp`, `${VB}/p01.webp`, `${VB}/p16.webp`],
+  },
+  {
+    kind: 'venue',
+    slug: 'villa-dovil',
+    name: 'Вилла Довиль',
+    city: 'Одинцово',
+    type: 'Веранда',
+    capacityMax: 300,
+    capacity: 'до 300 гостей',
+    checkFrom: 12000,
+    avgCheck: 'от 12 000 ₽',
+    rating: 4.9,
+    reviews: 15,
+    media: [`${VD}/p01.webp`, `${VD}/p02.webp`, `${VD}/p03.webp`, `${VD}/p09.webp`],
   },
 ];
 

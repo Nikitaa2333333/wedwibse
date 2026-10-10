@@ -130,6 +130,11 @@ export const REELS: Reel[] = [
   { slug: 'reel-11', src: '/venues/forest-dew/reel-11.mp4', alt: 'Оранжерея среди сосен, четыре свадебных сезона', author: '', venue: 'forest-dew', sound: true },
   { slug: 'reel-12', src: '/venues/forest-dew/reel-12.mp4', alt: 'Пара на пруду и костровая зона', author: '', venue: 'forest-dew', sound: true },
   { slug: 'reel-01', src: '/venues/fish-point/reel-01.mp4', alt: 'Банкетный зал Fish Point в берёзовой роще с высоты', author: '', venue: 'fish-point', sound: true },
+  { slug: 'reel-01', src: '/venues/villa-dovil/reel-01.mp4', alt: 'Розовый цветочный декор зала', author: '', venue: 'villa-dovil', sound: true },
+  { slug: 'reel-02', src: '/venues/villa-dovil/reel-02.mp4', alt: 'Белый зал днём, сервировка круглых столов', author: '', venue: 'villa-dovil', sound: true },
+  { slug: 'reel-03', src: '/venues/villa-dovil/reel-03.mp4', alt: 'Зал вечером под люстрами', author: '', venue: 'villa-dovil', sound: true },
+  { slug: 'reel-04', src: '/venues/villa-dovil/reel-04.mp4', alt: 'Зал ночью: люстры и цветочный декор', author: '', venue: 'villa-dovil', sound: true },
+  { slug: 'reel-05', src: '/venues/villa-dovil/reel-05.mp4', alt: 'Зал в драпировках с мраморным полом', author: '', venue: 'villa-dovil', sound: true },
 ];
 
 /** Есть ли у ролика звук — по пути файла: разметка (PhotoRail, HeroStage,
