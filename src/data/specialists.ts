@@ -246,8 +246,8 @@ export const SPECIALIST_GROUPS: SpecialistGroup[] = [
   },
   {
     key: 'kuhnya',
-    label: 'Кухня и сладости',
-    short: 'Кухня',
+    label: 'Кейтеринг и кондитерка',
+    short: 'Кейтеринг',
     categories: ['keitering', 'konditery'],
     cover: '/specialists/groups/kuhnya.webp',
     tone: 'beige',
