@@ -63,7 +63,7 @@ jobs:
         run: |
           host="${{ secrets.DEPLOY_HOST }}"
           echo "== порт 22"
-          if timeout 15 bash -c "exec 3<>/dev/tcp/$host/22 && head -c 64 <&3"; then echo; echo "порт 22 открыт"; else echo "порт 22 не отвечает за 15 с"; fi
+          if timeout 15 bash -c "</dev/tcp/$host/22"; then echo "порт 22 открыт"; else echo "порт 22 не отвечает за 15 с"; fi
           echo "== ssh-вход"
           ssh -v -i ~/.ssh/id_ed25519 \
             -o BatchMode=yes -o ConnectTimeout=20 \
@@ -77,7 +77,13 @@ jobs:
         run: |
           # registry/ — отчёт утренней сверки (registry-nightly.yml): его кладут
           # на сервер отдельно, и --delete стирал бы его каждым деплоем
-          rsync -az --delete --timeout=60 --stats --exclude '.write-test' --exclude 'registry/' \
+          # --checksum: раннер каждый раз свежий, у всех 11 тыс. файлов новое
+          # время изменения, и без него rsync гонял блочные контрольные суммы
+          # по всем 2 ГБ. 12.10.2026 на медленном канале до VPS (~37 КБ/с)
+          # это растянуло заливку с 18 секунд до 7 минут (а до таймаутов —
+          # до бесконечного «висит»). С -c сравнение по содержимому идёт
+          # на самом сервере, по сети — только изменившиеся файлы.
+          rsync -az --checksum --delete --timeout=60 --stats --exclude '.write-test' --exclude 'registry/' \
             -e "ssh -i ~/.ssh/id_ed25519 -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=10 -o ServerAliveCountMax=3" \
             dist/ "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_PATH }}/"
 
