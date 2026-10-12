@@ -52,14 +52,33 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           echo "${{ secrets.DEPLOY_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
 
+      # ПРОВЕРКА СВЯЗИ ДО ЗАЛИВКИ (12.10.2026). Rsync без таймаутов, когда
+      # сервер не отвечал по SSH, висел часами и молча — три деплоя подряд
+      # стояли на «Rsync» без единой строки в логе. Теперь сначала стучимся
+      # в порт 22 и делаем пустой ssh-вход с подробным выводом: деплой
+      # падает за минуту и в логе видно, на чём именно (порт закрыт,
+      # рукопожатие не идёт, ключ не принят).
+      - name: Check SSH to server
+        timeout-minutes: 2
+        run: |
+          host="${{ secrets.DEPLOY_HOST }}"
+          echo "== порт 22"
+          if timeout 15 bash -c "exec 3<>/dev/tcp/$host/22 && head -c 64 <&3"; then echo; echo "порт 22 открыт"; else echo "порт 22 не отвечает за 15 с"; fi
+          echo "== ssh-вход"
+          ssh -v -i ~/.ssh/id_ed25519 \
+            -o BatchMode=yes -o ConnectTimeout=20 \
+            -o ServerAliveInterval=10 -o ServerAliveCountMax=3 \
+            "${{ secrets.DEPLOY_USER }}@$host" 'echo ssh ok; df -h / | tail -1; uptime' 2>&1 | tail -40
+
       - name: Rsync dist to server
         # --delete: удалённые страницы исчезают и на сервере,
         # иначе каталог копит мусор от прошлых сборок.
+        timeout-minutes: 10
         run: |
           # registry/ — отчёт утренней сверки (registry-nightly.yml): его кладут
           # на сервер отдельно, и --delete стирал бы его каждым деплоем
-          rsync -az --delete --exclude '.write-test' --exclude 'registry/' \
-            -e "ssh -i ~/.ssh/id_ed25519" \
+          rsync -az --delete --timeout=60 --stats --exclude '.write-test' --exclude 'registry/' \
+            -e "ssh -i ~/.ssh/id_ed25519 -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=10 -o ServerAliveCountMax=3" \
             dist/ "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_PATH }}/"
 
       # Проверять по IP бессмысленно: nginx разбирает запросы по server_name,
