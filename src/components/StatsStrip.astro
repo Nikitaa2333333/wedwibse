@@ -16,7 +16,7 @@ const { items } = Astro.props;
       {
         items.map((item) => (
           <div class="stat">
-            <span class="stat__value t-num">{item.value}</span>
+            <span class:list={['stat__value t-num', item.value.length > 4 && 'stat__value--long']}>{item.value}</span>
             <span class="stat__label t-small">{item.label}</span>
           </div>
         ))
@@ -41,6 +41,16 @@ const { items } = Astro.props;
   .stat__value {
     font-size: clamp(46px, 8vw, 92px);
     letter-spacing: var(--ls-display);
+  }
+
+  /* Длинное число («2 000+») в половину телефона не влезало и рвалось
+     по пробелу на «2» и «000+» (заказчик, 12.10.2026). Не переносим,
+     а ужимаем кегль под ширину колонки; короткие числа не трогаем. */
+  .stat { container-type: inline-size; }
+
+  .stat__value--long {
+    white-space: nowrap;
+    font-size: min(clamp(46px, 8vw, 92px), 24cqi);
   }
 
   .stat__label { font-weight: var(--w-medium); line-height: var(--lh-caption); }

@@ -59,6 +59,7 @@ const { title, terms, included, extras } = Astro.props;
     </div>
 
     <!-- ЗА ОТДЕЛЬНУЮ ПЛАТУ: снова таблица, снова во всю ширину -->
+    {extras.length > 0 && (
     <div class="terms__extras">
       {
         extras.map((group) => (
@@ -77,6 +78,7 @@ const { title, terms, included, extras } = Astro.props;
         ))
       }
     </div>
+    )}
   </div>
 </section>
 

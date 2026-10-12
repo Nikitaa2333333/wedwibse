@@ -98,7 +98,7 @@ sections.forEach((_, i) => {
             </div>
           )}
           {sec.tariffs && (
-            <div class="tariffs">
+            <div class:list={['tariffs', sec.tariffs.every((t) => !t.includes && !t.lead) && 'tariffs--bare']}>
               {sec.tariffs.map((t) => (
                 <article class="tariff">
                   <header class="tariff__head">
@@ -293,6 +293,15 @@ sections.forEach((_, i) => {
     align-items: baseline;
     justify-content: space-between;
     gap: var(--s-1) var(--s-4);
+  }
+
+  /* Голые тарифы (только «название — цена», как депозит по дням недели):
+     цена всегда под названием. Иначе короткое имя («Воскресенье»)
+     ставило цену справа, а длинное у соседа — под собой, и карточки
+     одной группы выглядели разными (заказчик, 12.10.2026). */
+  .tariffs--bare .tariff__head {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   /* Название тарифа — гротеском, как имена пунктов; цена — крупнее,
