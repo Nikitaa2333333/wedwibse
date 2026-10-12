@@ -27,6 +27,7 @@ export function venueBlocks(venue: Venue): VenueBlock[] {
   // ряд «Видео» — только если у площадки есть ролики в data/reels.ts;
   // ReelsRow без роликов не рисуется, но пустой блок в списке не нужен
   if (reelsOfVenue(venue.slug).length) blocks.push({ type: 'reels', title: 'Видео' });
-  blocks.push({ type: 'reviews' }, { type: 'faq', items: venue.faq });
+  blocks.push({ type: 'reviews' });
+  if (venue.faq.length) blocks.push({ type: 'faq', items: venue.faq });
   return blocks;
 }
