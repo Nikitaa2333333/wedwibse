@@ -192,7 +192,7 @@ const venues: FeedVenue[] = [
     avgCheck: 'от 12 000 ₽',
     rating: 4.9,
     reviews: 15,
-    media: [`${VD}/p01.webp`, `${VD}/p02.webp`, `${VD}/p03.webp`, `${VD}/p09.webp`],
+    media: [`${VD}/p03.webp`, `${VD}/p01.webp`, `${VD}/p02.webp`, `${VD}/p09.webp`],
   },
 ];
 
