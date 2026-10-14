@@ -127,7 +127,7 @@ sections.forEach((s, i) => {
         {pause && (
           <div class="story__pause">
             {pause.map((src) => (
-              <figure class="story__shot shot">
+              <figure class:list={['story__shot shot', !isPortrait(src) && 'shot--wide']}>
                 <Image
                   src={resolveImage(src)}
                   alt={`${name} — работа`}
