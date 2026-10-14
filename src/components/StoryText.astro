@@ -21,6 +21,7 @@ import type { StorySection } from '../data/specialists';
 import { resolveImage, IMG_WIDTHS } from '../lib/images';
 import { isPortrait, isVideo } from '../lib/media';
 import Avatar from './Avatar.astro';
+import StatsStrip from './StatsStrip.astro';
 
 interface Props {
   sections: StorySection[];
@@ -100,6 +101,7 @@ sections.forEach((s, i) => {
               ))}
             </div>
           )}
+          {sec.stats && <StatsStrip items={sec.stats} inline />}
           {sec.tariffs && (
             <div class:list={['tariffs', sec.tariffs.every((t) => !t.includes && !t.lead) && 'tariffs--bare']}>
               {sec.tariffs.map((t) => (
