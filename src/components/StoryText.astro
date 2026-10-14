@@ -47,8 +47,11 @@ const pairs: string[][] = [];
 // выходила мелкой) — вид тот же, что у портрета автора: скругление, в полях
 for (const p of pool) pairs.push([p]);
 const pauseAfter = new Map<number, string[]>();
+// кадры, расставленные в данных (sec.photo), заменяют автоматические паузы целиком
+const placed = sections.some((s) => s.photo);
 let next = 0;
-sections.forEach((_, i) => {
+sections.forEach((s, i) => {
+  if (placed) { if (s.photo) pauseAfter.set(i, [s.photo]); return; }
   if (i % 2 === 1 && i < sections.length - 1 && next < pairs.length) pauseAfter.set(i, pairs[next++]);
 });
 ---

@@ -3,6 +3,7 @@
   "categorySlug": "organizatory",
   "category": "Организаторы",
   "name": "Матрешка",
+  "avatar": "/specialists/organizatory/avatars/matreshka.webp",
   "photos": [
     "/specialists/organizatory/matreshka/gal/p03.webp",
     "/specialists/organizatory/matreshka/gal/p06.webp",
@@ -61,8 +62,23 @@
   "priceNote": "минимальная стоимость; обычно — 10 % от бюджета проекта",
   "age": "35–50",
   "experienceYears": 15,
-  "languages": ["ru", "en"],
-  "cities": ["цао", "сао", "свао", "вао", "юво", "юао", "юзао", "зао", "сзао", "mo", "вне-мо"],
+  "languages": [
+    "ru",
+    "en"
+  ],
+  "cities": [
+    "цао",
+    "сао",
+    "свао",
+    "вао",
+    "юво",
+    "юао",
+    "юзао",
+    "зао",
+    "сзао",
+    "mo",
+    "вне-мо"
+  ],
   "aboutTitle": "Об агентстве",
   "story": [
     {
@@ -96,9 +112,30 @@
     }
   ],
   "filters": {
-    "city": ["цао", "сао", "свао", "вао", "юво", "юао", "юзао", "зао", "сзао", "mo", "вне-мо"],
-    "format": ["abroad", "turnkey"],
-    "niche": ["themed", "budget", "eco", "luxury", "multicultural"],
+    "city": [
+      "цао",
+      "сао",
+      "свао",
+      "вао",
+      "юво",
+      "юао",
+      "юзао",
+      "зао",
+      "сзао",
+      "mo",
+      "вне-мо"
+    ],
+    "format": [
+      "abroad",
+      "turnkey"
+    ],
+    "niche": [
+      "themed",
+      "budget",
+      "eco",
+      "luxury",
+      "multicultural"
+    ],
     "minBudget": "1000-3000",
     "coordinators": "2+",
     "contract": "yes"

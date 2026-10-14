@@ -1,5 +1,5 @@
 // Заливает подрядчиков в PocketBase (upsert по categorySlug+slug):
-//   node scripts/pb-seed-specialists.mjs [slug ...] [--publish] [--refresh-reels]
+//   node scripts/pb-seed-specialists.mjs [slug ...] [--publish] [--refresh-reels] [--refresh-photos]
 // Зеркало pb-seed.mjs для площадок. Источник — src/data/specialists/<кат>/<slug>.json
 // (конвейер specialist-page); демо-подрядчики из specialists.ts в базу
 // не идут. Файлы записи: photos — галерея и портрет из
@@ -17,6 +17,7 @@ import { loadEnv, pb } from './pb-lib.mjs';
 const argv = process.argv.slice(2);
 const publish = argv.includes('--publish');
 const refreshReels = argv.includes('--refresh-reels');
+const refreshPhotos = argv.includes('--refresh-photos');
 const only = argv.filter((a) => !a.startsWith('--'));
 
 const api = await pb(await loadEnv());
@@ -63,6 +64,11 @@ for (const s of todo) {
   // с записи, дальше обычный путь зальёт текущие.
   if (refreshReels && rec.reels?.length) {
     Object.assign(rec, await api.update('specialists', rec.id, { 'reels-': rec.reels }));
+  }
+  // --refresh-photos: галерею пересобрали под теми же именами pNN (14.10 —
+  // LiRein в порядке альбома заказчика) — то же, что выше, для фото и портрета
+  if (refreshPhotos && rec.photos?.length) {
+    Object.assign(rec, await api.update('specialists', rec.id, { 'photos-': rec.photos }));
   }
   const index = { ...(rec.photoIndex ?? {}) };
   const present = new Set([...(rec.photos ?? []), ...(rec.reels ?? []), ...(rec.avatar ? [rec.avatar] : [])]);

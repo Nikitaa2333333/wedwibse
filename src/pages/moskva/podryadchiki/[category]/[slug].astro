@@ -85,7 +85,8 @@ const story = s.story ?? [
 // cta. Кадры отдаём ВСЕ: первый экран и есть галерея карточки, и по адресу
 // `#foto-<кадр>` из доски главной открывается тот кадр, по которому нажали.
 const reels = reelsOf(s.slug);
-const frames = [...new Set([s.photos[0], ...reels.map((r) => r.src), ...s.photos.slice(1)])].filter(Boolean);
+const lead = s.leadPhotos ?? 1;
+const frames = [...new Set([...s.photos.slice(0, lead), ...reels.map((r) => r.src), ...s.photos.slice(lead)])].filter(Boolean);
 
 const priceLabel = s.priceFrom ? `от ${priceFmt.format(s.priceFrom)} ₽` : 'Цена по запросу';
 const href = `/moskva/podryadchiki/${s.categorySlug}/${s.slug}/`;
