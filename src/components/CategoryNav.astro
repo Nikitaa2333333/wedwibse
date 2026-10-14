@@ -72,8 +72,23 @@ const showCats = rowSlugs.length > 0;
     display: flex;
     align-items: center;
     gap: var(--s-4);
-    padding: var(--s-3) 0 0 var(--gutter);
+    padding: var(--s-3) 0 var(--s-3) var(--gutter);
     background: var(--bg);
+  }
+
+  /* Нижний край полосы — не линия в упор по кадрам, а растворение фона
+     (заказчик, 14.10.2026: «обрезается, ни воздуха»). Снизу у полосы
+     своё поле --s-3, под ним фон ещё --s-4 гаснет в прозрачность: кадр
+     каталога уходит под полосу плавно. Слой не ловит касания. */
+  .cat-nav::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    height: var(--s-4);
+    background: linear-gradient(var(--bg), transparent);
+    pointer-events: none;
   }
 
   /* ============ ВКЛАДКИ ГРУППЫ ============
