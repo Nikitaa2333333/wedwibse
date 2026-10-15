@@ -1,0 +1,207 @@
+{
+  "slug": "lirein",
+  "categorySlug": "dekoratory",
+  "category": "Декораторы",
+  "name": "Студия декора Лирейн",
+  "photos": [
+    "/specialists/dekoratory/lirein/gal/p01.webp",
+    "/specialists/dekoratory/lirein/gal/p02.webp",
+    "/specialists/dekoratory/lirein/gal/p03.webp",
+    "/specialists/dekoratory/lirein/gal/p04.webp",
+    "/specialists/dekoratory/lirein/gal/p05.webp",
+    "/specialists/dekoratory/lirein/gal/p06.webp",
+    "/specialists/dekoratory/lirein/gal/p07.webp",
+    "/specialists/dekoratory/lirein/gal/p08.webp",
+    "/specialists/dekoratory/lirein/gal/p09.webp",
+    "/specialists/dekoratory/lirein/gal/p10.webp",
+    "/specialists/dekoratory/lirein/gal/p11.webp",
+    "/specialists/dekoratory/lirein/gal/p12.webp",
+    "/specialists/dekoratory/lirein/gal/p13.webp",
+    "/specialists/dekoratory/lirein/gal/p14.webp",
+    "/specialists/dekoratory/lirein/gal/p15.webp",
+    "/specialists/dekoratory/lirein/gal/p16.webp",
+    "/specialists/dekoratory/lirein/gal/p17.webp",
+    "/specialists/dekoratory/lirein/gal/p18.webp",
+    "/specialists/dekoratory/lirein/gal/p19.webp",
+    "/specialists/dekoratory/lirein/gal/p20.webp",
+    "/specialists/dekoratory/lirein/gal/p21.webp",
+    "/specialists/dekoratory/lirein/gal/p22.webp",
+    "/specialists/dekoratory/lirein/gal/p23.webp",
+    "/specialists/dekoratory/lirein/gal/p24.webp",
+    "/specialists/dekoratory/lirein/gal/p25.webp",
+    "/specialists/dekoratory/lirein/gal/p26.webp",
+    "/specialists/dekoratory/lirein/gal/p27.webp",
+    "/specialists/dekoratory/lirein/gal/p28.webp",
+    "/specialists/dekoratory/lirein/gal/p29.webp",
+    "/specialists/dekoratory/lirein/gal/p30.webp",
+    "/specialists/dekoratory/lirein/gal/p31.webp",
+    "/specialists/dekoratory/lirein/gal/p32.webp",
+    "/specialists/dekoratory/lirein/gal/p33.webp",
+    "/specialists/dekoratory/lirein/gal/p34.webp",
+    "/specialists/dekoratory/lirein/gal/p35.webp",
+    "/specialists/dekoratory/lirein/gal/p36.webp",
+    "/specialists/dekoratory/lirein/gal/p37.webp"
+  ],
+  "leadPhotos": 6,
+  "tagline": "Мы создаём атмосферу со вкусом ваших отношений",
+  "bio": "Наша миссия — создавать атмосферу, в которой вы узнаете себя. Индивидуальный подход для нас — это живой диалог и глубокое погружение в ваши пожелания: от мудбордов и эскизов до подбора фактур, света и флористики.\n\nМы создаём продуманные визуальные решения для мероприятий и пространств — от идеи и дизайн-концепции до производства, монтажа и финального сопровождения.",
+  "priceFrom": 150000,
+  "priceNote": "",
+  "age": "35–50",
+  "experienceYears": 15,
+  "languages": [
+    "ru",
+    "en"
+  ],
+  "cities": [
+    "moskva",
+    "mo"
+  ],
+  "styles": [
+    "classic",
+    "loft",
+    "rustic",
+    "boho",
+    "minimal",
+    "glam",
+    "eco",
+    "oriental"
+  ],
+  "aboutTitle": "О студии",
+  "story": [
+    {
+      "lead": "Наша миссия — создавать атмосферу, в которой вы узнаете себя.",
+      "text": [
+        "Индивидуальный подход для нас — это живой диалог и глубокое погружение в ваши пожелания. Мы внимательно слушаем, собираем смыслы и детали, предлагаем решения, которые подчёркивают вашу уникальность: от мудбордов и эскизов до подбора фактур, света и флористики.",
+        "Мы создаём продуманные визуальные решения для мероприятий и пространств — от идеи и дизайн-концепции до производства, монтажа и финального сопровождения."
+      ]
+    },
+    {
+      "title": "Пакеты",
+      "tariffs": [
+        {
+          "name": "Лайт",
+          "price": "от 150 000 ₽",
+          "lead": "Достойное оформление зоны президиума и/или лёгкий декор столов гостей."
+        },
+        {
+          "name": "Медиум",
+          "price": "от 250 000 ₽",
+          "lead": "Стильный декор президиума, столов гостей, зоны церемонии и/или фотозоны."
+        },
+        {
+          "name": "Премиум",
+          "price": "от 500 000 ₽",
+          "lead": "Эксклюзивный декор с изюминкой, включая президиум, столы гостей, зону церемонии, фотозону, декор потолка, зону welcome и многое другое…"
+        }
+      ],
+      "photo": "/specialists/dekoratory/lirein/gal/p38.webp"
+    },
+    {
+      "title": "Процесс работы",
+      "items": [
+        {
+          "title": "Телефонный разговор",
+          "text": "Мы ответим на все волнующие и интересующие вопросы по оформлению вашего торжества."
+        },
+        {
+          "title": "Встреча и знакомство",
+          "text": "Обсуждение желаний, предпочтений, возможностей и направлений действий."
+        },
+        {
+          "title": "Заключение договора",
+          "text": "Подписание договора, бронь даты и начало работы."
+        },
+        {
+          "title": "Процесс организации",
+          "text": "Утверждение концепции декора, подписание сметы, внесение предоплаты. Начало воплощения в жизнь красоты."
+        },
+        {
+          "title": "День торжества",
+          "text": "Реализация мечты в реальность. Наслаждение праздником и атмосферой."
+        }
+      ],
+      "photo": "/specialists/dekoratory/lirein/team.webp"
+    },
+    {
+      "title": "Почему стоит доверить оформление нам",
+      "stats": [
+        {
+          "value": "15+",
+          "label": "лет в сфере организации и декора торжеств"
+        },
+        {
+          "value": "700+",
+          "label": "торжеств за плечами"
+        },
+        {
+          "value": "50+",
+          "label": "профессионалов: сервисы аренды и производства"
+        }
+      ]
+    }
+  ],
+  "filters": {
+    "city": [
+      "moskva",
+      "mo"
+    ],
+    "travel": "yes",
+    "priceTier": "medium",
+    "style": [
+      "classic",
+      "loft",
+      "rustic",
+      "boho",
+      "minimal",
+      "glam",
+      "eco",
+      "oriental"
+    ],
+    "liveFlorals": "yes",
+    "fabrics": "yes",
+    "riggingWork": "yes",
+    "serviceType": [
+      "turnkey"
+    ],
+    "minBudget": "100-200",
+    "venueTypes": [
+      "loft",
+      "hall",
+      "estate",
+      "terrace",
+      "country-club"
+    ],
+    "nonStandardVenues": "yes",
+    "contract": "yes"
+  },
+  "packageIncludes": [
+    "Мудборды и эскизы",
+    "Дизайн-концепция оформления",
+    "Подбор фактур, света и флористики",
+    "Собственное производство декора",
+    "Монтаж и финальное сопровождение",
+    "Работа по договору"
+  ],
+  "quote": "Начинаем с разговора: собираем ваши пожелания и детали, готовим мудборд и эскизы, а дальше ведём проект до монтажа и финала вечера.",
+  "offers": [
+    {
+      "title": "Лайт — от 150 000 ₽",
+      "text": "Достойное оформление зоны президиума и/или лёгкий декор столов гостей."
+    },
+    {
+      "title": "Медиум — от 250 000 ₽",
+      "text": "Стильный декор президиума, столов гостей, зоны церемонии и/или фотозоны."
+    },
+    {
+      "title": "Премиум — от 500 000 ₽",
+      "text": "Эксклюзивный декор: президиум, столы гостей, зона церемонии, фотозона, декор потолка, welcome-зона и не только."
+    },
+    {
+      "title": "Любая площадка",
+      "text": "Лофт, банкетный зал, усадьба, терраса, загородный клуб — и нестандартные площадки тоже."
+    }
+  ],
+  "avatar": "/specialists/dekoratory/avatars/lirein.webp",
+  "portrait": "/specialists/dekoratory/lirein/portrait.webp"
+}

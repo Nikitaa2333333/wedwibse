@@ -105,8 +105,14 @@ async function save(url, dest, size) {
     } catch {}
   }
   await mkdir(dirname(dest), { recursive: true });
-  const buf = Buffer.from(await (await get(url)).arrayBuffer());
-  await writeFile(`${dest}.part`, buf);
+  // ПОТОКОМ на диск, не целиком в память. Раньше файл собирался в Buffer:
+  // на VPS 2 ГБ RAM промо-ролик 1,6 ГБ (WHY NOT, 06.10.2026) пять раз
+  // подряд упирался в OOM-killer — убивал он загрузчик, но в такой
+  // давке под раздачу мог попасть и nginx с сайтом.
+  const { createWriteStream } = await import('node:fs');
+  const { Readable } = await import('node:stream');
+  const { pipeline } = await import('node:stream/promises');
+  await pipeline(Readable.fromWeb((await get(url)).body), createWriteStream(`${dest}.part`));
   const { rename } = await import('node:fs/promises');
   await rename(`${dest}.part`, dest);
   return true;

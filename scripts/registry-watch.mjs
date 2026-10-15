@@ -14,74 +14,7 @@
 import { readFileSync, readdirSync, existsSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-const SHEET_ID = '1J8U7oLfBSenFn7VKWL7gp1EfNfH8lFCV3THmpH8eiA8';
-const ROOT = new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
-
-/** вкладка → папка категории в src/data/specialists */
-const CATEGORY_TABS = {
-  'Организаторы': 'organizatory',
-  'Координаторы': 'koordinatory',
-  'Ведущие': 'vedushchie',
-  'Декораторы': 'dekoratory',
-  'Фотографы': 'fotografy',
-  'Видеографы': 'videografy',
-  'Reels-мейкеры': 'rils-meikery',
-  'Кейтеринг': 'keitering',
-  'Кондитеры': 'konditery',
-  'Стилисты и визажисты': 'stilisty',
-  'Диджеи': 'dj',
-  'Кавер-группы': 'kaver-gruppy',
-  'Вокалисты': 'vokalisty',
-  'Музыканты': 'muzykanty',
-  'Спецэффекты': 'speceffekty',
-  'Аренда звука': 'arenda-zvuka',
-  'Аренда светомузыки': 'arenda-sveta',
-  'Хореографы': 'horeografy',
-  'Аниматоры': 'animatory',
-  'Шоу': 'shou',
-  'Фокусники и иллюзионисты': 'fokusniki',
-  'Авто и трансфер': 'avto',
-};
-
-function parseCsv(text) {
-  const rows = [];
-  let row = [], field = '', quoted = false;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (quoted) {
-      if (ch === '"') {
-        if (text[i + 1] === '"') { field += '"'; i++; } else quoted = false;
-      } else field += ch;
-    } else if (ch === '"') quoted = true;
-    else if (ch === ',') { row.push(field); field = ''; }
-    else if (ch === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
-    else if (ch !== '\r') field += ch;
-  }
-  if (field || row.length) { row.push(field); rows.push(row); }
-  return rows;
-}
-
-async function fetchTab(title) {
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(title)}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`${title}: HTTP ${res.status}`);
-  const rows = parseCsv(await res.text());
-  // gviz сам решает, сколько строк шапки съесть, и делает это по-разному от
-  // вкладки к вкладке: где-то отдаёт три строки как есть (группы / ключи /
-  // подписи), где-то склеивает их в одну — «Основное status Статус».
-  // Поэтому ищем строку ключей, а не надеемся на её номер.
-  const isKeyRow = (row) => {
-    const filled = row.filter(Boolean);
-    return filled.length > 3 && filled.every((c) => /^[A-Za-z][A-Za-z0-9_]*$/.test(c));
-  };
-  let keys, dataStart;
-  const i = rows.slice(0, 3).findIndex(isKeyRow);
-  if (i >= 0) { keys = rows[i]; dataStart = i + 2; }            // ниже строка подписей
-  else { keys = (rows[0] ?? []).map((c) => (c.match(/\b[A-Za-z][A-Za-z0-9_]*\b/) ?? [''])[0]); dataStart = 1; }
-  return rows.slice(dataStart)
-    .map((cells) => Object.fromEntries(keys.map((k, i) => [k, (cells[i] ?? '').trim()])))
-    .filter((r) => (r.name ?? '').trim());
-}
+import { ROOT, CATEGORY_TABS, fetchTab, sameName } from './registry-lib.mjs';
 
 /** кто уже на сайте: JSON-карточки + «Лешаковы» из TS */
 function onSite() {
@@ -132,7 +65,7 @@ for (const [tab, categorySlug] of Object.entries(CATEGORY_TABS)) {
   try { rows = await fetchTab(tab); } catch (e) { console.error(`! ${e.message}`); continue; }
   for (const row of rows) {
     const name = row.name.trim();
-    if (site.names.has(name) || (row.slug && site.slugs.has(row.slug))) continue;
+    if ([...site.names].some((n) => sameName(n, name)) || (row.slug && site.slugs.has(row.slug))) continue;
     found.push({ tab, categorySlug, name, status: row.status || 'без статуса', ...gapsOf(row), materials: row.materials || '' });
   }
 }

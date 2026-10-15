@@ -25,7 +25,7 @@ const indexable = process.env.SITE_INDEXABLE === 'true';
 ---
 
 <!doctype html>
-<html lang="ru">
+<html lang="ru" data-look="cream">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -35,7 +35,7 @@ const indexable = process.env.SITE_INDEXABLE === 'true';
         и что выбрал человек, сервер знать не может. Системные части,
         которые CSS не красит (резинка скролла, встроенные контролы),
         держит color-scheme в global.css — он меняется вместе с палитрой. */}
-    <meta name="theme-color" content="#ffffff" />
+    <meta name="theme-color" content="#f6efe5" />
     {!indexable && <meta name="robots" content="noindex, nofollow" />}
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     {/* Самохостинг Onest (public/fonts/, @font-face — src/styles/global.css).

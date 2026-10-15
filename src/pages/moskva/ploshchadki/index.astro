@@ -185,7 +185,7 @@ const mapPoints = venueMapPoints();
           const firstRow = venueIndex < 2;
           venueIndex += 1;
           const filters = filtersOf(item);
-          const sortKey = { price: item.checkFrom ?? Number.MAX_SAFE_INTEGER, rating: item.rating };
+          const sortKey = { price: item.checkFrom ?? Number.MAX_SAFE_INTEGER, rating: item.rating ?? 0 };
 
           const sizes =
             cardVariant === 'vcard--wide'
@@ -229,7 +229,9 @@ const mapPoints = venueMapPoints();
                     </h2>
                     <p class="vcard__meta">{item.city}</p>
                   </div>
-                  <span class="vcard__rate" aria-label={`Рейтинг ${item.rating}`}>★ {item.rating.toFixed(1)}</span>
+                  {item.rating && (
+                    <span class="vcard__rate" aria-label={`Рейтинг ${item.rating}`}>★ {item.rating.toFixed(1)}</span>
+                  )}
                 </div>
                 {item.checkFrom ? (
                   <p class="vcard__price">{item.avgCheck}</p>
@@ -351,9 +353,7 @@ const mapPoints = venueMapPoints();
   .vcard__media { position: relative; }
 
   /* Без тёмного градиента снизу — цена ушла в подпись под кадром,
-     на самом фото остаётся только сердце (у него своя тень, .veil
-     ему не нужен). */
-  .vcard :global(.veil) { display: none; }
+     на самом фото остаётся только сердце со своей тенью. */
 
   /* ============ ПОДПИСЬ ПОД ФОТО ============
      Кадр идёт в край экрана, текст — нет: своё поле подписи держит
@@ -381,9 +381,14 @@ const mapPoints = venueMapPoints();
 
   /* На телефоне имя в кегле корпуса: h3 (21px) в колонке 190px ломал
      «Усадьба Дубровицы» на две строки и раздувал подпись. */
-  .vcard__name {
+  /* Имя — жирным гротеском, как в карточке подрядчика (08.10.2026):
+     антиква образа «крем» мелким кеглем тонкая. Двойной класс
+     перебивает правило образа для h2. */
+  .vcard .vcard__name {
+    font-family: var(--font-sans);
     font-size: var(--fs-body);
-    font-weight: var(--w-head);
+    font-weight: var(--w-head-lg);
+    letter-spacing: 0;
     line-height: 1.1;
   }
 
@@ -414,7 +419,7 @@ const mapPoints = venueMapPoints();
   .vcard__tag { margin-top: 4px; }
 
   @media (min-width: 640px) {
-    .vcard__name { font-size: var(--fs-h3); line-height: 1.05; }
+    .vcard .vcard__name { font-size: var(--fs-h3); line-height: 1.05; }
     .vcard__meta { font-size: var(--fs-small); line-height: 1.1; }
     .vcard__rate { font-size: var(--fs-small); padding-top: 0.2em; }
     /* цена сразу под городом, без отрыва: крупный кегль сам даёт воздух */

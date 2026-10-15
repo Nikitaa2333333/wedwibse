@@ -1,0 +1,211 @@
+{
+  "slug": "zinoveev",
+  "categorySlug": "videografy",
+  "category": "Видеографы",
+  "name": "Илья Зиновеев",
+  "avatar": "/specialists/videografy/avatars/zinoveev.webp",
+  "portrait": "/specialists/videografy/zinoveev/portrait.webp",
+  "photos": [
+    "/specialists/videografy/zinoveev/gal/p15.webp",
+    "/specialists/videografy/zinoveev/gal/p01.webp",
+    "/specialists/videografy/zinoveev/gal/p02.webp",
+    "/specialists/videografy/zinoveev/gal/p14.webp",
+    "/specialists/videografy/zinoveev/gal/p17.webp",
+    "/specialists/videografy/zinoveev/gal/p19.webp",
+    "/specialists/videografy/zinoveev/gal/p22.webp",
+    "/specialists/videografy/zinoveev/gal/p23.webp",
+    "/specialists/videografy/zinoveev/gal/p24.webp",
+    "/specialists/videografy/zinoveev/gal/p26.webp",
+    "/specialists/videografy/zinoveev/gal/p27.webp",
+    "/specialists/videografy/zinoveev/gal/p29.webp",
+    "/specialists/videografy/zinoveev/gal/p30.webp",
+    "/specialists/videografy/zinoveev/gal/p31.webp",
+    "/specialists/videografy/zinoveev/gal/p33.webp",
+    "/specialists/videografy/zinoveev/gal/p34.webp",
+    "/specialists/videografy/zinoveev/gal/p35.webp",
+    "/specialists/videografy/zinoveev/gal/p36.webp",
+    "/specialists/videografy/zinoveev/gal/p37.webp",
+    "/specialists/videografy/zinoveev/gal/p39.webp",
+    "/specialists/videografy/zinoveev/gal/p41.webp",
+    "/specialists/videografy/zinoveev/gal/p42.webp",
+    "/specialists/videografy/zinoveev/gal/p43.webp",
+    "/specialists/videografy/zinoveev/gal/p03.webp",
+    "/specialists/videografy/zinoveev/gal/p04.webp",
+    "/specialists/videografy/zinoveev/gal/p05.webp",
+    "/specialists/videografy/zinoveev/gal/p06.webp",
+    "/specialists/videografy/zinoveev/gal/p07.webp",
+    "/specialists/videografy/zinoveev/gal/p08.webp",
+    "/specialists/videografy/zinoveev/gal/p09.webp",
+    "/specialists/videografy/zinoveev/gal/p10.webp",
+    "/specialists/videografy/zinoveev/gal/p11.webp",
+    "/specialists/videografy/zinoveev/gal/p12.webp",
+    "/specialists/videografy/zinoveev/gal/p13.webp",
+    "/specialists/videografy/zinoveev/gal/p16.webp",
+    "/specialists/videografy/zinoveev/gal/p18.webp",
+    "/specialists/videografy/zinoveev/gal/p20.webp",
+    "/specialists/videografy/zinoveev/gal/p21.webp",
+    "/specialists/videografy/zinoveev/gal/p25.webp",
+    "/specialists/videografy/zinoveev/gal/p28.webp",
+    "/specialists/videografy/zinoveev/gal/p32.webp",
+    "/specialists/videografy/zinoveev/gal/p38.webp",
+    "/specialists/videografy/zinoveev/gal/p40.webp",
+    "/specialists/videografy/zinoveev/gal/p44.webp"
+  ],
+  "tagline": "Свадебные фильмы братьев Зиновеевых",
+  "bio": "Мы — братья Зиновеевы, Илья и Дмитрий, и снимаем свадебные фильмы, которые действительно хочется пересматривать, а не складывать в дальнюю папку. Без неловкого позирования и заезженных шаблонов: наша задача — поймать настоящие эмоции, ваши взгляды, слёзы радости гостей и атмосферу семейного праздника.\n\nСнимаем день целиком — от сборов до банкета, церемонии и прогулки, а ещё лав-стори и семейные события. Помогаем спланировать свадебный день, подобрать площадку и других специалистов.",
+  "gender": "м",
+  "priceFrom": 70000,
+  "priceNote": "тариф Mini: 8 часов съёмки и мини-фильм",
+  "age": "35–50",
+  "experienceYears": 5,
+  "cities": ["цао", "сао", "свао", "вао", "юво", "юао", "юзао", "зао", "сзао", "mo", "вне-мо"],
+  "styles": ["reportage", "cinematic", "dynamic"],
+  "languages": ["ru"],
+  "aboutTitle": "О нас",
+  "story": [
+    {
+      "title": "Свадебные видеографы братья Зиновеевы",
+      "text": [
+        "Мы — братья Зиновеевы, и мы снимаем свадебные фильмы, которые вам действительно захочется пересматривать (а не складировать в дальнюю папку на жёстком диске).",
+        "Забудьте о неловком позировании и заезженных шаблонах. Наша задача — зафиксировать настоящие эмоции: ваши взгляды, слёзы радости гостей и ту самую атмосферу семейного торжества. У нас полно энергии и свежих идей, чтобы сделать ваше видео стильным, живым и современным."
+      ]
+    },
+    {
+      "title": "Что мы снимаем",
+      "items": [
+        {
+          "title": "Свадьбы",
+          "text": "Наша свадебная видеосъёмка — от сборов до банкета, церемонии и прогулки. Создаём атмосферный фильм, который пересматривают с улыбкой годы спустя."
+        },
+        {
+          "title": "Лавстори",
+          "text": "Красивая короткая история о вашей паре. Снимаем на живописных локациях — в парках, на улицах города, в студии. Идеально как подарок друг другу или превью перед свадьбой."
+        },
+        {
+          "title": "Семейная видеосъёмка",
+          "text": "Сохраняем на видео самые важные семейные моменты — крестины, дни рождения, выпускные, выписки из роддома. Получаете тёплый ролик с эмоциями близких людей."
+        }
+      ]
+    },
+    {
+      "title": "Преимущества съёмки свадьбы у нас",
+      "list": [
+        "Выезд в любую точку мира",
+        "Внимание к пожеланиям",
+        "Дружелюбие и отзывчивость",
+        "Первоклассный сервис"
+      ]
+    },
+    {
+      "title": "Порядок оказания услуг",
+      "items": [
+        {
+          "title": "Заявка",
+          "text": "Вы оставляете заявку через сайт или по телефону."
+        },
+        {
+          "title": "Звонок",
+          "text": "Мы связываемся с вами, помогаем подобрать оптимальный тариф."
+        },
+        {
+          "title": "Встречаемся",
+          "text": "Уточняем все нюансы съёмки. Помогаем спланировать свадебный день, подобрать площадку и других специалистов."
+        },
+        {
+          "title": "Договор",
+          "text": "Подписываем договор. Вы вносите предоплату."
+        },
+        {
+          "title": "Видеосъёмка",
+          "text": "В день вашего торжества мы приезжаем за 30 минут до обговорённого времени."
+        },
+        {
+          "title": "Результат",
+          "text": "После монтажа вы получаете прекрасные фильм и клип, которые с радостью будете пересматривать всей семьёй многие годы."
+        }
+      ]
+    },
+    {
+      "title": "Цены",
+      "after": [
+        "Сроки выдачи видео — 3–6 месяцев."
+      ],
+      "tariffs": [
+        {
+          "name": "Mini",
+          "price": "70 000 ₽",
+          "includes": [
+            "Один видеограф",
+            "Видеосъёмка 8 часов",
+            "Монтаж мини-фильма (8–10 минут)",
+            "Отдача всего отснятого материала"
+          ]
+        },
+        {
+          "name": "Standart",
+          "price": "90 000 ₽",
+          "includes": [
+            "Один видеограф",
+            "Видеосъёмка 10 часов",
+            "Запись звука на банкете",
+            "Монтаж фильма",
+            "Монтаж ролика",
+            "Отдача всего отснятого материала"
+          ]
+        },
+        {
+          "name": "Standart +",
+          "price": "145 000 ₽",
+          "includes": [
+            "Два видеографа",
+            "Видеосъёмка 10 часов",
+            "Запись звука на банкете",
+            "Монтаж фильма",
+            "Монтаж ролика",
+            "Монтаж reels",
+            "Отдача всего отснятого материала"
+          ]
+        }
+      ]
+    }
+  ],
+  "filters": {
+    "gender": "м",
+    "priceHour": "8-10",
+    "city": ["цао", "сао", "свао", "вао", "юво", "юао", "юзао", "зао", "сзао", "mo", "вне-мо"],
+    "style": ["reportage", "cinematic", "dynamic"],
+    "experience": "5-10",
+    "serviceType": ["full-day", "partial", "love-story", "teaser-film"],
+    "minBudget": "60-100",
+    "operators": "1",
+    "deliveryTime": "3-6m",
+    "contract": "yes"
+  },
+  "packageIncludes": [
+    "Съёмка от сборов до банкета, церемонии и прогулки",
+    "Фильм и короткий ролик о дне",
+    "Запись звука на банкете",
+    "Весь отснятый материал",
+    "Помощь спланировать день, подобрать площадку и специалистов",
+    "Работа по договору с предоплатой"
+  ],
+  "quote": "Оставьте заявку или позвоните — поможем подобрать тариф. В день свадьбы приезжаем за 30 минут до обговорённого времени.",
+  "offers": [
+    {
+      "title": "Mini — 70 000 ₽",
+      "text": "Один видеограф, 8 часов съёмки, монтаж мини-фильма на 8–10 минут и весь отснятый материал."
+    },
+    {
+      "title": "Standart — 90 000 ₽",
+      "text": "Один видеограф, 10 часов съёмки, запись звука на банкете, фильм, ролик и весь отснятый материал."
+    },
+    {
+      "title": "Standart + — 145 000 ₽",
+      "text": "Два видеографа, 10 часов съёмки, запись звука, фильм, ролик и reels, весь отснятый материал."
+    },
+    {
+      "title": "Выезд в любую точку мира",
+      "text": "Снимаем свадьбы в Москве, области и далеко за их пределами."
+    }
+  ]
+}

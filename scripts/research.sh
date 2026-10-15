@@ -3,9 +3,9 @@
 #
 #   bash scripts/research.sh list    <url>                 что на диске и сколько весит
 #   bash scripts/research.sh preview <слаг> <url>          превью на сервер + к себе на отбор
-#   bash scripts/research.sh pick    <слаг> "004 007 012"  оригиналы отобранных
+#   bash scripts/research.sh pick    <слаг> "004 007 012"  отобранные → пережатые webp + photos.json
 #   bash scripts/research.sh all     <слаг> <url> [--only=photo|video]
-#   bash scripts/research.sh pull    <слаг> [prev|raw]     забрать папку к себе
+#   bash scripts/research.sh pull    <слаг> [prev|raw|photos]  забрать папку к себе
 #   bash scripts/research.sh ls      [слаг]                что уже выгружено
 #
 # Порядок работы: list → preview → смотришь контактный лист глазами → pick.
@@ -81,7 +81,13 @@ case "$cmd" in
     url=$(sshx "cat $DIR/out/$slug/.url 2>/dev/null" || true)
     [[ -z "$url" ]] && { echo "Не нашёл ссылку на диск для '$slug'. Прогони сначала preview."; exit 1; }
     sshx "$RUN '$url' out/$slug --pick='$picks' --jobs=6"
-    pull "$slug" raw
+    # Пережимаем там же, где скачали: на ноутбук через VPN идут готовые
+    # webp + photos.json (в 5–10 раз легче оригиналов). nice — сервер общий
+    # с сайтом. Оригиналы остаются на сервере: `pull <слаг> raw`, если нужны.
+    sshx "cd $DIR && rm -rf out/$slug/photos && nice -n 19 node bin/prep-photos-server.mjs out/$slug"
+    pull "$slug" photos
+    sshx "cat $DIR/out/$slug/photos.json" > "research/specialists/$slug/photos.json"
+    echo "Дальше prep-photos не нужен: photos/ и photos.json уже готовы."
     ;;
 
   all)

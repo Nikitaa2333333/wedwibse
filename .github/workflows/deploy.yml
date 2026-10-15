@@ -52,12 +52,39 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           echo "${{ secrets.DEPLOY_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
 
+      # ПРОВЕРКА СВЯЗИ ДО ЗАЛИВКИ (12.10.2026). Rsync без таймаутов, когда
+      # сервер не отвечал по SSH, висел часами и молча — три деплоя подряд
+      # стояли на «Rsync» без единой строки в логе. Теперь сначала стучимся
+      # в порт 22 и делаем пустой ssh-вход с подробным выводом: деплой
+      # падает за минуту и в логе видно, на чём именно (порт закрыт,
+      # рукопожатие не идёт, ключ не принят).
+      - name: Check SSH to server
+        timeout-minutes: 2
+        run: |
+          host="${{ secrets.DEPLOY_HOST }}"
+          echo "== порт 22"
+          if timeout 15 bash -c "</dev/tcp/$host/22"; then echo "порт 22 открыт"; else echo "порт 22 не отвечает за 15 с"; fi
+          echo "== ssh-вход"
+          ssh -v -i ~/.ssh/id_ed25519 \
+            -o BatchMode=yes -o ConnectTimeout=20 \
+            -o ServerAliveInterval=10 -o ServerAliveCountMax=3 \
+            "${{ secrets.DEPLOY_USER }}@$host" 'echo ssh ok; df -h / | tail -1; uptime' 2>&1 | tail -40
+
       - name: Rsync dist to server
         # --delete: удалённые страницы исчезают и на сервере,
         # иначе каталог копит мусор от прошлых сборок.
+        timeout-minutes: 10
         run: |
-          rsync -az --delete --exclude '.write-test' \
-            -e "ssh -i ~/.ssh/id_ed25519" \
+          # registry/ — отчёт утренней сверки (registry-nightly.yml): его кладут
+          # на сервер отдельно, и --delete стирал бы его каждым деплоем
+          # --checksum: раннер каждый раз свежий, у всех 11 тыс. файлов новое
+          # время изменения, и без него rsync гонял блочные контрольные суммы
+          # по всем 2 ГБ. 12.10.2026 на медленном канале до VPS (~37 КБ/с)
+          # это растянуло заливку с 18 секунд до 7 минут (а до таймаутов —
+          # до бесконечного «висит»). С -c сравнение по содержимому идёт
+          # на самом сервере, по сети — только изменившиеся файлы.
+          rsync -az --checksum --delete --timeout=60 --stats --exclude '.write-test' --exclude 'registry/' \
+            -e "ssh -i ~/.ssh/id_ed25519 -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=10 -o ServerAliveCountMax=3" \
             dist/ "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_PATH }}/"
 
       # Проверять по IP бессмысленно: nginx разбирает запросы по server_name,
@@ -68,3 +95,18 @@ jobs:
           code=$(curl -sL -o /dev/null -w '%{http_code}' https://wed-secrets.ru/)
           echo "Главная отдала $code"
           test "$code" = "200"
+
+      # РОЛИКИ НЕ В GIT (VIDEO.md): они живут на сервере отдельно и заливаются
+      # scripts/media-push.sh руками. 28.09 код с роликами Балашовой и
+      # Косаревой ушёл без заливки — неделю страницы ссылались на файлы,
+      # которых на сервере не было, и видео «не работало». Теперь каждый
+      # ролик, на который ссылается собранный сайт, должен отдаваться
+      # сервером, иначе деплой красный.
+      - name: Reels on server
+        run: |
+          missing=0
+          for u in $(grep -rhoE '/[A-Za-z0-9/_.-]+\.mp4' dist --include=*.html | sort -u); do
+            code=$(curl -s -o /dev/null -r 0-1 -w '%{http_code}' "https://wed-secrets.ru$u")
+            if [ "$code" != "206" ] && [ "$code" != "200" ]; then echo "нет на сервере ($code): $u"; missing=1; fi
+          done
+          test "$missing" = "0" || { echo "Залить: bash scripts/media-push.sh"; exit 1; }

@@ -1,0 +1,191 @@
+name: Реестр ↔ сайт (каждое утро)
+
+# Утренняя сверка Google-таблицы модератора с сайтом: кто новый
+# (registry-watch) и что разошлось у заведённых (registry-diff) — цены,
+# фильтры, снятые, битые ссылки на диск, Карты на дом вместо организации.
+# Отчёт — в одну задачу (issue) с меткой «реестр»: её видно с телефона,
+# и она переписывается каждое утро, а не плодит новые. Всё сошлось —
+# задача закрывается сама.
+#
+# Второй этап (06.10.2026): если расхождения есть и в секретах репозитория
+# лежит CLAUDE_CODE_OAUTH_TOKEN, Claude сразу берёт отчёт в работу по
+# скиллам specialist-page / venue-page — правит данные, заводит карточки,
+# проверяет сборку — и открывает PR. В master не пушит: на сайт правки
+# попадают, только когда PR сливает человек. Нет токена — этап молча
+# пропускается, сверка работает как раньше.
+
+on:
+  schedule:
+    - cron: '0 4 * * *'   # 07:00 по Москве
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Скрипты импортируют .ts напрямую (наборы фильтров, лента) — Node 24
+      # снимает типы сам, npm ci не нужен: зависимостей у сверки нет.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Сверка
+        run: |
+          {
+            echo "Проверено: $(TZ=Europe/Moscow date '+%d.%m.%Y %H:%M') МСК"
+            echo
+            echo '## Новые в таблице'
+            echo '```'
+            node scripts/registry-watch.mjs --all
+            echo '```'
+            echo
+            echo '## Расхождения с сайтом'
+            echo '```'
+            node scripts/registry-diff.mjs
+            echo '```'
+            echo
+            echo 'Локально то же: `node scripts/registry-watch.mjs --all` и `node scripts/registry-diff.mjs`.'
+          } > report.md
+          cat report.md
+
+      # Тот же отчёт машинным видом — на сервер, wed-secrets.ru/registry/report.json.
+      # Его забирает Apps Script в самой Google-таблице (scripts/registry-notes.gs)
+      # и вешает заметки на ячейки с именами: модератор видит расхождения прямо
+      # в таблице. В отчёте только то, что и так есть в таблице (она открыта по ссылке).
+      - name: Отчёт для таблицы
+        run: |
+          node scripts/registry-diff.mjs --json > registry.json
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "${{ secrets.DEPLOY_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          ssh -i ~/.ssh/id_ed25519 -o BatchMode=yes "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}"             "mkdir -p ${{ secrets.DEPLOY_PATH }}/registry && cat > ${{ secrets.DEPLOY_PATH }}/registry/report.json" < registry.json
+
+      # Бэкап базы ВНЕ сервера. На VPS снимок в 03:30 (/srv/wedsecrets-pb/backup.sh,
+      # хранит 14 последних); здесь свежий забирается в артефакт GitHub на 90 дней —
+      # умрёт сервер, записи каталога останутся. Только data.db + auxiliary.db
+      # (~200 КБ); фото базы — копии кадров из git, восстанавливаются pb-seed.
+      - name: Бэкап базы
+        run: |
+          ssh -i ~/.ssh/id_ed25519 -o BatchMode=yes "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}"             'cat /srv/wedsecrets-pb/backups/latest.tar.gz' > pb-backup.tar.gz
+          tar -tzf pb-backup.tar.gz | grep -q 'data.db$'
+          ls -la pb-backup.tar.gz
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pb-backup-${{ github.run_id }}
+          path: pb-backup.tar.gz
+          retention-days: 90
+
+      - name: Отчёт в задачу
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create 'реестр' --color 'C2B8A3' --description 'Сверка реестра с сайтом' 2>/dev/null || true
+          num=$(gh issue list --label 'реестр' --state all --limit 1 --json number -q '.[0].number')
+          clean=$(grep -c 'новых подрядчиков нет\|Реестр и сайт сходятся' report.md || true)
+          if [ -z "$num" ]; then
+            gh issue create --title 'Реестр ↔ сайт: что поменять' --label 'реестр' --body-file report.md
+          else
+            gh issue edit "$num" --body-file report.md
+            if [ "$clean" -ge 2 ]; then
+              gh issue close "$num" --comment 'Всё сошлось — закрываю до следующих расхождений.' 2>/dev/null || true
+            else
+              gh issue reopen "$num" 2>/dev/null || true
+            fi
+          fi
+
+      # ============ ВТОРОЙ ЭТАП: CLAUDE ВЕРСТАЕТ ПО ОТЧЁТУ ============
+      - name: Есть ли что верстать
+        id: gate
+        env:
+          TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          clean=$(grep -c 'новых подрядчиков нет\|Реестр и сайт сходятся' report.md || true)
+          if [ -n "$TOKEN" ] && [ "$clean" -lt 2 ]; then echo "run=true" >> "$GITHUB_OUTPUT"; else echo "run=false" >> "$GITHUB_OUTPUT"; fi
+          [ -n "$TOKEN" ] || echo "Токена CLAUDE_CODE_OAUTH_TOKEN нет — второй этап пропущен"
+
+      - name: Зависимости для сборки
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          npm ci
+          command -v magick >/dev/null || (sudo apt-get update -qq && sudo apt-get install -y -qq imagemagick ffmpeg)
+          git config user.name 'Claude (сверка реестра)'
+          git config user.email 'noreply@anthropic.com'
+
+      # Доступ к VPS тем же ключом, что у деплоя: пользователь deploy владеет
+      # и папкой сайта, и папкой роликов /var/www/wedsecrets-media — этого
+      # хватает, чтобы Claude залил ролики новой карточки (media-push.sh).
+      - name: SSH к серверу
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "${{ secrets.DEPLOY_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          echo "MEDIA_KEY=$HOME/.ssh/id_ed25519" >> "$GITHUB_ENV"
+          echo "MEDIA_HOST=${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" >> "$GITHUB_ENV"
+
+      # База каталога — PocketBase на VPS, слушает только 127.0.0.1 сервера.
+      # Туннель тем же ключом деплоя; пароль администратора лежит на сервере
+      # (/srv/wedsecrets-pb/.env, читает только deploy) и в GitHub не хранится —
+      # здесь он маскируется в логах и живёт до конца прогона.
+      - name: База (туннель к PocketBase)
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          H="${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}"
+          PB_SSH_KEY=~/.ssh/id_ed25519 PB_SSH_HOST="$H" bash scripts/pb-tunnel.sh
+          ssh -i ~/.ssh/id_ed25519 -o BatchMode=yes "$H" 'cat /srv/wedsecrets-pb/.env' | while IFS='=' read -r k v; do
+            [ -n "$k" ] || continue
+            [ "$k" = PB_ADMIN_PASSWORD ] && echo "::add-mask::$v"
+            echo "$k=$v" >> "$GITHUB_ENV"
+          done
+
+      - name: Claude берёт отчёт в работу
+        if: steps.gate.outputs.run == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ github.token }}
+          claude_args: '--max-turns 250 --allowedTools "Bash,Read,Write,Edit,Glob,Grep,WebFetch,WebSearch"'
+          prompt: |
+            Ты в репозитории WED Secrets (свадебный каталог, Astro). Правила проекта — AGENTS.md
+            (он же CLAUDE.md), конвейеры — .claude/skills/specialist-page/SKILL.md и
+            .claude/skills/venue-page/SKILL.md. Прочитай их до работы.
+
+            Утренняя сверка Google-таблицы с сайтом дала отчёт: report.md в корне.
+            Возьми его в работу:
+            1. «Разошлось с сайтом» — поправь данные карточек (JSON в src/data/…, feed.ts)
+               так, чтобы совпадали с таблицей; цифры в тексты — только из таблицы.
+               Если сайт сознательно шире таблицы (данные с сайта подрядчика) — не трогай,
+               опиши в PR.
+            2. «Новые в таблице» с материалами — заведи по скиллу. Таблица читается
+               скриптами из scripts/registry-lib.mjs (fetchTab). Диск качай здесь же:
+               `node scripts/fetch-yadisk.mjs <url> <папка> --mode=preview|--pick=…`
+               (research.sh и сервер отсюда недоступны), пережатие — scripts/prep-photos.mjs.
+               Кадры отбирай по контактному листу (magick montage + Read).
+            3. Ролики — можно: до 5 на подрядчика (Reels-мейкерам больше), пережатие
+               командой из VIDEO.md (ffmpeg есть), постер .webp, запись в src/data/reels.ts,
+               `node scripts/verify-video.mjs`, затем `bash scripts/media-push.sh` —
+               SSH к серверу уже настроен переменными MEDIA_KEY/MEDIA_HOST. Ролики
+               заливаются ДО открытия PR: деплой после слияния проверит, что они на месте.
+               База: туннель к PocketBase уже открыт (PB_URL в окружении) — после
+               раскладки кадров и роликов запиши карточку: `node scripts/pb-seed-specialists.mjs <slug>`
+               (площадка — `node scripts/pb-seed.mjs <slug>`). pb-pull не запускай.
+               Нельзя отсюда, только перечисли в PR как ручные шаги: правки самой
+               Google-таблицы, материалы из Telegram/iCloud, всё, где нет годных
+               фото (меньше 1200 px).
+            4. «Ссылки» и «Сняты из таблицы» — ничего не удаляй, только перечисли в PR.
+            Проверка: verify-specialist / verify-venue по каждой тронутой карточке
+            и `npx astro build` без ошибок.
+            Итог — ветка `registry/${{ github.run_id }}`, коммиты с понятными сообщениями,
+            `gh pr create` в master с меткой «реестр»: что сделано, что требует человека.
+            В master НЕ пушить и PR НЕ сливать. Если правок не потребовалось — PR не создавай.
+

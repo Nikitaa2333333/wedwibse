@@ -126,7 +126,7 @@ const { sortable = true } = Astro.props;
       const cmp: Record<string, (a: SortKey, b: SortKey) => number> = {
         'price-asc': (a, b) => a.price - b.price,
         'price-desc': (a, b) => b.price - a.price,
-        rating: (a, b) => b.rating - a.rating,
+        rating: (a, b) => (b.rating ?? 0) - (a.rating ?? 0),
       };
       const sorted = kids.filter(keyOf).sort((a, b) => cmp[by](keyOf(a)!, keyOf(b)!));
       let ci = 0;

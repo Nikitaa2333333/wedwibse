@@ -135,7 +135,9 @@ export function compareFacts(): Record<string, Fact[]> {
     out[`venue:${item.name}`] = [
       ...base,
       ...venueExtras(item.name, have),
-      { label: 'Рейтинг', value: `★ ${item.rating.toFixed(1)} · ${reviews(item.reviews)}` },
+      ...(item.rating
+        ? [{ label: 'Рейтинг', value: `★ ${item.rating.toFixed(1)} · ${reviews(item.reviews ?? 0)}` }]
+        : []),
     ];
   }
 

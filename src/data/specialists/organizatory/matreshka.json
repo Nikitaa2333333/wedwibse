@@ -1,0 +1,170 @@
+{
+  "slug": "matreshka",
+  "categorySlug": "organizatory",
+  "category": "Организаторы",
+  "name": "Матрешка",
+  "avatar": "/specialists/organizatory/avatars/matreshka.webp",
+  "photos": [
+    "/specialists/organizatory/matreshka/gal/p03.webp",
+    "/specialists/organizatory/matreshka/gal/p06.webp",
+    "/specialists/organizatory/matreshka/gal/p01.webp",
+    "/specialists/organizatory/matreshka/gal/p05.webp",
+    "/specialists/organizatory/matreshka/gal/p07.webp",
+    "/specialists/organizatory/matreshka/gal/p08.webp",
+    "/specialists/organizatory/matreshka/gal/p09.webp",
+    "/specialists/organizatory/matreshka/gal/p10.webp",
+    "/specialists/organizatory/matreshka/gal/p12.webp",
+    "/specialists/organizatory/matreshka/gal/p13.webp",
+    "/specialists/organizatory/matreshka/gal/p14.webp",
+    "/specialists/organizatory/matreshka/gal/p15.webp",
+    "/specialists/organizatory/matreshka/gal/p16.webp",
+    "/specialists/organizatory/matreshka/gal/p17.webp",
+    "/specialists/organizatory/matreshka/gal/p20.webp",
+    "/specialists/organizatory/matreshka/gal/p21.webp",
+    "/specialists/organizatory/matreshka/gal/p23.webp",
+    "/specialists/organizatory/matreshka/gal/p25.webp",
+    "/specialists/organizatory/matreshka/gal/p27.webp",
+    "/specialists/organizatory/matreshka/gal/p28.webp",
+    "/specialists/organizatory/matreshka/gal/p29.webp",
+    "/specialists/organizatory/matreshka/gal/p30.webp",
+    "/specialists/organizatory/matreshka/gal/p31.webp",
+    "/specialists/organizatory/matreshka/gal/p34.webp",
+    "/specialists/organizatory/matreshka/gal/p35.webp",
+    "/specialists/organizatory/matreshka/gal/p36.webp",
+    "/specialists/organizatory/matreshka/gal/p37.webp",
+    "/specialists/organizatory/matreshka/gal/p38.webp",
+    "/specialists/organizatory/matreshka/gal/p41.webp",
+    "/specialists/organizatory/matreshka/gal/p42.webp",
+    "/specialists/organizatory/matreshka/gal/p43.webp",
+    "/specialists/organizatory/matreshka/gal/p44.webp",
+    "/specialists/organizatory/matreshka/gal/p45.webp",
+    "/specialists/organizatory/matreshka/gal/p46.webp",
+    "/specialists/organizatory/matreshka/gal/p48.webp",
+    "/specialists/organizatory/matreshka/gal/p49.webp",
+    "/specialists/organizatory/matreshka/gal/p02.webp",
+    "/specialists/organizatory/matreshka/gal/p04.webp",
+    "/specialists/organizatory/matreshka/gal/p11.webp",
+    "/specialists/organizatory/matreshka/gal/p18.webp",
+    "/specialists/organizatory/matreshka/gal/p19.webp",
+    "/specialists/organizatory/matreshka/gal/p22.webp",
+    "/specialists/organizatory/matreshka/gal/p24.webp",
+    "/specialists/organizatory/matreshka/gal/p26.webp",
+    "/specialists/organizatory/matreshka/gal/p32.webp",
+    "/specialists/organizatory/matreshka/gal/p33.webp",
+    "/specialists/organizatory/matreshka/gal/p39.webp",
+    "/specialists/organizatory/matreshka/gal/p40.webp",
+    "/specialists/organizatory/matreshka/gal/p47.webp",
+    "/specialists/organizatory/matreshka/gal/p50.webp"
+  ],
+  "tagline": "Свадьба под ключ: от идеи до свечи на торте",
+  "bio": "Свадебное агентство: берём весь процесс на себя — от первой идеи до последней свечи на торте, чтобы вы могли прожить свой день счастливо.\n\nОбщаемся с подрядчиками, ходим на встречи, держим сроки — никаких бесконечных чатов и таблиц. Помогаем грамотно распределить бюджет и предлагаем проверенных подрядчиков в его рамках. Создаём концепцию под вас и остаёмся рядом от первой встречи до финала вечера: подсказываем, направляем и отвечаем за результат.",
+  "priceFrom": 100000,
+  "priceNote": "минимальная стоимость; обычно — 10 % от бюджета проекта",
+  "age": "35–50",
+  "experienceYears": 15,
+  "languages": [
+    "ru",
+    "en"
+  ],
+  "cities": [
+    "цао",
+    "сао",
+    "свао",
+    "вао",
+    "юво",
+    "юао",
+    "юзао",
+    "зао",
+    "сзао",
+    "mo",
+    "вне-мо"
+  ],
+  "aboutTitle": "Об агентстве",
+  "story": [
+    {
+      "lead": "Берём весь процесс на себя. От первой идеи до последней свечи на торте, чтобы вы могли прожить день счастливо."
+    },
+    {
+      "items": [
+        {
+          "title": "Экономим время",
+          "text": "Берём на себя общение с подрядчиками, встречи, контроль сроков. Забудьте про бесконечные чаты и таблицы."
+        },
+        {
+          "title": "Укладываемся в бюджет",
+          "text": "Помогаем грамотно распределить средства и предлагаем проверенных подрядчиков в рамках вашего бюджета."
+        },
+        {
+          "title": "Поддержка на каждом этапе",
+          "text": "От первой встречи до финала вечера мы рядом — подсказываем, направляем и берём ответственность за результат."
+        },
+        {
+          "title": "Создаём концепцию под вас"
+        }
+      ]
+    },
+    {
+      "lead": "Работаем с проектами от 1 000 000 ₽",
+      "text": [
+        "Такой бюджет позволяет реализовать продуманную концепцию, качественный продакшн и надёжную команду подрядчиков.",
+        "Стоимость наших услуг — 10% от общего бюджета проекта. Минимальная стоимость работы организаторов — 100 000 ₽."
+      ]
+    }
+  ],
+  "filters": {
+    "city": [
+      "цао",
+      "сао",
+      "свао",
+      "вао",
+      "юво",
+      "юао",
+      "юзао",
+      "зао",
+      "сзао",
+      "mo",
+      "вне-мо"
+    ],
+    "format": [
+      "abroad",
+      "turnkey"
+    ],
+    "niche": [
+      "themed",
+      "budget",
+      "eco",
+      "luxury",
+      "multicultural"
+    ],
+    "minBudget": "1000-3000",
+    "coordinators": "2+",
+    "contract": "yes"
+  },
+  "packageIncludes": [
+    "Концепция свадьбы под вас",
+    "Подбор проверенных подрядчиков",
+    "Распределение бюджета",
+    "Встречи, переписка с подрядчиками и контроль сроков",
+    "Два координатора и больше в день свадьбы",
+    "Работа по договору"
+  ],
+  "quote": "Работаем с проектами от 1 000 000 ₽: такой бюджет позволяет реализовать продуманную концепцию, качественный продакшн и надёжную команду подрядчиков. Стоимость услуг — 10 % от бюджета, минимум 100 000 ₽.",
+  "offers": [
+    {
+      "title": "Экономим время",
+      "text": "Берём на себя общение с подрядчиками, встречи и контроль сроков."
+    },
+    {
+      "title": "Укладываемся в бюджет",
+      "text": "Помогаем грамотно распределить средства и подбираем проверенных подрядчиков в его рамках."
+    },
+    {
+      "title": "Поддержка на каждом этапе",
+      "text": "От первой встречи до финала вечера рядом: подсказываем, направляем и отвечаем за результат."
+    },
+    {
+      "title": "10 % от бюджета",
+      "text": "Проекты от 1 000 000 ₽, минимальная стоимость работы организаторов — 100 000 ₽."
+    }
+  ]
+}

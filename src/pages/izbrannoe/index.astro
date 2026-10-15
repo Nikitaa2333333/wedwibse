@@ -383,10 +383,15 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
   }
 
   /* Кегль под половину экрана: в две колонки --fs-h3 рвал имя на три строки */
-  .fcard__name {
+  /* Имя — жирным гротеском, как в карточках каталога (08.10.2026):
+     антиква образа «крем» мелким кеглем тонкая. :root поднимает вес
+     селектора над правилом образа (:root[data-look] :is(h2)). */
+  :root .fcard .fcard__name {
     min-width: 0;
+    font-family: var(--font-sans);
     font-size: var(--fs-body);
-    font-weight: var(--w-head);
+    font-weight: var(--w-head-lg);
+    letter-spacing: 0;
     line-height: 1.15;
   }
 
@@ -949,7 +954,6 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
       byItem.set(it.id, m);
     }
     const rows = labels.filter((l) => list.filter((i) => byItem.get(i.id)?.has(l)).length >= MIN_FILLED);
-    const dropped = labels.length - rows.length;
 
     const head = list.map((i) => `
       <div class="cmp__head">
@@ -989,7 +993,6 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
       <div class="cmp__scroll">
         <div class="cmp__table" style="--cols:${list.length}">${head}${body}</div>
       </div>
-      ${dropped ? '<p class="t-caption cmp__note">Строки, заполненные меньше чем у двух карточек, не показаны — сравнивать там нечего.</p>' : ''}
     `;
 
     bindComparePin();

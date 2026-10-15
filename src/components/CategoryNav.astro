@@ -13,7 +13,7 @@
 // Живёт под SiteHeader — top берёт готовую высоту шапки из --header-h
 // (SiteHeader сам её публикует).
 import type { SpecialistCategory } from '../data/specialists';
-import { SPECIALIST_GROUPS } from '../data/specialists';
+import { SPECIALIST_GROUPS, SPECIALISTS_BY_CATEGORY } from '../data/specialists';
 import BackButton from './BackButton.astro';
 
 interface Props {
@@ -31,10 +31,11 @@ const activeGroup = SPECIALIST_GROUPS.find((g) => g.categories.includes(activeSl
 // список, как раньше: лучше длинный ряд, чем пустой
 const rowSlugs = (activeGroup?.categories ?? categories.map((c) => c.slug)).filter((s) => bySlug.has(s));
 
-// Раздел без вкладок (в группе одна категория) — ряд не рисуем:
-// одна вкладка повторяла бы заголовок каталога и притворялась
-// переключателем, которому не на что переключать. Стрелка остаётся.
-const showCats = rowSlugs.length > 1;
+// Вкладка рисуется и тогда, когда в группе одна категория («Ведущие»):
+// раньше ряд в этом случае снимали, и рядом со стрелкой зияла пустая
+// строка, а соседние разделы стояли со вкладками — один каталог
+// выглядел двумя разными экранами (заказчик, 12.10.2026).
+const showCats = rowSlugs.length > 0;
 ---
 
 <nav class="cat-nav" aria-label="Категории специалистов">
@@ -50,10 +51,12 @@ const showCats = rowSlugs.length > 1;
         return (
           <a
             href={`${basePath}${c.slug}/`}
-            class={`cat-nav__cat${c.slug === activeSlug ? ' is-active' : ''}`}
+            class={`chip cat-nav__cat${c.slug === activeSlug ? ' is-active' : ''}`}
             aria-current={c.slug === activeSlug ? 'page' : undefined}
           >
             {c.label}
+            {/* сколько карточек в разделе — тот же список, что у сетки каталога */}
+            <span class="chip__count">{SPECIALISTS_BY_CATEGORY[c.slug]?.length ?? 0}</span>
           </a>
         );
       })}
@@ -69,22 +72,37 @@ const showCats = rowSlugs.length > 1;
     display: flex;
     align-items: center;
     gap: var(--s-4);
-    padding: var(--s-3) 0 0 var(--gutter);
+    padding: var(--s-3) 0 var(--s-3) var(--gutter);
     background: var(--bg);
   }
 
+  /* Нижний край полосы — не линия в упор по кадрам, а растворение фона
+     (заказчик, 14.10.2026: «обрезается, ни воздуха»). Снизу у полосы
+     своё поле --s-3, под ним фон ещё --s-4 гаснет в прозрачность: кадр
+     каталога уходит под полосу плавно. Слой не ловит касания. */
+  .cat-nav::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    height: var(--s-4);
+    background: linear-gradient(var(--bg), transparent);
+    pointer-events: none;
+  }
+
   /* ============ ВКЛАДКИ ГРУППЫ ============
-     Голый текст, без подложек и обводок: рядом чернильная кнопка «назад»,
-     ниже — ряд серых чипов, третьей форме тут тесно. «Вы здесь» —
-     подчёркивание, отбитое от базовой линии и разорванное вокруг
-     выносных. Не влезли — ряд листается вбок сам, страница не едет
-     (ось Y закрыта явно). touch-action не ставим — ось жеста выбирает
-     браузер (см. DESIGN.md, «Жест на лентах»). */
+     Пилюли-переключатели — общий .chip, текущая в чернильной инверсии
+     (заказчик, 05.10.2026: голый текст с подчёркиванием не читался как
+     переключатель внутри подгруппы). Не влезли — ряд листается вбок сам,
+     страница не едет (ось Y закрыта явно). touch-action не ставим — ось
+     жеста выбирает браузер (см. DESIGN.md, «Жест на лентах»). */
   .cat-nav__tabs {
     flex: 1 1 0;
     min-width: 0;
     display: flex;
-    gap: var(--s-5);
+    align-items: center;
+    gap: var(--s-2);
     padding-right: var(--gutter);
     overflow-x: auto;
     overflow-y: clip;
@@ -94,30 +112,5 @@ const showCats = rowSlugs.length > 1;
 
   .cat-nav__tabs::-webkit-scrollbar { display: none; }
 
-  .cat-nav__cat {
-    flex: none;
-    display: inline-flex;
-    align-items: center;
-    padding: 8px 0;
-    font-size: var(--fs-small);
-    font-weight: var(--w-medium);
-    color: var(--fg);
-    text-decoration: none;
-    white-space: nowrap;
-    opacity: 0.55;
-    transition: opacity var(--dur-fast) var(--ease-out);
-  }
-
-  .cat-nav__cat.is-active {
-    opacity: 1;
-    font-weight: var(--w-head);
-    text-decoration: underline;
-    text-decoration-thickness: 1.5px;
-    text-underline-offset: 7px;
-    text-decoration-skip-ink: auto;
-  }
-
-  @media (hover: hover) {
-    .cat-nav__cat:hover { opacity: 1; }
-  }
+  .cat-nav__cat { flex: none; }
 </style>

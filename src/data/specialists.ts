@@ -99,6 +99,17 @@ export interface Specialist {
   quote?: string;
   /** предложения от специалиста — короткие карточки на странице-визитке */
   offers?: { title: string; text: string }[];
+  /** РАЗДЕЛЫ ИСХОДНИКА (CHARACTER.md, 08.10.2026): текст подрядчика его же
+      структурой — какие разделы прислал, в каком порядке и каким голосом.
+      Есть story — визитка выводит его вместо шаблона «О подрядчике /
+      Почему выбирают / Что входит / Предложение»: раскладка по нашим
+      ячейкам и теряла то, что в них не влезло. Это не каталог блоков:
+      раздел — только текстовая форма (заголовок, абзацы, список, пункты
+      с именем), набор и порядок переписываются из исходника. */
+  story?: StorySection[];
+  /** сколько фото в первом экране идёт до роликов (по умолчанию 1):
+      заказчик задал «первую карусель» — LiRein, 6 кадров */
+  leadPhotos?: number;
   /** вертикальные видео-reels; пока только постеры-заглушки, video появится
       с реальными файлами (напр. /reels/anton-1.mp4 в public) */
   reels?: { poster: string; video?: string }[];
@@ -216,7 +227,8 @@ export const SPECIALIST_GROUPS: SpecialistGroup[] = [
     short: 'Ведущие',
     categories: ['vedushchie'],
     cover: '/specialists/groups/vedushchie.webp',
-    tone: 'dark',
+    tone: 'beige',
+    bg: '#b4c3d3',
   },
   {
     key: 'dekor',
@@ -225,7 +237,7 @@ export const SPECIALIST_GROUPS: SpecialistGroup[] = [
     categories: ['dekoratory'],
     cover: '/specialists/groups/dekor.webp',
     tone: 'beige',
-    bg: '#b9abc4',
+    bg: '#c6b0c0',
   },
   {
     key: 'foto-video',
@@ -237,8 +249,8 @@ export const SPECIALIST_GROUPS: SpecialistGroup[] = [
   },
   {
     key: 'kuhnya',
-    label: 'Кухня и сладости',
-    short: 'Кухня',
+    label: 'Кейтеринг и кондитерка',
+    short: 'Кейтеринг',
     categories: ['keitering', 'konditery'],
     cover: '/specialists/groups/kuhnya.webp',
     tone: 'beige',
@@ -251,6 +263,7 @@ export const SPECIALIST_GROUPS: SpecialistGroup[] = [
     categories: ['stilisty'],
     cover: '/specialists/groups/obraz.webp',
     tone: 'beige',
+    bg: '#d9b49c',
   },
   {
     key: 'muzyka',
@@ -258,7 +271,8 @@ export const SPECIALIST_GROUPS: SpecialistGroup[] = [
     short: 'Музыка',
     categories: ['dj', 'kaver-gruppy', 'vokalisty', 'muzykanty'],
     cover: '/specialists/groups/muzyka.webp',
-    tone: 'dark',
+    tone: 'beige',
+    bg: '#b59ea7',
   },
   {
     key: 'oborudovanie',
@@ -267,6 +281,7 @@ export const SPECIALIST_GROUPS: SpecialistGroup[] = [
     categories: ['speceffekty', 'arenda-zvuka', 'arenda-sveta'],
     cover: '/specialists/groups/oborudovanie.webp',
     tone: 'dark',
+    bg: '#73958a',
   },
   {
     key: 'shou',
@@ -275,6 +290,7 @@ export const SPECIALIST_GROUPS: SpecialistGroup[] = [
     categories: ['horeografy', 'animatory', 'shou', 'fokusniki'],
     cover: '/specialists/groups/shou.webp',
     tone: 'beige',
+    bg: '#dcc7a5',
   },
   {
     key: 'avto',
@@ -296,7 +312,6 @@ export { VEDUSHCHIE_FILTERS, FOTOGRAFY_FILTERS, DEKORATORY_FILTERS } from './spe
 // Тексты — их собственные, слегка причёсанные; ничего не дописано за них.
 // Чего у нас пока НЕТ и что нельзя выдумывать — оставлено пустым, такая
 // карточка просто не попадает в соответствующий фильтр:
-//   цена (говорят «зависит от даты и часов» → priceNote),
 //   рейтинг и отзывы (ни одного собранного),
 //   сроки и формат выдачи, договор, предоплата, минимальный бюджет.
 // Спросить у подрядчика и заполнить — тогда карточка встанет в эти фильтры.
@@ -330,13 +345,16 @@ export const FOTOGRAFY: Specialist[] = [
     tagline: 'Фото и видео одним комплектом',
     bio: 'Мы Юлия и Леонид — снимаем свадьбы пятнадцать лет и знаем в этой сфере каждую мелочь. Наши работы — яркие, искренние и стильные моменты, которые не потеряют актуальности через годы ни съёмкой, ни обработкой.\n\nРаботаем в паре и снимаем комплексом «фото + видео»: съёмка занимает минимум времени, а весь материал выходит в едином стиле. Действия отточены сотнями свадеб — от вас классное настроение, всё остальное берём на себя.',
     gender: 'pair',
-    priceNote: 'Зависит от даты, времени года и количества часов',
+    priceFrom: 150000,
+    priceNote: 'фото и видео; зависит от даты, времени года и количества часов',
+    age: '35–50',
     experienceYears: 15,
     aboutTitle: 'О нас',
     filters: {
       gender: 'pair',
       city: ['цао', 'сао', 'свао', 'вао', 'юво', 'юао', 'юзао', 'зао', 'сзао', 'mo', 'вне-мо'],
       experience: '15+',
+      minBudget: '150+',
       style: ['reportage', 'staged', 'lifestyle'],
       serviceType: ['full-day'],
     },
@@ -374,10 +392,6 @@ export const FOTOGRAFY: Specialist[] = [
         text: 'Объективы любой ширины, свой свет на банкете — всё, что нужно для съёмки в любых условиях.',
       },
       {
-        title: 'Свои подрядчики',
-        text: 'Список ведущих, визажистов и организаторов собирали годами — там только те, с кем работали сами.',
-      },
-      {
         title: 'Приезжаем на своей машине',
         text: 'В ней всегда есть печеньки и бутерброды.',
       },
@@ -413,7 +427,10 @@ export const SPECIALISTS_BY_CATEGORY: Record<string, Specialist[]> = (() => {
   };
   for (const s of jsonSpecialists) (map[s.categorySlug] ??= []).push(s);
 
-  for (const list of Object.values({ ...map })) {
+  // снимок списков: пока своей категории не было, «Видеографы» собирались
+  // только из alsoCategories; с первым JSON-видеографом цикл стал дописывать
+  // в тот же массив, по которому идёт, и уходил в бесконечность
+  for (const list of Object.values(map).map((l) => [...l])) {
     for (const s of list) {
       for (const extra of s.alsoCategories ?? []) {
         (map[extra] ??= []).push(s);
@@ -464,7 +481,46 @@ export function findSpecialist(slug: string): Specialist | undefined {
  *  getStaticPaths визитки и на все места, которые на визитку ссылаются
  *  («похожие подрядчики»): иначе ссылка ведёт в 404. */
 export function hasProfile(s: Specialist): boolean {
-  return Boolean(s.quote || s.offers);
+  return Boolean(s.quote || s.offers || s.story?.length);
+}
+
+/** Раздел текста подрядчика (поле story). Порядок полей внутри раздела —
+ *  порядок вывода: заголовок → крупная фраза → абзацы → список → пункты →
+ *  абзацы после. */
+export interface StorySection {
+  /** заголовок раздела, если он есть у подрядчика («Как проходит работа») */
+  title?: string;
+  /** абзацы до списка */
+  text?: string[];
+  /** перечисление — буллитом, слова подрядчика */
+  list?: string[];
+  /** короткие факты россыпью плашек .plates («о себе», список интерактивов):
+      когда пунктов много и они в одну-две строки, столбец буллитов тянется */
+  tiles?: string[];
+  /** пункты с собственным именем (участники группы, позиции прайса): имя — h3;
+      photo — портрет в кружке слева (участники группы) */
+  items?: { title: string; text?: string; list?: string[]; photo?: string }[];
+  /** тарифы карточками: шапка «название — цена», что входит, примечание.
+      Всё, что относится к тарифу, — внутри него, а не абзацем между тарифами */
+  tariffs?: { name: string; price: string; unit?: string; lead?: string; includes?: string[]; note?: string }[];
+  /** цифры-факты («15+ лет», «700+ торжеств») — крупное число и подпись,
+      той же полосой StatsStrip, что цифры площадки (заказчик, 14.10.2026) */
+  stats?: { value: string; label: string }[];
+  /** абзацы после списка/пунктов («Также у нас есть…») */
+  after?: string[];
+  /** короткая фраза, которую подрядчик сам ставит отдельно (премия,
+      девиз) — крупным кеглем, а не жирным внутри абзаца */
+  lead?: string;
+  /** вид раздела: 'menu' — пункты как меню кейтеринга (одна плашка,
+      блюдо жирным, состав мелко) */
+  kind?: 'menu';
+  /** 'dark' — раздел на шоколаде (.theme-dark), как тёмный блок площадки:
+      главная фраза автора; один-два на страницу */
+  tone?: 'dark';
+  /** кадр после раздела, который заказчик поставил сам (команда, работа):
+      если он есть хоть у одного раздела — автоматические паузы из photos
+      не ставятся, порядок кадров в тексте целиком задают данные */
+  photo?: string;
 }
 
 /** адрес визитки: она одна, даже если карточка стоит в двух категориях */

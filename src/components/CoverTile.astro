@@ -25,7 +25,7 @@
 // Обложки сменились — плашка плавно перетекает в цвет новой.
 import { Image } from 'astro:assets';
 import { resolveImage } from '../lib/images';
-import { coverTone } from '../lib/cover-tone';
+import { coverTone, isDarkHex } from '../lib/cover-tone';
 
 interface Props {
   name: string;
@@ -40,25 +40,41 @@ interface Props {
   /** цвет плашки руками — перебивает цвет, снятый с кадра. Нужен, только
       если автоматический промахнулся (кадр с пёстрым низом) */
   bg?: string;
+  /** цвет плашки на каждый кадр (по индексу covers): кадры меняются —
+      меняется и плашка. Перебивает bg и цвет, снятый с кадра; пустое
+      место в списке — цвет с кадра, как обычно */
+  bgs?: (string | undefined)[];
   /** доля экрана, которую плитка занимает на брейкпоинтах (для srcset) */
   sizes: string;
   /** первый экран — грузим сразу */
   eager?: boolean;
   /** ширины srcset: роль из IMG_WIDTHS */
   widths: number[];
+  /** имя группы синхронной смены: плитки с одним именем меняют кадр
+      в один момент (входы на главной), без него — каждая в своей фазе */
+  sync?: string;
+  /** короткая плашка (входы на главной, 09.10.2026): имена разделов
+      в одно слово, запас под вторую строку не нужен — капсула встаёт
+      сразу под имя, и плашка меньше закрывает кадр */
+  compact?: boolean;
 }
 
-const { name, href, capsule, covers, tone = 'beige', bg, sizes, eager = false, widths } = Astro.props;
+const { name, href, capsule, covers, tone = 'beige', bg, bgs, sizes, eager = false, widths, sync, compact = false } = Astro.props;
 
 // Цвет с кадра на каждую обложку; руками заданный bg — только первой,
 // а смена кадров его не трогает (ручной цвет — осознанное решение).
-const tones = await Promise.all(covers.map((c) => coverTone(c)));
-const first = bg ? { bg, dark: tones[0]?.dark ?? tone === 'dark' } : tones[0];
+const measured = await Promise.all(covers.map((c) => coverTone(c)));
+// Свой цвет кадра (bgs) — его же тон решает, светлая или тёмная подпись.
+const tones = measured.map((t, n) => {
+  const own = bgs?.[n];
+  return own ? { bg: own, dark: isDarkHex(own) } : t;
+});
+const first = bg ? { bg, dark: isDarkHex(bg) } : tones[0];
 const dark = first ? first.dark : tone === 'dark';
 ---
 
 <a
-  class:list={['ctile', dark && 'theme-dark']}
+  class:list={['ctile', compact && 'ctile--compact', dark && 'theme-dark']}
   href={href}
   aria-label={`${name} — ${capsule}`}
   style={first ? `--tile-bg: ${first.bg}` : undefined}
@@ -71,7 +87,11 @@ const dark = first ? first.dark : tone === 'dark';
       отдельно от кадра, и на стыке мелькала линия (25.09.2026).
       Высоту фото в потоке держит распорка .ctile__spacer. */}
   <span class="ctile__spacer" aria-hidden="true"></span>
-  <span class="ctile__media" data-cover-swap={covers.length > 1 ? '' : undefined}>
+  <span
+    class="ctile__media"
+    data-cover-swap={covers.length > 1 ? '' : undefined}
+    data-cover-sync={covers.length > 1 ? sync : undefined}
+  >
     {covers.map((cover, n) => (
       <span
         class:list={['ctile__frame', n === 0 && 'is-on']}
@@ -232,6 +252,28 @@ const dark = first ? first.dark : tone === 'dark';
     border-radius: var(--radius-pill);
     background: color-mix(in srgb, currentColor 12%, transparent);
   }
+
+  /* КОРОТКАЯ ПЛАШКА (входы на главной): заказчик, 09.10.2026 — «большой
+     пробел между названием и количеством, шторка сильно перекрывает
+     фото». Имя без запаса под вторую строку, капсула сразу под ним,
+     поля плашки и растворение кадра короче. */
+  .ctile--compact .ctile__body {
+    flex: 0 0 auto;
+    gap: var(--s-2);
+    padding: var(--s-2) var(--s-4) var(--s-3);
+  }
+
+  .ctile--compact .ctile__name {
+    min-height: 0;
+  }
+
+  .ctile--compact .ctile__count {
+    margin-top: 0;
+  }
+
+  .ctile--compact .ctile__shot::after {
+    height: 18%;
+  }
 </style>
 
 <script>
@@ -243,6 +285,10 @@ const dark = first ? first.dark : tone === 'dark';
   const calm = window.matchMedia('(prefers-reduced-motion: reduce)');
 
   if (!calm.matches) {
+    // Фаза на группу data-cover-sync: плитки одной группы (входы на
+    // главной) меняют кадр разом, как одна витрина.
+    const groupPhase = new Map<string, number>();
+
     document.querySelectorAll<HTMLElement>('[data-cover-swap]').forEach((stack) => {
       const frames = Array.from(stack.querySelectorAll<HTMLElement>('.ctile__frame'));
       if (frames.length < 2) return;
@@ -250,7 +296,10 @@ const dark = first ? first.dark : tone === 'dark';
       let i = 0;
       // Разводим плитки по фазе: иначе все обложки на экране мигают разом,
       // и страница выглядит моргающей, а не живой.
-      const phase = Math.random() * SWAP_MS;
+      // Плитки одной группы data-cover-sync — наоборот, в одной фазе.
+      const group = stack.dataset.coverSync;
+      if (group && !groupPhase.has(group)) groupPhase.set(group, Math.random() * SWAP_MS);
+      const phase = group ? groupPhase.get(group)! : Math.random() * SWAP_MS;
 
       // Цвет плашки несёт сам слой кадра; здесь только цвет подписи:
       // белая на тёмном кадре, чернильная на светлом.

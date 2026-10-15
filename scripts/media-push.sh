@@ -14,8 +14,11 @@
 set -euo pipefail
 cd "$(dirname "$0")/../public"
 
-KEY=~/.ssh/timeweb_wed
-HOST=root@193.124.47.78
+# С ноутбука — root с ключом timeweb_wed. Из GitHub Actions (утренняя
+# сверка, Claude заводит карточку с роликами) — пользователь deploy
+# с ключом деплоя: каталог роликов принадлежит ему, root там не нужен.
+KEY=${MEDIA_KEY:-~/.ssh/timeweb_wed}
+HOST=${MEDIA_HOST:-root@193.124.47.78}
 DIR=/var/www/wedsecrets-media
 SSH=(ssh -i "$KEY" -o BatchMode=yes "$HOST")
 

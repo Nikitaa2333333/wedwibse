@@ -43,8 +43,21 @@ for (const src of files) {
   const id = `p${String(i).padStart(2, '0')}`;
   const dest = join(outDir, `${id}.webp`);
   try {
-    // auto-orient по EXIF, длинная сторона до 2800, без апскейла
-    execFileSync('magick', [src, '-auto-orient', '-resize', '2800x2800>', '-quality', '88', dest], { stdio: 'pipe' });
+    // auto-orient по EXIF, длинная сторона до 2800, без апскейла.
+    // До трёх попыток и ПОЛНОЕ декодирование результата (`null:`), а не
+    // identify: identify читает только заголовок и пропускает недописанный
+    // webp. На кадрах 7000 px с Sony (Villa Barvikha, 05.10.2026) magick
+    // через раз писал обрезанный файл, каждый прогон — другие кадры.
+    let tries = 0;
+    for (;;) {
+      try {
+        execFileSync('magick', [src, '-auto-orient', '-resize', '2800x2800>', '-quality', '88', dest], { stdio: 'pipe' });
+        execFileSync('magick', ['-regard-warnings', dest, 'null:'], { stdio: 'pipe' });
+        break;
+      } catch (err) {
+        if (++tries >= 3) throw err;
+      }
+    }
     const info = execFileSync('magick', ['identify', '-format', '%w %h', dest], { stdio: 'pipe' }).toString().trim();
     const [w, h] = info.split(' ').map(Number);
     if (!w || !h) throw new Error('identify failed');

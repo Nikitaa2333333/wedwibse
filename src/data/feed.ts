@@ -25,8 +25,10 @@ export interface FeedVenue {
   /** нет открытого прайса — поля нет, и карточка не попадает в бакеты чека */
   checkFrom?: number;
   avgCheck: string;
-  rating: number;
-  reviews: number;
+  /** нет отзывов (площадку ещё не оценивали на Картах) — полей нет,
+      и звезда с нулём на карточке не рисуется */
+  rating?: number;
+  reviews?: number;
   /** фото или видео площадки: листаются вбок */
   media: string[];
 }
@@ -46,9 +48,11 @@ const FD = '/venues/forest-dew';
 const DTL = '/venues/due-to-love';
 const SPARK = '/venues/spark-hall';
 const LED = '/venues/led';
+const VB = '/venues/villa-barvikha';
 const FP = '/venues/fish-point';
 const OTR = '/venues/otrazhenie';
 const GRB = '/venues/grebnevo';
+const VD = '/venues/villa-dovil';
 
 const venues: FeedVenue[] = [
   {
@@ -63,7 +67,7 @@ const venues: FeedVenue[] = [
     avgCheck: 'от 5 000 ₽',
     rating: 5,
     reviews: 151,
-    media: [`${RL}/gal/g8.webp`, `${RL}/gal/g2.webp`, `${RL}/gal/g5.webp`, `${RL}/welcome/w1.webp`],
+    media: [`${RL}/gal/g13.webp`, `${RL}/gal/g8.webp`, `${RL}/gal/g2.webp`, `${RL}/gal/g5.webp`],
   },
   {
     kind: 'venue',
@@ -140,11 +144,11 @@ const venues: FeedVenue[] = [
     type: 'Оранжерея',
     capacityMax: 60,
     capacity: 'до 60 гостей',
-    checkFrom: 8000,
-    avgCheck: 'от 8 000 ₽',
+    checkFrom: 9000,
+    avgCheck: 'от 9 000 ₽',
     rating: 4.4,
     reviews: 10,
-    media: [`${OTR}/p31.webp`, `${OTR}/p33.webp`, `${OTR}/p12.webp`, `${OTR}/p21.webp`],
+    media: [`${OTR}/p56.webp`, `${OTR}/p31.webp`, `${OTR}/p12.webp`, `${OTR}/p21.webp`],
   },
   {
     // Усадьба с девятью залами — в каталоге одна карточка; вместимость
@@ -161,6 +165,34 @@ const venues: FeedVenue[] = [
     rating: 4.9,
     reviews: 55,
     media: [`${GRB}/grand-lesnoy/p10.webp`, `${GRB}/barsky/p04.webp`, `${GRB}/pushkin/p13.webp`, `${GRB}/trubetskoy-hall/p13.webp`],
+  },
+  {
+    kind: 'venue',
+    slug: 'villa-barvikha',
+    name: 'Villa Barvikha 135',
+    city: 'Барвиха',
+    type: 'Усадьба',
+    capacityMax: 450,
+    capacity: 'до 450 гостей',
+    checkFrom: 8500,
+    avgCheck: 'от 8 500 ₽',
+    rating: 5,
+    reviews: 368,
+    media: [`${VB}/p21.webp`, `${VB}/p37.webp`, `${VB}/p01.webp`, `${VB}/p16.webp`],
+  },
+  {
+    kind: 'venue',
+    slug: 'villa-dovil',
+    name: 'Вилла Довиль',
+    city: 'Одинцово',
+    type: 'Веранда',
+    capacityMax: 300,
+    capacity: 'до 300 гостей',
+    checkFrom: 12000,
+    avgCheck: 'от 12 000 ₽',
+    rating: 4.9,
+    reviews: 15,
+    media: [`${VD}/p03.webp`, `${VD}/p01.webp`, `${VD}/p02.webp`, `${VD}/p09.webp`],
   },
 ];
 

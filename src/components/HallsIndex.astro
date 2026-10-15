@@ -15,13 +15,12 @@ import { resolveImage, IMG_WIDTHS } from '../lib/images';
 import { withCount, type PluralForms } from '../lib/plural';
 
 interface Props {
-  kicker: string;
   title: string;
   lead?: string;
   halls: VenueHall[];
 }
 
-const { kicker, title, lead, halls } = Astro.props;
+const { title, lead, halls } = Astro.props;
 
 const GUESTS: PluralForms = ['гость', 'гостя', 'гостей'];
 
@@ -37,7 +36,6 @@ const rentFrom = (hall: VenueHall) =>
 <section class="hidx section" id="zaly">
   <div class="container container--wide">
     <header class="hidx__head">
-      <p class="hidx__kicker t-caption">{kicker}</p>
       <h2 class="hidx__title">{title}</h2>
       {lead && <p class="hidx__lead">{lead}</p>}
     </header>
@@ -96,10 +94,6 @@ const rentFrom = (hall: VenueHall) =>
 
   .hidx__head { margin-bottom: var(--section-gap-tight); }
 
-  .hidx__kicker {
-    font-weight: var(--w-medium);
-    margin-bottom: var(--s-3);
-  }
 
   .hidx__title {
     font-size: var(--fs-h1);

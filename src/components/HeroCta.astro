@@ -43,7 +43,7 @@ const { orderLabel, orderHref, save } = Astro.props;
   .hero-cta {
     display: flex;
     align-items: stretch; /* <a> и <button> считают строку по-разному: тянем до одной высоты */
-    gap: var(--s-3);
+    gap: var(--s-2); /* пара кнопок — одна группа: ближе друг к другу (заказчик, 08.10) */
   }
 
   .hero-cta .pill {

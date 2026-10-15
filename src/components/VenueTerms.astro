@@ -1,24 +1,23 @@
 ---
+import { rowsClass } from '../lib/rows';
 // Условия площадки: деньги, бронирование, что входит в стоимость,
 // что считается отдельно. Всё «метка — значение» идёт строками (.rows),
 // чистые перечисления — маркированным списком (.list).
 import type { Venue } from '../data/venues';
 
 interface Props {
-  kicker: string;
   title: string;
   terms: Venue['terms'];
   included: Venue['included'];
   extras: Venue['extras'];
 }
 
-const { kicker, title, terms, included, extras } = Astro.props;
+const { title, terms, included, extras } = Astro.props;
 ---
 
 <section class="terms section" id="usloviya">
   <div class="container container--wide">
     <header class="terms__head">
-      <p class="terms__kicker t-caption">{kicker}</p>
       <h2 class="terms__title">{title}</h2>
     </header>
 
@@ -29,7 +28,7 @@ const { kicker, title, terms, included, extras } = Astro.props;
         terms.map((group) => (
           <div class="group">
             <h3 class="group__name">{group.title}</h3>
-            <dl class="rows">
+            <dl class={rowsClass(group.rows)}>
               {group.rows.map((row) => (
                 <div class="rows__row">
                   <dt class="rows__label">{row.label}</dt>
@@ -60,6 +59,7 @@ const { kicker, title, terms, included, extras } = Astro.props;
     </div>
 
     <!-- ЗА ОТДЕЛЬНУЮ ПЛАТУ: снова таблица, снова во всю ширину -->
+    {extras.length > 0 && (
     <div class="terms__extras">
       {
         extras.map((group) => (
@@ -78,6 +78,7 @@ const { kicker, title, terms, included, extras } = Astro.props;
         ))
       }
     </div>
+    )}
   </div>
 </section>
 
@@ -87,10 +88,6 @@ const { kicker, title, terms, included, extras } = Astro.props;
 
   .terms__head { margin-bottom: var(--section-gap-tight); }
 
-  .terms__kicker {
-    font-weight: var(--w-medium);
-    margin-bottom: var(--s-3);
-  }
 
   .terms__title {
     font-size: var(--fs-h1);

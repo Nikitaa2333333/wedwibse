@@ -16,7 +16,7 @@
 // целиком, по своей оси, одним движением.
 //
 // Компонент отвечает только за сам просмотр фото — цену/тип/сердечко
-// кладёт вызывающая страница через слот, поверх .veil.
+// кладёт вызывающая страница через слот, прямо на кадр.
 import { Image } from 'astro:assets';
 import { resolveImage } from '../lib/images';
 import { frameId, isVideo, posterOf } from '../lib/media';
@@ -112,7 +112,6 @@ const {
     </div>
   </div>
 
-  <div class="veil" aria-hidden="true"></div>
 
   {dots && photos.length > 1 && (
     <div class="prail__dots">
