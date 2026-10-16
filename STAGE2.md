@@ -9,6 +9,11 @@
 https://www.figma.com/board/SMJGYoL0JUtkwhRShtPeIH (собрана 15.10 из этого файла
 и CABINET.md; решение поменялось — правим .md, потом доску).
 
+**Решения 16.10 меняют часть ниже** (profi. вместо kabinet., вход по паролю,
+кабинет невесты в этом этапе, деньги — третий этап, индексация сейчас,
+видео до 10 × 1 мин) — CABINET.md, раздел 21. Документ для заказчика:
+https://docs.google.com/document/d/1J3FRwUkirhatNYbm_A-AyDE71ZPE0Ht8BlpKY0-lEjU
+
 ## 0. Коротко
 
 - **Кабинет ложится на базу** (PocketBase 0.40.4 на VPS): схема и правила
