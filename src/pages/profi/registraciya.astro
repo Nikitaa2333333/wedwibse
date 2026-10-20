@@ -4,8 +4,7 @@
 // отдельные галочки со ссылками на тексты, без обеих кнопки неактивны.
 // Тексты пишет юрист — ссылки пока ведут на заглушку. Отправки нет.
 import ProfiShell from '../../components/profi/ProfiShell.astro';
-import TelegramButton from '../../components/profi/TelegramButton.astro';
-import Icon from '../../components/Icon.astro';
+import MessengerLogin from '../../components/profi/MessengerLogin.astro';
 import '../../components/profi/auth.css';
 ---
 
@@ -19,18 +18,18 @@ import '../../components/profi/auth.css';
     <div class="auth__checks">
       <label class="check">
         <input class="check__input" type="checkbox" data-consent-box />
-        <span class="check__box"><Icon name="check" /></span>
+        <span class="check__box"></span>
         <span>Принимаю <a href="/profi/#voprosy">условия размещения</a></span>
       </label>
       <label class="check">
         <input class="check__input" type="checkbox" data-consent-box />
-        <span class="check__box"><Icon name="check" /></span>
+        <span class="check__box"></span>
         <span>Даю согласие на <a href="/profi/#voprosy">обработку персональных данных</a></span>
       </label>
     </div>
 
     <div class="auth__gate" data-consent-gate aria-disabled="true">
-      <TelegramButton label="Через Telegram" />
+      <MessengerLogin prefix="Через" />
     </div>
 
     <p class="auth__or">или по почте</p>

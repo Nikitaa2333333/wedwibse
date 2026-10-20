@@ -1021,9 +1021,22 @@ body.has-sticky-cta { padding-bottom: var(--float-cta-space); }
   place-items: center;
   transition: background var(--dur-fast) var(--ease-out);
 }
-.check__box svg { width: 16px; height: 16px; opacity: 0; color: var(--bg); }
+/* Одна тонкая галочка, нарисованная рамкой: значок check из набора —
+   двойная галочка в квадрате, в квадратике она читалась кашей
+   (Никита, 20.10.2026). */
+.check__box::after {
+  content: '';
+  width: 6px;
+  height: 11px;
+  margin-top: -2px;
+  border: solid var(--bg);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) scale(0.6);
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+}
 .check__input:checked + .check__box { background: var(--fg); }
-.check__input:checked + .check__box svg { opacity: 1; }
+.check__input:checked + .check__box::after { opacity: 1; transform: rotate(45deg); }
 .check__input:focus-visible + .check__box { outline: 2px solid var(--fg); outline-offset: 2px; }
 .check a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
 

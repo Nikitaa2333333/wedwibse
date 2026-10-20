@@ -7,7 +7,6 @@
 // что у каталога площадок. Значения — ЗАГЛУШКА на примере оранжереи LЁD.
 import { Image } from 'astro:assets';
 import ProfiShell from '../../../components/profi/ProfiShell.astro';
-import Icon from '../../../components/Icon.astro';
 import { VENUE_FILTERS } from '../../../data/feed';
 import { resolveImage, IMG_WIDTHS } from '../../../lib/images';
 import '../../../components/profi/anketa.css';
@@ -42,7 +41,7 @@ const photos = ['hero-portrait', 's2-hall', 's3-welcome', 's4-ceremony', 's5-tab
     <header class="form__head">
       <span class="chip chip--tag form__status">Черновик</span>
       <h1 class="t-h1">Площадка</h1>
-      <p class="form__saved" aria-live="polite"><Icon name="check" /> Сохранено · 12:04</p>
+      <p class="form__saved" aria-live="polite">Сохранено · 12:04</p>
     </header>
 
     <nav class="form__nav" aria-label="Разделы анкеты">
