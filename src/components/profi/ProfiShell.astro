@@ -55,7 +55,7 @@ const menu = [
   </Fragment>
 
   <div class={`profi profi--${look}`}>
-    <header class="pbar" data-pbar>
+    <header class="pbar">
       <div class="pbar__in container">
         <a class="pbar__brand" href="/profi/">
           <span class="pbar__name">WED Secrets</span>
@@ -68,9 +68,11 @@ const menu = [
     <slot />
 
     {look === 'promo' && (
-      <footer class="pfoot container">
-        <p class="t-caption">WED Secrets — свадебный каталог площадок и подрядчиков Москвы и области.</p>
-        <p class="t-caption"><a href="/">Каталог для пар</a></p>
+      <footer class="pfoot theme-dark">
+        <div class="pfoot__in container">
+          <p class="t-caption">WED Secrets — свадебный каталог площадок и подрядчиков Москвы и области.</p>
+          <p class="t-caption"><a href="/">Каталог для пар</a></p>
+        </div>
       </footer>
     )}
 
@@ -79,16 +81,13 @@ const menu = [
 </Layout>
 
 <style>
-  /* Шапка узкая и уезжает вверх, пока листают вниз; возвращается при
-     движении вверх (Никита, 20.10.2026: «широкая, пусть скрывается»). */
+  /* Шапка узкая и стоит наверху всегда (Никита, 20.10.2026). */
   .pbar {
     position: sticky;
     top: 0;
     z-index: var(--z-nav);
     background: var(--bg);
-    transition: transform var(--dur-base) var(--ease-out);
   }
-  .pbar.is-hidden { transform: translateY(-100%); }
   .pbar__in {
     display: flex;
     align-items: center;
@@ -113,11 +112,9 @@ const menu = [
 
   .pbar__for { font-size: var(--fs-caption); }
 
-  .pfoot {
-    display: grid;
-    gap: var(--s-2);
-    padding-block: var(--section-gap) var(--s-7);
-  }
+  /* Подвал промо — продолжение тёмного финала страницы, одна заливка до низа */
+  .pfoot { margin-top: -1px; padding-block: 1px calc(var(--s-7) + var(--safe-b, 0px)); }
+  .pfoot__in { display: grid; gap: var(--s-2); }
 
   .pfoot a { color: inherit; }
 
@@ -125,23 +122,6 @@ const menu = [
      схлопывается до обычного отступа). */
   .profi--tech { padding-bottom: var(--dock-space); }
 </style>
-
-<script>
-  // Прячем шапку при прокрутке вниз, показываем при прокрутке вверх.
-  const bar = document.querySelector<HTMLElement>('[data-pbar]');
-  if (bar) {
-    let last = window.scrollY;
-    let ticking = false;
-    const update = () => {
-      ticking = false;
-      const y = window.scrollY;
-      if (Math.abs(y - last) < 6) return;
-      bar.classList.toggle('is-hidden', y > last && y > bar.offsetHeight);
-      last = y;
-    };
-    window.addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
-  }
-</script>
 
 <style is:global>
   /* Кабинет и вход — рабочий инструмент: антиквы образа «крем» здесь нет
@@ -154,4 +134,12 @@ const menu = [
   html[data-look] :is(.profi--tech, .profi--auth) :is(h1, .t-h1) { font-size: var(--fs-h2); }
   html[data-look] :is(.profi--tech, .profi--auth) :is(h2, .t-h2) { font-size: var(--fs-h3); }
   html[data-look] :is(.profi--tech, .profi--auth) h3 { font-size: var(--fs-body); }
+
+  /* Промо: заголовки тоже Onest (Никита, 20.10.2026), антиква остаётся
+     только у заголовка первого экрана (.hero__title). */
+  html[data-look] .profi--promo :is(h2, h3, h4, .t-h1, .t-h2) {
+    font-family: var(--font-sans);
+    font-weight: var(--w-head-lg);
+    letter-spacing: -0.02em;
+  }
 </style>
