@@ -1,0 +1,84 @@
+---
+// Оболочка страниц для подрядчиков и площадок (второй этап, STAGE2.md §0.1).
+// Пока это ПРОТОТИП на wed-secrets.ru/profi/… — без базы, данные-заглушки.
+// Вместе с кабинетом переедет на поддомен profi.wed-secrets.ru.
+//
+// noindex стоит ВСЕГДА: индексация сайта открыта с 20.10.2026, и черновая
+// страница без него ушла бы в выдачу. Промо-страницу откроем поиску, когда
+// она станет настоящей, — снимем prototype={false}, а не этот тег руками.
+//
+// Нижнего дока невесты здесь нет: это другой продукт и другой человек.
+// Сверху — знак «WED Secrets · для профи» (ссылка на промо) и одно
+// служебное действие справа (вход или выход), без меню.
+import Layout from '../../layouts/Layout.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  /** правая ссылка в шапке */
+  action?: { href: string; label: string };
+  /** прототип: закрыт от поиска (по умолчанию да) */
+  prototype?: boolean;
+}
+
+const {
+  title,
+  description = 'WED Secrets для подрядчиков и площадок: карточка в свадебном каталоге Москвы.',
+  action,
+  prototype = true,
+} = Astro.props;
+---
+
+<Layout title={`${title} — WED Secrets для профи`} description={description}>
+  <Fragment slot="head">
+    {prototype && <meta name="robots" content="noindex, nofollow" />}
+  </Fragment>
+
+  <header class="pbar container">
+    <a class="pbar__brand" href="/profi/">
+      <span class="pbar__name">WED Secrets</span>
+      <span class="pbar__for">для профи</span>
+    </a>
+    {action && <a class="pill pill--sm" href={action.href}>{action.label}</a>}
+  </header>
+
+  <slot />
+
+  <footer class="pfoot container">
+    <p class="t-caption">WED Secrets — свадебный каталог площадок и подрядчиков Москвы и области.</p>
+    <p class="t-caption"><a href="/">Каталог для пар</a></p>
+  </footer>
+</Layout>
+
+<style>
+  .pbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-4);
+    padding-block: var(--s-5);
+  }
+
+  .pbar__brand {
+    display: flex;
+    align-items: baseline;
+    gap: var(--s-2);
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .pbar__name {
+    font-size: var(--fs-body);
+    font-weight: var(--w-head-lg);
+  }
+
+  .pbar__for { font-size: var(--fs-small); }
+
+  .pfoot {
+    display: grid;
+    gap: var(--s-2);
+    padding-block: var(--section-gap) var(--s-7);
+  }
+
+  .pfoot a { color: inherit; }
+</style>

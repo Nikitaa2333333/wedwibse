@@ -1,0 +1,224 @@
+---
+// АНКЕТА КАРТОЧКИ — прототип (STAGE2.md §0.1). Одна длинная страница по
+// разделам, сверху полоса чипов-якорей. Автосохранение — строка «Сохранено»
+// (кнопки «Сохранить» нет, CABINET.md §14 п.3). Внизу — «Отправить на
+// проверку». Вопросы фильтров — из того же источника, что фильтры каталога
+// (data/specialist-filters.ts): новый фильтр сам появится и здесь.
+// Значения — ЗАГЛУШКА на примере карточки Алексея Сухорады.
+import { Image } from 'astro:assets';
+import ProfiShell from '../../../components/profi/ProfiShell.astro';
+import Icon from '../../../components/Icon.astro';
+import { FOTOGRAFY_FILTERS } from '../../../data/specialist-filters';
+import { resolveImage, IMG_WIDTHS } from '../../../lib/images';
+
+const parts = [
+  ['osnovnoe', 'Основное'],
+  ['tekst', 'Текст'],
+  ['voprosy', 'Вопросы'],
+  ['prays', 'Прайс'],
+  ['foto', 'Фото'],
+  ['kontakty', 'Контакты'],
+];
+
+// Три первые группы вопросов категории — для прототипа хватит, вживую все.
+const groups = FOTOGRAFY_FILTERS.slice(0, 3);
+const picked = new Set(groups.flatMap((g) => g.options.slice(0, 2).map((o) => `${g.key}:${o.value}`)));
+
+const photos = ['p09', 'p01', 'p02', 'p03', 'p04', 'p05'].map(
+  (n) => `/specialists/fotografy/suhorada/gal/${n}.webp`,
+);
+---
+
+<ProfiShell title="Анкета карточки" action={{ href: '/profi/kabinet/', label: 'Мои карточки' }}>
+  <main class="container form">
+    <header class="form__head">
+      <h1 class="t-h1">Фотограф</h1>
+      <p class="form__saved" aria-live="polite"><Icon name="check" /> Сохранено · 12:04</p>
+    </header>
+
+    <nav class="form__nav" aria-label="Разделы анкеты">
+      {parts.map(([id, label]) => <a class="chip" href={`#${id}`}>{label}</a>)}
+    </nav>
+
+    <section class="part" id="osnovnoe">
+      <h2 class="t-h2">Основное</h2>
+      <label class="field">
+        <span class="field__label">Имя или название</span>
+        <input class="input" value="Алексей Сухорада" />
+      </label>
+      <div class="field">
+        <span class="field__label">Адрес страницы</span>
+        <p class="slug">…/fotografy/<b>suhorada</b>/</p>
+        <span class="field__note">Адрес свободен. После публикации его меняет только модератор.</span>
+      </div>
+      <div class="field">
+        <span class="field__label">Категория</span>
+        <p class="slug">Фотограф</p>
+        <span class="field__note">Закрепляется при создании карточки. Ещё профессия — заведите вторую карточку.</span>
+      </div>
+    </section>
+
+    <section class="part" id="tekst">
+      <h2 class="t-h2">Текст</h2>
+      <p class="part__lead">Разделами, как вам удобно рассказывать. Вставка из документа или соцсети — форматирование уберём сами, абзацы сохраним.</p>
+      <div class="block">
+        <label class="field">
+          <span class="field__label">Заголовок раздела</span>
+          <input class="input" value="Как я снимаю" />
+        </label>
+        <label class="field">
+          <span class="field__label">Текст</span>
+          <textarea class="input" rows="5">Снимаю свадьбы с 2014 года. Мне важны живые эмоции: я не ставлю пары в позы, а ловлю моменты, которые случаются сами.</textarea>
+        </label>
+      </div>
+      <button class="pill" type="button">+ Добавить раздел</button>
+      <p class="field__note">Телефоны, почта, ссылки и ники в тексте не пройдут проверку — для них есть раздел «Контакты».</p>
+    </section>
+
+    <section class="part" id="voprosy">
+      <h2 class="t-h2">Вопросы для фильтров</h2>
+      <p class="part__lead">По этим ответам пары находят вас в каталоге.</p>
+      {groups.map((g) => (
+        <fieldset class="field q">
+          <legend class="field__label">{g.label}</legend>
+          <div class="field__opts">
+            {g.options.map((o) => (
+              <label class="chip-opt">
+                <input class="chip-opt__input" type={g.type === 'single' ? 'radio' : 'checkbox'} name={g.key} checked={picked.has(`${g.key}:${o.value}`)} />
+                <span class="chip">{o.label}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      ))}
+    </section>
+
+    <section class="part" id="prays">
+      <h2 class="t-h2">Прайс</h2>
+      <fieldset class="field q">
+        <legend class="field__label">Как показать цены</legend>
+        <div class="field__opts">
+          <label class="chip-opt"><input class="chip-opt__input" type="radio" name="price" checked /><span class="chip">Пакеты</span></label>
+          <label class="chip-opt"><input class="chip-opt__input" type="radio" name="price" /><span class="chip">Таблица</span></label>
+          <label class="chip-opt"><input class="chip-opt__input" type="radio" name="price" /><span class="chip">Только «от»</span></label>
+        </div>
+      </fieldset>
+      <div class="block">
+        <label class="field"><span class="field__label">Пакет</span><input class="input" value="Полный день" /></label>
+        <label class="field"><span class="field__label">Цена, ₽</span><input class="input" inputmode="numeric" value="40 000" /></label>
+        <label class="field"><span class="field__label">Что входит</span><textarea class="input" rows="3">10 часов съёмки, 500 фото в обработке, онлайн-галерея</textarea></label>
+      </div>
+      <button class="pill" type="button">+ Добавить пакет</button>
+    </section>
+
+    <section class="part" id="foto">
+      <h2 class="t-h2">Фото</h2>
+      <p class="part__lead">До 50 кадров. Лучше вертикальные — на телефоне они открываются во весь экран. Первый кадр — обложка.</p>
+      <ul class="grid">
+        {photos.map((p) => (
+          <li class="grid__cell">
+            <Image src={resolveImage(p)} alt="" widths={[...IMG_WIDTHS.tile]} sizes="(min-width: 720px) 160px, 30vw" class="grid__img" />
+          </li>
+        ))}
+      </ul>
+      <p class="part__count">6 из 50</p>
+      <div class="part__row">
+        <button class="pill" type="button">С телефона</button>
+        <button class="pill" type="button">Ссылкой на Яндекс.Диск</button>
+      </div>
+      <p class="field__note">По ссылке мы покажем превью, вы отметите нужные кадры — сервер заберёт их сам, вкладку можно закрыть.</p>
+    </section>
+
+    <section class="part" id="kontakty">
+      <h2 class="t-h2">Контакты</h2>
+      <p class="part__lead">Пара видит их по кнопке «Показать контакты», в тексте карточки их нет.</p>
+      <label class="field"><span class="field__label">Телефон</span><input class="input" type="tel" value="+7 916 000-00-00" /></label>
+      <label class="field"><span class="field__label">Telegram</span><input class="input" value="@suhorada" /></label>
+      <label class="field"><span class="field__label">Сайт или соцсеть</span><input class="input" value="suhorada.ru" /></label>
+    </section>
+
+    <div class="send">
+      <a class="pill pill--lg pill--solid pill--block" href="/profi/kabinet/proverka/">Отправить на проверку</a>
+      <p class="field__note send__note">Проверим за 24 часа. Пока карточка на проверке, править её нельзя.</p>
+    </div>
+  </main>
+</ProfiShell>
+
+<style>
+  .form { max-width: 720px; padding-top: var(--s-4); }
+
+  .form__head { display: grid; gap: var(--s-2); }
+  .form__saved {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-1);
+    font-size: var(--fs-small);
+    font-weight: var(--w-medium);
+  }
+  .form__saved :global(svg) { width: 18px; height: 18px; }
+
+  /* Полоса разделов листается вбок пальцем, страница при этом — вниз:
+     touch-action не объявляем (DESIGN.md §8). Ось Y закрыта явно. */
+  .form__nav {
+    display: flex;
+    gap: var(--s-2);
+    overflow-x: auto;
+    overflow-y: clip;
+    scrollbar-width: none;
+    margin-top: var(--s-5);
+    padding-bottom: var(--s-1);
+  }
+  .form__nav::-webkit-scrollbar { display: none; }
+
+  .part {
+    display: grid;
+    gap: var(--s-4);
+    margin-top: var(--section-gap);
+    scroll-margin-top: var(--s-5);
+  }
+  .part__lead { max-width: var(--measure-text); }
+  .part__count { font-size: var(--fs-small); font-weight: var(--w-medium); }
+  .part__row { display: flex; flex-wrap: wrap; gap: var(--s-3); }
+  .part .pill { justify-self: start; }
+
+  .block {
+    display: grid;
+    gap: var(--s-4);
+    padding: var(--s-4);
+    background: var(--surface);
+    border-radius: var(--radius-card);
+  }
+  .block .input { background: var(--bg); }
+
+  .q { border: 0; padding: 0; margin: 0; }
+  .q legend { margin-bottom: var(--s-2); }
+
+  .slug {
+    font-size: var(--fs-small);
+    padding: 14px var(--s-5);
+    background: var(--surface);
+    border-radius: var(--radius-pill);
+    overflow-wrap: anywhere;
+  }
+
+  .grid {
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--s-2);
+  }
+  .grid__cell {
+    aspect-ratio: 4 / 5;
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    background: var(--surface-dim);
+  }
+  .grid__img { width: 100%; height: 100%; object-fit: cover; }
+
+  .send { margin-top: var(--section-gap); display: grid; gap: var(--s-3); }
+  .send__note { text-align: center; }
+
+  @media (min-width: 720px) {
+    .grid { grid-template-columns: repeat(4, 1fr); }
+  }
+</style>
