@@ -1,0 +1,88 @@
+---
+// ФОТО КАРТОЧКИ — прототип (CABINET-UX.md §2 п.8). Первая плитка —
+// «добавить», дальше кадры в порядке показа, первый — обложка. Порядок
+// меняется пальцем (перетаскивание — вживую, здесь подпись). Загрузка
+// с телефона или ссылкой на Яндекс.Диск (сервер заберёт сам). До 50 кадров.
+import { Image } from 'astro:assets';
+import SectionShell from '../../../../components/profi/SectionShell.astro';
+import { resolveImage, IMG_WIDTHS } from '../../../../lib/images';
+
+const photos = ['p09', 'p01', 'p02', 'p03', 'p04', 'p05', 'p13', 'p19', 'p32'].map(
+  (n) => `/specialists/fotografy/suhorada/gal/${n}.webp`,
+);
+---
+
+<SectionShell title="Фото" lead="До 50 кадров, лучше вертикальные. Первый — обложка. Зажмите кадр, чтобы переставить.">
+  <ul class="grid">
+    <li class="grid__cell grid__cell--add">
+      <button class="grid__add" type="button">
+        <span class="grid__plus">+</span>
+        <span>С телефона</span>
+      </button>
+    </li>
+    {photos.map((p, i) => (
+      <li class="grid__cell">
+        <Image src={resolveImage(p)} alt="" widths={[...IMG_WIDTHS.tile]} sizes="(min-width: 720px) 220px, 30vw" class="grid__img" />
+        {i === 0 && <span class="grid__cover">Обложка</span>}
+      </li>
+    ))}
+  </ul>
+
+  <div class="meta">
+    <span class="meta__count">9 из 50</span>
+    <button class="pill pill--sm" type="button">Ссылкой на Яндекс.Диск</button>
+  </div>
+</SectionShell>
+
+<style>
+  .grid {
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--s-2);
+  }
+  .grid__cell {
+    position: relative;
+    aspect-ratio: 4 / 5;
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    background: var(--surface-dim);
+  }
+  .grid__img { width: 100%; height: 100%; object-fit: cover; }
+  .grid__cover {
+    position: absolute;
+    left: var(--s-2);
+    bottom: var(--s-2);
+    padding: 4px 10px;
+    border-radius: var(--radius-pill);
+    background: var(--bg);
+    color: var(--fg);
+    font-size: var(--fs-caption);
+    font-weight: var(--w-medium);
+    line-height: var(--lh-caption);
+  }
+  .grid__cell--add { background: var(--surface); }
+  .grid__add {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: var(--s-1);
+    font: inherit;
+    font-size: var(--fs-caption);
+    font-weight: var(--w-medium);
+    color: var(--fg);
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+  }
+  .grid__plus { font-size: var(--fs-h2); line-height: 1; }
+
+  .meta { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); }
+  .meta__count { font-size: var(--fs-small); font-weight: var(--w-medium); }
+
+  @media (min-width: 720px) {
+    .grid { grid-template-columns: repeat(4, 1fr); }
+  }
+</style>

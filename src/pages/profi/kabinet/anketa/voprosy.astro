@@ -1,0 +1,35 @@
+---
+// ВОПРОСЫ ДЛЯ ФИЛЬТРОВ — прототип. Группы вопросов категории из того же
+// источника, что фильтры каталога (data/specialist-filters.ts): новый
+// фильтр сам появится и здесь. Чип переключается на экране сразу, сервер
+// догоняет (CABINET-UX.md §2 п.9). Отмечено — ЗАГЛУШКА.
+import SectionShell from '../../../../components/profi/SectionShell.astro';
+import { FOTOGRAFY_FILTERS } from '../../../../data/specialist-filters';
+
+const groups = FOTOGRAFY_FILTERS;
+const picked = new Set(groups.slice(0, 5).flatMap((g) => g.options.slice(0, 2).map((o) => `${g.key}:${o.value}`)));
+const answered = groups.filter((g) => g.options.some((o) => picked.has(`${g.key}:${o.value}`))).length;
+---
+
+<SectionShell title="Вопросы" lead={`По этим ответам пары находят вас в каталоге. Отвечено ${answered} из ${groups.length}.`}>
+  {groups.map((g, i) => (
+    <fieldset class="q">
+      <legend class="q__t">{g.label}{!groups.slice(0, 5).includes(g) && <span class="q__todo"> · не отвечено</span>}</legend>
+      <div class="q__opts">
+        {g.options.map((o) => (
+          <label class="chip-opt">
+            <input class="chip-opt__input" type={g.type === 'single' ? 'radio' : 'checkbox'} name={g.key} checked={picked.has(`${g.key}:${o.value}`)} />
+            <span class="chip">{o.label}</span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  ))}
+</SectionShell>
+
+<style>
+  .q { border: 0; padding: 0; margin: 0; display: grid; gap: var(--s-3); }
+  .q__t { font-weight: var(--w-head-lg); line-height: var(--lh-caption); }
+  .q__todo { font-weight: var(--w-body); font-size: var(--fs-small); }
+  .q__opts { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+</style>

@@ -2079,6 +2079,20 @@ body:has(.scta.is-shown) .fav-toast {
   --surface-dim: #e5dacb;
 }
 
+/* Рабочие экраны — кабинет подрядчика (.profi--tech, .profi--auth):
+   белая бумага базы вместо крема (Никита, 20.10.2026: «на белый фон,
+   чтобы привычно»). Значения — те же, что в :root выше; переписаны, потому
+   что образ «крем» перебивает их на <html>. Тёмную тему не трогаем. */
+:root[data-look='cream']:not([data-theme='dark']):has(.profi--tech, .profi--auth) {
+  --paper: #ffffff;
+  --ink: #1a1613;
+  --black: #14100e;
+  --white: #fdf9f2;
+  --line: #e4e0da;
+  --surface: #f7f5f2;
+  --surface-dim: #ece8e2;
+}
+
 :root[data-look='cream'] {
   /* Антиква Cormorant мелким кеглем нечитаема (заказчик, 08.10.2026:
      «Гарамонд мелкий — увеличь»): подзаголовки --fs-h3 в образе крупнее
