@@ -55,12 +55,14 @@ const menu = [
   </Fragment>
 
   <div class={`profi profi--${look}`}>
-    <header class="pbar container">
-      <a class="pbar__brand" href="/profi/">
-        <span class="pbar__name">WED Secrets</span>
-        <span class="pbar__for">для профи</span>
-      </a>
-      {action && <a class="pill pill--sm" href={action.href}>{action.label}</a>}
+    <header class="pbar" data-pbar>
+      <div class="pbar__in container">
+        <a class="pbar__brand" href="/profi/">
+          <span class="pbar__name">WED Secrets</span>
+          <span class="pbar__for">для профи</span>
+        </a>
+        {action && <a class="pill pill--sm pbar__btn" href={action.href}>{action.label}</a>}
+      </div>
     </header>
 
     <slot />
@@ -77,13 +79,24 @@ const menu = [
 </Layout>
 
 <style>
+  /* Шапка узкая и уезжает вверх, пока листают вниз; возвращается при
+     движении вверх (Никита, 20.10.2026: «широкая, пусть скрывается»). */
   .pbar {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-nav);
+    background: var(--bg);
+    transition: transform var(--dur-base) var(--ease-out);
+  }
+  .pbar.is-hidden { transform: translateY(-100%); }
+  .pbar__in {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: var(--s-4);
-    padding-block: var(--s-5);
+    min-height: 52px;
   }
+  .pbar__btn { padding-block: 6px; }
 
   .pbar__brand {
     display: flex;
@@ -94,11 +107,11 @@ const menu = [
   }
 
   .pbar__name {
-    font-size: var(--fs-body);
+    font-size: var(--fs-small);
     font-weight: var(--w-head-lg);
   }
 
-  .pbar__for { font-size: var(--fs-small); }
+  .pbar__for { font-size: var(--fs-caption); }
 
   .pfoot {
     display: grid;
@@ -112,6 +125,23 @@ const menu = [
      схлопывается до обычного отступа). */
   .profi--tech { padding-bottom: var(--dock-space); }
 </style>
+
+<script>
+  // Прячем шапку при прокрутке вниз, показываем при прокрутке вверх.
+  const bar = document.querySelector<HTMLElement>('[data-pbar]');
+  if (bar) {
+    let last = window.scrollY;
+    let ticking = false;
+    const update = () => {
+      ticking = false;
+      const y = window.scrollY;
+      if (Math.abs(y - last) < 6) return;
+      bar.classList.toggle('is-hidden', y > last && y > bar.offsetHeight);
+      last = y;
+    };
+    window.addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
+  }
+</script>
 
 <style is:global>
   /* Кабинет и вход — рабочий инструмент: антиквы образа «крем» здесь нет
