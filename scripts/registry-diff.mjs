@@ -66,12 +66,17 @@ async function diskOk(url) {
   diskCache.set(url, ok);
   return ok;
 }
-async function checkLinks(who, row) {
+async function checkLinks(who, row, page = '') {
   for (const url of String(row.materials ?? '').match(/https?:\/\/disk\.yandex\.ru\/[da]\/[\w-]+/g) ?? []) {
     if ((await diskOk(url)) === false) push('links', who, `диск не открывается (404) — ссылка обрезана или закрыта: ${url}`);
   }
   if (/yandex\.ru\/maps\/.*\/house\//.test(row.mapsUrl ?? '')) {
-    push('links', who, 'Яндекс.Карты ведут на ДОМ, а не на организацию — у дома нет отзывов и рейтинга');
+    // На сайте ссылка часто уже верная (на организацию) — тогда чинить
+    // таблицу, и подсказываем, на что заменить.
+    const org = page.match(/https:\/\/yandex\.ru\/maps\/org\/[^"\s]+/)?.[0];
+    push('links', who, org
+      ? `в таблице Яндекс.Карты ведут на ДОМ, на сайте — на организацию; заменить в таблице на ${org}`
+      : 'Яндекс.Карты ведут на ДОМ, а не на организацию — у дома нет отзывов и рейтинга');
   }
 }
 
@@ -131,20 +136,22 @@ try {
   const vdir = join(ROOT, 'src/data/venues');
   for (const row of venues) {
     const who = `${row.name.trim()} (Площадки)`;
-    await checkLinks(who, row);
     const feed = FEED.find((f) => f.kind === 'venue' && ((row.slug && f.slug === row.slug) || sameName(f.name, row.name)));
+    const file = feed ? join(vdir, `${feed.slug}.json`) : '';
+    const page = file && existsSync(file) ? readFileSync(file, 'utf8').replace(/\u00a0/g, ' ') : '';
+    await checkLinks(who, row, page);
     if (!feed) { push('unmatched', who, 'нет на сайте'); continue; }
     const check = num(row.checkFrom);
     if (check != null && check !== (feed.checkFrom ?? null)) push('changed', who, `чек от: в таблице ${fmt(check)} ₽, на сайте ${feed.checkFrom ? fmt(feed.checkFrom) + ' ₽' : 'не указан'}`);
     const cap = num(row.capacityBanquet);
     if (cap != null && cap > feed.capacityMax) push('changed', who, `банкет: в таблице до ${cap}, в каталоге до ${feed.capacityMax}`);
-    // Аренда, депозит и сервис живут текстом в блоках страницы — ищем число на странице
-    const file = join(vdir, `${feed.slug}.json`);
-    const page = existsSync(file) ? readFileSync(file, 'utf8').replace(/ /g, ' ') : '';
+    // Аренда, депозит и сервис живут текстом в блоках страницы — ищем число на странице.
+    // Крупные суммы пишут и «1,5 млн», и «1 500 000» — годится любое.
+    const written = (v) => v >= 1e6 ? [fmt(v), `${String(v / 1e6).replace('.', ',')} млн`] : [fmt(v)];
     if (page) {
       for (const [k, label, unit] of [['rentFrom', 'аренда от', ' ₽'], ['depositFrom', 'депозит от', ' ₽'], ['serviceFee', 'сервисный сбор', ' %']]) {
         const v = num(row[k]);
-        if (v != null && !page.includes(fmt(v))) push('changed', who, `${label} ${fmt(v)}${unit} — в таблице есть, на странице такого числа нет`);
+        if (v != null && !written(v).some((w) => page.includes(w))) push('changed', who, `${label} ${fmt(v)}${unit} — в таблице есть, на странице такого числа нет`);
       }
     }
   }
