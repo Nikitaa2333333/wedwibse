@@ -21,7 +21,7 @@
 //    и Яндекс.Карты на ДОМ вместо организации (у дома нет отзывов).
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROOT, CATEGORY_TABS, fetchTab, norm, sameName } from './registry-lib.mjs';
+import { ROOT, CATEGORY_TABS, fetchTab, norm, sameName, toSlug } from './registry-lib.mjs';
 
 const { FILTERS_BY_CATEGORY } = await import('../src/data/specialist-filters.ts');
 const { FEED } = await import('../src/data/feed.ts');
@@ -87,7 +87,8 @@ for (const [tab, cat] of Object.entries(CATEGORY_TABS)) {
     const who = `${row.name.trim()} (${tab})`;
     await checkLinks(who, row);
     const s = site.find((x) => (row.slug && x.slug === row.slug) || (sameName(x.name, row.name) && (x.categorySlug === cat || (x.alsoCategories ?? []).includes(cat))))
-      ?? site.find((x) => (row.slug && x.slug === row.slug) || sameName(x.name, row.name));
+      ?? site.find((x) => (row.slug && x.slug === row.slug) || sameName(x.name, row.name))
+      ?? site.find((x) => x.slug === toSlug(row.name));
     if (!s) { push('unmatched', who, `нет на сайте${row.materials ? '' : ' (и нет материалов)'}`); continue; }
     seen.add(s.slug);
     if (s.ts || (s.categorySlug !== cat && (s.alsoCategories ?? []).includes(cat))) continue; // вторая вкладка той же карточки

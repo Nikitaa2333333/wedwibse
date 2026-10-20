@@ -14,7 +14,7 @@
 import { readFileSync, readdirSync, existsSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { ROOT, CATEGORY_TABS, fetchTab, sameName } from './registry-lib.mjs';
+import { ROOT, CATEGORY_TABS, fetchTab, sameName, toSlug } from './registry-lib.mjs';
 
 /** кто уже на сайте: JSON-карточки + «Лешаковы» из TS */
 function onSite() {
@@ -65,7 +65,7 @@ for (const [tab, categorySlug] of Object.entries(CATEGORY_TABS)) {
   try { rows = await fetchTab(tab); } catch (e) { console.error(`! ${e.message}`); continue; }
   for (const row of rows) {
     const name = row.name.trim();
-    if ([...site.names].some((n) => sameName(n, name)) || (row.slug && site.slugs.has(row.slug))) continue;
+    if ([...site.names].some((n) => sameName(n, name)) || (row.slug && site.slugs.has(row.slug)) || site.slugs.has(toSlug(name))) continue;
     found.push({ tab, categorySlug, name, status: row.status || 'без статуса', ...gapsOf(row), materials: row.materials || '' });
   }
 }
