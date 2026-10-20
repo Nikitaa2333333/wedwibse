@@ -91,6 +91,7 @@ const faq = [
             )}
           </div>
         ))}
+        <span class="hero__fade"></span>
       </div>
       <div class="hero__body container">
         <h1 class="t-display hero__title">Красивая витрина для вашей работы</h1>
@@ -105,7 +106,7 @@ const faq = [
     <!-- 2. Бегущая лента карточек -->
     <section class="section run" aria-labelledby="run-t">
       <div class="container">
-        <h2 class="t-h1" id="run-t" data-fx>Вы окажетесь рядом с ними</h2>
+        <h2 class="t-h1" id="run-t" data-fx>Наши партнёры уже на площадке</h2>
       </div>
       {[rowA, rowB].map((row, r) => (
         <div class={`run__row run__row--${r ? 'back' : 'fwd'}`}>
@@ -180,7 +181,7 @@ const faq = [
     <!-- 4. Что вы получаете -->
     <section class="section container">
       <h2 class="t-h1" data-fx>Что вы получаете</h2>
-      <ul class="plates gets" data-fx>
+      <ul class="gets" data-fx>
         {gets.map((g) => <li>{g}</li>)}
       </ul>
     </section>
@@ -233,10 +234,13 @@ const faq = [
   }
 
   /* ---------- 1. первый экран ---------- */
+  /* Видео во всю ширину, снизу оно уходит градиентом в бумагу, и на этом
+     градиенте начинается текст (Никита, 20.10.2026). Градиент — в цвет
+     бумаги, не затемнение: текст тёмный и читается, кадр сверху чистый. */
   .hero__stage {
     position: relative;
-    height: 46svh;
-    min-height: 300px;
+    height: 72svh;
+    min-height: 420px;
     overflow: hidden;
     background: var(--surface);
   }
@@ -267,7 +271,14 @@ const faq = [
     30% { transform: scale(1); }
     100% { transform: scale(1); }
   }
-  .hero__body { padding-top: var(--s-5); }
+  .hero__fade {
+    position: absolute;
+    inset: auto 0 -1px 0;
+    height: 50%;
+    z-index: 1;
+    background: linear-gradient(to bottom, transparent 0%, color-mix(in srgb, var(--bg) 85%, transparent) 45%, var(--bg) 72%);
+  }
+  .hero__body { position: relative; z-index: 2; margin-top: -22svh; }
   .hero__title { font-size: clamp(40px, 10.5vw, 104px); max-width: 16ch; }
   .hero__lead { margin-top: var(--s-4); max-width: 34ch; }
   .hero__cta { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-6); }
@@ -368,7 +379,23 @@ const faq = [
   .ui__thumb { width: 100%; height: auto; aspect-ratio: 4 / 5; object-fit: cover; border-radius: var(--radius-card); }
 
   /* ---------- 4. что получаете ---------- */
-  .gets { margin-top: var(--section-gap-tight); }
+  /* Плашки по своему содержимому, а не во всю строку: в растянутых
+     было больше пустоты, чем текста. */
+  .gets {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+    margin-top: var(--section-gap-tight);
+  }
+  .gets li {
+    padding: 10px var(--s-4);
+    font-size: var(--fs-small);
+    font-weight: var(--w-medium);
+    line-height: var(--lh-caption);
+    background: var(--surface);
+    border-radius: var(--radius-pill);
+  }
 
   /* ---------- 5. видео ---------- */
   .vid {
