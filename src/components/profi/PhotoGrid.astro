@@ -1,0 +1,220 @@
+---
+// ФОТО КАРТОЧКИ — сетка с порядком (CABINET-UX.md §2 п.8). Первая плитка —
+// «добавить» (с телефона — настоящий выбор файлов, превью сразу на экране),
+// дальше кадры в порядке показа, первый — обложка. Порядок меняется
+// пальцем: зажал кадр — тащишь; работает указателем, а не HTML5-drag,
+// который на телефоне не живёт. Удаление — крестик на кадре, с «Вернуть».
+// Ссылка на Яндекс.Диск — заглушка до сервера. Лимит — 50.
+import { Image } from 'astro:assets';
+import { resolveImage, IMG_WIDTHS } from '../../lib/images';
+
+interface Props {
+  photos: string[];
+  max?: number;
+}
+
+const { photos, max = 50 } = Astro.props;
+---
+
+<div class="pg" data-pg data-max={max}>
+  <ul class="pg__grid" data-pg-grid>
+    <li class="pg__cell pg__cell--add">
+      <label class="pg__add">
+        <input class="pg__file" type="file" accept="image/*" multiple data-pg-file />
+        <span class="pg__plus">+</span>
+        <span>С телефона</span>
+      </label>
+    </li>
+    {photos.map((p) => (
+      <li class="pg__cell" data-pg-item>
+        <Image src={resolveImage(p)} alt="" widths={[...IMG_WIDTHS.tile]} sizes="(min-width: 720px) 220px, 30vw" class="pg__img" draggable="false" />
+        <span class="pg__cover" data-pg-cover>Обложка</span>
+        <button class="pg__del" type="button" aria-label="Убрать кадр" data-pg-del>×</button>
+      </li>
+    ))}
+  </ul>
+
+  <p class="pg__undo" data-pg-undo hidden>Кадр убран · <button type="button" data-pg-restore>Вернуть</button></p>
+
+  <div class="pg__meta">
+    <span class="pg__count"><b data-pg-count>{photos.length}</b> из {max}</span>
+    <button class="pill pill--sm" type="button">Ссылкой на Яндекс.Диск</button>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-pg]').forEach((root) => {
+    const grid = root.querySelector<HTMLElement>('[data-pg-grid]')!;
+    const count = root.querySelector<HTMLElement>('[data-pg-count]')!;
+    const undo = root.querySelector<HTMLElement>('[data-pg-undo]')!;
+    const max = Number(root.dataset.max);
+    let removed: { el: HTMLElement; next: Element | null } | null = null;
+    let undoTimer = 0;
+
+    const items = () => [...grid.querySelectorAll<HTMLElement>('[data-pg-item]')];
+    const sync = () => {
+      const all = items();
+      count.textContent = String(all.length);
+      all.forEach((el, i) => el.classList.toggle('is-cover', i === 0));
+      root.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+    sync();
+
+    // Добавить с телефона: превью сразу, без ожидания сервера
+    root.querySelector<HTMLInputElement>('[data-pg-file]')!.addEventListener('change', (e) => {
+      const files = [...((e.target as HTMLInputElement).files ?? [])];
+      const free = max - items().length;
+      files.slice(0, Math.max(0, free)).forEach((f) => {
+        const li = document.createElement('li');
+        li.className = 'pg__cell';
+        li.dataset.pgItem = '';
+        const img = document.createElement('img');
+        img.className = 'pg__img';
+        img.alt = '';
+        img.draggable = false;
+        img.src = URL.createObjectURL(f);
+        li.append(img);
+        li.insertAdjacentHTML('beforeend', '<span class="pg__cover" data-pg-cover>Обложка</span><button class="pg__del" type="button" aria-label="Убрать кадр" data-pg-del>×</button>');
+        grid.append(li);
+      });
+      (e.target as HTMLInputElement).value = '';
+      sync();
+    });
+
+    // Убрать с «Вернуть»
+    root.addEventListener('click', (e) => {
+      const t = e.target as HTMLElement;
+      if (t.hasAttribute('data-pg-del')) {
+        const el = t.closest<HTMLElement>('[data-pg-item]')!;
+        removed = { el, next: el.nextElementSibling };
+        el.remove();
+        undo.hidden = false;
+        clearTimeout(undoTimer);
+        undoTimer = window.setTimeout(() => { undo.hidden = true; removed = null; }, 6000);
+        sync();
+      } else if (t.hasAttribute('data-pg-restore') && removed) {
+        grid.insertBefore(removed.el, removed.next);
+        removed = null;
+        undo.hidden = true;
+        sync();
+      }
+    });
+
+    // Порядок пальцем: зажать 180 мс, тащить, отпустить
+    let drag: HTMLElement | null = null;
+    let hold = 0;
+    let start = { x: 0, y: 0 };
+    grid.addEventListener('pointerdown', (e) => {
+      const el = (e.target as HTMLElement).closest<HTMLElement>('[data-pg-item]');
+      if (!el || (e.target as HTMLElement).closest('button')) return;
+      start = { x: e.clientX, y: e.clientY };
+      hold = window.setTimeout(() => {
+        drag = el;
+        el.classList.add('is-drag');
+        el.setPointerCapture(e.pointerId);
+      }, 180);
+    });
+    grid.addEventListener('pointermove', (e) => {
+      if (!drag) {
+        if (Math.hypot(e.clientX - start.x, e.clientY - start.y) > 8) clearTimeout(hold);
+        return;
+      }
+      e.preventDefault();
+      drag.style.transform = `translate(${e.clientX - start.x}px, ${e.clientY - start.y}px)`;
+      const over = document.elementsFromPoint(e.clientX, e.clientY)
+        .find((n) => n !== drag && (n as HTMLElement).matches?.('[data-pg-item]')) as HTMLElement | undefined;
+      if (!over) return;
+      const r = over.getBoundingClientRect();
+      const after = e.clientX > r.left + r.width / 2;
+      if (after) over.after(drag); else over.before(drag);
+      // после перестановки сдвиг считаем заново от нового места
+      start = { x: e.clientX, y: e.clientY };
+      drag.style.transform = '';
+    });
+    const end = () => {
+      clearTimeout(hold);
+      if (!drag) return;
+      drag.classList.remove('is-drag');
+      drag.style.transform = '';
+      drag = null;
+      sync();
+    };
+    grid.addEventListener('pointerup', end);
+    grid.addEventListener('pointercancel', end);
+  });
+</script>
+
+<style>
+  .pg { display: grid; gap: var(--s-4); }
+  .pg__grid {
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--s-2);
+    touch-action: pan-y; /* вертикальный скролл страницы остаётся, тащим после удержания */
+  }
+  .pg__cell {
+    position: relative;
+    aspect-ratio: 4 / 5;
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    background: var(--surface-dim);
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .pg__cell.is-drag { opacity: 0.85; transform: scale(1.04); z-index: 2; transition: none; }
+  :global(.pg__img) { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+  .pg__cover {
+    position: absolute;
+    left: var(--s-2);
+    bottom: var(--s-2);
+    padding: 4px 10px;
+    border-radius: var(--radius-pill);
+    background: var(--bg);
+    color: var(--fg);
+    font-size: var(--fs-caption);
+    font-weight: var(--w-medium);
+    line-height: var(--lh-caption);
+    display: none;
+  }
+  .pg__cell.is-cover .pg__cover { display: block; }
+  .pg__del {
+    position: absolute;
+    top: var(--s-1);
+    right: var(--s-1);
+    width: 26px;
+    height: 26px;
+    display: grid;
+    place-items: center;
+    font: inherit;
+    line-height: 1;
+    color: var(--fg);
+    background: var(--bg);
+    border: 0;
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+  }
+  .pg__cell--add { background: var(--surface); }
+  .pg__add {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: var(--s-1);
+    font-size: var(--fs-caption);
+    font-weight: var(--w-medium);
+    cursor: pointer;
+  }
+  .pg__file { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .pg__plus { font-size: var(--fs-h2); line-height: 1; }
+
+  .pg__undo { font-size: var(--fs-small); }
+  .pg__undo button { font: inherit; font-weight: var(--w-medium); color: inherit; background: none; border: 0; text-decoration: underline; cursor: pointer; }
+  .pg__meta { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); }
+  .pg__count { font-size: var(--fs-small); }
+
+  @media (min-width: 720px) {
+    .pg__grid { grid-template-columns: repeat(4, 1fr); }
+  }
+</style>

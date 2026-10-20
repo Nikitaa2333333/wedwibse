@@ -1,0 +1,12 @@
+---
+// ФОТО ПЛОЩАДКИ — сетка PhotoGrid. Кадры залов отмечаются у зала. ЗАГЛУШКА.
+import SectionShell from '../../../../components/profi/SectionShell.astro';
+import PhotoGrid from '../../../../components/profi/PhotoGrid.astro';
+const back = '/profi/kabinet/anketa-ploshchadki/';
+
+const photos = ['hero-portrait', 's2-hall', 's3-welcome', 's4-ceremony', 's5-table', 's6-night'].map((n) => `/venues/led/${n}.webp`);
+---
+
+<SectionShell title="Фото" lead="До 50 кадров, лучше вертикальные. Первый — обложка. Зажмите кадр, чтобы переставить." back={back}>
+  <PhotoGrid photos={photos} />
+</SectionShell>

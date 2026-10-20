@@ -1,0 +1,13 @@
+---
+// КОНТАКТЫ ПЛОЩАДКИ — менеджер, почта, часы ответа. Пара видит по кнопке
+// «Показать контакты». ЗАГЛУШКА.
+import SectionShell from '../../../../components/profi/SectionShell.astro';
+const back = '/profi/kabinet/anketa-ploshchadki/';
+---
+
+<SectionShell title="Контакты" lead="Пара видит их по кнопке «Показать контакты». Каждое открытие попадает в «Интерес»." back={back}>
+  <label class="field"><span class="field__label">Телефон менеджера</span><input class="input" type="tel" value="+7 495 000-00-00" /></label>
+  <label class="field"><span class="field__label">Почта</span><input class="input" type="email" value="manager@example.ru" /></label>
+  <label class="field"><span class="field__label">Telegram или MAX</span><input class="input" placeholder="Ник или номер" /></label>
+  <label class="field"><span class="field__label">Часы ответа</span><input class="input" value="Ежедневно с 10 до 21" /></label>
+</SectionShell>

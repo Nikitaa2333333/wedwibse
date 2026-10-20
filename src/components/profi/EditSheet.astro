@@ -1,0 +1,36 @@
+---
+// Шторка редактирования строки (пакет прайса, зал площадки): поля в слоте,
+// внизу «Готово». Та же .sheet и bindSheet, что у фильтров (CLAUDE.md:
+// своих всплывающих панелей не пишем). Страница открывает её через
+// data-sheet-open="<name>", заполняет поля и забирает значения в onClose.
+import Icon from '../Icon.astro';
+
+interface Props {
+  name: string;
+  title: string;
+}
+
+const { name, title } = Astro.props;
+---
+
+<div class="sheet" data-sheet={name}>
+  <div class="sheet__backdrop" data-sheet-close></div>
+  <section class="sheet__panel" role="dialog" aria-modal="true" aria-labelledby={`${name}-title`}>
+    <header class="sheet__head">
+      <h2 class="sheet__title" id={`${name}-title`}>{title}</h2>
+      <button class="icon-btn" type="button" data-sheet-close aria-label="Закрыть">
+        <Icon name="close" />
+      </button>
+    </header>
+    <div class="sheet__body es__body" data-sheet-body data-lenis-prevent>
+      <slot />
+    </div>
+    <footer class="sheet__foot">
+      <button class="pill pill--solid pill--block" type="button" data-sheet-close>Готово</button>
+    </footer>
+  </section>
+</div>
+
+<style>
+  .es__body { display: grid; gap: var(--s-4); }
+</style>
