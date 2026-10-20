@@ -252,6 +252,38 @@ ssh -i ~/.ssh/timeweb_wed root@193.124.47.78 '
 '
 ```
 
+## 7.1 Задание для ноутбука (Claude Code локально, Git Bash)
+
+Облачная сессия до сервера не достаёт — эти шаги делаются с ноутбука,
+где лежит ключ `~/.ssh/timeweb_wed`. Можно отдать целиком локальному
+Claude Code: «Выполни раздел 7.1 из STAGE2.md, пришли вывод, отметь
+галочки и закоммить».
+
+- [ ] **1. Проверка сервера** — команда из раздела 7, вывод сохранить
+      в `research/server-check-<дата>.txt` и вставить в новый чат.
+- [ ] **2. Открыть индексацию на сервере** (после деплоя №57):
+      ```
+      ssh -i ~/.ssh/timeweb_wed root@193.124.47.78 '
+        cp /etc/nginx/sites-available/wedsecrets /root/wedsecrets.nginx.bak-$(date +%F)
+        sed -i "/add_header X-Robots-Tag/d" /etc/nginx/sites-available/wedsecrets
+        nginx -t && systemctl reload nginx'
+      curl -sI https://wed-secrets.ru/ | grep -i x-robots || echo "X-Robots-Tag снят"
+      curl -s https://wed-secrets.ru/robots.txt
+      curl -s https://wed-secrets.ru/sitemap.xml | head -5
+      ```
+      Ожидаем: заголовка нет, в `robots.txt` — `Allow: /` и `Sitemap:`,
+      `sitemap.xml` открывается.
+- [ ] **3. Вебмастер и Search Console:** добавить `https://wed-secrets.ru`,
+      подтвердить права, отправить `https://wed-secrets.ru/sitemap.xml`
+      (скилл `yandex-webmaster`, если есть).
+- [ ] **4. Telegram-бот:** в @BotFather `/newbot` (имя «WED Secrets»),
+      затем `/setdomain` → `wed-secrets.ru`. Токен бота **в чат и в git
+      не класть** — в `.env` проекта и в секреты GitHub (`TELEGRAM_BOT_TOKEN`).
+- [ ] **5. reg.ru:** A-запись `profi` → `193.124.47.78` (сертификат выпустим
+      вместе с кабинетом).
+- [ ] **6. Закрыть или влить старые черновики №42 и №43** — посмотреть,
+      актуальны ли.
+
 ## 8. Как начать новый чат
 
 > Продолжаем второй этап WED Secrets. Ветка `claude/cabinet-plan`, запрос №40.
