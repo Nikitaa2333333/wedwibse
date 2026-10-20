@@ -12,11 +12,19 @@
 // полосу не знают, они читают только --dock-space.
 import Icon from './Icon.astro';
 
+import type { IconName } from '../lib/icons';
+
+interface DockItem { key: string; href: string; label: string; icon: IconName }
+
 interface Props {
-  active?: 'feed' | 'venues' | 'vendors' | 'saved';
+  active?: string;
+  /** свой набор разделов: кабинет подрядчика (profi) — та же полоса,
+      другие ссылки. Без него — разделы сайта для пар. */
+  items?: readonly DockItem[];
+  label?: string;
 }
 
-const { active } = Astro.props;
+const { active, items: customItems, label = 'Основная навигация' } = Astro.props;
 
 // icon — ключ из реестра src/lib/icons.ts (Solar Linear, контурные).
 const items = [
@@ -48,10 +56,12 @@ const items = [
     icon: 'heart',
   },
 ] as const;
+
+const shown: readonly DockItem[] = customItems ?? items;
 ---
 
-<nav class="dock" aria-label="Основная навигация">
-  {items.map((it) => (
+<nav class="dock" aria-label={label} style={`--dock-n:${shown.length}`}>
+  {shown.map((it) => (
     <a
       class:list={['dock__item', { 'is-active': it.key === active }]}
       href={it.href}
@@ -81,7 +91,7 @@ const items = [
     inset: auto 0 0 0;
     z-index: var(--z-nav);
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(var(--dock-n, 4), minmax(0, 1fr));
     padding: 6px 0 calc(6px + var(--safe-b));
     background: var(--bg);
     border-top: 1px solid var(--hairline);

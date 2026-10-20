@@ -10,10 +10,10 @@ import { DEMO_ACCOUNT, DEMO_CARDS, STATUS_LABEL } from '../../../data/profi-demo
 const left = DEMO_ACCOUNT.cardsMax - DEMO_CARDS.length;
 ---
 
-<ProfiShell title="Кабинет" action={{ href: '/profi/', label: 'Выйти' }}>
+<ProfiShell title="Кабинет" section="cards">
   <main class="section container cab">
     <h1 class="t-h1">Здравствуйте, {DEMO_ACCOUNT.name}</h1>
-    <p class="cab__lead">Ваши карточки в каталоге. Любая правка уходит на проверку — до 24 часов, на сайте всё это время прежняя версия.</p>
+    <p class="cab__lead">Ваши карточки в каталоге</p>
 
     <ul class="cards">
       {DEMO_CARDS.map((c) => (
@@ -62,14 +62,6 @@ const left = DEMO_ACCOUNT.cardsMax - DEMO_CARDS.length;
       <p class="cab__left">Можно ещё {left} из {DEMO_ACCOUNT.cardsMax}: другая профессия или площадка.</p>
     )}
 
-    <section class="cab__next">
-      <h2 class="t-h2">Что ещё можно сделать</h2>
-      <ul class="list">
-        <li>Добавить видео: до 10 роликов, каждый до минуты — ссылкой на Яндекс.Диск, пережмём сами.</li>
-        <li>Подключить почту, чтобы входить и без Telegram.</li>
-        <li><a href="/profi/#video">Посмотреть видеоинструкцию</a>: как сделать карточку сильнее.</li>
-      </ul>
-    </section>
   </main>
 </ProfiShell>
 
@@ -126,13 +118,10 @@ const left = DEMO_ACCOUNT.cardsMax - DEMO_CARDS.length;
   }
   .card__extra .card__status { background: var(--surface); }
   .card__why { font-size: var(--fs-small); }
-  .cab__next a { color: inherit; }
 
   .card__site { font-size: var(--fs-small); color: inherit; justify-self: start; }
 
   .cab__add { margin-top: var(--s-5); }
   .cab__left { margin-top: var(--s-2); font-size: var(--fs-small); text-align: center; }
 
-  .cab__next { margin-top: var(--section-gap); }
-  .cab__next .list { margin-top: var(--s-4); }
 </style>

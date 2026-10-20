@@ -4,49 +4,35 @@
 // восстановления доступа. Форма никуда не отправляет — ЗАГЛУШКА до базы.
 import ProfiShell from '../../components/profi/ProfiShell.astro';
 import TelegramButton from '../../components/profi/TelegramButton.astro';
+import '../../components/profi/auth.css';
 ---
 
-<ProfiShell title="Вход" action={{ href: '/profi/registraciya/', label: 'Регистрация' }}>
-  <main class="section container auth">
-    <h1 class="t-h1">Вход в кабинет</h1>
-    <p class="auth__lead">Для площадок и подрядчиков, которые уже разместились или получили от нас ссылку.</p>
+<ProfiShell title="Вход" look="auth">
+  <main class="container auth">
+    <div class="auth__head">
+      <h1 class="t-h1">Вход</h1>
+      <p class="auth__sub">Кабинет площадок и подрядчиков</p>
+    </div>
 
-    <div class="auth__main"><TelegramButton /></div>
+    <TelegramButton />
 
     <p class="auth__or">или по почте</p>
 
     <form class="auth__form" action="/profi/kabinet/" method="get">
       <label class="field">
         <span class="field__label">Почта</span>
-        <input class="input" type="email" name="email" autocomplete="email" placeholder="name@example.ru" />
+        <input class="input" type="email" name="email" autocomplete="email" />
       </label>
-      <label class="field">
-        <span class="field__label">Пароль</span>
-        <input class="input" type="password" name="password" autocomplete="current-password" />
-      </label>
+      <div class="field">
+        <div class="auth__row">
+          <label class="field__label" for="pw">Пароль</label>
+          <a href="/profi/parol/">Забыли?</a>
+        </div>
+        <input class="input" id="pw" type="password" name="password" autocomplete="current-password" />
+      </div>
       <button class="pill pill--lg pill--block" type="submit">Войти</button>
-      <a class="auth__link" href="/profi/parol/">Забыли пароль? Пришлём код на почту</a>
     </form>
 
-    <p class="auth__foot">Ещё нет учётки? <a href="/profi/registraciya/">Зарегистрироваться</a></p>
+    <p class="auth__alt">Нет учётки? <a href="/profi/registraciya/">Зарегистрироваться</a></p>
   </main>
 </ProfiShell>
-
-<style>
-  .auth { max-width: 520px; padding-top: var(--s-4); }
-  .auth__lead { margin-top: var(--s-4); }
-  .auth__main { margin-top: var(--s-6); }
-  .auth__or {
-    margin-top: var(--s-6);
-    text-align: center;
-    font-size: var(--fs-small);
-  }
-  .auth__form {
-    display: grid;
-    gap: var(--s-4);
-    margin-top: var(--s-4);
-  }
-  .auth__link, .auth__foot a { color: inherit; }
-  .auth__link { font-size: var(--fs-small); justify-self: center; }
-  .auth__foot { margin-top: var(--s-7); font-size: var(--fs-small); }
-</style>

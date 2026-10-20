@@ -1,0 +1,28 @@
+---
+// СБРОС ПАРОЛЯ, шаг 2 — код из письма и новый пароль. ЗАГЛУШКА, см. parol.astro.
+import ProfiShell from '../../../components/profi/ProfiShell.astro';
+import '../../../components/profi/auth.css';
+---
+
+<ProfiShell title="Код из письма" look="auth">
+  <main class="container auth">
+    <div class="auth__head">
+      <h1 class="t-h1">Код из письма</h1>
+      <p class="auth__sub">Отправили на alexey@suhorada.ru</p>
+    </div>
+
+    <form class="auth__form" action="/profi/kabinet/" method="get">
+      <label class="field">
+        <span class="field__label">Код</span>
+        <input class="input" inputmode="numeric" autocomplete="one-time-code" />
+      </label>
+      <label class="field">
+        <span class="field__label">Новый пароль</span>
+        <input class="input" type="password" autocomplete="new-password" placeholder="Не короче 8 знаков" />
+      </label>
+      <button class="pill pill--lg pill--solid pill--block" type="submit">Сохранить и войти</button>
+    </form>
+
+    <p class="auth__alt">Письма нет? <a href="/profi/parol/kod/">Прислать ещё раз</a></p>
+  </main>
+</ProfiShell>
