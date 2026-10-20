@@ -1,0 +1,95 @@
+---
+// ТЕКСТ КАРТОЧКИ — прототип редактора «как в мессенджере» (CABINET-UX.md
+// §2 п.6–7). Раздел = один блок текста без отдельных полей «заголовок»
+// и «описание»: первая строка — заголовок, строки с «—» или «•» — список,
+// пустая строка — новый абзац. Это ровно StorySection, сервер разберёт
+// блок без разметки. Сверху — предложенная структура категории
+// (data/profi-structures.ts): «Взять за основу» ставит заголовки
+// с подсказками. Значения — ЗАГЛУШКА на примере Алексея Сухорады.
+import SectionShell from '../../../../components/profi/SectionShell.astro';
+import { structureFor } from '../../../../data/profi-structures';
+
+const structure = structureFor('fotografy');
+
+// Два раздела уже написаны, остальные — из структуры, с подсказкой
+const written = [
+  'Как я снимаю\nСнимаю свадьбы с 2014 года. Мне важны живые эмоции: не ставлю пары в позы, а ловлю моменты, которые случаются сами.\n\nРаботаю один или со вторым фотографом — зависит от размера свадьбы.',
+  'Что получаете\n— 500 кадров в авторской обработке\n— онлайн-галерея через 30 дней\n— 30 кадров на следующий день\n— печатная книга по желанию',
+];
+const blocks = structure.sections.map((sec, i) => ({
+  value: written[i] ?? '',
+  placeholder: `${sec.title}\n${sec.hint}`,
+}));
+---
+
+<SectionShell title="Текст" lead="Пишите как в мессенджере: первая строка — заголовок раздела, строки с «—» — список, пустая строка — новый абзац.">
+  <div class="struct">
+    <p class="struct__t">{structure.label}</p>
+    <p class="struct__d">{structure.sections.map((s) => s.title).join(' · ')}</p>
+    <button class="pill pill--sm" type="button">Взять за основу</button>
+  </div>
+
+  <ol class="blocks">
+    {blocks.map((b, i) => (
+      <li class="block">
+        <textarea class="block__ta" rows={b.value ? 7 : 3} placeholder={b.placeholder} aria-label={`Раздел ${i + 1}`}>{b.value}</textarea>
+        <div class="block__tools">
+          <button class="block__tool" type="button" aria-label="Жирный"><b>Ж</b></button>
+          <button class="block__tool" type="button" aria-label="Список">—</button>
+          <button class="block__tool block__tool--up" type="button" aria-label="Выше">↑</button>
+          <button class="block__tool" type="button" aria-label="Ниже">↓</button>
+          <button class="block__tool block__tool--del" type="button" aria-label="Удалить">×</button>
+        </div>
+      </li>
+    ))}
+  </ol>
+
+  <button class="pill" type="button">+ Раздел</button>
+  <p class="note">Телефоны, почта, ссылки и ники в тексте не пройдут проверку — для них есть раздел «Контакты».</p>
+</SectionShell>
+
+<style>
+  .struct { display: grid; gap: var(--s-2); justify-items: start; }
+  .struct__t { font-weight: var(--w-head-lg); line-height: var(--lh-caption); }
+  .struct__d { font-size: var(--fs-small); line-height: var(--lh-snug); }
+
+  /* Блок текста: само поле и есть плашка, второй рамки нет */
+  .blocks { list-style: none; display: grid; gap: var(--s-4); }
+  .block { display: grid; gap: var(--s-2); }
+  .block__ta {
+    width: 100%;
+    min-width: 0;
+    resize: vertical;
+    padding: var(--s-4);
+    font: inherit;
+    font-size: var(--fs-body);
+    line-height: var(--lh-body);
+    color: var(--fg);
+    background: var(--surface);
+    border: 0;
+    border-radius: var(--radius-card);
+  }
+  /* Первая строка — заголовок: показываем это самим полем через
+     first-line, насколько браузер позволяет (жирный, без смены кегля). */
+  .block__ta::first-line { font-weight: var(--w-head-lg); }
+  .block__ta::placeholder { color: var(--fg); opacity: 0.4; }
+  .block__ta:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+
+  .block__tools { display: flex; gap: var(--s-1); }
+  .block__tool {
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    font: inherit;
+    font-size: var(--fs-small);
+    color: var(--fg);
+    background: transparent;
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+  }
+  .block__tool--up { margin-left: auto; }
+
+  .note { font-size: var(--fs-caption); }
+</style>

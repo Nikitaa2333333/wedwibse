@@ -1,0 +1,45 @@
+---
+// Экран одного раздела анкеты (CABINET-UX.md §2 п.4: один экран — одна
+// задача). Сверху «назад» на хаб анкеты и имя раздела, строка «Сохранено»,
+// содержимое, внизу «Готово» — та же ссылка на хаб. Кнопка «назад» —
+// BackButton, единственная в проекте (CLAUDE.md).
+import ProfiShell from './ProfiShell.astro';
+import BackButton from '../BackButton.astro';
+
+interface Props {
+  title: string;
+  /** подсказка под заголовком, одна строка */
+  lead?: string;
+  back?: string;
+}
+
+const { title, lead, back = '/profi/kabinet/anketa/' } = Astro.props;
+---
+
+<ProfiShell title={`${title} — анкета`} section="cards">
+  <main class="container sec">
+    <header class="sec__head">
+      <BackButton href={back} label="К анкете" />
+      <div class="sec__titles">
+        <h1 class="t-h1 sec__title">{title}</h1>
+        <p class="sec__saved" aria-live="polite">Сохранено · 12:04</p>
+      </div>
+    </header>
+    {lead && <p class="sec__lead">{lead}</p>}
+
+    <div class="sec__body"><slot /></div>
+
+    <a class="pill pill--lg pill--solid pill--block sec__done" href={back}>Готово</a>
+  </main>
+</ProfiShell>
+
+<style>
+  .sec { max-width: 720px; padding-top: var(--s-3); }
+  .sec__head { display: flex; align-items: center; gap: var(--s-4); }
+  .sec__titles { display: grid; gap: 2px; min-width: 0; }
+  .sec__title { line-height: var(--lh-caption); }
+  .sec__saved { font-size: var(--fs-caption); }
+  .sec__lead { margin-top: var(--s-4); font-size: var(--fs-small); max-width: var(--measure-text); }
+  .sec__body { margin-top: var(--s-6); display: grid; gap: var(--s-6); }
+  .sec__done { margin-top: var(--section-gap); }
+</style>

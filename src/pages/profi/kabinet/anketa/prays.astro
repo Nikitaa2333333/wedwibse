@@ -1,0 +1,65 @@
+---
+// ПРАЙС — прототип. Пакеты строками: название, цена, что входит одной
+// строкой; нажатие открывает редактирование (вживую — шторка .sheet).
+// Способ показа цен — чипами. ЗАГЛУШКА.
+import SectionShell from '../../../../components/profi/SectionShell.astro';
+
+const packages = [
+  { name: 'Полный день', price: '40 000 ₽', includes: '10 часов, 500 фото, онлайн-галерея' },
+  { name: 'Половина дня', price: '25 000 ₽', includes: '5 часов, 250 фото' },
+  { name: 'Love story', price: '12 000 ₽', includes: '2 часа, 80 фото' },
+];
+---
+
+<SectionShell title="Прайс" lead="Пакеты показываются на карточке таблицей. Цена «от» в каталоге — самый дешёвый пакет.">
+  <fieldset class="q">
+    <legend class="q__t">Как показать цены</legend>
+    <div class="q__opts">
+      <label class="chip-opt"><input class="chip-opt__input" type="radio" name="price" checked /><span class="chip">Пакеты</span></label>
+      <label class="chip-opt"><input class="chip-opt__input" type="radio" name="price" /><span class="chip">Таблица</span></label>
+      <label class="chip-opt"><input class="chip-opt__input" type="radio" name="price" /><span class="chip">Только «от»</span></label>
+    </div>
+  </fieldset>
+
+  <ul class="packs">
+    {packages.map((p) => (
+      <li>
+        <button class="pack" type="button">
+          <span class="pack__main">
+            <span class="pack__name">{p.name}</span>
+            <span class="pack__inc">{p.includes}</span>
+          </span>
+          <span class="pack__price">{p.price}</span>
+        </button>
+      </li>
+    ))}
+  </ul>
+  <button class="pill" type="button">+ Пакет</button>
+</SectionShell>
+
+<style>
+  .q { border: 0; padding: 0; margin: 0; display: grid; gap: var(--s-3); }
+  .q__t { font-weight: var(--w-head-lg); line-height: var(--lh-caption); }
+  .q__opts { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+
+  .packs { list-style: none; display: grid; gap: var(--s-2); }
+  .pack {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-4);
+    padding: var(--s-4);
+    font: inherit;
+    text-align: left;
+    color: var(--fg);
+    background: var(--surface);
+    border: 0;
+    border-radius: var(--radius-card);
+    cursor: pointer;
+  }
+  .pack__main { display: grid; gap: 2px; min-width: 0; }
+  .pack__name { font-weight: var(--w-head-lg); line-height: var(--lh-caption); }
+  .pack__inc { font-size: var(--fs-small); line-height: var(--lh-snug); }
+  .pack__price { flex: none; font-weight: var(--w-head-lg); }
+</style>

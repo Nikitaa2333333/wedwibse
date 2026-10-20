@@ -41,16 +41,16 @@ export const DEMO_CARDS: CabinetCard[] = [
     name: 'Алексей Сухорада',
     role: 'Фотограф',
     status: 'published',
-    note: 'Опубликована 18 октября',
+    note: 'На сайте с 18 октября · правка на проверке с 12:04',
     url: '/moskva/podryadchiki/fotografy/suhorada/',
     filled: 100,
-    pending: 'Новые фото и цены на проверке с 12:04 — на сайте пока прежняя версия',
+    pending: 'Новые фото и цены на проверке — на сайте пока прежняя версия',
   },
   {
     name: 'Алексей Сухорада',
     role: 'Видеограф',
     status: 'returned',
-    note: 'Вернули 19 октября',
+    note: 'Вернули 19 октября: в тексте телефон',
     filled: 80,
     reason: 'В тексте указан телефон. Контакты — только в разделе «Контакты».',
   },
@@ -73,3 +73,22 @@ export const DEMO_INTEREST = {
     { when: '18 октября', what: 'Сохранили в избранное', card: 'Видеограф' },
   ],
 };
+
+// Разделы анкеты подрядчика и их состояние — то, что хаб анкеты показывает
+// строками (CABINET-UX.md §2 п.3). Вживую считается из данных ревизии.
+export interface FormSection {
+  slug: string;
+  label: string;
+  /** строка состояния справа от названия */
+  state: string;
+  done: boolean;
+}
+
+export const DEMO_FORM_SECTIONS: FormSection[] = [
+  { slug: 'osnovnoe', label: 'Основное', state: 'Алексей Сухорада · Фотограф', done: true },
+  { slug: 'foto', label: 'Фото', state: '9 из 50', done: true },
+  { slug: 'tekst', label: 'Текст', state: '4 раздела', done: true },
+  { slug: 'voprosy', label: 'Вопросы', state: '5 из 8', done: false },
+  { slug: 'prays', label: 'Прайс', state: '3 пакета', done: true },
+  { slug: 'kontakty', label: 'Контакты', state: 'Телефон, Telegram', done: true },
+];
