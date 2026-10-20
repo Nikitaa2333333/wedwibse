@@ -29,6 +29,8 @@ interface Props {
   look?: 'promo' | 'auth' | 'tech';
   /** раздел кабинета, подсвеченный в меню */
   section?: Section;
+  /** свой знак в шапке вместо «WED Secrets для профи» (экран входа) */
+  brand?: string;
 }
 
 const {
@@ -38,6 +40,7 @@ const {
   prototype = true,
   look = 'tech',
   section,
+  brand,
 } = Astro.props;
 
 // Разделы кабинета. «Интерес» — журнал: кто открыл контакты, сколько раз
@@ -56,10 +59,10 @@ const menu = [
 
   <div class={`profi profi--${look}`}>
     <header class="pbar">
-      <div class="pbar__in container">
+      <div class:list={['pbar__in container', { 'pbar__in--center': brand }]}>
         <a class="pbar__brand" href="/profi/">
-          <span class="pbar__name">WED Secrets</span>
-          <span class="pbar__for">для профи</span>
+          <span class="pbar__name">{brand ?? 'WED Secrets'}</span>
+          {!brand && <span class="pbar__for">для профи</span>}
         </a>
         {action && <a class="pill pill--sm pbar__btn" href={action.href}>{action.label}</a>}
       </div>
@@ -95,6 +98,8 @@ const menu = [
     gap: var(--s-4);
     min-height: 52px;
   }
+  /* Свой знак (экран входа) стоит по центру, как на макете. */
+  .pbar__in--center { justify-content: center; }
   .pbar__btn { padding-block: 6px; }
 
   .pbar__brand {

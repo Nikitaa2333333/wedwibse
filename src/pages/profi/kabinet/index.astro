@@ -5,12 +5,13 @@
 // внутри ничего не обрамляется (правило 20.10). Действия — на экране
 // карточки, здесь только переход. Данные — ЗАГЛУШКА из profi-demo.ts.
 import { Image } from 'astro:assets';
-import Icon from '../../../components/Icon.astro';
+import Glyph from '../../../components/profi/Glyph.astro';
 import ProfiShell from '../../../components/profi/ProfiShell.astro';
 import { resolveImage, IMG_WIDTHS } from '../../../lib/images';
 import { DEMO_ACCOUNT, DEMO_CARDS, STATUS_LABEL } from '../../../data/profi-demo';
 
 const left = DEMO_ACCOUNT.cardsMax - DEMO_CARDS.length;
+const STATUS_CLASS = { published: 'status--ok', review: 'status--info', returned: 'status--bad', draft: '' } as const;
 ---
 
 <ProfiShell title="Кабинет" section="cards">
@@ -29,20 +30,17 @@ const left = DEMO_ACCOUNT.cardsMax - DEMO_CARDS.length;
               )}
             </span>
             <span class="card__body">
-              <span class={`chip chip--tag card__status is-${c.status}`}>{STATUS_LABEL[c.status]}</span>
+              <span class={`status ${STATUS_CLASS[c.status]}`}>{STATUS_LABEL[c.status]}</span>
               <span class="card__name">{c.role}</span>
               <span class="card__note">{c.note}</span>
             </span>
-            <Icon name="arrowRight" class="card__go" />
+            <Glyph name="chevronRight" class="card__go" />
           </a>
         </li>
       ))}
     </ul>
 
-    {left > 0 && (
-      <a class="pill pill--lg pill--block cab__add" href="/profi/kabinet/novaya/">+ Добавить карточку</a>
-      <p class="cab__left">Можно ещё {left} из {DEMO_ACCOUNT.cardsMax}: другая профессия или площадка</p>
-    )}
+    {left > 0 && <a class="cab__add" href="/profi/kabinet/novaya/">+ Добавить карточку</a>}
   </main>
 </ProfiShell>
 
@@ -75,12 +73,18 @@ const left = DEMO_ACCOUNT.cardsMax - DEMO_CARDS.length;
   .card__empty { font-size: var(--fs-caption); text-align: center; }
 
   .card__body { display: grid; gap: var(--s-1); min-width: 0; justify-items: start; }
-  .card__status { background: var(--bg); }
-  .card__status.is-published, .card__status.is-returned { background: var(--fg); color: var(--bg); }
   .card__name { font-size: var(--fs-h3); font-weight: var(--w-head-lg); line-height: var(--lh-caption); }
   .card__note { font-size: var(--fs-small); line-height: var(--lh-snug); }
-  :global(.card__go) { width: 22px; height: 22px; }
+  :global(.card__go) { width: 22px; height: 22px; color: var(--text-2); }
 
-  .cab__add { margin-top: var(--s-5); }
-  .cab__left { margin-top: var(--s-3); font-size: var(--fs-small); text-align: center; }
+  /* «Добавить карточку» — просто текст по центру, без подчёркивания и рамки. */
+  .cab__add {
+    display: block;
+    margin-top: var(--s-5);
+    text-align: center;
+    font-size: var(--fs-body);
+    font-weight: var(--w-head-lg);
+    color: inherit;
+    text-decoration: none;
+  }
 </style>

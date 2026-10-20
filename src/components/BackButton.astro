@@ -12,20 +12,29 @@
 // вкладки, и «шаг назад по истории» вернул бы на соседнюю вкладку,
 // а не к выбору раздела.
 import Icon from './Icon.astro';
+import Glyph from './profi/Glyph.astro';
 
 interface Props {
   href: string;
   label?: string;
   history?: boolean;
   class?: string;
+  /** кабинет: тонкая стрелка без плашки (CLAUDE.md, «Кабинет — это не сайт») */
+  plain?: boolean;
 }
 
-const { href, label = 'Назад', history = true, class: className } = Astro.props;
+const { href, label = 'Назад', history = true, class: className, plain = false } = Astro.props;
 ---
 
-<a class:list={['hero-btn', className]} href={href} aria-label={label} data-back-btn={history ? '' : undefined}>
-  <Icon name="arrowLeft" />
-</a>
+{plain ? (
+  <a class:list={['back', className]} href={href} aria-label={label} data-back-btn={history ? '' : undefined}>
+    <Glyph name="chevronLeft" class="back__mark" />
+  </a>
+) : (
+  <a class:list={['hero-btn', className]} href={href} aria-label={label} data-back-btn={history ? '' : undefined}>
+    <Icon name="arrowLeft" />
+  </a>
+)}
 
 <script>
   document.querySelectorAll<HTMLAnchorElement>('[data-back-btn]').forEach((btn) => {
@@ -37,3 +46,18 @@ const { href, label = 'Назад', history = true, class: className } = Astro.p
     });
   });
 </script>
+
+<style>
+  /* Кабинет: тонкая стрелка, зона нажатия 44px, сдвинута влево, чтобы сама
+     стрелка стояла по краю текста, а не врезалась в заголовок. */
+  .back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    margin-left: -12px;
+    color: inherit;
+  }
+  :global(.back__mark) { width: 26px; height: 26px; }
+</style>

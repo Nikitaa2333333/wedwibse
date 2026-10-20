@@ -1,0 +1,18 @@
+---
+// Способы входа плашками: Telegram и MAX — через одно расстояние.
+// Почта — форма на самой странице выше, отдельной плашки у неё нет.
+import TelegramButton from './TelegramButton.astro';
+import MaxButton from './MaxButton.astro';
+
+interface Props {
+  /** «Войти через» на входе, «Через» на регистрации */
+  prefix?: string;
+}
+
+const { prefix = 'Войти через' } = Astro.props;
+---
+
+<div class="auth__methods">
+  <TelegramButton label={`${prefix} Telegram`} />
+  <MaxButton label={prefix} />
+</div>

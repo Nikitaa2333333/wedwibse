@@ -1,11 +1,11 @@
 ---
-// РЕДАКТОР ТЕКСТА «КАК В МЕССЕНДЖЕРЕ» (CABINET-UX.md §2 п.6–7). Раздел =
-// один блок текста: первая строка — заголовок, строки с «—» — список,
-// пустая строка — новый абзац, **жирный** — как в Telegram. Это ровно
-// StorySection, сервер разбирает блок без разметки.
-// Сверху — предложенная структура категории: «Взять за основу» ставит
-// заголовки в пустые блоки, подсказка остаётся под блоком, пока в нём
-// одна строка. Кнопки под блоком: жирный, список, выше, ниже, удалить
+// РЕДАКТОР ТЕКСТА (CABINET-UX.md §2 п.6–7). Раздел = один блок: первая
+// строка — заголовок, строки с «—» — список, пустая строка — новый абзац.
+// Это ровно StorySection. Жирности в тексте нет: на сайте жирность внутри
+// абзаца запрещена (CLAUDE.md глобальный), форматирование — заголовок,
+// абзацы, список.
+// Шаблон категории — одна тихая строка сверху: «Взять за основу» ставит
+// заголовки в пустые блоки. Под блоком — список, выше, ниже, удалить
 // (удаление с «Вернуть» вместо «Вы уверены?» — правило 9).
 // Логика клиентская, в прототипе ничего не отправляет.
 import type { SuggestedStructure } from '../../data/profi-structures';
@@ -25,11 +25,7 @@ const blocks = structure.sections.map((sec, i) => ({
 ---
 
 <div class="tb" data-tb>
-  <div class="tb__struct">
-    <p class="tb__struct-t">{structure.label}</p>
-    <p class="tb__struct-d">{structure.sections.map((s) => s.title).join(' · ')}</p>
-    <button class="pill pill--sm" type="button" data-tb-apply>Взять за основу</button>
-  </div>
+  <p class="tb__struct">{structure.label} · <button class="tb__link" type="button" data-tb-apply>взять за основу</button></p>
 
   <ol class="tb__list" data-tb-list>
     {blocks.map((b, i) => (
@@ -37,7 +33,6 @@ const blocks = structure.sections.map((sec, i) => ({
         <textarea class="tb__ta" rows="3" placeholder={`${b.title}\n${b.hint}`} aria-label={`Раздел ${i + 1}`} data-tb-ta>{b.value}</textarea>
         <p class="tb__hint" data-tb-hint hidden>{b.hint}</p>
         <div class="tb__tools">
-          <button class="tb__tool" type="button" data-tb-bold aria-label="Жирный"><b>Ж</b></button>
           <button class="tb__tool" type="button" data-tb-list-btn aria-label="Список">—</button>
           <button class="tb__tool tb__tool--right" type="button" data-tb-up aria-label="Выше">↑</button>
           <button class="tb__tool" type="button" data-tb-down aria-label="Ниже">↓</button>
@@ -53,7 +48,6 @@ const blocks = structure.sections.map((sec, i) => ({
 Текст" aria-label="Новый раздел" data-tb-ta></textarea>
       <p class="tb__hint" data-tb-hint hidden></p>
       <div class="tb__tools">
-        <button class="tb__tool" type="button" data-tb-bold aria-label="Жирный"><b>Ж</b></button>
         <button class="tb__tool" type="button" data-tb-list-btn aria-label="Список">—</button>
         <button class="tb__tool tb__tool--right" type="button" data-tb-up aria-label="Выше">↑</button>
         <button class="tb__tool" type="button" data-tb-down aria-label="Ниже">↓</button>
@@ -63,8 +57,8 @@ const blocks = structure.sections.map((sec, i) => ({
   </template>
 
   <p class="tb__undo" data-tb-undo hidden>Раздел удалён · <button type="button" data-tb-restore>Вернуть</button></p>
-  <button class="pill" type="button" data-tb-add>+ Раздел</button>
-  <p class="tb__note">Телефоны, почта, ссылки и ники в тексте не пройдут проверку — для них есть раздел «Контакты».</p>
+  <button class="tb__link tb__link--add" type="button" data-tb-add>+ Раздел</button>
+  <p class="tb__note">Телефоны, почта и ссылки — только в «Контактах», в тексте не пройдут проверку.</p>
 </div>
 
 <script>
@@ -94,13 +88,7 @@ const blocks = structure.sections.map((sec, i) => ({
     };
     list.querySelectorAll<HTMLElement>('[data-tb-block]').forEach(wire);
 
-    // Выделение → **жирный**; строки выделения → «— пункт»
-    const wrap = (ta: HTMLTextAreaElement, mark: string) => {
-      const { selectionStart: a, selectionEnd: b, value } = ta;
-      const sel = value.slice(a, b) || 'текст';
-      ta.setRangeText(`${mark}${sel}${mark}`, a, b, 'select');
-      ta.dispatchEvent(new Event('input', { bubbles: true }));
-    };
+    // Строки выделения → «— пункт»
     const listify = (ta: HTMLTextAreaElement) => {
       const { selectionStart: a, selectionEnd: b, value } = ta;
       const from = value.lastIndexOf('\n', a - 1) + 1;
@@ -141,8 +129,7 @@ const blocks = structure.sections.map((sec, i) => ({
         return;
       }
       if (!block || !ta) return;
-      if (btn.hasAttribute('data-tb-bold')) wrap(ta, '**');
-      else if (btn.hasAttribute('data-tb-list-btn')) listify(ta);
+      if (btn.hasAttribute('data-tb-list-btn')) listify(ta);
       else if (btn.hasAttribute('data-tb-up')) block.previousElementSibling?.before(block);
       else if (btn.hasAttribute('data-tb-down')) block.nextElementSibling?.after(block);
       else if (btn.hasAttribute('data-tb-del')) {
@@ -160,9 +147,9 @@ const blocks = structure.sections.map((sec, i) => ({
 
 <style>
   .tb { display: grid; gap: var(--s-5); }
-  .tb__struct { display: grid; gap: var(--s-2); justify-items: start; }
-  .tb__struct-t { font-weight: var(--w-head-lg); line-height: var(--lh-caption); }
-  .tb__struct-d { font-size: var(--fs-small); line-height: var(--lh-snug); }
+  .tb__struct { font-size: var(--fs-small); color: var(--text-2); }
+  .tb__link { font: inherit; color: var(--fg); font-weight: var(--w-medium); background: none; border: 0; padding: 0; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+  .tb__link--add { justify-self: start; font-size: var(--fs-body); }
 
   /* Само поле и есть плашка раздела, второй рамки нет */
   .tb__list { list-style: none; display: grid; gap: var(--s-4); }
@@ -193,16 +180,15 @@ const blocks = structure.sections.map((sec, i) => ({
     display: grid;
     place-items: center;
     font: inherit;
-    font-size: var(--fs-small);
-    color: var(--fg);
+    font-size: var(--fs-body);
+    color: var(--text-2);
     background: transparent;
-    border: 1px solid var(--hairline);
-    border-radius: var(--radius-pill);
+    border: 0;
     cursor: pointer;
   }
   .tb__tool--right { margin-left: auto; }
 
   .tb__undo { font-size: var(--fs-small); }
   .tb__undo button { font: inherit; font-weight: var(--w-medium); color: inherit; background: none; border: 0; text-decoration: underline; cursor: pointer; }
-  .tb__note { font-size: var(--fs-caption); }
+  .tb__note { font-size: var(--fs-caption); color: var(--text-2); }
 </style>

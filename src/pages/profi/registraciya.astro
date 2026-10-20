@@ -4,7 +4,7 @@
 // отдельные галочки со ссылками на тексты, без обеих кнопки неактивны.
 // Тексты пишет юрист — ссылки пока ведут на заглушку. Отправки нет.
 import ProfiShell from '../../components/profi/ProfiShell.astro';
-import MessengerLogin from '../../components/profi/MessengerLogin.astro';
+import AuthMethods from '../../components/profi/AuthMethods.astro';
 import '../../components/profi/auth.css';
 ---
 
@@ -28,23 +28,17 @@ import '../../components/profi/auth.css';
       </label>
     </div>
 
-    <div class="auth__gate" data-consent-gate aria-disabled="true">
-      <MessengerLogin prefix="Через" />
-    </div>
-
-    <p class="auth__or">или по почте</p>
-
-    <form class="auth__form auth__gate" action="/profi/kabinet/" method="get" data-consent-gate aria-disabled="true">
-      <label class="field">
-        <span class="field__label">Почта</span>
-        <input class="input" type="email" name="email" autocomplete="email" />
-      </label>
-      <label class="field">
-        <span class="field__label">Пароль</span>
-        <input class="input" type="password" name="password" autocomplete="new-password" placeholder="Не короче 8 знаков" />
-      </label>
-      <button class="pill pill--lg pill--block" type="submit">Создать учётку</button>
+    <form class="auth__form auth__form--lg auth__gate" action="/profi/kabinet/" method="get" data-consent-gate aria-disabled="true">
+      <input class="input" type="email" name="email" placeholder="Почта" aria-label="Почта" autocomplete="email" />
+      <input class="input" type="password" name="password" placeholder="Пароль, не короче 8 знаков" aria-label="Пароль" autocomplete="new-password" />
+      <button class="pill pill--lg pill--solid pill--block" type="submit">Создать учётку</button>
     </form>
+
+    <p class="auth__divider">или</p>
+
+    <div class="auth__gate" data-consent-gate aria-disabled="true">
+      <AuthMethods prefix="Через" />
+    </div>
 
     <p class="auth__alt">Уже есть учётка? <a href="/profi/vhod/">Войти</a></p>
   </main>

@@ -4,7 +4,7 @@
 // кабинета хозяина Airbnb). Здесь — состояние разделов строками и кнопка
 // «Отправить на проверку». Прогресс считается из тех же данных, что
 // у сервера. Значения — ЗАГЛУШКА (карточка Алексея Сухорады).
-import Icon from '../../../../components/Icon.astro';
+import Glyph from '../../../../components/profi/Glyph.astro';
 import ProfiShell from '../../../../components/profi/ProfiShell.astro';
 import BackButton from '../../../../components/BackButton.astro';
 import { DEMO_FORM_SECTIONS } from '../../../../data/profi-demo';
@@ -15,12 +15,10 @@ const pct = Math.round((done / DEMO_FORM_SECTIONS.length) * 100);
 
 <ProfiShell title="Анкета карточки" section="cards">
   <main class="container hub">
+    <BackButton plain href="/profi/kabinet/" label="К карточкам" />
     <header class="hub__head">
-      <BackButton href="/profi/kabinet/" label="К карточкам" />
-      <div class="hub__titles">
-        <h1 class="t-h1 hub__title">Фотограф</h1>
-        <p class="hub__saved">Черновик · сохранено 12:04</p>
-      </div>
+      <h1 class="t-h1 hub__title">Фотограф</h1>
+      <p class="hub__saved"><span class="status">Черновик</span> сохранено 12:04</p>
     </header>
 
     <div class="hub__progress" role="progressbar" aria-valuenow={pct} aria-valuemin="0" aria-valuemax="100" aria-label="Заполнено">
@@ -34,9 +32,10 @@ const pct = Math.round((done / DEMO_FORM_SECTIONS.length) * 100);
           <a class="row" href={`/profi/kabinet/anketa/${s.slug}/`}>
             <span class="row__main">
               <span class="row__label">{s.label}</span>
-              <span class={`row__state${s.done ? '' : ' row__state--todo'}`}>{s.state}</span>
+              <span class={`row__state${s.done ? '' : ' row__state--todo'}`}>{s.done ? s.state : `пусто · ${s.state}`}</span>
             </span>
-            <Icon name="arrowRight" class="row__go" />
+            {s.done && <Glyph name="check" class="row__ok" />}
+            <Glyph name="chevronRight" class="row__go" />
           </a>
         </li>
       ))}
@@ -44,42 +43,42 @@ const pct = Math.round((done / DEMO_FORM_SECTIONS.length) * 100);
 
     <div class="hub__send">
       <a class="pill pill--lg pill--solid pill--block" href="/profi/kabinet/proverka/">Отправить на проверку</a>
-      <p class="hub__note">Проверим за сутки. Пока карточка на проверке, править её нельзя.</p>
+      <p class="hub__note"><span class="status status--info">Проверим за сутки</span> Пока карточка на проверке, править её нельзя.</p>
     </div>
   </main>
 </ProfiShell>
 
 <style>
-  .hub { max-width: 720px; padding-top: var(--s-3); }
-  .hub__head { display: flex; align-items: center; gap: var(--s-4); }
-  .hub__titles { display: grid; gap: 2px; }
+  .hub { max-width: 720px; padding-top: var(--s-1); }
+  .hub__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-4); }
   .hub__title { line-height: var(--lh-caption); }
-  .hub__saved { font-size: var(--fs-caption); }
+  .hub__saved { display: flex; align-items: center; gap: var(--s-2); font-size: var(--fs-caption); color: var(--text-2); white-space: nowrap; }
 
-  .hub__progress { display: grid; gap: var(--s-2); margin-top: var(--s-6); }
+  .hub__progress { display: grid; gap: var(--s-2); margin-top: var(--s-4); }
   .hub__bar { display: block; height: 6px; border-radius: var(--radius-pill); background: var(--surface); overflow: hidden; }
-  .hub__fill { display: block; height: 100%; width: var(--p); background: var(--fg); border-radius: inherit; }
-  .hub__pct { font-size: var(--fs-caption); font-weight: var(--w-medium); }
+  .hub__fill { display: block; height: 100%; width: var(--p); background: var(--st-ok); border-radius: inherit; }
+  .hub__pct { font-size: var(--fs-caption); color: var(--text-2); }
 
-  /* Разделы — строки без плашек: имя жирно, состояние строкой, стрелка. */
-  .rows { list-style: none; margin-top: var(--s-6); }
+  /* Разделы — плотные строки с линией между ними: имя, состояние, галочка
+     у заполненного, у пустого — слово «пусто» красным. */
+  .rows { list-style: none; margin-top: var(--s-5); }
   .row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: var(--s-4);
-    padding: var(--s-4) 0;
+    gap: var(--s-3);
+    padding: var(--s-3) 0;
     color: inherit;
     text-decoration: none;
     border-top: 1px solid var(--hairline);
   }
   .rows li:last-child .row { border-bottom: 1px solid var(--hairline); }
-  .row__main { display: grid; gap: 2px; min-width: 0; }
+  .row__main { display: grid; gap: 2px; min-width: 0; flex: 1; }
   .row__label { font-size: var(--fs-body); font-weight: var(--w-head-lg); line-height: var(--lh-caption); }
-  .row__state { font-size: var(--fs-small); line-height: var(--lh-caption); }
-  .row__state--todo { font-weight: var(--w-medium); }
-  :global(.row__go) { width: 22px; height: 22px; flex: none; }
+  .row__state { font-size: var(--fs-small); line-height: var(--lh-caption); color: var(--text-2); }
+  .row__state--todo { color: var(--st-bad-text); font-weight: var(--w-medium); }
+  :global(.row__ok) { width: 20px; height: 20px; color: var(--st-ok); stroke-width: 2.2; }
+  :global(.row__go) { width: 20px; height: 20px; color: var(--text-2); }
 
-  .hub__send { margin-top: var(--section-gap); display: grid; gap: var(--s-3); }
-  .hub__note { font-size: var(--fs-caption); text-align: center; }
+  .hub__send { margin-top: var(--s-6); display: grid; gap: var(--s-3); }
+  .hub__note { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: var(--s-2); font-size: var(--fs-caption); text-align: center; }
 </style>

@@ -4,6 +4,8 @@
 // сама заявка подрядчику — третий этап, STAGE2.md §1). Данные — ЗАГЛУШКА.
 import ProfiShell from '../../../components/profi/ProfiShell.astro';
 import { DEMO_INTEREST } from '../../../data/profi-demo';
+
+const peak = Math.max(...DEMO_INTEREST.views);
 ---
 
 <ProfiShell title="Интерес" section="interest">
@@ -19,6 +21,19 @@ import { DEMO_INTEREST } from '../../../data/profi-demo';
         </div>
       ))}
     </dl>
+
+    <section class="ir__chart" aria-label="Просмотры карточки по дням">
+      <div class="ir__chart-head">
+        <h2 class="ir__h2">Просмотры по дням</h2>
+        <span class="status status--ok">пик {peak}</span>
+      </div>
+      <div class="ir__bars" role="img" aria-label={`Просмотры за 30 дней, пик ${peak}`}>
+        {DEMO_INTEREST.views.map((v, i) => (
+          <span class={`ir__bar${i === DEMO_INTEREST.views.length - 1 ? ' ir__bar--now' : ''}`} style={`--h:${Math.round((v / peak) * 100)}%`}></span>
+        ))}
+      </div>
+      <div class="ir__axis"><span>30 дней назад</span><span>сегодня</span></div>
+    </section>
 
     <h2 class="t-h2 ir__h">Последние</h2>
     <ul class="ir__log">
@@ -51,7 +66,16 @@ import { DEMO_INTEREST } from '../../../data/profi-demo';
   .ir__num { font-size: var(--fs-h3); font-weight: var(--w-head-lg); line-height: var(--lh-heading); }
   .ir__label { margin-top: var(--s-1); font-size: var(--fs-caption); line-height: var(--lh-caption); }
 
-  .ir__h { margin-top: var(--section-gap); }
+  .ir__chart { margin-top: var(--s-5); display: grid; gap: var(--s-3); }
+  .ir__chart-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); }
+  .ir__h2 { font-family: var(--font-sans); font-size: var(--fs-body); font-weight: var(--w-head-lg); }
+  /* Столбцы без библиотеки: высота каждого — доля от пика, сегодняшний зелёный. */
+  .ir__bars { display: flex; align-items: flex-end; gap: 3px; height: 120px; }
+  .ir__bar { flex: 1; height: var(--h); min-height: 4px; background: var(--st-info); border-radius: 3px 3px 0 0; }
+  .ir__bar--now { background: var(--st-ok); }
+  .ir__axis { display: flex; justify-content: space-between; font-size: var(--fs-caption); color: var(--text-2); }
+
+  .ir__h { margin-top: var(--s-6); }
   .ir__log { list-style: none; display: grid; gap: var(--s-2); margin-top: var(--s-4); }
   .ir__row {
     display: grid;

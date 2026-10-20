@@ -1,0 +1,20 @@
+---
+// Тонкие значки кабинета: стрелки и галочка линией 1.6px, как у Apple.
+// Набор сайта (Solar Bold, Icon.astro) для кабинета слишком жирный
+// (CLAUDE.md, «Кабинет — это не сайт»). Цвет и размер — от места вставки.
+interface Props {
+  name: 'chevronRight' | 'chevronLeft' | 'check';
+  class?: string;
+}
+const { name, class: className } = Astro.props;
+---
+
+<svg class={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  {name === 'chevronRight' && <path d="M9.5 5.5 16 12l-6.5 6.5" />}
+  {name === 'chevronLeft' && <path d="M14.5 5.5 8 12l6.5 6.5" />}
+  {name === 'check' && <path d="M5 12.5 9.7 17 19 7.5" />}
+</svg>
+
+<style>
+  svg { display: block; width: 20px; height: 20px; flex: none; }
+</style>

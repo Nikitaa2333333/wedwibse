@@ -6,8 +6,9 @@
 // SPECIALIST_CATEGORIES): новая категория сама появится и здесь.
 // В прототипе любая категория подрядчика ведёт на анкету фотографа.
 import ProfiShell from '../../../components/profi/ProfiShell.astro';
+import BackButton from '../../../components/BackButton.astro';
+import Glyph from '../../../components/profi/Glyph.astro';
 import { SPECIALIST_CATEGORIES, SPECIALIST_GROUPS } from '../../../data/specialists';
-import { DEMO_ACCOUNT, DEMO_CARDS } from '../../../data/profi-demo';
 
 const bySlug = new Map(SPECIALIST_CATEGORIES.map((c) => [c.slug, c]));
 const grouped = new Set(SPECIALIST_GROUPS.flatMap((g) => g.categories));
@@ -19,28 +20,31 @@ const groups = [
   { label: 'Другое', cats: SPECIALIST_CATEGORIES.filter((c) => !grouped.has(c.slug)) },
 ].filter((g) => g.cats.length > 0);
 
-const left = DEMO_ACCOUNT.cardsMax - DEMO_CARDS.length;
 ---
 
 <ProfiShell title="Новая карточка" section="cards">
-  <main class="section container nw">
+  <main class="container nw">
+    <BackButton plain href="/profi/kabinet/" label="К карточкам" />
     <h1 class="t-h1">Новая карточка</h1>
-    <p class="nw__lead">Свободно {left} из {DEMO_ACCOUNT.cardsMax}. Имя и контакты подставим из учётки, работы и текст — свои у каждой карточки.</p>
 
-    <a class="nw__venue" href="/profi/kabinet/anketa-ploshchadki/">
-      <span class="nw__t">Площадка</span>
-      <span class="nw__d">Ресторан, загородный клуб, лофт, шатёр. Залы, вместимость, условия аренды и меню.</span>
+    <a class="nw__row nw__row--lead" href="/profi/kabinet/anketa-ploshchadki/">
+      <span>Площадка</span>
+      <Glyph name="chevronRight" class="nw__go" />
     </a>
 
-    <h2 class="t-h2 nw__h">Подрядчик</h2>
-    <p class="nw__d">Выберите категорию — от неё зависят вопросы для фильтров. Сменить её потом нельзя, для второй профессии заводят вторую карточку.</p>
+    <h2 class="nw__h">Подрядчик</h2>
 
     {groups.map((g) => (
       <section class="nw__group">
         <h3 class="nw__gt">{g.label}</h3>
         <ul class="nw__cats">
           {g.cats.map((c) => (
-            <li><a class="chip" href="/profi/kabinet/anketa/">{c.role}</a></li>
+            <li>
+              <a class="nw__row" href="/profi/kabinet/anketa/">
+                <span>{c.role}</span>
+                <Glyph name="chevronRight" class="nw__go" />
+              </a>
+            </li>
           ))}
         </ul>
       </section>
@@ -49,35 +53,33 @@ const left = DEMO_ACCOUNT.cardsMax - DEMO_CARDS.length;
 </ProfiShell>
 
 <style>
-  .nw { max-width: 720px; padding-top: var(--s-4); }
-  .nw__lead { margin-top: var(--s-4); max-width: var(--measure-text); }
+  .nw { max-width: 720px; padding-top: var(--s-1); padding-bottom: var(--s-7); }
+  .nw h1 { margin-top: var(--s-1); }
 
-  .nw__venue {
-    display: grid;
-    gap: var(--s-2);
-    margin-top: var(--s-6);
-    padding: var(--s-5);
-    background: var(--fg);
-    color: var(--bg);
-    border-radius: var(--radius-card);
+  /* Пункты выбора — строки с линией между ними, справа тонкая стрелка. */
+  .nw__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-4);
+    padding: var(--s-3) 0;
+    color: inherit;
     text-decoration: none;
+    border-top: 1px solid var(--hairline);
   }
-  .nw__t {
-    font-size: var(--fs-h3);
-    font-weight: var(--w-head);
-    line-height: var(--lh-heading);
-  }
-  .nw__d { font-size: var(--fs-small); max-width: var(--measure-text); }
+  .nw__row--lead { margin-top: var(--s-5); border-bottom: 1px solid var(--hairline); font-weight: var(--w-head-lg); font-size: var(--fs-body); }
+  :global(.nw__go) { color: var(--text-2); }
 
-  .nw__h { margin-top: var(--section-gap); margin-bottom: var(--s-3); }
+  .nw__h { margin-top: var(--s-6); font-family: var(--font-sans); font-size: var(--fs-h3); font-weight: var(--w-head-lg); }
 
-  .nw__group { margin-top: var(--s-6); }
+  .nw__group { margin-top: var(--s-5); }
   .nw__gt {
     font-family: var(--font-sans);
-    font-size: var(--fs-body);
-    font-weight: var(--w-head-lg);
-    line-height: var(--lh-caption);
+    font-size: var(--fs-caption);
+    font-weight: var(--w-medium);
+    color: var(--text-2);
+    padding-bottom: var(--s-2);
   }
-  .nw__cats { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-3); list-style: none; }
-  .nw__cats .chip { text-decoration: none; color: inherit; }
+  .nw__cats { list-style: none; }
+  .nw__cats li:last-child .nw__row { border-bottom: 1px solid var(--hairline); }
 </style>

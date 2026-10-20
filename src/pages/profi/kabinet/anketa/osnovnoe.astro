@@ -1,6 +1,8 @@
 ---
-// ОСНОВНОЕ — имя, адрес страницы, категория. Категория закрепляется при
-// создании карточки (CABINET.md §21). ЗАГЛУШКА.
+// ОСНОВНОЕ — имя и категория. Адрес страницы человек не правит: он строится
+// из имени и после публикации меняется только модератором, поэтому показан
+// мелко внизу, без поля. Категория закрепляется при создании (CABINET.md §21).
+// ЗАГЛУШКА.
 import SectionShell from '../../../../components/profi/SectionShell.astro';
 ---
 
@@ -10,17 +12,14 @@ import SectionShell from '../../../../components/profi/SectionShell.astro';
     <input class="input" value="Алексей Сухорада" />
   </label>
   <div class="field">
-    <span class="field__label">Адрес страницы</span>
-    <p class="ro">wed-secrets.ru/…/fotografy/<b>suhorada</b>/</p>
-    <span class="field__note">После публикации адрес меняет только модератор</span>
-  </div>
-  <div class="field">
     <span class="field__label">Категория</span>
     <p class="ro">Фотограф</p>
     <span class="field__note">Ещё профессия — вторая карточка</span>
   </div>
+  <p class="addr">Адрес страницы: wed-secrets.ru/…/fotografy/suhorada/</p>
 </SectionShell>
 
 <style>
-  .ro { font-size: var(--fs-body); overflow-wrap: anywhere; }
+  .ro { font-size: var(--fs-body); }
+  .addr { font-size: var(--fs-caption); color: var(--text-2); overflow-wrap: anywhere; }
 </style>

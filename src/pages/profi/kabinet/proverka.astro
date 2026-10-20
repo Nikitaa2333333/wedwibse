@@ -9,18 +9,14 @@ import ProfiShell from '../../../components/profi/ProfiShell.astro';
 <ProfiShell title="Проверка карточки" section="cards">
   <main class="section container st">
     <section class="st__state">
-      <span class="chip chip--tag">На проверке</span>
-      <h1 class="t-h1">Отправили модератору</h1>
-      <p>Проверим до 24 часов и напишем в мессенджер и на почту. Пока карточка на проверке, править её нельзя: модератор видит ровно то, что вы отправили.</p>
-      <ul class="list">
-        <li>Уже опубликованная версия остаётся на сайте до решения.</li>
-        <li>Если всё хорошо — изменения появятся на сайте через секунды после одобрения.</li>
-      </ul>
-      <a class="pill pill--lg" href="/profi/kabinet/">К моим карточкам</a>
+      <span class="status status--info">Отправлено модератору · на проверке</span>
+      <h1 class="t-h1">Проверим до 24 часов</h1>
+      <p>Напишем в мессенджер и на почту. Пока карточка на проверке, править её нельзя. Версия на сайте остаётся прежней до решения.</p>
+      <a class="st__link" href="/profi/kabinet/">К карточкам</a>
     </section>
 
     <section class="st__state st__state--back">
-      <span class="chip chip--tag">Вернули с причиной</span>
+      <span class="status status--bad">Вернули с причиной</span>
       <h2 class="t-h2">Модератор вернул карточку</h2>
       <p class="st__why">«В разделе „Как я снимаю“ указан телефон. Контакты — только в разделе „Контакты“, там их увидит пара по кнопке».</p>
       <p>Исправьте и отправьте ещё раз — проверка снова до 24 часов.</p>
@@ -35,4 +31,5 @@ import ProfiShell from '../../../components/profi/ProfiShell.astro';
   .st__state p { max-width: var(--measure-text); }
   .st__state--back { padding-top: var(--section-gap); border-top: 1px solid var(--hairline); }
   .st__why { font-weight: var(--w-medium); }
+  .st__link { color: inherit; font-weight: var(--w-medium); text-decoration: underline; text-underline-offset: 3px; }
 </style>

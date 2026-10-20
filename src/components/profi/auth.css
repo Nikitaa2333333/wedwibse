@@ -17,8 +17,35 @@
   text-align: center;
 }
 
+.auth__or--lg { font-size: var(--fs-body); }
+
 .auth__form { display: grid; gap: var(--s-4); }
 .auth__form .pill { margin-top: var(--s-2); }
+
+/* Вход по почте крупнее: поля с подписью внутри (placeholder), ссылка
+   «Забыли пароль?» по центру под ними, кнопка следом. */
+.auth__form--lg { gap: var(--s-4); }
+.auth__form--lg .input { min-height: 60px; font-size: var(--fs-body); }
+.auth__forgot { justify-self: center; font-size: var(--fs-small); color: inherit; }
+
+/* Способы входа одним блоком: Telegram, MAX, почта — через одно расстояние,
+   без обводки (1px рамки pill возвращаем отступом, чтобы высота не просела). */
+.auth__methods { display: grid; gap: var(--s-2); }
+.auth__methods .pill { border: 0; padding-block: 17px; }
+
+/* Разделитель «или» между почтой и мессенджерами: линия, слово, линия. */
+.auth__divider {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  font-size: var(--fs-small);
+}
+.auth__divider::before,
+.auth__divider::after { content: ''; flex: 1; height: 1px; background: var(--hairline); }
+
+/* «Входили через мессенджер?» на экране пароля: фраза и те же две плашки. */
+.auth__social { display: grid; gap: var(--s-4); }
+.auth__social p { font-size: var(--fs-small); }
 
 /* Подпись поля и ссылка справа в одну строку: «Пароль … Забыли?» */
 .auth__row { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s-3); }
