@@ -36,18 +36,27 @@ const left = DEMO_ACCOUNT.cardsMax - DEMO_CARDS.length;
               <span class={`chip chip--tag card__status is-${c.status}`}>{STATUS_LABEL[c.status]}</span>
               <h2 class="card__name">{c.role}</h2>
               <p class="card__note">{c.note}</p>
-              {c.status !== 'published' && (
+              {c.status === 'draft' && (
                 <p class="card__fill">Заполнено на {c.filled}%</p>
               )}
             </div>
           </a>
+          {c.pending && (
+            <p class="card__extra"><span class="chip chip--tag card__status">{STATUS_LABEL.review}</span>{c.pending}</p>
+          )}
+          {c.reason && (
+            <div class="card__extra">
+              <p class="card__why">{c.reason}</p>
+              <a class="pill pill--solid" href="/profi/kabinet/anketa/#tekst">Исправить</a>
+            </div>
+          )}
           {c.url && <a class="card__site" href={c.url}>Открыть на сайте</a>}
         </li>
       ))}
     </ul>
 
     {left > 0 && (
-      <a class="pill pill--lg pill--block cab__add" href="/profi/kabinet/anketa/">
+      <a class="pill pill--lg pill--block cab__add" href="/profi/kabinet/novaya/">
         + Добавить карточку
       </a>
       <p class="cab__left">Можно ещё {left} из {DEMO_ACCOUNT.cardsMax}: другая профессия или площадка.</p>
@@ -58,7 +67,7 @@ const left = DEMO_ACCOUNT.cardsMax - DEMO_CARDS.length;
       <ul class="list">
         <li>Добавить видео: до 10 роликов, каждый до минуты — ссылкой на Яндекс.Диск, пережмём сами.</li>
         <li>Подключить почту, чтобы входить и без Telegram.</li>
-        <li>Посмотреть видеоинструкцию: как сделать карточку сильнее.</li>
+        <li><a href="/profi/#video">Посмотреть видеоинструкцию</a>: как сделать карточку сильнее.</li>
       </ul>
     </section>
   </main>
@@ -100,10 +109,24 @@ const left = DEMO_ACCOUNT.cardsMax - DEMO_CARDS.length;
 
   .card__body { display: grid; gap: var(--s-1); align-content: start; min-width: 0; }
   .card__status { justify-self: start; background: var(--bg); }
+  .card__status.is-returned { background: var(--fg); color: var(--bg); }
   .card__status.is-published { background: var(--fg); color: var(--bg); }
   .card__name { font-size: var(--fs-h3); font-weight: var(--w-head); line-height: var(--lh-heading); margin-top: var(--s-1); }
   .card__note { font-size: var(--fs-small); }
   .card__fill { font-size: var(--fs-caption); font-weight: var(--w-medium); }
+
+  .card__extra {
+    display: grid;
+    gap: var(--s-3);
+    justify-items: start;
+    padding: var(--s-4);
+    background: var(--bg);
+    border-radius: var(--radius-card);
+    font-size: var(--fs-small);
+  }
+  .card__extra .card__status { background: var(--surface); }
+  .card__why { font-size: var(--fs-small); }
+  .cab__next a { color: inherit; }
 
   .card__site { font-size: var(--fs-small); color: inherit; justify-self: start; }
 

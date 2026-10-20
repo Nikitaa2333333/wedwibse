@@ -24,6 +24,10 @@ export interface CabinetCard {
   url?: string;
   /** сколько из анкеты заполнено, 0–100 */
   filled: number;
+  /** у опубликованной: правка ждёт модератора, на сайте прежняя версия */
+  pending?: string;
+  /** у возвращённой: причина словами модератора */
+  reason?: string;
 }
 
 export const DEMO_ACCOUNT = {
@@ -37,15 +41,17 @@ export const DEMO_CARDS: CabinetCard[] = [
     name: 'Алексей Сухорада',
     role: 'Фотограф',
     status: 'published',
-    note: 'Последняя правка опубликована 18 октября',
+    note: 'Опубликована 18 октября',
     url: '/moskva/podryadchiki/fotografy/suhorada/',
     filled: 100,
+    pending: 'Новые фото и цены на проверке с 12:04 — на сайте пока прежняя версия',
   },
   {
     name: 'Алексей Сухорада',
     role: 'Видеограф',
-    status: 'draft',
-    note: 'Осталось добавить фото и отправить на проверку',
-    filled: 60,
+    status: 'returned',
+    note: 'Вернули 19 октября',
+    filled: 80,
+    reason: 'В тексте указан телефон. Контакты — только в разделе «Контакты».',
   },
 ];

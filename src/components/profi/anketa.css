@@ -1,0 +1,91 @@
+/* Анкета карточки в кабинете — общие стили анкеты подрядчика и площадки
+   (pages/profi/kabinet/anketa*.astro). Подключается импортом со страницы,
+   поэтому классы живут только на страницах анкет. */
+.form { max-width: 720px; padding-top: var(--s-4); }
+
+.form__head { display: grid; gap: var(--s-2); }
+.form__saved {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  font-size: var(--fs-small);
+  font-weight: var(--w-medium);
+}
+.form__saved svg { width: 18px; height: 18px; }
+
+/* Полоса разделов листается вбок пальцем, страница при этом — вниз:
+   touch-action не объявляем (DESIGN.md §8). Ось Y закрыта явно. */
+.form__nav {
+  display: flex;
+  gap: var(--s-2);
+  overflow-x: auto;
+  overflow-y: clip;
+  scrollbar-width: none;
+  margin-top: var(--s-5);
+  padding-bottom: var(--s-1);
+}
+.form__nav::-webkit-scrollbar { display: none; }
+
+.part {
+  display: grid;
+  gap: var(--s-4);
+  margin-top: var(--section-gap);
+  scroll-margin-top: var(--s-5);
+}
+.part__lead { max-width: var(--measure-text); }
+.part__count { font-size: var(--fs-small); font-weight: var(--w-medium); }
+.part__row { display: flex; flex-wrap: wrap; gap: var(--s-3); }
+.part .pill { justify-self: start; }
+
+.block {
+  display: grid;
+  gap: var(--s-4);
+  padding: var(--s-4);
+  background: var(--surface);
+  border-radius: var(--radius-card);
+}
+.block .input { background: var(--bg); }
+
+.q { border: 0; padding: 0; margin: 0; }
+.q legend { margin-bottom: var(--s-2); }
+
+.slug {
+  font-size: var(--fs-small);
+  padding: 14px var(--s-5);
+  background: var(--surface);
+  border-radius: var(--radius-pill);
+  overflow-wrap: anywhere;
+}
+
+.grid {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--s-2);
+}
+.grid__cell {
+  aspect-ratio: 4 / 5;
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  background: var(--surface-dim);
+}
+.grid__img { width: 100%; height: 100%; object-fit: cover; }
+
+.send { margin-top: var(--section-gap); display: grid; gap: var(--s-3); }
+.send__note { text-align: center; }
+
+@media (min-width: 720px) {
+  .grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+.form__status { justify-self: start; }
+
+/* Строка тарифа площадки: день текстом, аренда и депозит — два поля */
+.tariff { display: grid; grid-template-columns: 4.5em 1fr 1fr; gap: var(--s-2); align-items: center; }
+.tariff .input { min-width: 0; max-width: 100%; padding-inline: var(--s-3); }
+.tariff__day { font-size: var(--fs-small); font-weight: var(--w-medium); line-height: var(--lh-caption); }
+.tariff--head { font-size: var(--fs-caption); font-weight: var(--w-medium); }
+.tariff--head span { padding-inline: var(--s-3); }
+.nums { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-2); }
+.nums .field { min-width: 0; }
+.nums .input { min-width: 0; max-width: 100%; }

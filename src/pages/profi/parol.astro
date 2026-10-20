@@ -1,0 +1,65 @@
+---
+// СБРОС ПАРОЛЯ — прототип (решение 16.10.2026: сброс кодом из письма,
+// CABINET.md §21). Три шага одной страницей: почта → код → новый пароль.
+// Вживую шаги идут по очереди; в прототипе показаны все сразу, чтобы
+// заказчик увидел путь целиком. Письма нет, пока не заведём Яндекс 360 —
+// ЗАГЛУШКА, форма никуда не отправляет.
+import ProfiShell from '../../components/profi/ProfiShell.astro';
+import TelegramButton from '../../components/profi/TelegramButton.astro';
+---
+
+<ProfiShell title="Восстановить доступ" action={{ href: '/profi/vhod/', label: 'Войти' }}>
+  <main class="section container auth">
+    <h1 class="t-h1">Забыли пароль</h1>
+    <p class="auth__lead">Пришлём код на почту, с ним зададите новый пароль.</p>
+
+    <form class="auth__step" action="/profi/kabinet/" method="get">
+      <h2 class="auth__t">Почта учётки</h2>
+      <label class="field">
+        <span class="field__label">Почта</span>
+        <input class="input" type="email" name="email" autocomplete="email" value="alexey@suhorada.ru" />
+      </label>
+      <button class="pill pill--lg pill--block" type="button">Прислать код</button>
+    </form>
+
+    <form class="auth__step" action="/profi/kabinet/" method="get">
+      <h2 class="auth__t">Код из письма</h2>
+      <p class="auth__note">Отправили на alexey@suhorada.ru. Письмо не пришло — проверьте папку «Спам» или запросите код ещё раз через минуту.</p>
+      <label class="field">
+        <span class="field__label">Код</span>
+        <input class="input" inputmode="numeric" autocomplete="one-time-code" value="481516" />
+      </label>
+      <label class="field">
+        <span class="field__label">Новый пароль</span>
+        <input class="input" type="password" autocomplete="new-password" value="********" />
+        <span class="field__note">Не короче 8 знаков</span>
+      </label>
+      <button class="pill pill--lg pill--solid pill--block" type="submit">Сохранить и войти</button>
+    </form>
+
+    <p class="auth__or">или без пароля</p>
+    <div class="auth__main"><TelegramButton /></div>
+  </main>
+</ProfiShell>
+
+<style>
+  .auth { max-width: 520px; padding-top: var(--s-4); }
+  .auth__lead { margin-top: var(--s-4); }
+  .auth__step {
+    display: grid;
+    gap: var(--s-4);
+    margin-top: var(--s-6);
+    padding: var(--s-5);
+    background: var(--surface);
+    border-radius: var(--radius-card);
+  }
+  .auth__step .input { background: var(--bg); }
+  .auth__t {
+    font-size: var(--fs-h3);
+    font-weight: var(--w-head);
+    line-height: var(--lh-heading);
+  }
+  .auth__note { font-size: var(--fs-small); }
+  .auth__or { margin-top: var(--s-6); text-align: center; font-size: var(--fs-small); }
+  .auth__main { margin-top: var(--s-4); }
+</style>

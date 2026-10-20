@@ -1,0 +1,84 @@
+---
+// НОВАЯ КАРТОЧКА — прототип: первый шаг после «+ Добавить карточку».
+// Выбор «площадка или подрядчик» и категория. Категория закрепляется при
+// создании (CABINET.md §21): от неё зависят вопросы фильтров в анкете.
+// Список категорий — тот же реестр, что у каталога (SPECIALIST_GROUPS /
+// SPECIALIST_CATEGORIES): новая категория сама появится и здесь.
+// В прототипе любая категория подрядчика ведёт на анкету фотографа.
+import ProfiShell from '../../../components/profi/ProfiShell.astro';
+import { SPECIALIST_CATEGORIES, SPECIALIST_GROUPS } from '../../../data/specialists';
+import { DEMO_ACCOUNT, DEMO_CARDS } from '../../../data/profi-demo';
+
+const bySlug = new Map(SPECIALIST_CATEGORIES.map((c) => [c.slug, c]));
+const grouped = new Set(SPECIALIST_GROUPS.flatMap((g) => g.categories));
+const groups = [
+  ...SPECIALIST_GROUPS.map((g) => ({
+    label: g.label,
+    cats: g.categories.map((s) => bySlug.get(s)).filter((c) => c !== undefined),
+  })),
+  { label: 'Другое', cats: SPECIALIST_CATEGORIES.filter((c) => !grouped.has(c.slug)) },
+].filter((g) => g.cats.length > 0);
+
+const left = DEMO_ACCOUNT.cardsMax - DEMO_CARDS.length;
+---
+
+<ProfiShell title="Новая карточка" action={{ href: '/profi/kabinet/', label: 'Мои карточки' }}>
+  <main class="section container nw">
+    <h1 class="t-h1">Новая карточка</h1>
+    <p class="nw__lead">Свободно {left} из {DEMO_ACCOUNT.cardsMax}. Имя и контакты подставим из учётки, работы и текст — свои у каждой карточки.</p>
+
+    <a class="nw__venue" href="/profi/kabinet/anketa-ploshchadki/">
+      <span class="nw__t">Площадка</span>
+      <span class="nw__d">Ресторан, загородный клуб, лофт, шатёр. Залы, вместимость, условия аренды и меню.</span>
+    </a>
+
+    <h2 class="t-h2 nw__h">Подрядчик</h2>
+    <p class="nw__d">Выберите категорию — от неё зависят вопросы для фильтров. Сменить её потом нельзя, для второй профессии заводят вторую карточку.</p>
+
+    {groups.map((g) => (
+      <section class="nw__group">
+        <h3 class="nw__gt">{g.label}</h3>
+        <ul class="nw__cats">
+          {g.cats.map((c) => (
+            <li><a class="chip" href="/profi/kabinet/anketa/">{c.role}</a></li>
+          ))}
+        </ul>
+      </section>
+    ))}
+  </main>
+</ProfiShell>
+
+<style>
+  .nw { max-width: 720px; padding-top: var(--s-4); }
+  .nw__lead { margin-top: var(--s-4); max-width: var(--measure-text); }
+
+  .nw__venue {
+    display: grid;
+    gap: var(--s-2);
+    margin-top: var(--s-6);
+    padding: var(--s-5);
+    background: var(--fg);
+    color: var(--bg);
+    border-radius: var(--radius-card);
+    text-decoration: none;
+  }
+  .nw__t {
+    font-family: var(--font-serif);
+    font-size: var(--fs-h2);
+    font-weight: var(--w-head);
+    line-height: var(--lh-heading);
+  }
+  .nw__d { font-size: var(--fs-small); max-width: var(--measure-text); }
+
+  .nw__h { margin-top: var(--section-gap); margin-bottom: var(--s-3); }
+
+  .nw__group { margin-top: var(--s-6); }
+  .nw__gt {
+    font-family: var(--font-sans);
+    font-size: var(--fs-body);
+    font-weight: var(--w-head-lg);
+    line-height: var(--lh-caption);
+  }
+  .nw__cats { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-3); list-style: none; }
+  .nw__cats .chip { text-decoration: none; color: inherit; }
+</style>

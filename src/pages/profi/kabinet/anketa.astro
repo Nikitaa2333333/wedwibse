@@ -10,6 +10,7 @@ import ProfiShell from '../../../components/profi/ProfiShell.astro';
 import Icon from '../../../components/Icon.astro';
 import { FOTOGRAFY_FILTERS } from '../../../data/specialist-filters';
 import { resolveImage, IMG_WIDTHS } from '../../../lib/images';
+import '../../../components/profi/anketa.css';
 
 const parts = [
   ['osnovnoe', 'Основное'],
@@ -32,6 +33,7 @@ const photos = ['p09', 'p01', 'p02', 'p03', 'p04', 'p05'].map(
 <ProfiShell title="Анкета карточки" action={{ href: '/profi/kabinet/', label: 'Мои карточки' }}>
   <main class="container form">
     <header class="form__head">
+      <span class="chip chip--tag form__status">Черновик</span>
       <h1 class="t-h1">Фотограф</h1>
       <p class="form__saved" aria-live="polite"><Icon name="check" /> Сохранено · 12:04</p>
     </header>
@@ -143,82 +145,3 @@ const photos = ['p09', 'p01', 'p02', 'p03', 'p04', 'p05'].map(
     </div>
   </main>
 </ProfiShell>
-
-<style>
-  .form { max-width: 720px; padding-top: var(--s-4); }
-
-  .form__head { display: grid; gap: var(--s-2); }
-  .form__saved {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--s-1);
-    font-size: var(--fs-small);
-    font-weight: var(--w-medium);
-  }
-  .form__saved :global(svg) { width: 18px; height: 18px; }
-
-  /* Полоса разделов листается вбок пальцем, страница при этом — вниз:
-     touch-action не объявляем (DESIGN.md §8). Ось Y закрыта явно. */
-  .form__nav {
-    display: flex;
-    gap: var(--s-2);
-    overflow-x: auto;
-    overflow-y: clip;
-    scrollbar-width: none;
-    margin-top: var(--s-5);
-    padding-bottom: var(--s-1);
-  }
-  .form__nav::-webkit-scrollbar { display: none; }
-
-  .part {
-    display: grid;
-    gap: var(--s-4);
-    margin-top: var(--section-gap);
-    scroll-margin-top: var(--s-5);
-  }
-  .part__lead { max-width: var(--measure-text); }
-  .part__count { font-size: var(--fs-small); font-weight: var(--w-medium); }
-  .part__row { display: flex; flex-wrap: wrap; gap: var(--s-3); }
-  .part .pill { justify-self: start; }
-
-  .block {
-    display: grid;
-    gap: var(--s-4);
-    padding: var(--s-4);
-    background: var(--surface);
-    border-radius: var(--radius-card);
-  }
-  .block .input { background: var(--bg); }
-
-  .q { border: 0; padding: 0; margin: 0; }
-  .q legend { margin-bottom: var(--s-2); }
-
-  .slug {
-    font-size: var(--fs-small);
-    padding: 14px var(--s-5);
-    background: var(--surface);
-    border-radius: var(--radius-pill);
-    overflow-wrap: anywhere;
-  }
-
-  .grid {
-    list-style: none;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--s-2);
-  }
-  .grid__cell {
-    aspect-ratio: 4 / 5;
-    border-radius: var(--radius-card);
-    overflow: hidden;
-    background: var(--surface-dim);
-  }
-  .grid__img { width: 100%; height: 100%; object-fit: cover; }
-
-  .send { margin-top: var(--section-gap); display: grid; gap: var(--s-3); }
-  .send__note { text-align: center; }
-
-  @media (min-width: 720px) {
-    .grid { grid-template-columns: repeat(4, 1fr); }
-  }
-</style>

@@ -10,6 +10,15 @@
 import ProfiShell from '../../components/profi/ProfiShell.astro';
 import FaqBlock from '../../components/FaqBlock.astro';
 import Icon from '../../components/Icon.astro';
+import { Image } from 'astro:assets';
+import { resolveImage, IMG_WIDTHS } from '../../lib/images';
+
+// Примеры — настоящие карточки каталога: подрядчик видит, где окажется.
+const examples = [
+  { photo: '/venues/led/hero-portrait.webp', name: 'Оранжерея LЁD', role: 'Площадка', href: '/moskva/ploshchadki/led/' },
+  { photo: '/specialists/fotografy/suhorada/gal/p09.webp', name: 'Алексей Сухорада', role: 'Фотограф', href: '/moskva/podryadchiki/fotografy/suhorada/' },
+  { photo: '/specialists/vedushchie/balashova/gal/p05.webp', name: 'Любовь Балашова', role: 'Ведущая', href: '/moskva/podryadchiki/vedushchie/balashova/' },
+];
 
 const steps = [
   { t: 'Заведите карточку', d: 'Войдите через Telegram или по почте и заполните анкету: текст о себе, ответы на вопросы вашей категории, прайс и фото. Всё сохраняется само.' },
@@ -59,6 +68,21 @@ const faq = [
     </section>
 
     <section class="section container">
+      <h2 class="t-h1">Так выглядят карточки</h2>
+      <ul class="ex">
+        {examples.map((e) => (
+          <li>
+            <a class="ex__card" href={e.href}>
+              <Image src={resolveImage(e.photo)} alt={e.name} widths={[...IMG_WIDTHS.card]} sizes="(min-width: 1024px) 300px, 30vw" class="ex__img" />
+              <span class="ex__name">{e.name}</span>
+              <span class="ex__role">{e.role}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <section class="section container">
       <h2 class="t-h1">Как это работает</h2>
       <ul class="how">
         {steps.map((s) => (
@@ -70,7 +94,7 @@ const faq = [
       </ul>
     </section>
 
-    <section class="section container">
+    <section class="section container" id="video">
       <h2 class="t-h1">Видеоинструкция</h2>
       <!-- ЗАГЛУШКА: ролик снимаем с готового кабинета (STAGE2.md, неделя 6). -->
       <div class="video" role="img" aria-label="Здесь будет видеоинструкция">
@@ -103,7 +127,7 @@ const faq = [
     <section class="section theme-dark final">
       <div class="container">
         <h2 class="t-h1">Начните с карточки</h2>
-        <p class="t-lead final__lead">Регистрация через Telegram занимает минуту.</p>
+        <p class="t-lead final__lead">Регистрация занимает минуту: через Telegram или по почте.</p>
         <a class="pill pill--lg final__btn" href="/profi/registraciya/">Зарегистрироваться</a>
       </div>
     </section>
@@ -119,6 +143,18 @@ const faq = [
     gap: var(--s-3);
     margin-top: var(--s-6);
   }
+
+  .ex {
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--s-3);
+    margin-top: var(--section-gap-tight);
+  }
+  .ex__card { display: grid; gap: var(--s-1); color: inherit; text-decoration: none; min-width: 0; }
+  .ex__img { width: 100%; height: auto; aspect-ratio: 4 / 5; object-fit: cover; border-radius: var(--radius-card); }
+  .ex__name { margin-top: var(--s-1); font-size: var(--fs-small); font-weight: var(--w-head-lg); line-height: var(--lh-caption); }
+  .ex__role { font-size: var(--fs-caption); line-height: var(--lh-caption); }
 
   .how {
     list-style: none;
@@ -164,6 +200,18 @@ const faq = [
   .final__btn { margin-top: var(--s-6); border-color: var(--fg); }
 
   @media (min-width: 1024px) {
-    .how { grid-template-columns: repeat(2, 1fr); gap: var(--s-7) var(--s-8); }
+    .ex {
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--s-3);
+    margin-top: var(--section-gap-tight);
+  }
+  .ex__card { display: grid; gap: var(--s-1); color: inherit; text-decoration: none; min-width: 0; }
+  .ex__img { width: 100%; height: auto; aspect-ratio: 4 / 5; object-fit: cover; border-radius: var(--radius-card); }
+  .ex__name { margin-top: var(--s-1); font-size: var(--fs-small); font-weight: var(--w-head-lg); line-height: var(--lh-caption); }
+  .ex__role { font-size: var(--fs-caption); line-height: var(--lh-caption); }
+
+  .how { grid-template-columns: repeat(2, 1fr); gap: var(--s-7) var(--s-8); }
   }
 </style>
