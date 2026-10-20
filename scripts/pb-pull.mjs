@@ -24,6 +24,10 @@ console.log(`записей: ${res.items.length}`);
 for (const rec of res.items) {
   const v = rec.page;
   if (!v?.slug) { console.error(`  ${rec.slug}: пустое page, пропуск`); continue; }
+  // Карточки из кабинета подрядчика рисует сервер прямо из базы (CABINET.md,
+  // раздел 11): в git их нет, иначе снятая с публикации карточка жила бы
+  // дальше в src/ — два источника правды.
+  if (v.source === 'cabinet') { console.log(`  ${v.slug}: из кабинета, в src/ не пишу`); continue; }
   // Площадки, записанные объектами в venues.ts, в JSON не дублируем —
   // иначе страница соберётся дважды с одним slug.
   if (!v.blocks) { console.log(`  ${v.slug}: legacy-объект в venues.ts, JSON не пишу`); continue; }
@@ -68,6 +72,7 @@ async function pull(rec, name, dest) {
 for (const rec of sp.items) {
   const s = rec.page;
   if (!s?.slug) { console.error(`  ${rec.slug}: пустое page, пропуск`); continue; }
+  if (s.source === 'cabinet') { console.log(`  ${s.categorySlug}/${s.slug}: из кабинета, в src/ не пишу`); continue; }
   const dir = join('src/data/specialists', s.categorySlug);
   await mkdir(dir, { recursive: true });
   await writeFile(join(dir, `${s.slug}.json`), JSON.stringify(s, null, 2) + '\n');
