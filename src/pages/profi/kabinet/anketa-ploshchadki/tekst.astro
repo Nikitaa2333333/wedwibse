@@ -1,0 +1,15 @@
+---
+// ТЕКСТ ПЛОЩАДКИ — редактор TextBlocks со структурой площадки. ЗАГЛУШКА.
+import SectionShell from '../../../../components/profi/SectionShell.astro';
+import TextBlocks from '../../../../components/profi/TextBlocks.astro';
+import { VENUE_STRUCTURE } from '../../../../data/profi-structures';
+const back = '/profi/kabinet/anketa-ploshchadki/';
+
+const written = [
+  'О площадке\nСтеклянный павильон стоит прямо между соснами, к нему ведут деревянные ступени и настил, вокруг — лес, а не подъездная дорога.',
+];
+---
+
+<SectionShell title="Текст" lead="Пишите как в мессенджере: первая строка — заголовок раздела, строки с «—» — список, пустая строка — новый абзац." back={back}>
+  <TextBlocks structure={VENUE_STRUCTURE} written={written} />
+</SectionShell>

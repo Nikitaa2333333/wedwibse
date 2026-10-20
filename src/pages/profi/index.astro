@@ -1,0 +1,511 @@
+---
+// ПРОМО-СТРАНИЦА ДЛЯ ПОДРЯДЧИКОВ И ПЛОЩАДОК — прототип (STAGE2.md §0.1).
+// Ссылку на неё мы рассылаем подрядчикам и площадкам: что это, как работает,
+// видеоинструкция, вопросы и регистрация. Вживую — profi.wed-secrets.ru,
+// тогда же откроем её поиску (сейчас noindex через ProfiShell).
+//
+// ОДИН СПОКОЙНЫЙ СТИЛЬ (правки Никиты 20.10.2026 после первой витрины):
+// бумага, антиква в заголовках, Onest в тексте, кнопки .pill, одна тёмная
+// секция в конце. Текст на кадр не кладём — видео первого экрана стоит
+// отдельно, текст под ним. Теней нет. Шаги — лента вбок пальцем, и каждый
+// шаг иллюстрирует сам себя кусочком интерфейса, а не случайным фото.
+// Движение: смена кадров в первом экране, бегущая лента карточек, мягкое
+// появление секций (transform/opacity, без JS всё видно сразу,
+// prefers-reduced-motion выключает).
+//
+// Фото и ролики — настоящие карточки каталога. Ролики лежат на VPS
+// (CLAUDE.md, «Видео»): локально их нет, в первом экране тогда стоит постер.
+import { Image, getImage } from 'astro:assets';
+import ProfiShell from '../../components/profi/ProfiShell.astro';
+import FaqBlock from '../../components/FaqBlock.astro';
+import Icon from '../../components/Icon.astro';
+import TelegramButton from '../../components/profi/TelegramButton.astro';
+import { resolveImage, IMG_WIDTHS } from '../../lib/images';
+
+// Первый экран: кадры сменяют друг друга с медленным наездом. Первый слой —
+// ролик (постер тем же путём), остальные — фото.
+const heroLayers = [
+  { photo: '/reels/kosareva-courtyard.webp', video: '/reels/kosareva-courtyard.mp4' },
+  { photo: '/venues/forest-dew/s4-evening.webp' },
+  { photo: '/specialists/fotografy/suhorada/gal/p24.webp' },
+  { photo: '/venues/led/s4-ceremony.webp' },
+];
+const heroPoster = await getImage({ src: resolveImage(heroLayers[0].photo), width: 1080, format: 'webp' });
+
+// Бегущая лента: настоящие карточки каталога, два ряда навстречу.
+const P = '/moskva/podryadchiki';
+const rowA = [
+  { photo: '/specialists/fotografy/suhorada/gal/p09.webp', name: 'Алексей Сухорада', role: 'Фотограф', href: `${P}/fotografy/suhorada/` },
+  { photo: '/venues/forest-dew/s2-hall.webp', name: 'Лесная Роса', role: 'Площадка', href: '/moskva/ploshchadki/forest-dew/' },
+  { photo: '/reels/kosareva-sun.webp', name: 'Екатерина Косарева', role: 'Reels-мейкер', href: `${P}/rils-meikery/kosareva/` },
+  { photo: '/reels/lirein-pink.webp', name: 'Студия Лирейн', role: 'Декор', href: `${P}/dekoratory/lirein/` },
+  { photo: '/specialists/vedushchie/balashova/gal/p05.webp', name: 'Любовь Балашова', role: 'Ведущая', href: `${P}/vedushchie/balashova/` },
+  { photo: '/venues/led/gal/g9.webp', name: 'Оранжерея LЁD', role: 'Площадка', href: '/moskva/ploshchadki/led/' },
+];
+const rowB = [
+  { photo: '/reels/zinoveev-couple.webp', name: 'Илья Зиновеев', role: 'Видеограф', href: `${P}/videografy/zinoveev/` },
+  { photo: '/specialists/fotografy/suhorada/gal/p33.webp', name: 'Алексей Сухорада', role: 'Фотограф', href: `${P}/fotografy/suhorada/` },
+  { photo: '/reels/nazarova-bouquet.webp', name: 'Анна Назарова', role: 'Стилист', href: `${P}/stilisty/nazarova/` },
+  { photo: '/venues/forest-dew/s3-ceremony.webp', name: 'Лесная Роса', role: 'Площадка', href: '/moskva/ploshchadki/forest-dew/' },
+  { photo: '/reels/goleva-day.webp', name: 'Дарья Голева', role: 'Ведущая', href: `${P}/vedushchie/goleva/` },
+  { photo: '/reels/lirein-tent.webp', name: 'Студия Лирейн', role: 'Декор', href: `${P}/dekoratory/lirein/` },
+];
+
+const steps = [
+  { t: 'Заведите карточку', d: 'Войдите через Telegram, MAX или по почте и заполните анкету. Всё сохраняется само.' },
+  { t: 'Мы проверим за сутки', d: 'Модератор смотрит карточку до публикации. Если что-то не так, вернём с понятной причиной.' },
+  { t: 'Пары находят вас', d: 'Карточка встаёт в каталог и фильтры, в поиск Яндекса и Google, в подборки блога.' },
+  { t: 'Обновляйте, когда нужно', d: 'Новые фото, цены, видео. На сайте всё это время висит прежняя версия.' },
+];
+
+const gets = [
+  { t: 'Своя страница', d: 'С адресом, фото, видео и ценами' },
+  { t: 'Каталог и фильтры', d: 'Пары находят вас по своим ответам' },
+  { t: 'Яндекс и Google', d: 'Страница открыта поиску' },
+  { t: 'Лента главной', d: 'Ваши ролики среди лучших' },
+  { t: 'Подборки в блоге', d: 'Статьи ведут на карточку' },
+  { t: 'Заявки от пар', d: 'Видно, кто открыл контакты' },
+];
+
+const faq = [
+  { q: 'Сколько это стоит?', a: ['На старте размещение бесплатное. Если появятся тарифы, мы объявим их заранее, и вы решите сами.'] },
+  { q: 'Кто может разместиться?', a: ['Площадки и подрядчики свадеб в Москве и области: фотографы, видеографы, ведущие, декораторы, флористы, стилисты и другие.'] },
+  { q: 'Сколько фото и видео можно загрузить?', a: ['До 50 фото и до 10 роликов по минуте на карточку. С телефона или ссылкой на папку Яндекс.Диска — сервер заберёт файлы сам.'] },
+  { q: 'Можно ли указать телефон в описании?', a: ['Нет. Контакты живут в отдельном поле и открываются паре по кнопке «Показать контакты». Так мы видим, сколько пар вами заинтересовались.'] },
+  { q: 'У меня две профессии', a: ['С одной учётки можно завести до трёх карточек: например, фотограф и видеограф. Имя и контакты подставятся сами, работы — свои для каждой.'] },
+  { q: 'Как быстро проверяют карточку?', a: ['До 24 часов. Пока карточка на проверке, на сайте висит прежняя версия.'] },
+];
+---
+
+<ProfiShell title="Разместиться в каталоге" look="promo" action={{ href: '/profi/vhod/', label: 'Войти' }}>
+  <main class="promo">
+    <!-- 1. Первый экран: живые кадры отдельно, текст под ними -->
+    <section class="hero">
+      <div class="hero__stage" aria-hidden="true">
+        {heroLayers.map((l, i) => (
+          <div class="hero__layer" style={`--i:${i}`}>
+            {l.video ? (
+              <video class="hero__media" src={l.video} poster={heroPoster.src} autoplay muted loop playsinline preload="metadata" />
+            ) : (
+              <Image src={resolveImage(l.photo)} alt="" widths={[...IMG_WIDTHS.hero]} sizes="100vw" class="hero__media" loading={i === 1 ? 'eager' : 'lazy'} />
+            )}
+          </div>
+        ))}
+        <span class="hero__fade"></span>
+      </div>
+      <div class="hero__body container">
+        <h1 class="t-display hero__title">Красивая витрина для вашей работы</h1>
+        <p class="t-lead hero__lead">Свадебный каталог Москвы и области, где пары выбирают глазами: фото, видео, честные цены.</p>
+        <div class="hero__cta">
+          <a class="pill pill--lg pill--solid" href="/profi/registraciya/">Разместиться бесплатно</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Бегущая лента карточек -->
+    <section class="section run" aria-labelledby="run-t">
+      <div class="container">
+        <h2 class="t-h1" id="run-t" data-fx>Наши партнёры уже на площадке</h2>
+      </div>
+      {[rowA, rowB].map((row, r) => (
+        <div class={`run__row run__row--${r ? 'back' : 'fwd'}`}>
+          <ul class="run__track">
+            {[...row, ...row].map((c, i) => (
+              <li aria-hidden={i >= row.length ? 'true' : undefined}>
+                <a class="run__card" href={c.href} tabindex={i >= row.length ? -1 : undefined}>
+                  <Image src={resolveImage(c.photo)} alt={i >= row.length ? '' : c.name} widths={[...IMG_WIDTHS.card]} sizes="(min-width: 1024px) 220px, 40vw" class="run__img" />
+                  <span class="run__name">{c.name}</span>
+                  <span class="run__role">{c.role}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </section>
+
+    <!-- 3. Как это работает: лента шагов вбок, каждый шаг — свой экран -->
+    <section class="section how" id="kak">
+      <div class="container">
+        <h2 class="t-h1" data-fx>Как это работает</h2>
+      </div>
+      <ol class="how__rail">
+        {steps.map((s, i) => (
+          <li class={`how__card how__card--${i + 1}`} data-fx>
+            <div class="how__shot" aria-hidden="true">
+              {i === 0 && (
+                <div class="demo">
+                  <span class="demo__btn"><TelegramButton href="#kak" label="Через Telegram" /><span class="tap"></span></span>
+                  <span class="demo__field demo__field--a">Алексей Сухорада</span>
+                  <span class="demo__field demo__field--b">Фотограф</span>
+                </div>
+              )}
+              {i === 1 && (
+                <div class="demo">
+                  <span class="demo__swap">
+                    <span class="chip chip--tag demo__chip demo__chip--wait">На проверке</span>
+                    <span class="chip chip--tag demo__chip demo__chip--ok">На сайте</span>
+                  </span>
+                  <span class="demo__bar"><span class="demo__fill"></span></span>
+                  <span class="demo__line">Проверка до 24 часов</span>
+                </div>
+              )}
+              {i === 2 && (
+                <div class="demo demo--heart">
+                  <span class="demo__heart">
+                    <Icon name="heartOutline" class="demo__h demo__h--off" />
+                    <Icon name="heart" class="demo__h demo__h--on" />
+                    <span class="tap"></span>
+                  </span>
+                </div>
+              )}
+              {i === 3 && (
+                <div class="demo">
+                  <span class="demo__saved">Сохранено · 12:04</span>
+                  <span class="demo__grid">
+                    {['p13', 'p19', 'p32'].map((n) => (
+                      <Image src={resolveImage(`/specialists/fotografy/suhorada/gal/${n}.webp`)} alt="" widths={[...IMG_WIDTHS.thumb]} sizes="72px" class="demo__thumb" />
+                    ))}
+                  </span>
+                  <span class="demo__count"><span class="demo__n demo__n--a">6 из 50 фото</span><span class="demo__n demo__n--b">9 из 50 фото</span></span>
+                </div>
+              )}
+            </div>
+            <div class="how__text">
+              <p class="how__num">Шаг {i + 1}</p>
+              <h3 class="how__t">{s.t}</h3>
+              <p class="how__d">{s.d}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </section>
+
+    <!-- 4. Что вы получаете -->
+    <section class="section container">
+      <h2 class="t-h1" data-fx>Что вы получаете</h2>
+      <ul class="gets">
+        {gets.map((g, i) => (
+          <li class="gets__item" data-fx style={`--d:${i}`}>
+            <span class="gets__t">{g.t}</span>
+            <span class="gets__d">{g.d}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <!-- 5. Видеоинструкция. ЗАГЛУШКА: ролик снимаем с готового кабинета (STAGE2.md, неделя 6) -->
+    <section class="section container" id="video">
+      <h2 class="t-h1" data-fx>Видеоинструкция</h2>
+      <div class="vid" data-fx>
+        <Image src={resolveImage('/venues/forest-dew/s5-table.webp')} alt="" widths={[...IMG_WIDTHS.wide]} sizes="(min-width: 1024px) 900px, 100vw" class="vid__img" />
+        <span class="vid__play" aria-hidden="true"><Icon name="play" /></span>
+      </div>
+      <p class="vid__cap">Как завести карточку за десять минут. Появится к запуску.</p>
+    </section>
+
+    <!-- 6. Частые вопросы -->
+    <div id="voprosy"><FaqBlock title="Частые вопросы" items={faq} /></div>
+
+    <!-- 7. Финал -->
+    <section class="section theme-dark end">
+      <div class="container">
+        <h2 class="t-h1" data-fx>Начните с карточки</h2>
+        <p class="t-lead end__lead" data-fx>Регистрация занимает минуту: через Telegram, MAX или по почте.</p>
+        <div class="hero__cta" data-fx>
+          <a class="pill pill--lg end__btn" href="/profi/registraciya/">Зарегистрироваться</a>
+        </div>
+      </div>
+    </section>
+  </main>
+</ProfiShell>
+
+<script>
+  // Мягкое появление секций. Без JS и с prefers-reduced-motion всё стоит сразу.
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.documentElement.classList.add('fx');
+    const io = new IntersectionObserver(
+      (entries) => entries.forEach((e) => {
+        if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); }
+      }),
+      { rootMargin: '0px 0px -10% 0px' },
+    );
+    document.querySelectorAll('[data-fx]').forEach((el) => io.observe(el));
+  }
+</script>
+
+<style>
+  .promo {
+    --hero-cycle: 24s;
+    --run-speed: 70s;
+    overflow-x: clip;
+  }
+
+  /* ---------- 1. первый экран ---------- */
+  /* Видео во всю ширину, снизу оно уходит градиентом в бумагу, и на этом
+     градиенте начинается текст (Никита, 20.10.2026). Градиент — в цвет
+     бумаги, не затемнение: текст тёмный и читается, кадр сверху чистый. */
+  .hero__stage {
+    position: relative;
+    height: 72svh;
+    min-height: 420px;
+    overflow: hidden;
+    background: var(--surface);
+  }
+  .hero__layer {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    animation: heroFade var(--hero-cycle) linear infinite;
+    animation-delay: calc(var(--i) * var(--hero-cycle) / 4 - 0.01s);
+  }
+  .hero__layer:first-child { opacity: 1; }
+  .hero__media {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    animation: heroZoom var(--hero-cycle) linear infinite;
+    animation-delay: inherit;
+  }
+  @keyframes heroFade {
+    0% { opacity: 0; }
+    4% { opacity: 1; }
+    25% { opacity: 1; }
+    29% { opacity: 0; }
+    100% { opacity: 0; }
+  }
+  @keyframes heroZoom {
+    0% { transform: scale(1.1); }
+    30% { transform: scale(1); }
+    100% { transform: scale(1); }
+  }
+  .hero__fade {
+    position: absolute;
+    inset: auto 0 -1px 0;
+    height: 50%;
+    z-index: 1;
+    background: linear-gradient(to bottom, transparent 0%, color-mix(in srgb, var(--bg) 85%, transparent) 45%, var(--bg) 72%);
+  }
+  .hero__body { position: relative; z-index: 2; margin-top: -22svh; }
+  .hero__title { font-size: clamp(40px, 10.5vw, 104px); max-width: 16ch; }
+  .hero__lead { margin-top: var(--s-4); max-width: 34ch; }
+  .hero__cta { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-6); }
+
+  /* Мягкое появление: заголовок первого экрана сразу, секции — при прокрутке */
+  :global(html.fx) .hero__body > * { animation: rise 0.9s var(--ease-out) both; }
+  :global(html.fx) .hero__body > :nth-child(2) { animation-delay: 0.1s; }
+  :global(html.fx) .hero__body > :nth-child(3) { animation-delay: 0.2s; }
+  @keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+  :global(html.fx) [data-fx] {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.8s var(--ease-out), transform 0.8s var(--ease-out);
+  }
+  :global(html.fx) [data-fx].is-in { opacity: 1; transform: none; }
+
+  /* ---------- 2. бегущая лента ---------- */
+  .run__row { margin-top: var(--s-5); overflow: hidden; }
+  .run__row:first-of-type { margin-top: var(--section-gap-tight); }
+  .run__track {
+    list-style: none;
+    display: flex;
+    gap: var(--s-3);
+    width: max-content;
+    animation: run var(--run-speed) linear infinite;
+  }
+  .run__row--back .run__track { animation-direction: reverse; animation-duration: calc(var(--run-speed) * 1.2); }
+  @keyframes run { to { transform: translateX(calc(-50% - var(--s-3) / 2)); } }
+  @media (hover: hover) {
+    .run__row:hover .run__track { animation-play-state: paused; }
+  }
+  .run__card { display: grid; gap: var(--s-1); width: clamp(140px, 38vw, 220px); color: inherit; text-decoration: none; }
+  .run__img { width: 100%; height: auto; aspect-ratio: 4 / 5; object-fit: cover; border-radius: var(--radius-card); }
+  .run__row--fwd .run__img { aspect-ratio: 2 / 3; }
+  .run__name { margin-top: var(--s-1); font-size: var(--fs-small); font-weight: var(--w-head-lg); line-height: var(--lh-caption); }
+  .run__role { font-size: var(--fs-caption); line-height: var(--lh-caption); }
+
+  /* ---------- 3. шаги лентой вбок ----------
+     Листается пальцем, страница при этом — вниз: touch-action не объявляем
+     (DESIGN.md §8). Ось Y закрыта явно (CLAUDE.md, ловушка «панель ездит»);
+     снизу запас, чтобы Safari не подрезал последнюю строку.
+     Каждый шаг — цельная карточка: сверху живой кусочек интерфейса
+     (анимация показывает, как быстро это происходит), снизу текст. */
+  .how__rail {
+    list-style: none;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 84%;
+    gap: var(--s-4);
+    margin-top: var(--section-gap-tight);
+    padding: 0 var(--gutter) var(--s-4);
+    scroll-padding-inline: var(--gutter);
+    overflow-x: auto;
+    overflow-y: clip;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+  .how__rail::-webkit-scrollbar { display: none; }
+  /* Одна плашка на шаг: кусочек интерфейса стоит прямо в ней, без
+     вложенной подложки (правило «плашка в плашке нельзя», DESIGN.md §2). */
+  .how__card {
+    scroll-snap-align: start;
+    display: grid;
+    grid-template-rows: auto 1fr;
+    padding: var(--s-5);
+    background: var(--surface);
+    border-radius: calc(var(--radius-card) * 1.5);
+    min-width: 0;
+  }
+  .how__shot {
+    position: relative;
+    min-height: 300px;
+    display: grid;
+    place-items: center;
+  }
+  .how__text { display: grid; align-content: start; gap: var(--s-2); padding-top: var(--s-5); }
+  .how__num { font-size: var(--fs-small); font-weight: var(--w-medium); }
+  .how__t { font-size: var(--fs-h3); line-height: var(--lh-heading); }
+  .how__d { font-size: var(--fs-small); line-height: var(--lh-snug); }
+
+  /* ---- живые кусочки интерфейса ----
+     Петля 4 с, только transform/opacity. Стоят на паузе, пока карточка
+     не на экране (.is-in ставит скрипт появлений). */
+  .demo { --loop: 4s; position: relative; width: 100%; display: grid; gap: var(--s-2); justify-items: start; }
+  .demo :global(*) { animation-duration: var(--loop); animation-iteration-count: infinite; animation-timing-function: var(--ease-out); animation-play-state: paused; }
+  :global(html:not(.fx)) .demo :global(*),
+  .how__card:global(.is-in) .demo :global(*) { animation-play-state: running; }
+
+  /* «нажатие пальцем» — расходящийся круг */
+  .tap {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 44px;
+    height: 44px;
+    margin: -22px 0 0 -22px;
+    border-radius: var(--radius-pill);
+    background: var(--fg);
+    opacity: 0;
+    pointer-events: none;
+    animation-name: tap;
+  }
+  @keyframes tap {
+    0%, 8% { opacity: 0; transform: scale(0.4); }
+    14% { opacity: 0.25; transform: scale(1); }
+    26%, 100% { opacity: 0; transform: scale(1.6); }
+  }
+
+  /* шаг 1: нажали Telegram — поля заполнились сами */
+  .demo__btn { position: relative; display: block; width: 100%; animation-name: press; }
+  .demo__btn :global(.tg) { font-size: var(--fs-small); padding: 12px 20px; white-space: nowrap; }
+  @keyframes press { 0%, 10% { transform: none; } 15% { transform: scale(0.96); } 22%, 100% { transform: none; } }
+  .demo__field {
+    width: 100%;
+    padding: 12px var(--s-4);
+    background: var(--bg);
+    border-radius: var(--radius-pill);
+    font-size: var(--fs-small);
+    animation-name: fieldA;
+  }
+  .demo__field--b { animation-name: fieldB; }
+  @keyframes fieldA { 0%, 24% { opacity: 0; transform: translateY(8px); } 32%, 90% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+  @keyframes fieldB { 0%, 34% { opacity: 0; transform: translateY(8px); } 42%, 90% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+
+  /* шаг 2: полоса проверки — «На проверке» сменилось на «На сайте» */
+  .demo__swap { display: grid; }
+  .demo__chip { grid-area: 1 / 1; justify-self: start; display: inline-flex; align-items: center; gap: var(--s-1); }
+  .demo__chip :global(svg) { width: 16px; height: 16px; }
+  .demo__chip--wait { background: var(--bg); animation-name: chipWait; }
+  .demo__chip--ok { background: var(--fg); color: var(--bg); animation-name: chipOk; }
+  @keyframes chipWait { 0%, 55% { opacity: 1; } 62%, 92% { opacity: 0; } 100% { opacity: 1; } }
+  @keyframes chipOk { 0%, 55% { opacity: 0; transform: scale(0.9); } 62% { opacity: 1; transform: scale(1.06); } 68%, 92% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+  .demo__bar { width: 100%; height: 6px; border-radius: var(--radius-pill); background: var(--bg); overflow: hidden; }
+  .demo__fill { display: block; height: 100%; background: var(--fg); transform-origin: left; animation-name: fill; }
+  @keyframes fill { 0% { transform: scaleX(0); } 55%, 92% { transform: scaleX(1); } 100% { transform: scaleX(0); } }
+  .demo__line { font-size: var(--fs-small); }
+
+  /* шаг 3: пара нашла карточку и поставила сердце — одно крупное сердце */
+  .demo--heart { justify-items: center; }
+  .demo__heart { position: relative; width: 96px; height: 96px; animation-name: none; }
+  .demo__heart .tap { width: 120px; height: 120px; margin: -60px 0 0 -60px; }
+  .demo__heart :global(.demo__h) { position: absolute; inset: 0; width: 96px; height: 96px; }
+  .demo__heart :global(.demo__h--off) { animation: heartOff var(--loop) var(--ease-out) infinite; animation-play-state: inherit; }
+  .demo__heart :global(.demo__h--on) { --icon-fill: currentColor; animation: heartOn var(--loop) var(--ease-out) infinite; animation-play-state: inherit; }
+  @keyframes heartOff { 0%, 14% { opacity: 1; } 16%, 92% { opacity: 0; } 100% { opacity: 1; } }
+  @keyframes heartOn { 0%, 14% { opacity: 0; transform: scale(0.6); } 20% { opacity: 1; transform: scale(1.25); } 28%, 92% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+
+  /* шаг 4: правка сохранилась, фото добавились по одному */
+  .demo__saved { display: inline-flex; align-items: center; gap: var(--s-1); font-size: var(--fs-small); font-weight: var(--w-medium); }
+  .demo__saved :global(svg) { width: 18px; height: 18px; }
+  .demo__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-1); width: 100%; }
+  .demo__grid > :global(*) { animation: thumb var(--loop) var(--ease-out) infinite; animation-play-state: inherit; }
+  .demo__grid > :global(*:nth-child(2)) { animation-delay: 0.25s; }
+  .demo__grid > :global(*:nth-child(3)) { animation-delay: 0.5s; }
+  .demo__grid { animation-name: none; }
+  @keyframes thumb { 0%, 8% { opacity: 0; transform: scale(0.85); } 18%, 90% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+  .demo__grid :global(.demo__thumb) { width: 100%; height: auto; aspect-ratio: 4 / 5; object-fit: cover; border-radius: var(--radius-card); }
+  .demo__count { display: grid; font-size: var(--fs-small); }
+  .demo__n { grid-area: 1 / 1; }
+  .demo__n--a { animation-name: nA; }
+  .demo__n--b { animation-name: nB; font-weight: var(--w-medium); }
+  @keyframes nA { 0%, 30% { opacity: 1; } 36%, 94% { opacity: 0; } 100% { opacity: 1; } }
+  @keyframes nB { 0%, 30% { opacity: 0; } 36%, 94% { opacity: 1; } 100% { opacity: 0; } }
+
+  /* ---------- 4. что получаете ----------
+     Простой список: заголовок и строка под ним, без плашек и линий. */
+  .gets {
+    list-style: none;
+    display: grid;
+    gap: var(--s-6);
+    margin-top: var(--section-gap-tight);
+  }
+  .gets__item { display: grid; gap: var(--s-1); max-width: var(--measure-text); }
+  .gets__t { font-size: var(--fs-h3); font-weight: var(--w-head-lg); line-height: var(--lh-heading); letter-spacing: -0.02em; }
+  .gets__d { font-size: var(--fs-body); line-height: var(--lh-snug); }
+
+  /* ---------- 5. видео ---------- */
+  .vid {
+    position: relative;
+    margin-top: var(--section-gap-tight);
+    aspect-ratio: 4 / 5;
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .vid__img { width: 100%; height: 100%; object-fit: cover; }
+  .vid__play {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 72px;
+    height: 72px;
+    margin: -36px 0 0 -36px;
+    display: grid;
+    place-items: center;
+    border-radius: var(--radius-pill);
+    background: var(--bg);
+    color: var(--fg);
+  }
+  .vid__cap { margin-top: var(--s-3); font-size: var(--fs-small); }
+
+  /* ---------- 7. финал ---------- */
+  .end__lead { margin-top: var(--s-4); max-width: 30ch; }
+  .end__btn { background: var(--invert-fg); color: var(--invert-bg); border-color: var(--invert-fg); }
+
+  /* ---------- широкий экран ---------- */
+  @media (min-width: 1024px) {
+    .hero__stage { height: 70svh; }
+    .gets { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-7) var(--s-6); }
+    .how__rail {
+      grid-auto-flow: row;
+      grid-template-columns: repeat(4, 1fr);
+      max-width: var(--page-max);
+      margin-inline: auto;
+      overflow: visible;
+    }
+    .vid { aspect-ratio: 16 / 9; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero__layer:not(:first-child) { display: none; }
+  }
+</style>

@@ -1,0 +1,38 @@
+---
+// ВХОД ПОДРЯДЧИКА — прототип. Мессенджер (Telegram и MAX рядом, CABINET.md
+// §22–23) первым, почта + пароль — вторым и для
+// восстановления доступа. Форма никуда не отправляет — ЗАГЛУШКА до базы.
+import ProfiShell from '../../components/profi/ProfiShell.astro';
+import MessengerLogin from '../../components/profi/MessengerLogin.astro';
+import '../../components/profi/auth.css';
+---
+
+<ProfiShell title="Вход" look="auth">
+  <main class="container auth">
+    <div class="auth__head">
+      <h1 class="t-h1">Вход</h1>
+      <p class="auth__sub">Кабинет площадок и подрядчиков</p>
+    </div>
+
+    <MessengerLogin />
+
+    <p class="auth__or">или по почте</p>
+
+    <form class="auth__form" action="/profi/kabinet/" method="get">
+      <label class="field">
+        <span class="field__label">Почта</span>
+        <input class="input" type="email" name="email" autocomplete="email" />
+      </label>
+      <div class="field">
+        <div class="auth__row">
+          <label class="field__label" for="pw">Пароль</label>
+          <a href="/profi/parol/">Забыли?</a>
+        </div>
+        <input class="input" id="pw" type="password" name="password" autocomplete="current-password" />
+      </div>
+      <button class="pill pill--lg pill--block" type="submit">Войти</button>
+    </form>
+
+    <p class="auth__alt">Нет учётки? <a href="/profi/registraciya/">Зарегистрироваться</a></p>
+  </main>
+</ProfiShell>

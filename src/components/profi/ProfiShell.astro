@@ -1,0 +1,145 @@
+---
+// Оболочка страниц для подрядчиков и площадок (второй этап, STAGE2.md §0.1).
+// Пока это ПРОТОТИП на wed-secrets.ru/profi/… — без базы, данные-заглушки.
+// Вместе с кабинетом переедет на поддомен profi.wed-secrets.ru.
+//
+// noindex стоит ВСЕГДА: индексация сайта открыта с 20.10.2026, и черновая
+// страница без него ушла бы в выдачу. Промо-страницу откроем поиску, когда
+// она станет настоящей, — снимем prototype={false}, а не этот тег руками.
+//
+// Три вида (Никита, 20.10.2026):
+// - look="promo" — промо-страница: шапка со знаком и «Войти», подвал.
+// - look="auth" — вход, регистрация, пароль: только знак, без кнопки
+//   в шапке (раньше она прыгала «Войти» ↔ «Регистрация») и без подвала.
+// - look="tech" — кабинет: рабочий инструмент, внизу меню разделов
+//   (та же полоса BottomDock, что у сайта, со своими ссылками).
+// Во всех видах, кроме промо, заголовки без антиквы.
+import Layout from '../../layouts/Layout.astro';
+import BottomDock from '../BottomDock.astro';
+
+type Section = 'cards' | 'interest' | 'profile';
+
+interface Props {
+  title: string;
+  description?: string;
+  /** правая ссылка в шапке (промо) */
+  action?: { href: string; label: string };
+  /** прототип: закрыт от поиска (по умолчанию да) */
+  prototype?: boolean;
+  look?: 'promo' | 'auth' | 'tech';
+  /** раздел кабинета, подсвеченный в меню */
+  section?: Section;
+}
+
+const {
+  title,
+  description = 'WED Secrets для подрядчиков и площадок: карточка в свадебном каталоге Москвы.',
+  action,
+  prototype = true,
+  look = 'tech',
+  section,
+} = Astro.props;
+
+// Разделы кабинета. «Интерес» — журнал: кто открыл контакты, сколько раз
+// карточку сохранили (второй этап, без денег — STAGE2.md §1).
+const menu = [
+  { key: 'cards', href: '/profi/kabinet/', label: 'Карточки', icon: 'list' },
+  { key: 'interest', href: '/profi/kabinet/interes/', label: 'Интерес', icon: 'heart' },
+  { key: 'profile', href: '/profi/kabinet/profil/', label: 'Профиль', icon: 'account' },
+] as const;
+---
+
+<Layout title={`${title} — WED Secrets для профи`} description={description}>
+  <Fragment slot="head">
+    {prototype && <meta name="robots" content="noindex, nofollow" />}
+  </Fragment>
+
+  <div class={`profi profi--${look}`}>
+    <header class="pbar">
+      <div class="pbar__in container">
+        <a class="pbar__brand" href="/profi/">
+          <span class="pbar__name">WED Secrets</span>
+          <span class="pbar__for">для профи</span>
+        </a>
+        {action && <a class="pill pill--sm pbar__btn" href={action.href}>{action.label}</a>}
+      </div>
+    </header>
+
+    <slot />
+
+    {look === 'promo' && (
+      <footer class="pfoot theme-dark">
+        <div class="pfoot__in container">
+          <p class="t-caption">WED Secrets — свадебный каталог площадок и подрядчиков Москвы и области.</p>
+          <p class="t-caption"><a href="/">Каталог для пар</a></p>
+        </div>
+      </footer>
+    )}
+
+    {look === 'tech' && <BottomDock items={menu} active={section} label="Разделы кабинета" />}
+  </div>
+</Layout>
+
+<style>
+  /* Шапка узкая и стоит наверху всегда (Никита, 20.10.2026). */
+  .pbar {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-nav);
+    background: var(--bg);
+  }
+  .pbar__in {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-4);
+    min-height: 52px;
+  }
+  .pbar__btn { padding-block: 6px; }
+
+  .pbar__brand {
+    display: flex;
+    align-items: baseline;
+    gap: var(--s-2);
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .pbar__name {
+    font-size: var(--fs-small);
+    font-weight: var(--w-head-lg);
+  }
+
+  .pbar__for { font-size: var(--fs-caption); }
+
+  /* Подвал промо — продолжение тёмного финала страницы, одна заливка до низа */
+  .pfoot { margin-top: -1px; padding-block: 1px calc(var(--s-7) + var(--safe-b, 0px)); }
+  .pfoot__in { display: grid; gap: var(--s-2); }
+
+  .pfoot a { color: inherit; }
+
+  /* Место под меню кабинета внизу (на ПК меню слева, --dock-space сам
+     схлопывается до обычного отступа). */
+  .profi--tech { padding-bottom: var(--dock-space); }
+</style>
+
+<style is:global>
+  /* Кабинет и вход — рабочий инструмент: антиквы образа «крем» здесь нет
+     (Никита, 20.10.2026). Селектор тяжелее правила образа в global.css. */
+  html[data-look] :is(.profi--tech, .profi--auth) :is(h1, h2, h3, h4, .t-display, .t-h1, .t-h2) {
+    font-family: var(--font-sans);
+    font-weight: var(--w-head-lg);
+    letter-spacing: -0.01em;
+  }
+  html[data-look] :is(.profi--tech, .profi--auth) :is(h1, .t-h1) { font-size: var(--fs-h2); }
+  html[data-look] :is(.profi--tech, .profi--auth) :is(h2, .t-h2) { font-size: var(--fs-h3); }
+  html[data-look] :is(.profi--tech, .profi--auth) h3 { font-size: var(--fs-body); }
+
+  /* Промо: заголовки тоже Onest (Никита, 20.10.2026), антиква остаётся
+     только у заголовка первого экрана (.hero__title). */
+  html[data-look] .profi--promo :is(h2, h3, h4, .t-h1, .t-h2) {
+    font-family: var(--font-sans);
+    font-weight: var(--w-head-lg);
+    letter-spacing: -0.02em;
+  }
+</style>

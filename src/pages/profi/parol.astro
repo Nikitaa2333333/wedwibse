@@ -1,0 +1,26 @@
+---
+// СБРОС ПАРОЛЯ, шаг 1 — прототип (решение 16.10.2026: сброс кодом из письма,
+// CABINET.md §21). Шаг 2 — /profi/parol/kod/. Письма нет, пока не заведём
+// Яндекс 360 — ЗАГЛУШКА, форма никуда не отправляет.
+import ProfiShell from '../../components/profi/ProfiShell.astro';
+import '../../components/profi/auth.css';
+---
+
+<ProfiShell title="Восстановить пароль" look="auth">
+  <main class="container auth">
+    <div class="auth__head">
+      <h1 class="t-h1">Новый пароль</h1>
+      <p class="auth__sub">Пришлём код на почту учётки</p>
+    </div>
+
+    <form class="auth__form" action="/profi/parol/kod/" method="get">
+      <label class="field">
+        <span class="field__label">Почта</span>
+        <input class="input" type="email" name="email" autocomplete="email" />
+      </label>
+      <button class="pill pill--lg pill--solid pill--block" type="submit">Прислать код</button>
+    </form>
+
+    <p class="auth__alt"><a href="/profi/vhod/">Вернуться ко входу</a></p>
+  </main>
+</ProfiShell>

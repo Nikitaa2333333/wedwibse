@@ -1,0 +1,16 @@
+---
+// ТЕКСТ КАРТОЧКИ ПОДРЯДЧИКА — редактор TextBlocks (CABINET-UX.md §2 п.6–7)
+// со структурой категории. Значения — ЗАГЛУШКА на примере Алексея Сухорады.
+import SectionShell from '../../../../components/profi/SectionShell.astro';
+import TextBlocks from '../../../../components/profi/TextBlocks.astro';
+import { structureFor } from '../../../../data/profi-structures';
+
+const written = [
+  'Как я снимаю\nСнимаю свадьбы с 2014 года. Мне важны живые эмоции: не ставлю пары в позы, а ловлю моменты, которые случаются сами.\n\nРаботаю один или со вторым фотографом — зависит от размера свадьбы.',
+  'Что получаете\n— 500 кадров в авторской обработке\n— онлайн-галерея через 30 дней\n— 30 кадров на следующий день\n— печатная книга по желанию',
+];
+---
+
+<SectionShell title="Текст" lead="Пишите как в мессенджере: первая строка — заголовок раздела, строки с «—» — список, пустая строка — новый абзац.">
+  <TextBlocks structure={structureFor('fotografy')} written={written} />
+</SectionShell>

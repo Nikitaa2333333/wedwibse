@@ -1,0 +1,68 @@
+---
+// ПРОФИЛЬ — раздел меню кабинета, прототип. Способы входа (Telegram и почта,
+// CABINET.md §22), принятые документы с датой подписи, выход. ЗАГЛУШКА.
+import ProfiShell from '../../../components/profi/ProfiShell.astro';
+import { DEMO_ACCOUNT } from '../../../data/profi-demo';
+---
+
+<ProfiShell title="Профиль" section="profile">
+  <main class="container pf">
+    <h1 class="t-h1">Профиль</h1>
+
+    <section class="pf__group">
+      <h2 class="pf__h">Учётка</h2>
+      <label class="field">
+        <span class="field__label">Имя</span>
+        <input class="input" value={`${DEMO_ACCOUNT.name} Сухорада`} />
+      </label>
+    </section>
+
+    <section class="pf__group">
+      <h2 class="pf__h">Вход</h2>
+      <div class="pf__row">
+        <div><p class="pf__k">Telegram</p><p class="pf__v">@suhorada</p></div>
+        <span class="chip chip--tag">Подключён</span>
+      </div>
+      <div class="pf__row">
+        <div><p class="pf__k">MAX</p><p class="pf__v">Вход и уведомления</p></div>
+        <a class="pill pill--sm" href="/profi/kabinet/profil/">Подключить</a>
+      </div>
+      <div class="pf__row">
+        <div><p class="pf__k">Почта и пароль</p><p class="pf__v">Запасной вход</p></div>
+        <a class="pill pill--sm" href="/profi/parol/">Подключить</a>
+      </div>
+    </section>
+
+    <section class="pf__group">
+      <h2 class="pf__h">Документы</h2>
+      <div class="pf__row">
+        <div><p class="pf__k">Условия размещения</p><p class="pf__v">Приняты 20 октября 2026</p></div>
+      </div>
+      <div class="pf__row">
+        <div><p class="pf__k">Согласие на обработку данных</p><p class="pf__v">Дано 20 октября 2026</p></div>
+      </div>
+    </section>
+
+    <a class="pill pill--lg pill--block pf__out" href="/profi/">Выйти</a>
+  </main>
+</ProfiShell>
+
+<style>
+  .pf { max-width: 720px; padding-top: var(--s-4); }
+  .pf__group { display: grid; gap: var(--s-2); margin-top: var(--s-7); }
+  .pf__h { margin-bottom: var(--s-2); }
+  .pf__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--s-3);
+    padding: var(--s-4);
+    background: var(--surface);
+    border-radius: var(--radius-card);
+  }
+  .pf__k { font-weight: var(--w-head); }
+  .pf__v { font-size: var(--fs-small); }
+  .pf__row .chip { background: var(--bg); flex: none; }
+  .pf__row .pill { flex: none; }
+  .pf__out { margin-top: var(--section-gap); }
+</style>

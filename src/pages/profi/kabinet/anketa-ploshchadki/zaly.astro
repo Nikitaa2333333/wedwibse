@@ -1,0 +1,112 @@
+---
+// ЗАЛЫ ПЛОЩАДКИ — строками: имя, вместимость, аренда «от». Нажатие
+// открывает шторку с полями (площадь, банкет, фуршет, тариф по дням:
+// аренда и депозит — как VenueHall в data/venues.ts). «+ Зал» добавляет
+// строку и открывает её. Один зал — тоже зал. ЗАГЛУШКА.
+import SectionShell from '../../../../components/profi/SectionShell.astro';
+import EditSheet from '../../../../components/profi/EditSheet.astro';
+const back = '/profi/kabinet/anketa-ploshchadki/';
+
+const halls = [
+  { name: 'Стеклянный зал', area: '180', banquet: '60', buffet: '90', rent: '150 000', deposit: '250 000' },
+];
+const days = ['Пн–Чт', 'Пятница', 'Сб–Вс'];
+---
+
+<SectionShell title="Залы" lead="Каждый зал — своя секция на странице площадки: кадр, вместимость, цены по дням." back={back}>
+  <ul class="halls" data-halls>
+    {halls.map((h) => (
+      <li>
+        <button class="hall" type="button" data-sheet-open="hall" data-name={h.name} data-area={h.area} data-banquet={h.banquet} data-buffet={h.buffet} data-rent={h.rent} data-deposit={h.deposit}>
+          <span class="hall__main">
+            <span class="hall__name">{h.name}</span>
+            <span class="hall__meta">{h.area} м² · банкет {h.banquet} · фуршет {h.buffet}</span>
+          </span>
+          <span class="hall__price">от {h.rent} ₽</span>
+        </button>
+      </li>
+    ))}
+  </ul>
+  <button class="pill" type="button" data-hall-add>+ Зал</button>
+
+  <EditSheet name="hall" title="Зал">
+    <label class="field"><span class="field__label">Название</span><input class="input" data-f="name" /></label>
+    <div class="nums">
+      <label class="field"><span class="field__label">Площадь, м²</span><input class="input" inputmode="numeric" data-f="area" /></label>
+      <label class="field"><span class="field__label">Банкет</span><input class="input" inputmode="numeric" data-f="banquet" /></label>
+      <label class="field"><span class="field__label">Фуршет</span><input class="input" inputmode="numeric" data-f="buffet" /></label>
+    </div>
+    <div class="field">
+      <span class="field__label">Цены по дням недели, ₽</span>
+      <div class="tariff tariff--head" aria-hidden="true"><span></span><span>Аренда</span><span>Депозит</span></div>
+      {days.map((d, i) => (
+        <div class="tariff">
+          <span class="tariff__day">{d}</span>
+          <input class="input" inputmode="numeric" aria-label={`Аренда, ${d}`} data-f={i === 0 ? 'rent' : undefined} />
+          <input class="input" inputmode="numeric" aria-label={`Депозит, ${d}`} data-f={i === 0 ? 'deposit' : undefined} />
+        </div>
+      ))}
+      <span class="field__note">Депозит — минимальный заказ по меню. Нет аренды или депозита — оставьте пустым.</span>
+    </div>
+    <label class="field"><span class="field__label">Что входит в аренду</span><textarea class="input" rows="2">Мебель и текстиль, свет и звук, уборка, парковка</textarea></label>
+    <button class="pill" type="button" data-hall-del>Убрать зал</button>
+  </EditSheet>
+</SectionShell>
+
+<script>
+  import { bindSheet } from '../../../../lib/sheet';
+  const sheetEl = document.querySelector<HTMLElement>('[data-sheet="hall"]');
+  const list = document.querySelector<HTMLElement>('[data-halls]');
+  if (sheetEl && list) {
+    const keys = ['name', 'area', 'banquet', 'buffet', 'rent', 'deposit'];
+    const f = (k: string) => sheetEl.querySelector<HTMLInputElement>(`[data-f="${k}"]`)!;
+    let current: HTMLElement | null = null;
+    const sheet = bindSheet(sheetEl, {
+      onOpen: (opener) => {
+        current = opener ?? null;
+        keys.forEach((k) => { f(k).value = current?.dataset[k] ?? ''; });
+      },
+      onClose: () => {
+        if (!current) return;
+        if (!f('name').value.trim()) { current.closest('li')?.remove(); current = null; return; }
+        keys.forEach((k) => { current!.dataset[k] = f(k).value; });
+        current.querySelector('.hall__name')!.textContent = f('name').value;
+        current.querySelector('.hall__meta')!.textContent = `${f('area').value} м² · банкет ${f('banquet').value} · фуршет ${f('buffet').value}`;
+        current.querySelector('.hall__price')!.textContent = f('rent').value ? `от ${f('rent').value} ₽` : '';
+        list.dispatchEvent(new Event('input', { bubbles: true }));
+        current = null;
+      },
+    });
+    sheetEl.querySelector('[data-hall-del]')!.addEventListener('click', () => { f('name').value = ''; sheet.close(); });
+    document.querySelector('[data-hall-add]')!.addEventListener('click', () => {
+      const li = document.createElement('li');
+      li.innerHTML = '<button class="hall" type="button" data-sheet-open="hall"><span class="hall__main"><span class="hall__name">Новый зал</span><span class="hall__meta"></span></span><span class="hall__price"></span></button>';
+      list.append(li);
+      const btn = li.querySelector<HTMLElement>('button')!;
+      btn.addEventListener('click', () => sheet.open(btn));
+      sheet.open(btn);
+    });
+  }
+</script>
+
+<style>
+  .halls { list-style: none; display: grid; gap: var(--s-2); }
+  .hall {
+    width: 100%; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4);
+    padding: var(--s-4); font: inherit; text-align: left; color: var(--fg);
+    background: var(--surface); border: 0; border-radius: var(--radius-card); cursor: pointer;
+  }
+  .hall__main { display: grid; gap: 2px; min-width: 0; }
+  .hall__name { font-weight: var(--w-head-lg); line-height: var(--lh-caption); }
+  .hall__meta { font-size: var(--fs-small); line-height: var(--lh-snug); }
+  .hall__price { flex: none; font-weight: var(--w-head-lg); }
+
+  .nums { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-2); }
+  .nums .field { min-width: 0; }
+  .nums .input { min-width: 0; max-width: 100%; }
+  .tariff { display: grid; grid-template-columns: 4.5em 1fr 1fr; gap: var(--s-2); align-items: center; }
+  .tariff .input { min-width: 0; max-width: 100%; padding-inline: var(--s-3); }
+  .tariff__day { font-size: var(--fs-small); font-weight: var(--w-medium); line-height: var(--lh-caption); }
+  .tariff--head { font-size: var(--fs-caption); font-weight: var(--w-medium); }
+  .tariff--head span { padding-inline: var(--s-3); }
+</style>

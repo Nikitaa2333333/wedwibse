@@ -1,0 +1,34 @@
+/* Экраны входа подрядчика: вход, регистрация, пароль, личная ссылка.
+   Одна узкая колонка, как у хороших экранов входа: заголовок и одна строка
+   пояснения по центру, главное действие первым, поля с подписями слева,
+   альтернативный путь одной строкой внизу. Лишних подписей нет. */
+.auth {
+  max-width: 400px;
+  padding-top: var(--s-6);
+  padding-bottom: var(--s-8);
+  display: grid;
+  gap: var(--s-5);
+}
+.auth__head { display: grid; gap: var(--s-2); text-align: center; margin-bottom: var(--s-2); }
+.auth__sub { font-size: var(--fs-small); }
+
+.auth__or {
+  font-size: var(--fs-small);
+  text-align: center;
+}
+
+.auth__form { display: grid; gap: var(--s-4); }
+.auth__form .pill { margin-top: var(--s-2); }
+
+/* Подпись поля и ссылка справа в одну строку: «Пароль … Забыли?» */
+.auth__row { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s-3); }
+.auth__row a { font-size: var(--fs-small); color: inherit; }
+
+.auth__checks { display: grid; gap: var(--s-3); }
+
+.auth__alt { text-align: center; font-size: var(--fs-small); }
+.auth__alt a { color: inherit; font-weight: var(--w-medium); }
+
+/* Кнопка ждёт обеих галочек согласия */
+.auth__gate { transition: opacity var(--dur-fast) var(--ease-out); }
+.auth__gate[aria-disabled='true'] { opacity: 0.35; pointer-events: none; }

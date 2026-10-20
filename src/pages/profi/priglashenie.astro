@@ -1,0 +1,75 @@
+---
+// ВХОД ПО ЛИЧНОЙ ССЫЛКЕ — пилот на 25 существующих карточках (решение
+// 20.10.2026, CABINET.md §22). Никита сам отправляет владельцу ссылку;
+// владелец видит СВОЮ карточку, принимает условия и входит через Telegram или MAX —
+// учётка привязывается к карточке. Вживую ссылка одноразовая
+// (/profi/priglashenie/<токен>/); в прототипе — пример на карточке Сухорады.
+import { Image } from 'astro:assets';
+import ProfiShell from '../../components/profi/ProfiShell.astro';
+import MessengerLogin from '../../components/profi/MessengerLogin.astro';
+import { resolveImage, IMG_WIDTHS } from '../../lib/images';
+import '../../components/profi/auth.css';
+---
+
+<ProfiShell title="Ваша карточка в каталоге" look="auth">
+  <main class="container auth" data-consent>
+    <div class="auth__head">
+      <h1 class="t-h1">Это ваша карточка</h1>
+      <p class="auth__sub">Войдите, чтобы править её самим</p>
+    </div>
+
+    <a class="inv" href="/moskva/podryadchiki/fotografy/suhorada/">
+      <Image
+        src={resolveImage('/specialists/fotografy/suhorada/gal/p09.webp')}
+        alt="Алексей Сухорада"
+        widths={[...IMG_WIDTHS.card]}
+        sizes="(min-width: 480px) 160px, 40vw"
+        class="inv__img"
+      />
+      <span class="inv__name">Алексей Сухорада</span>
+      <span class="inv__role">Фотограф · от 40 000 ₽</span>
+    </a>
+
+    <div class="auth__checks">
+      <label class="check">
+        <input class="check__input" type="checkbox" data-consent-box />
+        <span class="check__box"></span>
+        <span>Принимаю <a href="/profi/#voprosy">условия размещения</a></span>
+      </label>
+      <label class="check">
+        <input class="check__input" type="checkbox" data-consent-box />
+        <span class="check__box"></span>
+        <span>Даю согласие на <a href="/profi/#voprosy">обработку персональных данных</a></span>
+      </label>
+    </div>
+
+    <div class="auth__gate" data-consent-gate aria-disabled="true">
+      <MessengerLogin />
+    </div>
+  </main>
+</ProfiShell>
+
+<script>
+  const root = document.querySelector('[data-consent]');
+  if (root) {
+    const boxes = [...root.querySelectorAll<HTMLInputElement>('[data-consent-box]')];
+    const gate = root.querySelector<HTMLElement>('[data-consent-gate]');
+    const sync = () => gate?.setAttribute('aria-disabled', String(!boxes.every((b) => b.checked)));
+    boxes.forEach((b) => b.addEventListener('change', sync));
+    sync();
+  }
+</script>
+
+<style>
+  .inv {
+    display: grid;
+    justify-items: center;
+    gap: var(--s-1);
+    color: inherit;
+    text-decoration: none;
+    text-align: center;
+  }
+  .inv__img { width: 160px; height: auto; aspect-ratio: 4 / 5; object-fit: cover; border-radius: var(--radius-card); }
+  .inv__name { margin-top: var(--s-2); font-weight: var(--w-head-lg); }
+  .inv__role { font-size: var(--fs-small); }
+</style>

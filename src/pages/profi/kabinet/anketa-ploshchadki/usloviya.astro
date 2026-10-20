@@ -1,0 +1,32 @@
+---
+// УСЛОВИЯ ПЛОЩАДКИ — что пара спросит первым: кухня, свой алкоголь,
+// до скольки. Ответы уходят в блок условий на странице. ЗАГЛУШКА.
+import SectionShell from '../../../../components/profi/SectionShell.astro';
+const back = '/profi/kabinet/anketa-ploshchadki/';
+---
+
+<SectionShell title="Условия" lead="Что пара спросит первым. Ответы уйдут в блок условий на странице." back={back}>
+  <fieldset class="q">
+    <legend class="q__t">Кухня</legend>
+    <div class="q__opts">
+      <label class="chip-opt"><input class="chip-opt__input" type="radio" name="food" checked /><span class="chip">Только наша</span></label>
+      <label class="chip-opt"><input class="chip-opt__input" type="radio" name="food" /><span class="chip">Можно свой кейтеринг</span></label>
+    </div>
+  </fieldset>
+  <fieldset class="q">
+    <legend class="q__t">Свой алкоголь</legend>
+    <div class="q__opts">
+      <label class="chip-opt"><input class="chip-opt__input" type="radio" name="alco" /><span class="chip">Без сбора</span></label>
+      <label class="chip-opt"><input class="chip-opt__input" type="radio" name="alco" checked /><span class="chip">Со сбором</span></label>
+      <label class="chip-opt"><input class="chip-opt__input" type="radio" name="alco" /><span class="chip">Нельзя</span></label>
+    </div>
+  </fieldset>
+  <label class="field"><span class="field__label">До скольки можно гулять</span><input class="input" value="До 23:00 в зале, на веранде до 22:00" /></label>
+  <label class="field"><span class="field__label">Парковка</span><input class="input" value="Своя, бесплатная, 30 мест" /></label>
+</SectionShell>
+
+<style>
+  .q { border: 0; padding: 0; margin: 0; display: grid; gap: var(--s-3); }
+  .q__t { font-weight: var(--w-head-lg); line-height: var(--lh-caption); }
+  .q__opts { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+</style>

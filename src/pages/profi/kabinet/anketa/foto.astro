@@ -1,0 +1,13 @@
+---
+// ФОТО КАРТОЧКИ ПОДРЯДЧИКА — сетка PhotoGrid (CABINET-UX.md §2 п.8). ЗАГЛУШКА.
+import SectionShell from '../../../../components/profi/SectionShell.astro';
+import PhotoGrid from '../../../../components/profi/PhotoGrid.astro';
+
+const photos = ['p09', 'p01', 'p02', 'p03', 'p04', 'p05', 'p13', 'p19', 'p32'].map(
+  (n) => `/specialists/fotografy/suhorada/gal/${n}.webp`,
+);
+---
+
+<SectionShell title="Фото" lead="До 50 кадров, лучше вертикальные. Первый — обложка. Зажмите кадр, чтобы переставить.">
+  <PhotoGrid photos={photos} />
+</SectionShell>

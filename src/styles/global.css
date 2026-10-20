@@ -983,6 +983,63 @@ body.has-sticky-cta { padding-bottom: var(--float-cta-space); }
    та же инверсия, что у ховера: выбор читается без второго приёма. */
 .pill.is-active { background: var(--fg); color: var(--bg); }
 
+/* Главное действие экрана — залитая пилюля (кабинет подрядчика, 20.10.2026:
+   «Войти через Telegram», «Зарегистрироваться», «Отправить на проверку»).
+   Одна на экран: рядом с ней остальные действия — обычные контурные .pill.
+   Неактивная (не отмечены согласия) — та же форма, но прозрачная и без
+   отклика: кнопка видна заранее, а не появляется из ниоткуда. */
+.pill--solid { background: var(--fg); color: var(--bg); }
+@media (hover: hover) {
+  .pill--solid:hover { background: var(--fg); color: var(--bg); opacity: 0.88; }
+}
+.pill--block { display: flex; justify-content: center; width: 100%; text-align: center; }
+.pill:disabled,
+.pill[aria-disabled='true'] { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+
+/* ============ ГАЛОЧКА СОГЛАСИЯ ============
+   Квадрат слева и фраза справа, вся строка нажимается. Для оферты и
+   согласия на ПДн при регистрации (CABINET.md, разделы 16 и 21): две
+   ОТДЕЛЬНЫЕ галочки, у каждой ссылка на свой текст. Квадрат, а не
+   кружок .radio-row — это выбор «да/нет», а не один из нескольких. */
+.check {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: var(--s-3);
+  align-items: start;
+  font-size: var(--fs-small);
+  line-height: var(--lh-body);
+  cursor: pointer;
+}
+.check__input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.check__box {
+  width: 24px;
+  height: 24px;
+  margin-top: 2px;
+  border: 1.5px solid var(--fg);
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+/* Одна тонкая галочка, нарисованная рамкой: значок check из набора —
+   двойная галочка в квадрате, в квадратике она читалась кашей
+   (Никита, 20.10.2026). */
+.check__box::after {
+  content: '';
+  width: 6px;
+  height: 11px;
+  margin-top: -2px;
+  border: solid var(--bg);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) scale(0.6);
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+}
+.check__input:checked + .check__box { background: var(--fg); }
+.check__input:checked + .check__box::after { opacity: 1; transform: rotate(45deg); }
+.check__input:focus-visible + .check__box { outline: 2px solid var(--fg); outline-offset: 2px; }
+.check a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+
 /* ============ ЧИП ============
    Плашка выбора в фильтрах (полоса над каталогом, шторка). От .pill
    отличается ролью: .pill — действие, .chip — состояние «включён/выключен».
@@ -2020,6 +2077,20 @@ body:has(.scta.is-shown) .fav-toast {
   --line: #e2d7c7;
   --surface: #ede4d7;      /* плашки на тон темнее крема */
   --surface-dim: #e5dacb;
+}
+
+/* Рабочие экраны — кабинет подрядчика (.profi--tech, .profi--auth):
+   белая бумага базы вместо крема (Никита, 20.10.2026: «на белый фон,
+   чтобы привычно»). Значения — те же, что в :root выше; переписаны, потому
+   что образ «крем» перебивает их на <html>. Тёмную тему не трогаем. */
+:root[data-look='cream']:not([data-theme='dark']):has(.profi--tech, .profi--auth) {
+  --paper: #ffffff;
+  --ink: #1a1613;
+  --black: #14100e;
+  --white: #fdf9f2;
+  --line: #e4e0da;
+  --surface: #f7f5f2;
+  --surface-dim: #ece8e2;
 }
 
 :root[data-look='cream'] {

@@ -1,0 +1,67 @@
+---
+// РЕГИСТРАЦИЯ ПОДРЯДЧИКА — прототип. Оферта и согласие на ПДн подписываются
+// ЗДЕСЬ, до входа в кабинет (решение 16.10.2026, CABINET.md §16, §21): две
+// отдельные галочки со ссылками на тексты, без обеих кнопки неактивны.
+// Тексты пишет юрист — ссылки пока ведут на заглушку. Отправки нет.
+import ProfiShell from '../../components/profi/ProfiShell.astro';
+import MessengerLogin from '../../components/profi/MessengerLogin.astro';
+import '../../components/profi/auth.css';
+---
+
+<ProfiShell title="Регистрация" look="auth">
+  <main class="container auth" data-consent>
+    <div class="auth__head">
+      <h1 class="t-h1">Регистрация</h1>
+      <p class="auth__sub">Бесплатно, займёт минуту</p>
+    </div>
+
+    <div class="auth__checks">
+      <label class="check">
+        <input class="check__input" type="checkbox" data-consent-box />
+        <span class="check__box"></span>
+        <span>Принимаю <a href="/profi/#voprosy">условия размещения</a></span>
+      </label>
+      <label class="check">
+        <input class="check__input" type="checkbox" data-consent-box />
+        <span class="check__box"></span>
+        <span>Даю согласие на <a href="/profi/#voprosy">обработку персональных данных</a></span>
+      </label>
+    </div>
+
+    <div class="auth__gate" data-consent-gate aria-disabled="true">
+      <MessengerLogin prefix="Через" />
+    </div>
+
+    <p class="auth__or">или по почте</p>
+
+    <form class="auth__form auth__gate" action="/profi/kabinet/" method="get" data-consent-gate aria-disabled="true">
+      <label class="field">
+        <span class="field__label">Почта</span>
+        <input class="input" type="email" name="email" autocomplete="email" />
+      </label>
+      <label class="field">
+        <span class="field__label">Пароль</span>
+        <input class="input" type="password" name="password" autocomplete="new-password" placeholder="Не короче 8 знаков" />
+      </label>
+      <button class="pill pill--lg pill--block" type="submit">Создать учётку</button>
+    </form>
+
+    <p class="auth__alt">Уже есть учётка? <a href="/profi/vhod/">Войти</a></p>
+  </main>
+</ProfiShell>
+
+<script>
+  // Оба способа живут, только когда отмечены обе галочки. Без JS всё
+  // остаётся заблокированным — это прототип, отправки всё равно нет.
+  const root = document.querySelector('[data-consent]');
+  if (root) {
+    const boxes = [...root.querySelectorAll<HTMLInputElement>('[data-consent-box]')];
+    const gates = [...root.querySelectorAll<HTMLElement>('[data-consent-gate]')];
+    const sync = () => {
+      const ok = boxes.every((b) => b.checked);
+      gates.forEach((g) => g.setAttribute('aria-disabled', String(!ok)));
+    };
+    boxes.forEach((b) => b.addEventListener('change', sync));
+    sync();
+  }
+</script>

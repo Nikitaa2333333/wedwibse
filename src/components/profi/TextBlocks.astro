@@ -1,0 +1,208 @@
+---
+// РЕДАКТОР ТЕКСТА «КАК В МЕССЕНДЖЕРЕ» (CABINET-UX.md §2 п.6–7). Раздел =
+// один блок текста: первая строка — заголовок, строки с «—» — список,
+// пустая строка — новый абзац, **жирный** — как в Telegram. Это ровно
+// StorySection, сервер разбирает блок без разметки.
+// Сверху — предложенная структура категории: «Взять за основу» ставит
+// заголовки в пустые блоки, подсказка остаётся под блоком, пока в нём
+// одна строка. Кнопки под блоком: жирный, список, выше, ниже, удалить
+// (удаление с «Вернуть» вместо «Вы уверены?» — правило 9).
+// Логика клиентская, в прототипе ничего не отправляет.
+import type { SuggestedStructure } from '../../data/profi-structures';
+
+interface Props {
+  structure: SuggestedStructure;
+  /** уже написанные блоки — подставляются в первые разделы структуры */
+  written?: string[];
+}
+
+const { structure, written = [] } = Astro.props;
+const blocks = structure.sections.map((sec, i) => ({
+  value: written[i] ?? '',
+  title: sec.title,
+  hint: sec.hint,
+}));
+---
+
+<div class="tb" data-tb>
+  <div class="tb__struct">
+    <p class="tb__struct-t">{structure.label}</p>
+    <p class="tb__struct-d">{structure.sections.map((s) => s.title).join(' · ')}</p>
+    <button class="pill pill--sm" type="button" data-tb-apply>Взять за основу</button>
+  </div>
+
+  <ol class="tb__list" data-tb-list>
+    {blocks.map((b, i) => (
+      <li class="tb__block" data-tb-block data-title={b.title}>
+        <textarea class="tb__ta" rows="3" placeholder={`${b.title}\n${b.hint}`} aria-label={`Раздел ${i + 1}`} data-tb-ta>{b.value}</textarea>
+        <p class="tb__hint" data-tb-hint hidden>{b.hint}</p>
+        <div class="tb__tools">
+          <button class="tb__tool" type="button" data-tb-bold aria-label="Жирный"><b>Ж</b></button>
+          <button class="tb__tool" type="button" data-tb-list-btn aria-label="Список">—</button>
+          <button class="tb__tool tb__tool--right" type="button" data-tb-up aria-label="Выше">↑</button>
+          <button class="tb__tool" type="button" data-tb-down aria-label="Ниже">↓</button>
+          <button class="tb__tool" type="button" data-tb-del aria-label="Удалить">×</button>
+        </div>
+      </li>
+    ))}
+  </ol>
+
+  <template data-tb-tpl>
+    <li class="tb__block" data-tb-block>
+      <textarea class="tb__ta" rows="3" placeholder="Заголовок раздела
+Текст" aria-label="Новый раздел" data-tb-ta></textarea>
+      <p class="tb__hint" data-tb-hint hidden></p>
+      <div class="tb__tools">
+        <button class="tb__tool" type="button" data-tb-bold aria-label="Жирный"><b>Ж</b></button>
+        <button class="tb__tool" type="button" data-tb-list-btn aria-label="Список">—</button>
+        <button class="tb__tool tb__tool--right" type="button" data-tb-up aria-label="Выше">↑</button>
+        <button class="tb__tool" type="button" data-tb-down aria-label="Ниже">↓</button>
+        <button class="tb__tool" type="button" data-tb-del aria-label="Удалить">×</button>
+      </div>
+    </li>
+  </template>
+
+  <p class="tb__undo" data-tb-undo hidden>Раздел удалён · <button type="button" data-tb-restore>Вернуть</button></p>
+  <button class="pill" type="button" data-tb-add>+ Раздел</button>
+  <p class="tb__note">Телефоны, почта, ссылки и ники в тексте не пройдут проверку — для них есть раздел «Контакты».</p>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-tb]').forEach((root) => {
+    const list = root.querySelector<HTMLElement>('[data-tb-list]')!;
+    const tpl = root.querySelector<HTMLTemplateElement>('[data-tb-tpl]')!;
+    const undo = root.querySelector<HTMLElement>('[data-tb-undo]')!;
+    let removed: { el: HTMLElement; next: Element | null } | null = null;
+    let undoTimer = 0;
+
+    const grow = (ta: HTMLTextAreaElement) => {
+      ta.style.height = 'auto';
+      ta.style.height = `${ta.scrollHeight}px`;
+    };
+    // Подсказка видна, пока в блоке только заголовок
+    const syncHint = (block: HTMLElement) => {
+      const ta = block.querySelector<HTMLTextAreaElement>('[data-tb-ta]')!;
+      const hint = block.querySelector<HTMLElement>('[data-tb-hint]')!;
+      const lines = ta.value.split('\n').filter((l) => l.trim());
+      hint.hidden = !(lines.length === 1 && hint.textContent);
+    };
+    const wire = (block: HTMLElement) => {
+      const ta = block.querySelector<HTMLTextAreaElement>('[data-tb-ta]')!;
+      grow(ta);
+      syncHint(block);
+      ta.addEventListener('input', () => { grow(ta); syncHint(block); });
+    };
+    list.querySelectorAll<HTMLElement>('[data-tb-block]').forEach(wire);
+
+    // Выделение → **жирный**; строки выделения → «— пункт»
+    const wrap = (ta: HTMLTextAreaElement, mark: string) => {
+      const { selectionStart: a, selectionEnd: b, value } = ta;
+      const sel = value.slice(a, b) || 'текст';
+      ta.setRangeText(`${mark}${sel}${mark}`, a, b, 'select');
+      ta.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+    const listify = (ta: HTMLTextAreaElement) => {
+      const { selectionStart: a, selectionEnd: b, value } = ta;
+      const from = value.lastIndexOf('\n', a - 1) + 1;
+      const toNl = value.indexOf('\n', b);
+      const to = toNl === -1 ? value.length : toNl;
+      const lines = value.slice(from, to).split('\n').map((l) => (l.startsWith('— ') ? l : `— ${l}`));
+      ta.setRangeText(lines.join('\n'), from, to, 'select');
+      ta.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+
+    root.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest('button');
+      if (!btn) return;
+      const block = btn.closest<HTMLElement>('[data-tb-block]');
+      const ta = block?.querySelector<HTMLTextAreaElement>('[data-tb-ta]');
+
+      if (btn.hasAttribute('data-tb-apply')) {
+        list.querySelectorAll<HTMLElement>('[data-tb-block]').forEach((b) => {
+          const t = b.querySelector<HTMLTextAreaElement>('[data-tb-ta]')!;
+          if (!t.value.trim() && b.dataset.title) {
+            t.value = `${b.dataset.title}\n`;
+            t.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+        });
+        return;
+      }
+      if (btn.hasAttribute('data-tb-add')) {
+        const el = tpl.content.firstElementChild!.cloneNode(true) as HTMLElement;
+        list.append(el);
+        wire(el);
+        el.querySelector<HTMLTextAreaElement>('[data-tb-ta]')!.focus();
+        return;
+      }
+      if (btn.hasAttribute('data-tb-restore') && removed) {
+        list.insertBefore(removed.el, removed.next);
+        removed = null;
+        undo.hidden = true;
+        return;
+      }
+      if (!block || !ta) return;
+      if (btn.hasAttribute('data-tb-bold')) wrap(ta, '**');
+      else if (btn.hasAttribute('data-tb-list-btn')) listify(ta);
+      else if (btn.hasAttribute('data-tb-up')) block.previousElementSibling?.before(block);
+      else if (btn.hasAttribute('data-tb-down')) block.nextElementSibling?.after(block);
+      else if (btn.hasAttribute('data-tb-del')) {
+        removed = { el: block, next: block.nextElementSibling };
+        block.remove();
+        undo.hidden = false;
+        clearTimeout(undoTimer);
+        undoTimer = window.setTimeout(() => { undo.hidden = true; removed = null; }, 6000);
+        return;
+      }
+      root.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  });
+</script>
+
+<style>
+  .tb { display: grid; gap: var(--s-5); }
+  .tb__struct { display: grid; gap: var(--s-2); justify-items: start; }
+  .tb__struct-t { font-weight: var(--w-head-lg); line-height: var(--lh-caption); }
+  .tb__struct-d { font-size: var(--fs-small); line-height: var(--lh-snug); }
+
+  /* Само поле и есть плашка раздела, второй рамки нет */
+  .tb__list { list-style: none; display: grid; gap: var(--s-4); }
+  .tb__block { display: grid; gap: var(--s-2); }
+  .tb__ta {
+    width: 100%;
+    min-width: 0;
+    resize: none;
+    overflow: hidden;
+    padding: var(--s-4);
+    font: inherit;
+    font-size: var(--fs-body);
+    line-height: var(--lh-body);
+    color: var(--fg);
+    background: var(--surface);
+    border: 0;
+    border-radius: var(--radius-card);
+  }
+  .tb__ta::first-line { font-weight: var(--w-head-lg); }
+  .tb__ta::placeholder { color: var(--fg); opacity: 0.4; }
+  .tb__ta:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+  .tb__hint { font-size: var(--fs-caption); padding-inline: var(--s-4); }
+
+  .tb__tools { display: flex; gap: var(--s-1); }
+  .tb__tool {
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    font: inherit;
+    font-size: var(--fs-small);
+    color: var(--fg);
+    background: transparent;
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+  }
+  .tb__tool--right { margin-left: auto; }
+
+  .tb__undo { font-size: var(--fs-small); }
+  .tb__undo button { font: inherit; font-weight: var(--w-medium); color: inherit; background: none; border: 0; text-decoration: underline; cursor: pointer; }
+  .tb__note { font-size: var(--fs-caption); }
+</style>

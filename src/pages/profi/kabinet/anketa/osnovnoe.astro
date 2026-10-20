@@ -1,0 +1,26 @@
+---
+// ОСНОВНОЕ — имя, адрес страницы, категория. Категория закрепляется при
+// создании карточки (CABINET.md §21). ЗАГЛУШКА.
+import SectionShell from '../../../../components/profi/SectionShell.astro';
+---
+
+<SectionShell title="Основное">
+  <label class="field">
+    <span class="field__label">Имя или название</span>
+    <input class="input" value="Алексей Сухорада" />
+  </label>
+  <div class="field">
+    <span class="field__label">Адрес страницы</span>
+    <p class="ro">wed-secrets.ru/…/fotografy/<b>suhorada</b>/</p>
+    <span class="field__note">После публикации адрес меняет только модератор</span>
+  </div>
+  <div class="field">
+    <span class="field__label">Категория</span>
+    <p class="ro">Фотограф</p>
+    <span class="field__note">Ещё профессия — вторая карточка</span>
+  </div>
+</SectionShell>
+
+<style>
+  .ro { font-size: var(--fs-body); overflow-wrap: anywhere; }
+</style>

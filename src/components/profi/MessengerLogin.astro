@@ -1,0 +1,24 @@
+---
+// Вход через мессенджер: Telegram и MAX рядом (решение 20.10.2026,
+// CABINET.md §23). Одна точка, чтобы экраны входа, регистрации и личной
+// ссылки не расходились порядком и подписями.
+import TelegramButton from './TelegramButton.astro';
+import MaxButton from './MaxButton.astro';
+
+interface Props {
+  /** «Войти через» на входе, «Через» на регистрации */
+  prefix?: string;
+  href?: string;
+}
+
+const { prefix = 'Войти через', href } = Astro.props;
+---
+
+<div class="msg">
+  <TelegramButton href={href} label={`${prefix} Telegram`} />
+  <MaxButton href={href} label={prefix} />
+</div>
+
+<style>
+  .msg { display: grid; gap: var(--s-2); }
+</style>

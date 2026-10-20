@@ -5,7 +5,8 @@
 import { chromium } from 'playwright-core';
 import { homedir } from 'node:os';
 const [, , path, where = '0', out = 'shot.png', h = '844'] = process.argv;
-const browser = await chromium.launch({ executablePath: `${homedir()}/AppData/Local/ms-playwright/chromium-1223/chrome-win64/chrome.exe` });
+// CHROMIUM — путь к браузеру не на Windows (облачная сессия: /opt/pw-browsers/chromium)
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM || `${homedir()}/AppData/Local/ms-playwright/chromium-1223/chrome-win64/chrome.exe` });
 const page = await browser.newPage({ viewport: { width: 390, height: Number(h) }, deviceScaleFactor: 1.5 });
 await page.goto(`http://127.0.0.1:4327${path}`, { waitUntil: 'networkidle' });
 if (/^\d+$/.test(where)) await page.evaluate((y) => window.scrollTo(0, y), Number(where));

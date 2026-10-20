@@ -1,0 +1,112 @@
+---
+// ПРАЙС — пакеты строками; нажатие открывает шторку редактирования
+// (EditSheet), «+ Пакет» добавляет строку и сразу открывает её. Цена «от»
+// в каталоге — самый дешёвый пакет. ЗАГЛУШКА, на сервер не уходит.
+import SectionShell from '../../../../components/profi/SectionShell.astro';
+import EditSheet from '../../../../components/profi/EditSheet.astro';
+
+const packages = [
+  { name: 'Полный день', price: '40 000', includes: '10 часов, 500 фото, онлайн-галерея' },
+  { name: 'Половина дня', price: '25 000', includes: '5 часов, 250 фото' },
+  { name: 'Love story', price: '12 000', includes: '2 часа, 80 фото' },
+];
+---
+
+<SectionShell title="Прайс" lead="Пакеты показываются на карточке таблицей. Цена «от» в каталоге — самый дешёвый пакет.">
+  <fieldset class="q">
+    <legend class="q__t">Как показать цены</legend>
+    <div class="q__opts">
+      <label class="chip-opt"><input class="chip-opt__input" type="radio" name="price" checked /><span class="chip">Пакеты</span></label>
+      <label class="chip-opt"><input class="chip-opt__input" type="radio" name="price" /><span class="chip">Таблица</span></label>
+      <label class="chip-opt"><input class="chip-opt__input" type="radio" name="price" /><span class="chip">Только «от»</span></label>
+    </div>
+  </fieldset>
+
+  <ul class="packs" data-packs>
+    {packages.map((p) => (
+      <li>
+        <button class="pack" type="button" data-sheet-open="pack" data-name={p.name} data-price={p.price} data-includes={p.includes}>
+          <span class="pack__main">
+            <span class="pack__name">{p.name}</span>
+            <span class="pack__inc">{p.includes}</span>
+          </span>
+          <span class="pack__price">{p.price} ₽</span>
+        </button>
+      </li>
+    ))}
+  </ul>
+  <button class="pill" type="button" data-pack-add>+ Пакет</button>
+
+  <EditSheet name="pack" title="Пакет">
+    <label class="field"><span class="field__label">Название</span><input class="input" data-f="name" /></label>
+    <label class="field"><span class="field__label">Цена, ₽</span><input class="input" inputmode="numeric" data-f="price" /></label>
+    <label class="field"><span class="field__label">Что входит</span><textarea class="input" rows="3" data-f="includes"></textarea></label>
+    <button class="pill" type="button" data-pack-del>Убрать пакет</button>
+  </EditSheet>
+</SectionShell>
+
+<script>
+  import { bindSheet } from '../../../../lib/sheet';
+  const sheetEl = document.querySelector<HTMLElement>('[data-sheet="pack"]');
+  const list = document.querySelector<HTMLElement>('[data-packs]');
+  if (sheetEl && list) {
+    const f = (k: string) => sheetEl.querySelector<HTMLInputElement>(`[data-f="${k}"]`)!;
+    let current: HTMLElement | null = null;
+    const sheet = bindSheet(sheetEl, {
+      onOpen: (opener) => {
+        current = opener ?? null;
+        f('name').value = current?.dataset.name ?? '';
+        f('price').value = current?.dataset.price ?? '';
+        f('includes').value = current?.dataset.includes ?? '';
+      },
+      onClose: () => {
+        if (!current) return;
+        if (!f('name').value.trim()) { current.closest('li')?.remove(); current = null; return; }
+        current.dataset.name = f('name').value;
+        current.dataset.price = f('price').value;
+        current.dataset.includes = f('includes').value;
+        current.querySelector('.pack__name')!.textContent = f('name').value;
+        current.querySelector('.pack__inc')!.textContent = f('includes').value;
+        current.querySelector('.pack__price')!.textContent = `${f('price').value} ₽`;
+        list.dispatchEvent(new Event('input', { bubbles: true }));
+        current = null;
+      },
+    });
+    sheetEl.querySelector('[data-pack-del]')!.addEventListener('click', () => { f('name').value = ''; sheet.close(); });
+    document.querySelector('[data-pack-add]')!.addEventListener('click', () => {
+      const li = document.createElement('li');
+      li.innerHTML = '<button class="pack" type="button" data-sheet-open="pack" data-name="" data-price="" data-includes=""><span class="pack__main"><span class="pack__name">Новый пакет</span><span class="pack__inc"></span></span><span class="pack__price"></span></button>';
+      list.append(li);
+      const btn = li.querySelector<HTMLElement>('button')!;
+      btn.addEventListener('click', () => sheet.open(btn));
+      sheet.open(btn);
+    });
+  }
+</script>
+
+<style>
+  .q { border: 0; padding: 0; margin: 0; display: grid; gap: var(--s-3); }
+  .q__t { font-weight: var(--w-head-lg); line-height: var(--lh-caption); }
+  .q__opts { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+
+  .packs { list-style: none; display: grid; gap: var(--s-2); }
+  .pack {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-4);
+    padding: var(--s-4);
+    font: inherit;
+    text-align: left;
+    color: var(--fg);
+    background: var(--surface);
+    border: 0;
+    border-radius: var(--radius-card);
+    cursor: pointer;
+  }
+  .pack__main { display: grid; gap: 2px; min-width: 0; }
+  .pack__name { font-weight: var(--w-head-lg); line-height: var(--lh-caption); }
+  .pack__inc { font-size: var(--fs-small); line-height: var(--lh-snug); }
+  .pack__price { flex: none; font-weight: var(--w-head-lg); }
+</style>
