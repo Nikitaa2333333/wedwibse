@@ -7,7 +7,6 @@
 // Значения — ЗАГЛУШКА на примере карточки Алексея Сухорады.
 import { Image } from 'astro:assets';
 import ProfiShell from '../../../components/profi/ProfiShell.astro';
-import Icon from '../../../components/Icon.astro';
 import { FOTOGRAFY_FILTERS } from '../../../data/specialist-filters';
 import { resolveImage, IMG_WIDTHS } from '../../../lib/images';
 import '../../../components/profi/anketa.css';
@@ -35,7 +34,7 @@ const photos = ['p09', 'p01', 'p02', 'p03', 'p04', 'p05'].map(
     <header class="form__head">
       <span class="chip chip--tag form__status">Черновик</span>
       <h1 class="t-h1">Фотограф</h1>
-      <p class="form__saved" aria-live="polite"><Icon name="check" /> Сохранено · 12:04</p>
+      <p class="form__saved" aria-live="polite">Сохранено · 12:04</p>
     </header>
 
     <nav class="form__nav" aria-label="Разделы анкеты">

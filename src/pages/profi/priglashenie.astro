@@ -1,13 +1,12 @@
 ---
 // ВХОД ПО ЛИЧНОЙ ССЫЛКЕ — пилот на 25 существующих карточках (решение
 // 20.10.2026, CABINET.md §22). Никита сам отправляет владельцу ссылку;
-// владелец видит СВОЮ карточку, принимает условия и входит через Telegram —
+// владелец видит СВОЮ карточку, принимает условия и входит через Telegram или MAX —
 // учётка привязывается к карточке. Вживую ссылка одноразовая
 // (/profi/priglashenie/<токен>/); в прототипе — пример на карточке Сухорады.
 import { Image } from 'astro:assets';
 import ProfiShell from '../../components/profi/ProfiShell.astro';
-import TelegramButton from '../../components/profi/TelegramButton.astro';
-import Icon from '../../components/Icon.astro';
+import MessengerLogin from '../../components/profi/MessengerLogin.astro';
 import { resolveImage, IMG_WIDTHS } from '../../lib/images';
 import '../../components/profi/auth.css';
 ---
@@ -34,18 +33,18 @@ import '../../components/profi/auth.css';
     <div class="auth__checks">
       <label class="check">
         <input class="check__input" type="checkbox" data-consent-box />
-        <span class="check__box"><Icon name="check" /></span>
+        <span class="check__box"></span>
         <span>Принимаю <a href="/profi/#voprosy">условия размещения</a></span>
       </label>
       <label class="check">
         <input class="check__input" type="checkbox" data-consent-box />
-        <span class="check__box"><Icon name="check" /></span>
+        <span class="check__box"></span>
         <span>Даю согласие на <a href="/profi/#voprosy">обработку персональных данных</a></span>
       </label>
     </div>
 
     <div class="auth__gate" data-consent-gate aria-disabled="true">
-      <TelegramButton />
+      <MessengerLogin />
     </div>
   </main>
 </ProfiShell>

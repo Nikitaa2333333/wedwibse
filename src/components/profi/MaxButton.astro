@@ -1,0 +1,23 @@
+---
+// «Войти через MAX» — второй мессенджер входа рядом с Telegram (решение
+// Никиты 20.10.2026, CABINET.md §23). Готового виджета входа для сайтов
+// у MAX нет: вживую кнопка ведёт в нашего бота ссылкой с одноразовым кодом,
+// человек жмёт «Начать», сервер по вебхуку привязывает аккаунт и пускает
+// в кабинет. В прототипе — ссылка-заглушка на кабинет. Знак — слово MAX
+// набором, чужой логотип не рисуем.
+interface Props {
+  href?: string;
+  label?: string;
+}
+
+const { href = '/profi/kabinet/', label = 'Войти через' } = Astro.props;
+---
+
+<a class="pill pill--lg pill--solid pill--block mx" href={href}>
+  {label} <b class="mx__word">MAX</b>
+</a>
+
+<style>
+  .mx { align-items: center; gap: 0.3em; }
+  .mx__word { font-weight: var(--w-head-lg); letter-spacing: 0.02em; }
+</style>

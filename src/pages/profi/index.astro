@@ -52,7 +52,7 @@ const rowB = [
 ];
 
 const steps = [
-  { t: 'Заведите карточку', d: 'Войдите через Telegram или по почте и заполните анкету. Всё сохраняется само.' },
+  { t: 'Заведите карточку', d: 'Войдите через Telegram, MAX или по почте и заполните анкету. Всё сохраняется само.' },
   { t: 'Мы проверим за сутки', d: 'Модератор смотрит карточку до публикации. Если что-то не так, вернём с понятной причиной.' },
   { t: 'Пары находят вас', d: 'Карточка встаёт в каталог и фильтры, в поиск Яндекса и Google, в подборки блога.' },
   { t: 'Обновляйте, когда нужно', d: 'Новые фото, цены, видео. На сайте всё это время висит прежняя версия.' },
@@ -144,7 +144,7 @@ const faq = [
                 <div class="demo">
                   <span class="demo__swap">
                     <span class="chip chip--tag demo__chip demo__chip--wait">На проверке</span>
-                    <span class="chip chip--tag demo__chip demo__chip--ok"><Icon name="check" /> На сайте</span>
+                    <span class="chip chip--tag demo__chip demo__chip--ok">На сайте</span>
                   </span>
                   <span class="demo__bar"><span class="demo__fill"></span></span>
                   <span class="demo__line">Проверка до 24 часов</span>
@@ -167,7 +167,7 @@ const faq = [
               )}
               {i === 3 && (
                 <div class="demo">
-                  <span class="demo__saved"><Icon name="check" /> Сохранено · 12:04</span>
+                  <span class="demo__saved">Сохранено · 12:04</span>
                   <span class="demo__grid">
                     {['p13', 'p19', 'p32'].map((n) => (
                       <Image src={resolveImage(`/specialists/fotografy/suhorada/gal/${n}.webp`)} alt="" widths={[...IMG_WIDTHS.thumb]} sizes="72px" class="demo__thumb" />
@@ -217,7 +217,7 @@ const faq = [
     <section class="section theme-dark end">
       <div class="container">
         <h2 class="t-h1" data-fx>Начните с карточки</h2>
-        <p class="t-lead end__lead" data-fx>Регистрация занимает минуту: через Telegram или по почте.</p>
+        <p class="t-lead end__lead" data-fx>Регистрация занимает минуту: через Telegram, MAX или по почте.</p>
         <div class="hero__cta" data-fx>
           <a class="pill pill--lg end__btn" href="/profi/registraciya/">Зарегистрироваться</a>
         </div>
