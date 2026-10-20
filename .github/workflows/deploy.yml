@@ -40,10 +40,16 @@ jobs:
         env:
           SITE_URL: https://wed-secrets.ru
           # SITE_BASE не задаём: на своём домене сайт живёт в корне.
-          # SITE_INDEXABLE тоже не задаём — дизайн-фаза, сайт закрыт
-          # от поисковиков (см. SEO.md, раздел 5). Перед запуском: true.
+          # Индексация открыта 20.10.2026 (SEO.md, раздел 5): снимает
+          # мета-тег noindex и Disallow в robots.txt. Страница, которой
+          # в поиске не место, ставит свой <meta name="robots" content="noindex">.
+          SITE_INDEXABLE: 'true'
           YANDEX_MAPS_API_KEY: ${{ secrets.YANDEX_MAPS_API_KEY }}
         run: npx astro build
+
+      # Карта сайта из готовой сборки (страницы с noindex в неё не идут).
+      - name: Sitemap
+        run: node scripts/sitemap.mjs dist https://wed-secrets.ru
 
       - name: Prepare SSH
         run: |
