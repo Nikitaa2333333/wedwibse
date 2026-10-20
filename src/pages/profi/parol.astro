@@ -3,6 +3,7 @@
 // CABINET.md §21). Шаг 2 — /profi/parol/kod/. Письма нет, пока не заведём
 // Яндекс 360 — ЗАГЛУШКА, форма никуда не отправляет.
 import ProfiShell from '../../components/profi/ProfiShell.astro';
+import MessengerLogin from '../../components/profi/MessengerLogin.astro';
 import '../../components/profi/auth.css';
 ---
 
@@ -20,6 +21,14 @@ import '../../components/profi/auth.css';
       </label>
       <button class="pill pill--lg pill--solid pill--block" type="submit">Прислать код</button>
     </form>
+
+    <div class="auth__social">
+      <p>Входили через Telegram или MAX? Почты у учётки нет, пароль не нужен — войдите тем же способом.</p>
+      <MessengerLogin />
+    </div>
+
+    <!-- ЗАГЛУШКА: сюда контакт поддержки (Telegram или почта), пока нет — ссылка пустая -->
+    <p class="auth__alt">Не пришло письмо или нет доступа к почте? <a href="#">Напишите нам</a></p>
 
     <p class="auth__alt"><a href="/profi/vhod/">Вернуться ко входу</a></p>
   </main>

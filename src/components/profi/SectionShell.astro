@@ -18,12 +18,10 @@ const { title, lead, back = '/profi/kabinet/anketa/' } = Astro.props;
 
 <ProfiShell title={`${title} — анкета`} section="cards">
   <main class="container sec">
+    <BackButton plain href={back} label="К анкете" />
     <header class="sec__head">
-      <BackButton href={back} label="К анкете" />
-      <div class="sec__titles">
-        <h1 class="t-h1 sec__title">{title}</h1>
-        <p class="sec__saved" aria-live="polite" data-saved>Сохранено · 12:04</p>
-      </div>
+      <h1 class="t-h1 sec__title">{title}</h1>
+      <p class="sec__saved" aria-live="polite" data-saved>Сохранено · 12:04</p>
     </header>
     {lead && <p class="sec__lead">{lead}</p>}
 
@@ -55,12 +53,12 @@ const { title, lead, back = '/profi/kabinet/anketa/' } = Astro.props;
 </script>
 
 <style>
-  .sec { max-width: 720px; padding-top: var(--s-3); }
-  .sec__head { display: flex; align-items: center; gap: var(--s-4); }
-  .sec__titles { display: grid; gap: 2px; min-width: 0; }
+  .sec { max-width: 720px; padding-top: var(--s-1); }
+  /* Заголовок слева, «Сохранено» справа в той же строке (макет Никиты). */
+  .sec__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-4); }
   .sec__title { line-height: var(--lh-caption); }
-  .sec__saved { font-size: var(--fs-caption); }
-  .sec__lead { margin-top: var(--s-4); font-size: var(--fs-small); max-width: var(--measure-text); }
-  .sec__body { margin-top: var(--s-6); display: grid; gap: var(--s-6); }
+  .sec__saved { font-size: var(--fs-caption); color: var(--text-2); white-space: nowrap; }
+  .sec__lead { margin-top: var(--s-3); font-size: var(--fs-small); max-width: var(--measure-text); }
+  .sec__body { margin-top: var(--s-5); display: grid; gap: var(--s-5); }
   .sec__done { margin-top: var(--section-gap); }
 </style>

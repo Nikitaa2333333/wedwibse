@@ -352,6 +352,23 @@
   --accent: #e8592a;        /* оранжевый акцент: заливка плашек и акцентный текст */
 
   --accent-fg: #fdf9f2;     /* текст на залитой алой плашке */
+  /* Фирменные цвета мессенджеров входа: кнопки «Войти через …» узнаются
+     по тону соцсети. Единственное место с чужими цветами — вход подрядчика. */
+  --brand-telegram: #5b95e5;
+  --brand-max: #8b46f0;
+  --brand-fg: #fff;         /* текст и знак на кнопке мессенджера */
+  /* Кабинет подрядчика — не сайт (CLAUDE.md): цвет несёт смысл статуса.
+     Оттенки сняты с макета Никиты (Figma, 20.10.2026). */
+  --st-ok: #6edd68;         /* зелёный: на сайте, заполнено, порядок */
+  --st-ok-ink: #1a1613;     /* текст на зелёной плашке */
+  --st-bad: #d06478;        /* красный: вернули, нужно исправить */
+  --st-bad-fg: #fff;        /* текст на красной плашке */
+  --st-bad-text: #b3354d;   /* красный текстом на белом («пусто», ошибка) */
+  --st-info: #8ec5fa;       /* голубой: отправлено, на проверке */
+  --st-info-ink: #1a1613;   /* текст на голубой плашке */
+  --st-muted: var(--surface-dim); /* серый: черновик, пусто */
+  --text-2: #5f5851;        /* вторичный текст кабинета: серый, но 6:1 на белом */
+  --radius-status: 8px;     /* плашка статуса */
   /* Бумага стала белой — светлее её плашке уже некуда: капсулы и карточки
      теперь на тон ТЕМНЕЕ фона, иначе на белом их не видно вовсе. */
   --surface: #f7f5f2;       /* плашки и капсулы: на тон темнее бумаги */
@@ -995,6 +1012,24 @@ body.has-sticky-cta { padding-bottom: var(--float-cta-space); }
 .pill--block { display: flex; justify-content: center; width: 100%; text-align: center; }
 .pill:disabled,
 .pill[aria-disabled='true'] { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+
+/* ============ ПЛАШКА СТАТУСА (кабинет) ============
+   Статус карточки или раздела одним-двумя словами: зелёная — порядок,
+   красная — вернули, голубая — на проверке, серая — черновик/пусто. */
+.status {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: var(--radius-status);
+  background: var(--st-muted);
+  color: var(--fg);
+  font-size: var(--fs-caption);
+  font-weight: var(--w-medium);
+  line-height: 1.3;
+}
+.status--ok { background: var(--st-ok); color: var(--st-ok-ink); }
+.status--bad { background: var(--st-bad); color: var(--st-bad-fg); }
+.status--info { background: var(--st-info); color: var(--st-info-ink); }
 
 /* ============ ГАЛОЧКА СОГЛАСИЯ ============
    Квадрат слева и фраза справа, вся строка нажимается. Для оферты и

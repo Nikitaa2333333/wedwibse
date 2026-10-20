@@ -1,37 +1,29 @@
 ---
-// ВХОД ПОДРЯДЧИКА — прототип. Мессенджер (Telegram и MAX рядом, CABINET.md
-// §22–23) первым, почта + пароль — вторым и для
-// восстановления доступа. Форма никуда не отправляет — ЗАГЛУШКА до базы.
+// ВХОД ПОДРЯДЧИКА — прототип. Почта и пароль, ниже «или» и плашки
+// Telegram и MAX (CABINET.md §22–23). Форма никуда не отправляет — ЗАГЛУШКА до базы.
 import ProfiShell from '../../components/profi/ProfiShell.astro';
-import MessengerLogin from '../../components/profi/MessengerLogin.astro';
+import AuthMethods from '../../components/profi/AuthMethods.astro';
 import '../../components/profi/auth.css';
 ---
 
-<ProfiShell title="Вход" look="auth">
+<ProfiShell title="Вход" look="auth" brand="pro.wedsecrets">
   <main class="container auth">
     <div class="auth__head">
       <h1 class="t-h1">Вход</h1>
-      <p class="auth__sub">Кабинет площадок и подрядчиков</p>
     </div>
 
-    <MessengerLogin />
-
-    <p class="auth__or">или по почте</p>
-
-    <form class="auth__form" action="/profi/kabinet/" method="get">
-      <label class="field">
-        <span class="field__label">Почта</span>
-        <input class="input" type="email" name="email" autocomplete="email" />
-      </label>
-      <div class="field">
-        <div class="auth__row">
-          <label class="field__label" for="pw">Пароль</label>
-          <a href="/profi/parol/">Забыли?</a>
-        </div>
-        <input class="input" id="pw" type="password" name="password" autocomplete="current-password" />
-      </div>
-      <button class="pill pill--lg pill--block" type="submit">Войти</button>
+    <form class="auth__form auth__form--lg" action="/profi/kabinet/" method="get">
+      <input class="input" type="email" name="email" placeholder="Почта" aria-label="Почта" autocomplete="email" />
+      <input class="input" type="password" name="password" placeholder="Пароль" aria-label="Пароль" autocomplete="current-password" />
+      <a class="auth__forgot" href="/profi/parol/">Забыли пароль?</a>
+      <button class="pill pill--lg pill--solid pill--block" type="submit">Войти</button>
     </form>
+
+    <p class="auth__divider">или</p>
+
+    <AuthMethods />
+
+    <p class="auth__or auth__or--lg">или по почте</p>
 
     <p class="auth__alt">Нет учётки? <a href="/profi/registraciya/">Зарегистрироваться</a></p>
   </main>

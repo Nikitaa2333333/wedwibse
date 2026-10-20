@@ -4,6 +4,7 @@
 // в каталоге — самый дешёвый пакет. ЗАГЛУШКА, на сервер не уходит.
 import SectionShell from '../../../../components/profi/SectionShell.astro';
 import EditSheet from '../../../../components/profi/EditSheet.astro';
+import Glyph from '../../../../components/profi/Glyph.astro';
 
 const packages = [
   { name: 'Полный день', price: '40 000', includes: '10 часов, 500 фото, онлайн-галерея' },
@@ -12,15 +13,8 @@ const packages = [
 ];
 ---
 
-<SectionShell title="Прайс" lead="Пакеты показываются на карточке таблицей. Цена «от» в каталоге — самый дешёвый пакет.">
-  <fieldset class="q">
-    <legend class="q__t">Как показать цены</legend>
-    <div class="q__opts">
-      <label class="chip-opt"><input class="chip-opt__input" type="radio" name="price" checked /><span class="chip">Пакеты</span></label>
-      <label class="chip-opt"><input class="chip-opt__input" type="radio" name="price" /><span class="chip">Таблица</span></label>
-      <label class="chip-opt"><input class="chip-opt__input" type="radio" name="price" /><span class="chip">Только «от»</span></label>
-    </div>
-  </fieldset>
+<SectionShell title="Прайс">
+  <p class="from">В каталоге: <span class="status status--ok">от 12 000 ₽</span> — по самому дешёвому пакету</p>
 
   <ul class="packs" data-packs>
     {packages.map((p) => (
@@ -31,11 +25,12 @@ const packages = [
             <span class="pack__inc">{p.includes}</span>
           </span>
           <span class="pack__price">{p.price} ₽</span>
+          <Glyph name="chevronRight" class="pack__go" />
         </button>
       </li>
     ))}
   </ul>
-  <button class="pill" type="button" data-pack-add>+ Пакет</button>
+  <button class="add" type="button" data-pack-add>+ Пакет</button>
 
   <EditSheet name="pack" title="Пакет">
     <label class="field"><span class="field__label">Название</span><input class="input" data-f="name" /></label>
@@ -85,28 +80,30 @@ const packages = [
 </script>
 
 <style>
-  .q { border: 0; padding: 0; margin: 0; display: grid; gap: var(--s-3); }
-  .q__t { font-weight: var(--w-head-lg); line-height: var(--lh-caption); }
-  .q__opts { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+  .from { font-size: var(--fs-small); display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-2); }
 
-  .packs { list-style: none; display: grid; gap: var(--s-2); }
+  /* Пакеты — строки с линией: название и что входит слева, цена и стрелка справа. */
+  .packs { list-style: none; }
+  .packs li:last-child .pack { border-bottom: 1px solid var(--hairline); }
   .pack {
     width: 100%;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: var(--s-4);
-    padding: var(--s-4);
+    gap: var(--s-3);
+    padding: var(--s-3) 0;
     font: inherit;
     text-align: left;
     color: var(--fg);
-    background: var(--surface);
+    background: none;
     border: 0;
-    border-radius: var(--radius-card);
+    border-top: 1px solid var(--hairline);
     cursor: pointer;
   }
-  .pack__main { display: grid; gap: 2px; min-width: 0; }
+  .pack__main { display: grid; gap: 2px; min-width: 0; flex: 1; }
   .pack__name { font-weight: var(--w-head-lg); line-height: var(--lh-caption); }
-  .pack__inc { font-size: var(--fs-small); line-height: var(--lh-snug); }
+  .pack__inc { font-size: var(--fs-small); line-height: var(--lh-snug); color: var(--text-2); }
   .pack__price { flex: none; font-weight: var(--w-head-lg); }
+  :global(.pack__go) { color: var(--text-2); }
+
+  .add { justify-self: start; font: inherit; font-weight: var(--w-medium); color: inherit; background: none; border: 0; padding: 0; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 </style>

@@ -3,8 +3,11 @@
 // Никиты 20.10.2026, CABINET.md §23). Готового виджета входа для сайтов
 // у MAX нет: вживую кнопка ведёт в нашего бота ссылкой с одноразовым кодом,
 // человек жмёт «Начать», сервер по вебхуку привязывает аккаунт и пускает
-// в кабинет. В прототипе — ссылка-заглушка на кабинет. Знак — слово MAX
-// набором, чужой логотип не рисуем.
+// в кабинет. В прототипе — ссылка-заглушка на кабинет. Знак — официальный
+// логотип MAX (src/assets/profi/max-mark.webp), декоративный, как у Telegram.
+import { Image } from 'astro:assets';
+import maxMark from '../../assets/profi/max-mark.webp';
+
 interface Props {
   href?: string;
   label?: string;
@@ -14,10 +17,13 @@ const { href = '/profi/kabinet/', label = 'Войти через' } = Astro.prop
 ---
 
 <a class="pill pill--lg pill--solid pill--block mx" href={href}>
-  {label} <b class="mx__word">MAX</b>
+  <Image class="mx__mark" src={maxMark} alt="" width={26} height={26} widths={[26, 52, 78]} sizes="26px" />
+  <span>{label} <b class="mx__word">MAX</b></span>
 </a>
 
 <style>
-  .mx { align-items: center; gap: 0.3em; }
+  .mx { align-items: center; gap: var(--s-3); background: var(--brand-max); color: var(--brand-fg); border-color: transparent; }
+  @media (hover: hover) { .mx:hover { background: var(--brand-max); color: var(--brand-fg); border-color: transparent; } }
+  .mx__mark { width: 26px; height: 26px; flex: none; }
   .mx__word { font-weight: var(--w-head-lg); letter-spacing: 0.02em; }
 </style>
