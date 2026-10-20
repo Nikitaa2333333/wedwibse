@@ -1,26 +1,25 @@
 ---
 // ПРОМО-СТРАНИЦА ДЛЯ ПОДРЯДЧИКОВ И ПЛОЩАДОК — прототип (STAGE2.md §0.1).
 // Ссылку на неё мы рассылаем подрядчикам и площадкам: что это, как работает,
-// условия, видеоинструкция, вопросы и регистрация. Вживую — profi.wed-secrets.ru,
+// видеоинструкция, вопросы и регистрация. Вживую — profi.wed-secrets.ru,
 // тогда же откроем её поиску (сейчас noindex через ProfiShell).
 //
-// ВИТРИНА, А НЕ ПРИЛОЖЕНИЕ (решение Никиты 20.10.2026): здесь сознательно
-// нарушаем правила каталога из CLAUDE.md — текст лежит на кадре под
-// затемнением, есть появления при прокрутке, бегущая лента и стопка шагов.
-// Ограничения скорости остаются: без новых библиотек, анимируем только
-// transform/opacity, весь текст — в HTML, без JS страница читается целиком
-// (появления включает скрипт классом .fx на <html>), prefers-reduced-motion
-// выключает всё движение.
-//
-// Условия — из решений 16.10 и 20.10 (CABINET.md §21–22): бесплатно на старте,
-// до 50 фото, до 10 роликов по минуте, до 3 карточек, модерация до 24 часов.
-// Тарифы третьего этапа здесь не обещаем — «объявим заранее».
+// ОДИН СПОКОЙНЫЙ СТИЛЬ (правки Никиты 20.10.2026 после первой витрины):
+// бумага, антиква в заголовках, Onest в тексте, кнопки .pill, одна тёмная
+// секция в конце. Текст на кадр не кладём — видео первого экрана стоит
+// отдельно, текст под ним. Теней нет. Шаги — лента вбок пальцем, и каждый
+// шаг иллюстрирует сам себя кусочком интерфейса, а не случайным фото.
+// Движение: смена кадров в первом экране, бегущая лента карточек, мягкое
+// появление секций (transform/opacity, без JS всё видно сразу,
+// prefers-reduced-motion выключает).
 //
 // Фото и ролики — настоящие карточки каталога. Ролики лежат на VPS
-// (CLAUDE.md, «Видео»): локально их нет, и в первом экране стоит постер.
+// (CLAUDE.md, «Видео»): локально их нет, в первом экране тогда стоит постер.
 import { Image, getImage } from 'astro:assets';
 import ProfiShell from '../../components/profi/ProfiShell.astro';
+import FaqBlock from '../../components/FaqBlock.astro';
 import Icon from '../../components/Icon.astro';
+import TelegramButton from '../../components/profi/TelegramButton.astro';
 import { resolveImage, IMG_WIDTHS } from '../../lib/images';
 
 // Первый экран: кадры сменяют друг друга с медленным наездом. Первый слой —
@@ -53,10 +52,10 @@ const rowB = [
 ];
 
 const steps = [
-  { photo: '/specialists/fotografy/suhorada/gal/p13.webp', t: 'Заведите карточку', d: 'Войдите через Telegram или по почте и заполните анкету: текст о себе, ответы на вопросы вашей категории, прайс и фото. Всё сохраняется само.' },
-  { photo: '/venues/led/gal/g15.webp', t: 'Мы проверим за сутки', d: 'Модератор смотрит карточку до публикации. Если что-то не так — вернём с понятной причиной.' },
-  { photo: '/reels/kosareva-veil.webp', t: 'Пары находят вас', d: 'Карточка встаёт в каталог и фильтры, в поиск Яндекса и Google, в подборки блога и ленту главной.' },
-  { photo: '/specialists/fotografy/suhorada/gal/p36.webp', t: 'Обновляйте, когда нужно', d: 'Новые фото, цены, видео. Правка проходит ту же проверку, а на сайте всё это время висит прежняя версия.' },
+  { t: 'Заведите карточку', d: 'Войдите через Telegram или по почте и заполните анкету. Всё сохраняется само.' },
+  { t: 'Мы проверим за сутки', d: 'Модератор смотрит карточку до публикации. Если что-то не так, вернём с понятной причиной.' },
+  { t: 'Пары находят вас', d: 'Карточка встаёт в каталог и фильтры, в поиск Яндекса и Google, в подборки блога.' },
+  { t: 'Обновляйте, когда нужно', d: 'Новые фото, цены, видео. На сайте всё это время висит прежняя версия.' },
 ];
 
 const gets = [
@@ -68,28 +67,19 @@ const gets = [
   'Заявки от пар',
 ];
 
-const terms = [
-  ['0 ₽', 'размещение на старте'],
-  ['50', 'фото в карточке'],
-  ['10', 'роликов до минуты'],
-  ['3', 'карточки на одну учётку'],
-  ['24 ч', 'на проверку'],
-];
-
 const faq = [
-  { q: 'Сколько это стоит?', a: 'На старте размещение бесплатное. Если появятся тарифы, мы объявим их заранее, и вы решите сами.' },
-  { q: 'Кто может разместиться?', a: 'Площадки и подрядчики свадеб в Москве и области: фотографы, видеографы, ведущие, декораторы, флористы, стилисты и другие.' },
-  { q: 'Можно ли указать телефон в описании?', a: 'Нет. Контакты живут в отдельном поле и открываются паре по кнопке «Показать контакты». Так мы видим, сколько пар вами заинтересовались.' },
-  { q: 'У меня две профессии', a: 'Заведите до трёх карточек с одной учётки: например, фотограф и видеограф. Имя и контакты подставятся сами, работы — свои для каждой.' },
-  { q: 'Как загрузить много фото?', a: 'С телефона или ссылкой на папку Яндекс.Диска: сервер сам заберёт превью, вы отметите нужные кадры.' },
+  { q: 'Сколько это стоит?', a: ['На старте размещение бесплатное. Если появятся тарифы, мы объявим их заранее, и вы решите сами.'] },
+  { q: 'Кто может разместиться?', a: ['Площадки и подрядчики свадеб в Москве и области: фотографы, видеографы, ведущие, декораторы, флористы, стилисты и другие.'] },
+  { q: 'Сколько фото и видео можно загрузить?', a: ['До 50 фото и до 10 роликов по минуте на карточку. С телефона или ссылкой на папку Яндекс.Диска — сервер заберёт файлы сам.'] },
+  { q: 'Можно ли указать телефон в описании?', a: ['Нет. Контакты живут в отдельном поле и открываются паре по кнопке «Показать контакты». Так мы видим, сколько пар вами заинтересовались.'] },
+  { q: 'У меня две профессии', a: ['С одной учётки можно завести до трёх карточек: например, фотограф и видеограф. Имя и контакты подставятся сами, работы — свои для каждой.'] },
+  { q: 'Как быстро проверяют карточку?', a: ['До 24 часов. Пока карточка на проверке, на сайте висит прежняя версия.'] },
 ];
-
-const statement = 'Пары приходят сюда выбирать, а не листать. Поэтому каждая карточка — как страница журнала: ваши лучшие кадры, ваш текст, ваши цены.';
 ---
 
 <ProfiShell title="Разместиться в каталоге" look="promo" action={{ href: '/profi/vhod/', label: 'Войти' }}>
   <main class="promo">
-    <!-- 1. Первый экран: живые кадры во весь экран, текст поверх -->
+    <!-- 1. Первый экран: живые кадры отдельно, текст под ними -->
     <section class="hero">
       <div class="hero__stage" aria-hidden="true">
         {heroLayers.map((l, i) => (
@@ -102,41 +92,28 @@ const statement = 'Пары приходят сюда выбирать, а не 
           </div>
         ))}
       </div>
-      <div class="hero__shade" aria-hidden="true"></div>
       <div class="hero__body container">
-        <p class="hero__kicker">Для площадок и подрядчиков</p>
-        <h1 class="hero__title">
-          <span class="line"><span>Красивая витрина</span></span>
-          <span class="line"><span>для вашей работы</span></span>
-        </h1>
-        <p class="hero__lead">Свадебный каталог Москвы и области, где пары выбирают глазами: фото, видео, честные цены.</p>
+        <h1 class="t-display hero__title">Красивая витрина для вашей работы</h1>
+        <p class="t-lead hero__lead">Свадебный каталог Москвы и области, где пары выбирают глазами: фото, видео, честные цены.</p>
         <div class="hero__cta">
-          <a class="btn btn--light" href="/profi/registraciya/">Разместиться бесплатно</a>
-          <a class="btn btn--ghost" href="#kak">Как это работает</a>
+          <a class="pill pill--lg pill--solid" href="/profi/registraciya/">Разместиться бесплатно</a>
+          <a class="pill pill--lg" href="#kak">Как это работает</a>
         </div>
       </div>
-      <span class="hero__cue" aria-hidden="true"></span>
     </section>
 
-    <!-- 2. Фраза, которая проявляется по словам при прокрутке -->
-    <section class="say container" data-say>
-      <p class="say__text">
-        {statement.split(' ').map((w, i) => <span class="say__w" style={`--k:${i}`}>{w} </span>)}
-      </p>
-    </section>
-
-    <!-- 3. Бегущая лента карточек -->
-    <section class="run" aria-labelledby="run-t">
+    <!-- 2. Бегущая лента карточек -->
+    <section class="section run" aria-labelledby="run-t">
       <div class="container">
-        <h2 class="sec-title" id="run-t" data-fx>Вы окажетесь рядом с ними</h2>
+        <h2 class="t-h1" id="run-t" data-fx>Вы окажетесь рядом с ними</h2>
       </div>
       {[rowA, rowB].map((row, r) => (
         <div class={`run__row run__row--${r ? 'back' : 'fwd'}`}>
           <ul class="run__track">
             {[...row, ...row].map((c, i) => (
-              <li class="run__item" aria-hidden={i >= row.length ? 'true' : undefined}>
+              <li aria-hidden={i >= row.length ? 'true' : undefined}>
                 <a class="run__card" href={c.href} tabindex={i >= row.length ? -1 : undefined}>
-                  <Image src={resolveImage(c.photo)} alt={i >= row.length ? '' : c.name} widths={[...IMG_WIDTHS.card]} sizes="(min-width: 1024px) 240px, 42vw" class="run__img" />
+                  <Image src={resolveImage(c.photo)} alt={i >= row.length ? '' : c.name} widths={[...IMG_WIDTHS.card]} sizes="(min-width: 1024px) 220px, 40vw" class="run__img" />
                   <span class="run__name">{c.name}</span>
                   <span class="run__role">{c.role}</span>
                 </a>
@@ -147,99 +124,87 @@ const statement = 'Пары приходят сюда выбирать, а не 
       ))}
     </section>
 
-    <!-- 4. Как это работает: карточки шагов ложатся стопкой -->
-    <section class="how container" id="kak">
-      <h2 class="sec-title" data-fx>Как это работает</h2>
-      <ol class="how__stack">
+    <!-- 3. Как это работает: лента шагов вбок, каждый шаг — свой экран -->
+    <section class="section how" id="kak">
+      <div class="container">
+        <h2 class="t-h1" data-fx>Как это работает</h2>
+      </div>
+      <ol class="how__rail">
         {steps.map((s, i) => (
-          <li class={`how__card how__card--${i % 2 ? 'dark' : 'light'}`} style={`--i:${i}`}>
-            <div class="how__text">
-              <span class="how__num">{String(i + 1).padStart(2, '0')}</span>
-              <h3 class="how__t">{s.t}</h3>
-              <p class="how__d">{s.d}</p>
+          <li class="how__card">
+            <div class="how__shot" aria-hidden="true">
+              {i === 0 && (
+                <div class="ui ui--stack">
+                  <TelegramButton href="#kak" label="Через Telegram" />
+                  <span class="ui__field">Алексей Сухорада</span>
+                  <span class="ui__field">Фотограф</span>
+                </div>
+              )}
+              {i === 1 && (
+                <div class="ui ui--stack">
+                  <span class="chip chip--tag ui__chip">На проверке</span>
+                  <span class="ui__line">Проверим до 24 часов</span>
+                  <span class="ui__line ui__line--soft">Напишем в Telegram и на почту</span>
+                </div>
+              )}
+              {i === 2 && (
+                <div class="ui ui--card">
+                  <Image src={resolveImage('/specialists/fotografy/suhorada/gal/p03.webp')} alt="" widths={[...IMG_WIDTHS.thumb]} sizes="96px" class="ui__photo" />
+                  <div class="ui ui--stack">
+                    <span class="ui__name">Алексей Сухорада</span>
+                    <span class="ui__line ui__line--soft">Фотограф · от 40 000 ₽</span>
+                    <span class="ui__heart"><Icon name="heart" /></span>
+                  </div>
+                </div>
+              )}
+              {i === 3 && (
+                <div class="ui ui--stack">
+                  <span class="ui__saved"><Icon name="check" /> Сохранено · 12:04</span>
+                  <span class="ui__grid">
+                    {['p13', 'p19', 'p32'].map((n) => (
+                      <Image src={resolveImage(`/specialists/fotografy/suhorada/gal/${n}.webp`)} alt="" widths={[...IMG_WIDTHS.thumb]} sizes="72px" class="ui__thumb" />
+                    ))}
+                  </span>
+                  <span class="ui__line ui__line--soft">9 из 50 фото</span>
+                </div>
+              )}
             </div>
-            <Image src={resolveImage(s.photo)} alt="" widths={[...IMG_WIDTHS.card]} sizes="(min-width: 1024px) 420px, 80vw" class="how__img" />
+            <p class="how__num">Шаг {i + 1}</p>
+            <h3 class="how__t">{s.t}</h3>
+            <p class="how__d">{s.d}</p>
           </li>
         ))}
       </ol>
     </section>
 
-    <!-- 5. Что вы получаете: телефон с вашей карточкой -->
-    <section class="gets">
-      <div class="container gets__in">
-        <div class="gets__copy">
-          <h2 class="sec-title" data-fx>Ваша страница — как журнал</h2>
-          <p class="gets__lead" data-fx>Мы собираем карточку так же бережно, как редакция собирает разворот. А дальше она работает на вас сама.</p>
-          <ul class="gets__list">
-            {gets.map((g, i) => (
-              <li class="gets__item" data-fx style={`--d:${i}`}><Icon name="check" />{g}</li>
-            ))}
-          </ul>
-        </div>
-        <div class="phone" data-fx aria-hidden="true">
-          <div class="phone__screen">
-            <Image src={resolveImage('/specialists/fotografy/suhorada/gal/p03.webp')} alt="" widths={[...IMG_WIDTHS.card]} sizes="260px" class="phone__img" />
-            <div class="phone__info">
-              <span class="phone__name">Алексей Сухорада</span>
-              <span class="phone__role">Фотограф · от 40 000 ₽</span>
-              <span class="phone__chips"><span>Репортаж</span><span>Плёнка</span><span>Выезд</span></span>
-            </div>
-          </div>
-          <span class="phone__heart"><Icon name="heart" /></span>
-        </div>
-      </div>
+    <!-- 4. Что вы получаете -->
+    <section class="section container">
+      <h2 class="t-h1" data-fx>Что вы получаете</h2>
+      <ul class="plates gets" data-fx>
+        {gets.map((g) => <li>{g}</li>)}
+      </ul>
     </section>
 
-    <!-- 6. Условия крупными цифрами -->
-    <section class="terms" id="usloviya">
-      <div class="container">
-        <h2 class="sec-title" data-fx>Условия</h2>
-        <dl class="terms__grid">
-          {terms.map(([k, v], i) => (
-            <div class="terms__item" data-fx style={`--d:${i}`}>
-              <dt class="terms__num">{k}</dt>
-              <dd class="terms__label">{v}</dd>
-            </div>
-          ))}
-        </dl>
-        <p class="terms__note" data-fx>Если появятся тарифы, объявим заранее. Всё, что вы разместили бесплатно, останется на сайте.</p>
-      </div>
-    </section>
-
-    <!-- 7. Видеоинструкция. ЗАГЛУШКА: ролик снимаем с готового кабинета (STAGE2.md, неделя 6) -->
-    <section class="vid container" id="video">
-      <h2 class="sec-title" data-fx>Десять минут — и карточка готова</h2>
-      <div class="vid__frame" data-fx>
+    <!-- 5. Видеоинструкция. ЗАГЛУШКА: ролик снимаем с готового кабинета (STAGE2.md, неделя 6) -->
+    <section class="section container" id="video">
+      <h2 class="t-h1" data-fx>Видеоинструкция</h2>
+      <div class="vid" data-fx>
         <Image src={resolveImage('/venues/forest-dew/s5-table.webp')} alt="" widths={[...IMG_WIDTHS.wide]} sizes="(min-width: 1024px) 900px, 100vw" class="vid__img" />
-        <span class="vid__shade" aria-hidden="true"></span>
         <span class="vid__play" aria-hidden="true"><Icon name="play" /></span>
-        <p class="vid__cap">Видеоинструкция появится к запуску</p>
       </div>
+      <p class="vid__cap">Как завести карточку за десять минут. Появится к запуску.</p>
     </section>
 
-    <!-- 8. Частые вопросы -->
-    <section class="faq container">
-      <h2 class="sec-title" data-fx>Частые вопросы</h2>
-      <div class="faq__list">
-        {faq.map((f) => (
-          <details class="faq__item" data-fx>
-            <summary class="faq__q">{f.q}<span class="faq__plus" aria-hidden="true"></span></summary>
-            <p class="faq__a">{f.a}</p>
-          </details>
-        ))}
-      </div>
-    </section>
+    <!-- 6. Частые вопросы -->
+    <div id="voprosy"><FaqBlock title="Частые вопросы" items={faq} /></div>
 
-    <!-- 9. Финальный экран на кадре -->
-    <section class="end">
-      <Image src={resolveImage('/venues/led/s4-ceremony.webp')} alt="" widths={[...IMG_WIDTHS.hero]} sizes="100vw" class="end__img" />
-      <span class="end__shade" aria-hidden="true"></span>
-      <div class="end__body container">
-        <h2 class="end__title" data-fx>Начните с карточки</h2>
-        <p class="end__lead" data-fx>Регистрация занимает минуту: через Telegram или по почте.</p>
+    <!-- 7. Финал -->
+    <section class="section theme-dark end">
+      <div class="container">
+        <h2 class="t-h1" data-fx>Начните с карточки</h2>
+        <p class="t-lead end__lead" data-fx>Регистрация занимает минуту: через Telegram или по почте.</p>
         <div class="hero__cta" data-fx>
-          <a class="btn btn--light" href="/profi/registraciya/">Зарегистрироваться</a>
-          <a class="btn btn--ghost" href="/profi/vhod/">У меня есть учётка</a>
+          <a class="pill pill--lg end__btn" href="/profi/registraciya/">Зарегистрироваться</a>
         </div>
       </div>
     </section>
@@ -247,86 +212,37 @@ const statement = 'Пары приходят сюда выбирать, а не 
 </ProfiShell>
 
 <script>
-  // Появления и проявление фразы. Всё движение — только когда его можно:
-  // без JS и с prefers-reduced-motion страница стоит целиком сразу.
-  const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (!calm) {
+  // Мягкое появление секций. Без JS и с prefers-reduced-motion всё стоит сразу.
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     document.documentElement.classList.add('fx');
     const io = new IntersectionObserver(
       (entries) => entries.forEach((e) => {
         if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); }
       }),
-      { rootMargin: '0px 0px -12% 0px' },
+      { rootMargin: '0px 0px -10% 0px' },
     );
     document.querySelectorAll('[data-fx]').forEach((el) => io.observe(el));
-
-    // Фраза: слова набирают цвет по мере того, как блок проходит экран.
-    const say = document.querySelector<HTMLElement>('[data-say]');
-    const words = say ? [...say.querySelectorAll<HTMLElement>('.say__w')] : [];
-    let ticking = false;
-    const paint = () => {
-      ticking = false;
-      if (!say) return;
-      const r = say.getBoundingClientRect();
-      const vh = window.innerHeight;
-      const p = Math.min(1, Math.max(0, (vh * 0.85 - r.top) / (r.height + vh * 0.35)));
-      const lit = Math.round(p * words.length);
-      words.forEach((w, i) => w.classList.toggle('is-lit', i < lit));
-    };
-    window.addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(paint); } }, { passive: true });
-    paint();
   }
 </script>
 
 <style>
-  /* Свои размеры и цвета витрины собраны здесь, из токенов сайта. */
   .promo {
     --hero-cycle: 24s;
-    --run-speed: 60s;
-    --shade: color-mix(in srgb, var(--black) 72%, transparent);
-    --shade-soft: color-mix(in srgb, var(--black) 18%, transparent);
+    --run-speed: 70s;
     overflow-x: clip;
   }
 
-  .sec-title {
-    font-size: clamp(42px, 11.5vw, 104px);
-    line-height: 1;
-    max-width: 12ch;
-  }
-
-  /* ---------- кнопки витрины ---------- */
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 56px;
-    padding: 0 var(--s-6);
-    border-radius: var(--radius-pill);
-    font-size: var(--fs-body);
-    font-weight: var(--w-medium);
-    text-decoration: none;
-    transition: transform var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
-  }
-  .btn--light { background: var(--white); color: var(--black); }
-  .btn--ghost { color: var(--white); border: 1px solid color-mix(in srgb, var(--white) 60%, transparent); }
-  .btn:active { transform: scale(0.97); }
-  @media (hover: hover) {
-    .btn--light:hover { transform: translateY(-2px); }
-    .btn--ghost:hover { background: color-mix(in srgb, var(--white) 12%, transparent); }
-  }
-
   /* ---------- 1. первый экран ---------- */
-  .hero {
+  .hero__stage {
     position: relative;
-    min-height: 100svh;
-    display: grid;
-    align-items: end;
-    color: var(--white);
-    background: var(--black);
+    height: 46svh;
+    min-height: 300px;
     overflow: hidden;
+    background: var(--surface);
   }
-  .hero__stage, .hero__layer, .hero__shade { position: absolute; inset: 0; }
   .hero__layer {
+    position: absolute;
+    inset: 0;
     opacity: 0;
     animation: heroFade var(--hero-cycle) linear infinite;
     animation-delay: calc(var(--i) * var(--hero-cycle) / 4 - 0.01s);
@@ -339,7 +255,6 @@ const statement = 'Пары приходят сюда выбирать, а не 
     animation: heroZoom var(--hero-cycle) linear infinite;
     animation-delay: inherit;
   }
-  /* Каждый кадр: 1/4 цикла на экране, мягкая смена через опасити. */
   @keyframes heroFade {
     0% { opacity: 0; }
     4% { opacity: 1; }
@@ -348,93 +263,30 @@ const statement = 'Пары приходят сюда выбирать, а не 
     100% { opacity: 0; }
   }
   @keyframes heroZoom {
-    0% { transform: scale(1.12); }
+    0% { transform: scale(1.1); }
     30% { transform: scale(1); }
     100% { transform: scale(1); }
   }
-  .hero__shade {
-    background: linear-gradient(to bottom, var(--shade-soft) 0%, transparent 30%, transparent 40%, var(--shade) 100%);
-  }
-  .hero__body {
-    position: relative;
-    z-index: 2;
-    padding-bottom: calc(var(--s-8) + var(--s-4));
-  }
-  .hero__kicker {
-    font-size: var(--fs-small);
-    font-weight: var(--w-medium);
-  }
-  .hero__title {
-    margin-top: var(--s-3);
-    font-size: clamp(48px, 13vw, 128px);
-    line-height: 0.98;
-    font-weight: var(--w-head);
-  }
-  .line { display: block; overflow: hidden; padding-bottom: 0.06em; }
-  .line > span { display: inline-block; }
-  .hero__lead {
-    margin-top: var(--s-5);
-    max-width: 34ch;
-    font-size: var(--fs-lead);
-    line-height: var(--lh-snug);
-  }
-  .hero__cta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--s-3);
-    margin-top: var(--s-6);
-  }
-  .hero__cue {
-    position: absolute;
-    left: 50%;
-    bottom: var(--s-5);
-    width: 1px;
-    height: var(--s-7);
-    background: var(--white);
-    transform-origin: top;
-    animation: cue 2.4s var(--ease-inout) infinite;
-  }
-  @keyframes cue {
-    0% { transform: scaleY(0); opacity: 1; }
-    60% { transform: scaleY(1); opacity: 1; }
-    100% { transform: scaleY(1); opacity: 0; }
-  }
+  .hero__body { padding-top: var(--s-5); }
+  .hero__title { font-size: clamp(40px, 10.5vw, 104px); max-width: 16ch; }
+  .hero__lead { margin-top: var(--s-4); max-width: 34ch; }
+  .hero__cta { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-6); }
 
-  /* Заголовок первого экрана выезжает строками при загрузке. */
-  :global(html.fx) .line > span { animation: lineUp 1.1s var(--ease-out) both; }
-  :global(html.fx) .line:nth-child(2) > span { animation-delay: 0.12s; }
-  :global(html.fx) .hero__kicker,
-  :global(html.fx) .hero__lead,
-  :global(html.fx) .hero__body .hero__cta { animation: rise 1s var(--ease-out) both; }
-  :global(html.fx) .hero__lead { animation-delay: 0.35s; }
-  :global(html.fx) .hero__body .hero__cta { animation-delay: 0.5s; }
-  @keyframes lineUp { from { transform: translateY(105%); } to { transform: none; } }
-  @keyframes rise { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
-
-  /* Общие появления блоков при прокрутке. */
+  /* Мягкое появление: заголовок первого экрана сразу, секции — при прокрутке */
+  :global(html.fx) .hero__body > * { animation: rise 0.9s var(--ease-out) both; }
+  :global(html.fx) .hero__body > :nth-child(2) { animation-delay: 0.1s; }
+  :global(html.fx) .hero__body > :nth-child(3) { animation-delay: 0.2s; }
+  @keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
   :global(html.fx) [data-fx] {
     opacity: 0;
-    transform: translateY(32px);
-    transition: opacity 0.9s var(--ease-out), transform 0.9s var(--ease-out);
-    transition-delay: calc(var(--d, 0) * 70ms);
+    transform: translateY(20px);
+    transition: opacity 0.8s var(--ease-out), transform 0.8s var(--ease-out);
   }
   :global(html.fx) [data-fx].is-in { opacity: 1; transform: none; }
 
-  /* ---------- 2. фраза по словам ---------- */
-  .say { padding-block: var(--section-gap) calc(var(--section-gap) / 2); }
-  .say__text {
-    font-family: var(--font-serif);
-    font-size: clamp(32px, 8.4vw, 76px);
-    line-height: 1.08;
-    font-weight: var(--w-head);
-  }
-  :global(html.fx) .say__w { opacity: 0.18; transition: opacity 0.5s var(--ease-out); }
-  :global(html.fx) .say__w.is-lit { opacity: 1; }
-
-  /* ---------- 3. бегущая лента ---------- */
-  .run { padding-block: var(--section-gap); }
+  /* ---------- 2. бегущая лента ---------- */
   .run__row { margin-top: var(--s-5); overflow: hidden; }
-  .run .sec-title { margin-bottom: var(--s-3); }
+  .run__row:first-of-type { margin-top: var(--section-gap-tight); }
   .run__track {
     list-style: none;
     display: flex;
@@ -447,253 +299,119 @@ const statement = 'Пары приходят сюда выбирать, а не 
   @media (hover: hover) {
     .run__row:hover .run__track { animation-play-state: paused; }
   }
-  .run__card {
-    display: grid;
-    gap: var(--s-1);
-    width: clamp(150px, 40vw, 240px);
-    color: inherit;
-    text-decoration: none;
-  }
-  .run__img {
-    width: 100%;
-    height: auto;
-    aspect-ratio: 4 / 5;
-    object-fit: cover;
-    border-radius: var(--radius-card);
-  }
+  .run__card { display: grid; gap: var(--s-1); width: clamp(140px, 38vw, 220px); color: inherit; text-decoration: none; }
+  .run__img { width: 100%; height: auto; aspect-ratio: 4 / 5; object-fit: cover; border-radius: var(--radius-card); }
   .run__name { margin-top: var(--s-1); font-size: var(--fs-small); font-weight: var(--w-head-lg); line-height: var(--lh-caption); }
   .run__role { font-size: var(--fs-caption); line-height: var(--lh-caption); }
 
-  /* ---------- 4. шаги стопкой ---------- */
-  .how { padding-block: var(--section-gap); }
-  .how__stack { list-style: none; margin-top: var(--s-6); display: grid; gap: var(--s-5); }
-  .how__card {
-    position: sticky;
-    top: calc(var(--s-5) + var(--i) * var(--s-3));
+  /* ---------- 3. шаги лентой вбок ----------
+     Листается пальцем, страница при этом — вниз: touch-action не объявляем
+     (DESIGN.md §8). Ось Y закрыта явно (CLAUDE.md, ловушка «панель ездит»). */
+  .how__rail {
+    list-style: none;
     display: grid;
-    gap: var(--s-5);
-    padding: var(--s-5);
-    border-radius: calc(var(--radius-card) * 2);
-    background: var(--surface);
-    box-shadow: 0 -12px 32px -24px var(--black);
-  }
-  .how__card--dark { background: var(--black); color: var(--white); }
-  .how__num {
-    font-family: var(--font-serif);
-    font-size: clamp(56px, 16vw, 96px);
-    line-height: 0.9;
-  }
-  .how__t {
-    margin-top: var(--s-3);
-    font-family: var(--font-serif);
-    font-size: var(--fs-h2);
-    line-height: var(--lh-heading);
-    font-weight: var(--w-head);
-  }
-  .how__d { margin-top: var(--s-3); max-width: var(--measure-text); }
-  .how__img {
-    width: 100%;
-    height: auto;
-    aspect-ratio: 5 / 4;
-    object-fit: cover;
-    border-radius: var(--radius-card);
-  }
-
-  /* ---------- 5. телефон с карточкой ---------- */
-  .gets { padding-block: var(--section-gap); background: var(--surface); }
-  .gets__in { display: grid; gap: var(--s-8); }
-  .gets__lead { margin-top: var(--s-4); max-width: 36ch; font-size: var(--fs-lead); line-height: var(--lh-snug); }
-  .gets__list { list-style: none; margin-top: var(--s-6); display: grid; gap: var(--s-3); }
-  .gets__item {
-    display: flex;
-    align-items: center;
+    grid-auto-flow: column;
+    grid-auto-columns: 80%;
     gap: var(--s-3);
-    font-size: var(--fs-body);
-    font-weight: var(--w-medium);
+    margin-top: var(--section-gap-tight);
+    padding-inline: var(--gutter);
+    scroll-padding-inline: var(--gutter);
+    overflow-x: auto;
+    overflow-y: clip;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
   }
-  .gets__item :global(svg) {
-    flex: none;
-    width: 28px;
-    height: 28px;
-    padding: 5px;
-    border-radius: var(--radius-pill);
-    background: var(--black);
-    color: var(--white);
-  }
-
-  .phone {
-    position: relative;
-    justify-self: center;
-    width: min(270px, 72vw);
-    padding: 10px;
-    border-radius: 44px;
-    background: var(--black);
-    box-shadow: 0 40px 80px -40px var(--black);
-  }
-  :global(html.fx) .phone.is-in { animation: float 6s var(--ease-inout) 1s infinite; }
-  @keyframes float { 50% { transform: translateY(-10px); } }
-  .phone__screen {
-    border-radius: 34px;
-    overflow: hidden;
-    background: var(--paper);
-    color: var(--ink);
-  }
-  .phone__img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 5; object-fit: cover; }
-  .phone__info { display: grid; gap: var(--s-1); padding: var(--s-4); }
-  .phone__name { font-family: var(--font-serif); font-size: 26px; line-height: var(--lh-heading); font-weight: var(--w-head); }
-  .phone__role { font-size: var(--fs-caption); }
-  .phone__chips { display: flex; flex-wrap: wrap; gap: var(--s-1); margin-top: var(--s-2); }
-  .phone__chips span {
-    padding: 4px 10px;
-    font-size: 12px;
-    border-radius: var(--radius-pill);
-    background: var(--surface);
-  }
-  .phone__heart {
-    position: absolute;
-    top: var(--s-6);
-    right: var(--s-6);
-    width: 40px;
-    height: 40px;
+  .how__rail::-webkit-scrollbar { display: none; }
+  .how__card { scroll-snap-align: start; display: grid; align-content: start; gap: var(--s-2); }
+  .how__shot {
+    aspect-ratio: 1 / 1;
     display: grid;
     place-items: center;
+    padding: var(--s-5);
+    background: var(--surface);
+    border-radius: var(--radius-card);
+    margin-bottom: var(--s-3);
+  }
+  .how__num { font-size: var(--fs-small); font-weight: var(--w-medium); }
+  .how__t { font-size: var(--fs-h3); font-weight: var(--w-head); line-height: var(--lh-heading); }
+  .how__d { font-size: var(--fs-small); }
+
+  /* Кусочки интерфейса в шагах — из тех же элементов, что кабинет */
+  .ui { width: 100%; }
+  .ui--stack { display: grid; gap: var(--s-2); justify-items: start; }
+  .ui--stack :global(.tg) { font-size: var(--fs-small); padding: 12px 20px; white-space: nowrap; }
+  .ui__field {
+    width: 100%;
+    padding: 12px var(--s-4);
+    background: var(--bg);
     border-radius: var(--radius-pill);
-    background: var(--white);
-    color: var(--black);
+    font-size: var(--fs-small);
   }
-  .phone__heart :global(svg) { width: 20px; height: 20px; }
-
-  /* ---------- 6. условия ---------- */
-  .terms { padding-block: var(--section-gap); background: var(--black); color: var(--white); }
-  .terms__grid {
+  .ui__chip { background: var(--fg); color: var(--bg); }
+  .ui__line { font-size: var(--fs-body); font-weight: var(--w-head); }
+  .ui__line--soft { font-size: var(--fs-small); font-weight: var(--w-body); }
+  .ui--card {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--s-7) var(--s-5);
-    margin-top: var(--s-7);
+    grid-template-columns: 96px 1fr;
+    gap: var(--s-3);
+    align-items: center;
+    padding: var(--s-3);
+    background: var(--bg);
+    border-radius: var(--radius-card);
   }
-  .terms__item:first-child { grid-column: 1 / -1; }
-  .terms__num {
-    font-family: var(--font-serif);
-    font-size: clamp(64px, 18vw, 140px);
-    line-height: 0.9;
-    font-weight: var(--w-head);
-  }
-  .terms__item:first-child .terms__num { font-size: clamp(96px, 30vw, 200px); }
-  .terms__label { margin-top: var(--s-2); font-size: var(--fs-small); line-height: var(--lh-caption); max-width: 16ch; }
-  .terms__note { margin-top: var(--s-7); max-width: 40ch; font-size: var(--fs-small); }
+  .ui__photo { width: 96px; height: auto; aspect-ratio: 4 / 5; object-fit: cover; border-radius: var(--radius-card); }
+  .ui__name { font-weight: var(--w-head-lg); line-height: var(--lh-caption); }
+  .ui__heart :global(svg) { width: 20px; height: 20px; }
+  .ui__saved { display: inline-flex; align-items: center; gap: var(--s-1); font-size: var(--fs-small); font-weight: var(--w-medium); }
+  .ui__saved :global(svg) { width: 18px; height: 18px; }
+  .ui__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-1); width: 100%; }
+  .ui__thumb { width: 100%; height: auto; aspect-ratio: 4 / 5; object-fit: cover; border-radius: var(--radius-card); }
 
-  /* ---------- 7. видео ---------- */
-  .vid { padding-block: var(--section-gap); }
-  .vid__frame {
+  /* ---------- 4. что получаете ---------- */
+  .gets { margin-top: var(--section-gap-tight); }
+
+  /* ---------- 5. видео ---------- */
+  .vid {
     position: relative;
-    margin-top: var(--s-6);
-    border-radius: calc(var(--radius-card) * 2);
-    overflow: hidden;
+    margin-top: var(--section-gap-tight);
     aspect-ratio: 4 / 5;
-    color: var(--white);
+    border-radius: var(--radius-card);
+    overflow: hidden;
   }
-  .vid__img, .vid__shade { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-  .vid__shade { background: linear-gradient(to top, var(--shade) 0%, transparent 55%); }
+  .vid__img { width: 100%; height: 100%; object-fit: cover; }
   .vid__play {
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 84px;
-    height: 84px;
-    margin: -42px 0 0 -42px;
+    width: 72px;
+    height: 72px;
+    margin: -36px 0 0 -36px;
     display: grid;
     place-items: center;
     border-radius: var(--radius-pill);
-    background: var(--white);
-    color: var(--black);
+    background: var(--bg);
+    color: var(--fg);
   }
-  .vid__play::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    border: 1px solid var(--white);
-    animation: pulse 2.4s var(--ease-out) infinite;
-  }
-  @keyframes pulse { from { transform: scale(1); opacity: 0.8; } to { transform: scale(1.7); opacity: 0; } }
-  .vid__cap {
-    position: absolute;
-    left: var(--s-5);
-    right: var(--s-5);
-    bottom: var(--s-5);
-    font-size: var(--fs-body);
-    font-weight: var(--w-medium);
-  }
+  .vid__cap { margin-top: var(--s-3); font-size: var(--fs-small); }
 
-  /* ---------- 8. вопросы ---------- */
-  .faq { padding-block: var(--section-gap); }
-  .faq__list { margin-top: var(--s-6); }
-  .faq__item { border-top: 1px solid var(--line); }
-  .faq__item:last-child { border-bottom: 1px solid var(--line); }
-  .faq__q {
-    list-style: none;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: var(--s-4);
-    padding-block: var(--s-5);
-    font-size: var(--fs-h3);
-    font-family: var(--font-serif);
-    font-weight: var(--w-head);
-    line-height: var(--lh-heading);
-    cursor: pointer;
-  }
-  .faq__q::-webkit-details-marker { display: none; }
-  .faq__plus { position: relative; flex: none; width: 20px; height: 20px; }
-  .faq__plus::before, .faq__plus::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 0;
-    width: 100%;
-    height: 1.5px;
-    background: currentColor;
-    transition: transform var(--dur-base) var(--ease-out);
-  }
-  .faq__plus::after { transform: rotate(90deg); }
-  .faq__item[open] .faq__plus::after { transform: rotate(0deg); }
-  .faq__a { padding-bottom: var(--s-5); max-width: var(--measure-text); }
-
-  /* ---------- 9. финал ---------- */
-  .end {
-    position: relative;
-    min-height: 90svh;
-    display: grid;
-    align-items: end;
-    color: var(--white);
-    overflow: hidden;
-  }
-  .end__img, .end__shade { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-  .end__shade { background: linear-gradient(to top, var(--shade) 0%, transparent 70%); }
-  .end__body { position: relative; padding-bottom: var(--s-8); }
-  .end__title { font-size: clamp(48px, 13vw, 128px); line-height: 0.98; max-width: 10ch; }
-  .end__lead { margin-top: var(--s-4); font-size: var(--fs-lead); line-height: var(--lh-snug); max-width: 30ch; }
+  /* ---------- 7. финал ---------- */
+  .end__lead { margin-top: var(--s-4); max-width: 30ch; }
+  .end__btn { background: var(--invert-fg); color: var(--invert-bg); border-color: var(--invert-fg); }
 
   /* ---------- широкий экран ---------- */
   @media (min-width: 1024px) {
-    .hero__body { padding-bottom: var(--s-9, 120px); }
-    .how__card {
-      grid-template-columns: 1fr 1fr;
-      align-items: center;
-      gap: var(--s-8);
-      padding: var(--s-7);
-      top: calc(var(--s-7) + var(--i) * var(--s-4));
+    .hero__stage { height: 70svh; }
+    .how__rail {
+      grid-auto-flow: row;
+      grid-template-columns: repeat(4, 1fr);
+      max-width: var(--page-max);
+      margin-inline: auto;
+      overflow: visible;
     }
-    .gets__in { grid-template-columns: 1.1fr 0.9fr; align-items: center; }
-    .phone { width: 300px; }
-    .terms__grid { grid-template-columns: repeat(5, 1fr); }
-    .terms__item:first-child { grid-column: auto; }
-    .terms__item:first-child .terms__num { font-size: clamp(64px, 18vw, 140px); }
-    .vid__frame { aspect-ratio: 16 / 9; }
+    .vid { aspect-ratio: 16 / 9; }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .hero__layer { animation: none; }
     .hero__layer:not(:first-child) { display: none; }
   }
 </style>

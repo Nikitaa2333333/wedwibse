@@ -1,0 +1,66 @@
+---
+// «ИНТЕРЕС» — раздел меню кабинета, прототип. Что пары делают с карточкой:
+// просмотры, избранное, открытия контактов (журнал второго этапа, без денег;
+// сама заявка подрядчику — третий этап, STAGE2.md §1). Данные — ЗАГЛУШКА.
+import ProfiShell from '../../../components/profi/ProfiShell.astro';
+import { DEMO_INTEREST } from '../../../data/profi-demo';
+---
+
+<ProfiShell title="Интерес" section="interest">
+  <main class="container ir">
+    <h1 class="t-h1">Интерес</h1>
+    <p class="ir__sub">{DEMO_INTEREST.period}, по всем карточкам</p>
+
+    <dl class="ir__totals">
+      {DEMO_INTEREST.totals.map((t) => (
+        <div class="ir__total">
+          <dt class="ir__num">{t.value}</dt>
+          <dd class="ir__label">{t.label}</dd>
+        </div>
+      ))}
+    </dl>
+
+    <h2 class="t-h2 ir__h">Последние</h2>
+    <ul class="ir__log">
+      {DEMO_INTEREST.log.map((e) => (
+        <li class="ir__row">
+          <span class="ir__when">{e.when} · {e.card}</span>
+          <span class="ir__what">{e.what}</span>
+          {e.note && <span class="ir__note">{e.note}</span>}
+        </li>
+      ))}
+    </ul>
+  </main>
+</ProfiShell>
+
+<style>
+  .ir { max-width: 720px; padding-top: var(--s-4); }
+  .ir__sub { margin-top: var(--s-2); font-size: var(--fs-small); }
+
+  .ir__totals {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--s-2);
+    margin-top: var(--s-6);
+  }
+  .ir__total {
+    padding: var(--s-4) var(--s-3);
+    background: var(--surface);
+    border-radius: var(--radius-card);
+  }
+  .ir__num { font-size: var(--fs-h3); font-weight: var(--w-head-lg); line-height: var(--lh-heading); }
+  .ir__label { margin-top: var(--s-1); font-size: var(--fs-caption); line-height: var(--lh-caption); }
+
+  .ir__h { margin-top: var(--section-gap); }
+  .ir__log { list-style: none; display: grid; gap: var(--s-2); margin-top: var(--s-4); }
+  .ir__row {
+    display: grid;
+    gap: var(--s-1);
+    padding: var(--s-4);
+    background: var(--surface);
+    border-radius: var(--radius-card);
+  }
+  .ir__when { font-size: var(--fs-caption); }
+  .ir__what { font-weight: var(--w-head); }
+  .ir__note { font-size: var(--fs-small); }
+</style>
