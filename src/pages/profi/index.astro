@@ -151,18 +151,12 @@ const faq = [
                 </div>
               )}
               {i === 2 && (
-                <div class="demo demo--card">
-                  <Image src={resolveImage('/specialists/fotografy/suhorada/gal/p03.webp')} alt="" widths={[...IMG_WIDTHS.thumb]} sizes="88px" class="demo__photo" />
-                  <div class="demo__info">
-                    <span class="demo__name">Алексей Сухорада</span>
-                    <span class="demo__line">Фотограф · от 40 000 ₽</span>
-                    <span class="demo__heart">
-                      <Icon name="heartOutline" class="demo__h demo__h--off" />
-                      <Icon name="heart" class="demo__h demo__h--on" />
-                      <span class="tap"></span>
-                    </span>
-                  </div>
-                  <span class="demo__toast">Сохранили в избранное</span>
+                <div class="demo demo--heart">
+                  <span class="demo__heart">
+                    <Icon name="heartOutline" class="demo__h demo__h--off" />
+                    <Icon name="heart" class="demo__h demo__h--on" />
+                    <span class="tap"></span>
+                  </span>
                 </div>
               )}
               {i === 3 && (
@@ -326,6 +320,7 @@ const faq = [
   }
   .run__card { display: grid; gap: var(--s-1); width: clamp(140px, 38vw, 220px); color: inherit; text-decoration: none; }
   .run__img { width: 100%; height: auto; aspect-ratio: 4 / 5; object-fit: cover; border-radius: var(--radius-card); }
+  .run__row--fwd .run__img { aspect-ratio: 2 / 3; }
   .run__name { margin-top: var(--s-1); font-size: var(--fs-small); font-weight: var(--w-head-lg); line-height: var(--lh-caption); }
   .run__role { font-size: var(--fs-caption); line-height: var(--lh-caption); }
 
@@ -350,26 +345,24 @@ const faq = [
     scrollbar-width: none;
   }
   .how__rail::-webkit-scrollbar { display: none; }
+  /* Одна плашка на шаг: кусочек интерфейса стоит прямо в ней, без
+     вложенной подложки (правило «плашка в плашке нельзя», DESIGN.md §2). */
   .how__card {
     scroll-snap-align: start;
     display: grid;
     grid-template-rows: auto 1fr;
-    padding: var(--s-3);
+    padding: var(--s-5);
     background: var(--surface);
     border-radius: calc(var(--radius-card) * 1.5);
     min-width: 0;
   }
   .how__shot {
     position: relative;
-    aspect-ratio: 5 / 4;
+    min-height: 300px;
     display: grid;
     place-items: center;
-    padding: var(--s-4);
-    background: var(--bg);
-    border-radius: var(--radius-card);
-    overflow: hidden;
   }
-  .how__text { display: grid; align-content: start; gap: var(--s-2); padding: var(--s-4) var(--s-2) var(--s-2); }
+  .how__text { display: grid; align-content: start; gap: var(--s-2); padding-top: var(--s-5); }
   .how__num { font-size: var(--fs-small); font-weight: var(--w-medium); }
   .how__t { font-size: var(--fs-h3); line-height: var(--lh-heading); }
   .how__d { font-size: var(--fs-small); line-height: var(--lh-snug); }
@@ -409,7 +402,7 @@ const faq = [
   .demo__field {
     width: 100%;
     padding: 12px var(--s-4);
-    background: var(--surface);
+    background: var(--bg);
     border-radius: var(--radius-pill);
     font-size: var(--fs-small);
     animation-name: fieldA;
@@ -422,46 +415,24 @@ const faq = [
   .demo__swap { display: grid; }
   .demo__chip { grid-area: 1 / 1; justify-self: start; display: inline-flex; align-items: center; gap: var(--s-1); }
   .demo__chip :global(svg) { width: 16px; height: 16px; }
-  .demo__chip--wait { background: var(--surface); animation-name: chipWait; }
+  .demo__chip--wait { background: var(--bg); animation-name: chipWait; }
   .demo__chip--ok { background: var(--fg); color: var(--bg); animation-name: chipOk; }
   @keyframes chipWait { 0%, 55% { opacity: 1; } 62%, 92% { opacity: 0; } 100% { opacity: 1; } }
   @keyframes chipOk { 0%, 55% { opacity: 0; transform: scale(0.9); } 62% { opacity: 1; transform: scale(1.06); } 68%, 92% { opacity: 1; transform: none; } 100% { opacity: 0; } }
-  .demo__bar { width: 100%; height: 6px; border-radius: var(--radius-pill); background: var(--surface); overflow: hidden; }
+  .demo__bar { width: 100%; height: 6px; border-radius: var(--radius-pill); background: var(--bg); overflow: hidden; }
   .demo__fill { display: block; height: 100%; background: var(--fg); transform-origin: left; animation-name: fill; }
   @keyframes fill { 0% { transform: scaleX(0); } 55%, 92% { transform: scaleX(1); } 100% { transform: scaleX(0); } }
   .demo__line { font-size: var(--fs-small); }
 
-  /* шаг 3: пара нашла карточку и поставила сердце */
-  .demo--card {
-    grid-template-columns: 88px 1fr;
-    align-items: center;
-    gap: var(--s-3);
-    padding: var(--s-3);
-    background: var(--surface);
-    border-radius: var(--radius-card);
-  }
-  .demo__photo { width: 88px; height: auto; aspect-ratio: 4 / 5; object-fit: cover; border-radius: var(--radius-card); }
-  .demo__info { display: grid; gap: var(--s-1); min-width: 0; }
-  .demo__name { font-weight: var(--w-head-lg); line-height: var(--lh-caption); }
-  .demo__heart { position: relative; width: 28px; height: 28px; margin-top: var(--s-1); }
-  .demo__heart :global(.demo__h) { position: absolute; inset: 0; width: 28px; height: 28px; }
+  /* шаг 3: пара нашла карточку и поставила сердце — одно крупное сердце */
+  .demo--heart { justify-items: center; }
+  .demo__heart { position: relative; width: 96px; height: 96px; animation-name: none; }
+  .demo__heart .tap { width: 120px; height: 120px; margin: -60px 0 0 -60px; }
+  .demo__heart :global(.demo__h) { position: absolute; inset: 0; width: 96px; height: 96px; }
   .demo__heart :global(.demo__h--off) { animation: heartOff var(--loop) var(--ease-out) infinite; animation-play-state: inherit; }
   .demo__heart :global(.demo__h--on) { --icon-fill: currentColor; animation: heartOn var(--loop) var(--ease-out) infinite; animation-play-state: inherit; }
-  .demo__heart { animation-name: none; }
   @keyframes heartOff { 0%, 14% { opacity: 1; } 16%, 92% { opacity: 0; } 100% { opacity: 1; } }
-  @keyframes heartOn { 0%, 14% { opacity: 0; transform: scale(0.6); } 20% { opacity: 1; transform: scale(1.3); } 28%, 92% { opacity: 1; transform: none; } 100% { opacity: 0; } }
-  .demo__toast {
-    grid-column: 1 / -1;
-    justify-self: center;
-    padding: 6px var(--s-3);
-    border-radius: var(--radius-pill);
-    background: var(--fg);
-    color: var(--bg);
-    font-size: var(--fs-caption);
-    font-weight: var(--w-medium);
-    animation-name: toast;
-  }
-  @keyframes toast { 0%, 22% { opacity: 0; transform: translateY(8px); } 30%, 80% { opacity: 1; transform: none; } 90%, 100% { opacity: 0; transform: translateY(-6px); } }
+  @keyframes heartOn { 0%, 14% { opacity: 0; transform: scale(0.6); } 20% { opacity: 1; transform: scale(1.25); } 28%, 92% { opacity: 1; transform: none; } 100% { opacity: 0; } }
 
   /* шаг 4: правка сохранилась, фото добавились по одному */
   .demo__saved { display: inline-flex; align-items: center; gap: var(--s-1); font-size: var(--fs-small); font-weight: var(--w-medium); }
@@ -481,27 +452,16 @@ const faq = [
   @keyframes nB { 0%, 30% { opacity: 0; } 36%, 94% { opacity: 1; } 100% { opacity: 0; } }
 
   /* ---------- 4. что получаете ----------
-     Крупные плитки два в ряд: название жирным, под ним одна строка. */
+     Простой список: заголовок и строка под ним, без плашек и линий. */
   .gets {
     list-style: none;
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--s-2);
+    gap: var(--s-6);
     margin-top: var(--section-gap-tight);
   }
-  .gets__item {
-    display: grid;
-    align-content: space-between;
-    gap: var(--s-4);
-    min-height: 132px;
-    padding: var(--s-4);
-    background: var(--surface);
-    border-radius: calc(var(--radius-card) * 1.5);
-    transition-delay: calc(var(--d, 0) * 60ms);
-  }
-  .gets__item:nth-child(1), .gets__item:nth-child(6) { background: var(--fg); color: var(--bg); }
+  .gets__item { display: grid; gap: var(--s-1); max-width: var(--measure-text); }
   .gets__t { font-size: var(--fs-h3); font-weight: var(--w-head-lg); line-height: var(--lh-heading); letter-spacing: -0.02em; }
-  .gets__d { font-size: var(--fs-small); line-height: var(--lh-snug); }
+  .gets__d { font-size: var(--fs-body); line-height: var(--lh-snug); }
 
   /* ---------- 5. видео ---------- */
   .vid {
@@ -534,7 +494,7 @@ const faq = [
   /* ---------- широкий экран ---------- */
   @media (min-width: 1024px) {
     .hero__stage { height: 70svh; }
-    .gets { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .gets { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-7) var(--s-6); }
     .how__rail {
       grid-auto-flow: row;
       grid-template-columns: repeat(4, 1fr);
