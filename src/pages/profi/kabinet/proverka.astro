@@ -1,0 +1,51 @@
+---
+// СТАТУС ПРОВЕРКИ — прототип (STAGE2.md §0.1). Два состояния карточки после
+// «Отправить»: «На проверке» (черновик заблокирован, отзыва нет — решение
+// 16.10) и «Вернули с причиной». В прототипе оба на одной странице, чтобы
+// показать заказчику. Вживую состояние придёт из базы (`revisions.status`).
+import ProfiShell from '../../../components/profi/ProfiShell.astro';
+---
+
+<ProfiShell title="Проверка карточки" action={{ href: '/profi/kabinet/', label: 'Мои карточки' }}>
+  <main class="section container st">
+    <section class="st__state">
+      <span class="chip chip--tag">На проверке</span>
+      <h1 class="t-h1">Отправили модератору</h1>
+      <p>Проверим до 24 часов и напишем в Telegram и на почту. Пока карточка на проверке, править её нельзя: модератор видит ровно то, что вы отправили.</p>
+      <ul class="list">
+        <li>Уже опубликованная версия остаётся на сайте до решения.</li>
+        <li>Если всё хорошо — изменения появятся на сайте через секунды после одобрения.</li>
+      </ul>
+      <a class="pill pill--lg" href="/profi/kabinet/">К моим карточкам</a>
+    </section>
+
+    <section class="st__state st__state--back">
+      <span class="chip chip--tag">Вернули с причиной</span>
+      <h2 class="t-h2">Модератор вернул карточку</h2>
+      <blockquote class="st__why">
+        <p>В разделе «Как я снимаю» указан телефон. Контакты — только в разделе «Контакты», там их увидит пара по кнопке.</p>
+      </blockquote>
+      <p>Исправьте и отправьте ещё раз — проверка снова до 24 часов.</p>
+      <a class="pill pill--lg pill--solid" href="/profi/kabinet/anketa/#tekst">Исправить</a>
+    </section>
+  </main>
+</ProfiShell>
+
+<style>
+  .st { max-width: 720px; padding-top: var(--s-4); display: grid; gap: var(--section-gap); }
+  .st__state { display: grid; gap: var(--s-4); justify-items: start; }
+  .st__state p { max-width: var(--measure-text); }
+  .st__state--back {
+    padding: var(--s-5);
+    background: var(--surface);
+    border-radius: var(--radius-card);
+  }
+  .st__state--back .chip { background: var(--bg); }
+  .st__why {
+    margin: 0;
+    padding: var(--s-4);
+    background: var(--bg);
+    border-radius: var(--radius-card);
+    font-size: var(--fs-small);
+  }
+</style>

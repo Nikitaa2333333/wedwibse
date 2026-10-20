@@ -1,0 +1,138 @@
+---
+// ГЛАВНАЯ КАБИНЕТА ПОДРЯДЧИКА — прототип (STAGE2.md §0.1). Мои карточки
+// (до 3 на учётку — решение 16.10), у каждой статус и что делать дальше,
+// «+ Добавить карточку», пока есть место. Данные — ЗАГЛУШКА из profi-demo.ts.
+import { Image } from 'astro:assets';
+import ProfiShell from '../../../components/profi/ProfiShell.astro';
+import { resolveImage, IMG_WIDTHS } from '../../../lib/images';
+import { DEMO_ACCOUNT, DEMO_CARDS, STATUS_LABEL } from '../../../data/profi-demo';
+
+const left = DEMO_ACCOUNT.cardsMax - DEMO_CARDS.length;
+---
+
+<ProfiShell title="Кабинет" action={{ href: '/profi/', label: 'Выйти' }}>
+  <main class="section container cab">
+    <h1 class="t-h1">Здравствуйте, {DEMO_ACCOUNT.name}</h1>
+    <p class="cab__lead">Ваши карточки в каталоге. Любая правка уходит на проверку — до 24 часов, на сайте всё это время прежняя версия.</p>
+
+    <ul class="cards">
+      {DEMO_CARDS.map((c) => (
+        <li class="card">
+          <a class="card__link" href="/profi/kabinet/anketa/">
+            <div class="card__media">
+              {c.photo ? (
+                <Image
+                  src={resolveImage(c.photo)}
+                  alt={c.name}
+                  widths={[...IMG_WIDTHS.thumb]}
+                  sizes="96px"
+                  class="card__img"
+                />
+              ) : (
+                <span class="card__empty">Нет фото</span>
+              )}
+            </div>
+            <div class="card__body">
+              <span class={`chip chip--tag card__status is-${c.status}`}>{STATUS_LABEL[c.status]}</span>
+              <h2 class="card__name">{c.role}</h2>
+              <p class="card__note">{c.note}</p>
+              {c.status === 'draft' && (
+                <p class="card__fill">Заполнено на {c.filled}%</p>
+              )}
+            </div>
+          </a>
+          {c.pending && (
+            <p class="card__extra"><span class="chip chip--tag card__status">{STATUS_LABEL.review}</span>{c.pending}</p>
+          )}
+          {c.reason && (
+            <div class="card__extra">
+              <p class="card__why">{c.reason}</p>
+              <a class="pill pill--solid" href="/profi/kabinet/anketa/#tekst">Исправить</a>
+            </div>
+          )}
+          {c.url && <a class="card__site" href={c.url}>Открыть на сайте</a>}
+        </li>
+      ))}
+    </ul>
+
+    {left > 0 && (
+      <a class="pill pill--lg pill--block cab__add" href="/profi/kabinet/novaya/">
+        + Добавить карточку
+      </a>
+      <p class="cab__left">Можно ещё {left} из {DEMO_ACCOUNT.cardsMax}: другая профессия или площадка.</p>
+    )}
+
+    <section class="cab__next">
+      <h2 class="t-h2">Что ещё можно сделать</h2>
+      <ul class="list">
+        <li>Добавить видео: до 10 роликов, каждый до минуты — ссылкой на Яндекс.Диск, пережмём сами.</li>
+        <li>Подключить почту, чтобы входить и без Telegram.</li>
+        <li><a href="/profi/#video">Посмотреть видеоинструкцию</a>: как сделать карточку сильнее.</li>
+      </ul>
+    </section>
+  </main>
+</ProfiShell>
+
+<style>
+  .cab { max-width: 720px; padding-top: var(--s-4); }
+  .cab__lead { margin-top: var(--s-4); max-width: var(--measure-text); }
+
+  .cards { list-style: none; display: grid; gap: var(--s-4); margin-top: var(--s-6); }
+
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius-card);
+    padding: var(--s-4);
+    display: grid;
+    gap: var(--s-3);
+  }
+
+  .card__link {
+    display: grid;
+    grid-template-columns: 96px 1fr;
+    gap: var(--s-4);
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .card__media {
+    width: 96px;
+    aspect-ratio: 4 / 5;
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    background: var(--surface-dim);
+    display: grid;
+    place-items: center;
+  }
+  .card__img { width: 100%; height: 100%; object-fit: cover; }
+  .card__empty { font-size: var(--fs-caption); }
+
+  .card__body { display: grid; gap: var(--s-1); align-content: start; min-width: 0; }
+  .card__status { justify-self: start; background: var(--bg); }
+  .card__status.is-returned { background: var(--fg); color: var(--bg); }
+  .card__status.is-published { background: var(--fg); color: var(--bg); }
+  .card__name { font-size: var(--fs-h3); font-weight: var(--w-head); line-height: var(--lh-heading); margin-top: var(--s-1); }
+  .card__note { font-size: var(--fs-small); }
+  .card__fill { font-size: var(--fs-caption); font-weight: var(--w-medium); }
+
+  .card__extra {
+    display: grid;
+    gap: var(--s-3);
+    justify-items: start;
+    padding: var(--s-4);
+    background: var(--bg);
+    border-radius: var(--radius-card);
+    font-size: var(--fs-small);
+  }
+  .card__extra .card__status { background: var(--surface); }
+  .card__why { font-size: var(--fs-small); }
+  .cab__next a { color: inherit; }
+
+  .card__site { font-size: var(--fs-small); color: inherit; justify-self: start; }
+
+  .cab__add { margin-top: var(--s-5); }
+  .cab__left { margin-top: var(--s-2); font-size: var(--fs-small); text-align: center; }
+
+  .cab__next { margin-top: var(--section-gap); }
+  .cab__next .list { margin-top: var(--s-4); }
+</style>

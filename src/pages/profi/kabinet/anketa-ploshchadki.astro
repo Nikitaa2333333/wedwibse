@@ -1,0 +1,193 @@
+---
+// АНКЕТА ПЛОЩАДКИ — прототип (STAGE2.md §0.1). Тот же порядок, что у
+// подрядчика (разделы-якоря, автосохранение, «Отправить на проверку»),
+// но у площадки своё: залы с вместимостью и тарифом по дням недели
+// (аренда + депозит — как VenueHall в data/venues.ts) и условия аренды.
+// Вопросы фильтров — из VENUE_FILTERS (data/feed.ts), тот же источник,
+// что у каталога площадок. Значения — ЗАГЛУШКА на примере оранжереи LЁD.
+import { Image } from 'astro:assets';
+import ProfiShell from '../../../components/profi/ProfiShell.astro';
+import Icon from '../../../components/Icon.astro';
+import { VENUE_FILTERS } from '../../../data/feed';
+import { resolveImage, IMG_WIDTHS } from '../../../lib/images';
+import '../../../components/profi/anketa.css';
+
+const parts = [
+  ['osnovnoe', 'Основное'],
+  ['zaly', 'Залы'],
+  ['usloviya', 'Условия'],
+  ['tekst', 'Текст'],
+  ['voprosy', 'Вопросы'],
+  ['foto', 'Фото'],
+  ['kontakty', 'Контакты'],
+];
+
+// Локацию и тип спрашиваем в «Основном» — здесь числовые группы.
+const groups = VENUE_FILTERS.filter((g) => g.key === 'capacity' || g.key === 'avgCheck');
+const picked = new Set(['capacity:0-80', 'avgCheck:9+']);
+
+const tariff = [
+  ['Пн–Чт', '150 000', '250 000'],
+  ['Пятница', '200 000', '350 000'],
+  ['Сб–Вс', '250 000', '400 000'],
+];
+
+const photos = ['hero-portrait', 's2-hall', 's3-welcome', 's4-ceremony', 's5-table', 's6-night'].map(
+  (n) => `/venues/led/${n}.webp`,
+);
+---
+
+<ProfiShell title="Анкета площадки" action={{ href: '/profi/kabinet/', label: 'Мои карточки' }}>
+  <main class="container form">
+    <header class="form__head">
+      <span class="chip chip--tag form__status">Черновик</span>
+      <h1 class="t-h1">Площадка</h1>
+      <p class="form__saved" aria-live="polite"><Icon name="check" /> Сохранено · 12:04</p>
+    </header>
+
+    <nav class="form__nav" aria-label="Разделы анкеты">
+      {parts.map(([id, label]) => <a class="chip" href={`#${id}`}>{label}</a>)}
+    </nav>
+
+    <section class="part" id="osnovnoe">
+      <h2 class="t-h2">Основное</h2>
+      <label class="field">
+        <span class="field__label">Название</span>
+        <input class="input" value="Оранжерея LЁD" />
+      </label>
+      <div class="field">
+        <span class="field__label">Адрес страницы</span>
+        <p class="slug">…/ploshchadki/<b>led</b>/</p>
+        <span class="field__note">Адрес свободен. После публикации его меняет только модератор.</span>
+      </div>
+      <fieldset class="field q">
+        <legend class="field__label">Тип площадки</legend>
+        <div class="field__opts">
+          {['Ресторан', 'Загородный клуб', 'Лофт', 'Оранжерея', 'Шатёр', 'Усадьба'].map((t) => (
+            <label class="chip-opt">
+              <input class="chip-opt__input" type="radio" name="type" checked={t === 'Оранжерея'} />
+              <span class="chip">{t}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      <label class="field">
+        <span class="field__label">Адрес</span>
+        <input class="input" value="Московская область, Красногорск, Новая Рига" />
+        <span class="field__note">По адресу поставим точку на карте — проверите её на следующем шаге.</span>
+      </label>
+      <label class="field">
+        <span class="field__label">Как добраться</span>
+        <textarea class="input" rows="3">30 минут от центра Москвы по Новорижскому шоссе. Своя бесплатная парковка на 30 машин.</textarea>
+      </label>
+    </section>
+
+    <section class="part" id="zaly">
+      <h2 class="t-h2">Залы</h2>
+      <p class="part__lead">Каждый зал — своя секция на странице площадки: кадр, вместимость и цены. Один зал — тоже зал.</p>
+      <div class="block">
+        <label class="field"><span class="field__label">Название зала</span><input class="input" value="Стеклянный зал" /></label>
+        <div class="nums">
+          <label class="field"><span class="field__label">Площадь, м²</span><input class="input" inputmode="numeric" value="180" /></label>
+          <label class="field"><span class="field__label">Банкет</span><input class="input" inputmode="numeric" value="60" /></label>
+          <label class="field"><span class="field__label">Фуршет</span><input class="input" inputmode="numeric" value="90" /></label>
+        </div>
+        <div class="field">
+          <span class="field__label">Цены по дням недели, ₽</span>
+          <div class="tariff tariff--head" aria-hidden="true"><span></span><span>Аренда</span><span>Депозит</span></div>
+          {tariff.map(([day, rent, dep]) => (
+            <div class="tariff">
+              <span class="tariff__day">{day}</span>
+              <input class="input" inputmode="numeric" value={rent} aria-label={`Аренда, ${day}`} />
+              <input class="input" inputmode="numeric" value={dep} aria-label={`Депозит, ${day}`} />
+            </div>
+          ))}
+          <span class="field__note">Депозит — минимальный заказ по меню. Нет аренды или депозита — оставьте поле пустым.</span>
+        </div>
+      </div>
+      <button class="pill" type="button">+ Добавить зал</button>
+    </section>
+
+    <section class="part" id="usloviya">
+      <h2 class="t-h2">Условия</h2>
+      <p class="part__lead">Что пара спросит первым. Ответы уйдут в блок условий на странице.</p>
+      <fieldset class="field q">
+        <legend class="field__label">Кухня</legend>
+        <div class="field__opts">
+          <label class="chip-opt"><input class="chip-opt__input" type="radio" name="food" checked /><span class="chip">Только наша</span></label>
+          <label class="chip-opt"><input class="chip-opt__input" type="radio" name="food" /><span class="chip">Можно свой кейтеринг</span></label>
+        </div>
+      </fieldset>
+      <fieldset class="field q">
+        <legend class="field__label">Свой алкоголь</legend>
+        <div class="field__opts">
+          <label class="chip-opt"><input class="chip-opt__input" type="radio" name="alco" /><span class="chip">Без сбора</span></label>
+          <label class="chip-opt"><input class="chip-opt__input" type="radio" name="alco" checked /><span class="chip">Со сбором</span></label>
+          <label class="chip-opt"><input class="chip-opt__input" type="radio" name="alco" /><span class="chip">Нельзя</span></label>
+        </div>
+      </fieldset>
+      <label class="field"><span class="field__label">До скольки можно гулять</span><input class="input" value="До 23:00 в зале, на веранде до 22:00" /></label>
+      <label class="field"><span class="field__label">Что входит в аренду</span><textarea class="input" rows="3">Мебель и текстиль, свет и звук, уборка, парковка</textarea></label>
+    </section>
+
+    <section class="part" id="tekst">
+      <h2 class="t-h2">Текст</h2>
+      <p class="part__lead">Разделами, как вы рассказываете о площадке гостям. Вставка из документа или с сайта — форматирование уберём сами, абзацы сохраним.</p>
+      <div class="block">
+        <label class="field"><span class="field__label">Заголовок раздела</span><input class="input" value="Оранжерея в сосновом лесу" /></label>
+        <label class="field"><span class="field__label">Текст</span><textarea class="input" rows="5">Стеклянный павильон стоит прямо между соснами, к нему ведут деревянные ступени и настил, вокруг — лес, а не подъездная дорога.</textarea></label>
+      </div>
+      <button class="pill" type="button">+ Добавить раздел</button>
+      <p class="field__note">Телефоны, почта, ссылки и ники в тексте не пройдут проверку — для них есть раздел «Контакты».</p>
+    </section>
+
+    <section class="part" id="voprosy">
+      <h2 class="t-h2">Вопросы для фильтров</h2>
+      <p class="part__lead">По этим ответам пары находят площадку в каталоге.</p>
+      {groups.map((g) => (
+        <fieldset class="field q">
+          <legend class="field__label">{g.label}</legend>
+          <div class="field__opts">
+            {g.options.map((o) => (
+              <label class="chip-opt">
+                <input class="chip-opt__input" type={g.type === 'single' ? 'radio' : 'checkbox'} name={g.key} checked={picked.has(`${g.key}:${o.value}`)} />
+                <span class="chip">{o.label}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      ))}
+    </section>
+
+    <section class="part" id="foto">
+      <h2 class="t-h2">Фото</h2>
+      <p class="part__lead">До 50 кадров. Лучше вертикальные — на телефоне они открываются во весь экран. Первый кадр — обложка. Кадры залов отмечаются у каждого зала.</p>
+      <ul class="grid">
+        {photos.map((p) => (
+          <li class="grid__cell">
+            <Image src={resolveImage(p)} alt="" widths={[...IMG_WIDTHS.tile]} sizes="(min-width: 720px) 160px, 30vw" class="grid__img" />
+          </li>
+        ))}
+      </ul>
+      <p class="part__count">6 из 50</p>
+      <div class="part__row">
+        <button class="pill" type="button">С телефона</button>
+        <button class="pill" type="button">Ссылкой на Яндекс.Диск</button>
+      </div>
+      <p class="field__note">По ссылке мы покажем превью, вы отметите нужные кадры — сервер заберёт их сам, вкладку можно закрыть.</p>
+    </section>
+
+    <section class="part" id="kontakty">
+      <h2 class="t-h2">Контакты</h2>
+      <p class="part__lead">Пара видит их по кнопке «Показать контакты», в тексте карточки их нет.</p>
+      <label class="field"><span class="field__label">Телефон менеджера</span><input class="input" type="tel" value="+7 495 000-00-00" /></label>
+      <label class="field"><span class="field__label">Почта</span><input class="input" type="email" value="manager@example.ru" /></label>
+      <label class="field"><span class="field__label">Часы ответа</span><input class="input" value="Ежедневно с 10 до 21" /></label>
+    </section>
+
+    <div class="send">
+      <a class="pill pill--lg pill--solid pill--block" href="/profi/kabinet/proverka/">Отправить на проверку</a>
+      <p class="field__note send__note">Проверим за 24 часа. Пока карточка на проверке, править её нельзя.</p>
+    </div>
+  </main>
+</ProfiShell>
