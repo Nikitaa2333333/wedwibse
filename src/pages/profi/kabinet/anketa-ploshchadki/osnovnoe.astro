@@ -1,0 +1,36 @@
+---
+// ОСНОВНОЕ ПЛОЩАДКИ — название, адрес страницы, тип, адрес и как добраться.
+// По адресу сервер поставит точку на карте (CABINET.md). ЗАГЛУШКА.
+import SectionShell from '../../../../components/profi/SectionShell.astro';
+const back = '/profi/kabinet/anketa-ploshchadki/';
+---
+
+<SectionShell title="Основное" back={back}>
+  <label class="field"><span class="field__label">Название</span><input class="input" value="Оранжерея LЁD" /></label>
+  <div class="field">
+    <span class="field__label">Адрес страницы</span>
+    <p class="ro">wed-secrets.ru/…/ploshchadki/<b>led</b>/</p>
+    <span class="field__note">После публикации адрес меняет только модератор</span>
+  </div>
+  <fieldset class="q">
+    <legend class="q__t">Тип площадки</legend>
+    <div class="q__opts">
+      {['Ресторан', 'Загородный клуб', 'Лофт', 'Оранжерея', 'Шатёр', 'Усадьба'].map((t) => (
+        <label class="chip-opt"><input class="chip-opt__input" type="radio" name="type" checked={t === 'Оранжерея'} /><span class="chip">{t}</span></label>
+      ))}
+    </div>
+  </fieldset>
+  <label class="field">
+    <span class="field__label">Адрес</span>
+    <input class="input" value="Московская область, Красногорск, Новая Рига" />
+    <span class="field__note">По адресу поставим точку на карте</span>
+  </label>
+  <label class="field"><span class="field__label">Как добраться</span><textarea class="input" rows="3">30 минут от центра Москвы по Новорижскому шоссе. Своя бесплатная парковка на 30 машин.</textarea></label>
+</SectionShell>
+
+<style>
+  .ro { font-size: var(--fs-body); overflow-wrap: anywhere; }
+  .q { border: 0; padding: 0; margin: 0; display: grid; gap: var(--s-3); }
+  .q__t { font-weight: var(--w-head-lg); line-height: var(--lh-caption); }
+  .q__opts { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+</style>

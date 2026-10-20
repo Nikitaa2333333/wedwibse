@@ -22,7 +22,7 @@ const { title, lead, back = '/profi/kabinet/anketa/' } = Astro.props;
       <BackButton href={back} label="К анкете" />
       <div class="sec__titles">
         <h1 class="t-h1 sec__title">{title}</h1>
-        <p class="sec__saved" aria-live="polite">Сохранено · 12:04</p>
+        <p class="sec__saved" aria-live="polite" data-saved>Сохранено · 12:04</p>
       </div>
     </header>
     {lead && <p class="sec__lead">{lead}</p>}
@@ -32,6 +32,27 @@ const { title, lead, back = '/profi/kabinet/anketa/' } = Astro.props;
     <a class="pill pill--lg pill--solid pill--block sec__done" href={back}>Готово</a>
   </main>
 </ProfiShell>
+
+<script>
+  // Автосохранение без кнопки (CABINET-UX.md §2 п.9): любое изменение
+  // на экране через полсекунды становится «Сохранено · ЧЧ:ММ». В прототипе
+  // на сервер ничего не уходит — только строка.
+  const saved = document.querySelector<HTMLElement>('[data-saved]');
+  const main = document.querySelector('main');
+  if (saved && main) {
+    let t = 0;
+    const mark = () => {
+      saved.textContent = 'Сохраняем…';
+      clearTimeout(t);
+      t = window.setTimeout(() => {
+        const d = new Date();
+        saved.textContent = `Сохранено · ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      }, 600);
+    };
+    main.addEventListener('input', mark);
+    main.addEventListener('change', mark);
+  }
+</script>
 
 <style>
   .sec { max-width: 720px; padding-top: var(--s-3); }

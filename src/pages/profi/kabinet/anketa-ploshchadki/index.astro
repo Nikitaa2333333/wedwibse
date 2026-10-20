@@ -1,0 +1,73 @@
+---
+// ХАБ АНКЕТЫ ПЛОЩАДКИ — та же схема, что у подрядчика (CABINET-UX.md):
+// прогресс, разделы строками, каждый — свой экран. У площадки свои разделы:
+// залы (вместимость, тариф по дням) и условия аренды. ЗАГЛУШКА — LЁD.
+import Icon from '../../../../components/Icon.astro';
+import ProfiShell from '../../../../components/profi/ProfiShell.astro';
+import BackButton from '../../../../components/BackButton.astro';
+import { DEMO_VENUE_SECTIONS } from '../../../../data/profi-demo';
+
+const done = DEMO_VENUE_SECTIONS.filter((s) => s.done).length;
+const pct = Math.round((done / DEMO_VENUE_SECTIONS.length) * 100);
+---
+
+<ProfiShell title="Анкета площадки" section="cards">
+  <main class="container hub">
+    <header class="hub__head">
+      <BackButton href="/profi/kabinet/" label="К карточкам" />
+      <div class="hub__titles">
+        <h1 class="t-h1 hub__title">Оранжерея LЁD</h1>
+        <p class="hub__saved">Площадка · черновик · сохранено 12:04</p>
+      </div>
+    </header>
+
+    <div class="hub__progress" role="progressbar" aria-valuenow={pct} aria-valuemin="0" aria-valuemax="100" aria-label="Заполнено">
+      <span class="hub__bar"><span class="hub__fill" style={`--p:${pct}%`}></span></span>
+      <span class="hub__pct">Заполнено на {pct}%</span>
+    </div>
+
+    <ul class="rows">
+      {DEMO_VENUE_SECTIONS.map((s) => (
+        <li>
+          <a class="row" href={`/profi/kabinet/anketa-ploshchadki/${s.slug}/`}>
+            <span class="row__main">
+              <span class="row__label">{s.label}</span>
+              <span class={`row__state${s.done ? '' : ' row__state--todo'}`}>{s.state}</span>
+            </span>
+            <Icon name="arrowRight" class="row__go" />
+          </a>
+        </li>
+      ))}
+    </ul>
+
+    <div class="hub__send">
+      <a class="pill pill--lg pill--solid pill--block" href="/profi/kabinet/proverka/">Отправить на проверку</a>
+      <p class="hub__note">Проверим за сутки. Пока карточка на проверке, править её нельзя.</p>
+    </div>
+  </main>
+</ProfiShell>
+
+<style>
+  .hub { max-width: 720px; padding-top: var(--s-3); }
+  .hub__head { display: flex; align-items: center; gap: var(--s-4); }
+  .hub__titles { display: grid; gap: 2px; min-width: 0; }
+  .hub__title { line-height: var(--lh-caption); }
+  .hub__saved { font-size: var(--fs-caption); }
+  .hub__progress { display: grid; gap: var(--s-2); margin-top: var(--s-6); }
+  .hub__bar { display: block; height: 6px; border-radius: var(--radius-pill); background: var(--surface); overflow: hidden; }
+  .hub__fill { display: block; height: 100%; width: var(--p); background: var(--fg); border-radius: inherit; }
+  .hub__pct { font-size: var(--fs-caption); font-weight: var(--w-medium); }
+  .rows { list-style: none; margin-top: var(--s-6); }
+  .row {
+    display: flex; align-items: center; justify-content: space-between; gap: var(--s-4);
+    padding: var(--s-4) 0; color: inherit; text-decoration: none; border-top: 1px solid var(--hairline);
+  }
+  .rows li:last-child .row { border-bottom: 1px solid var(--hairline); }
+  .row__main { display: grid; gap: 2px; min-width: 0; }
+  .row__label { font-size: var(--fs-body); font-weight: var(--w-head-lg); line-height: var(--lh-caption); }
+  .row__state { font-size: var(--fs-small); line-height: var(--lh-caption); }
+  .row__state--todo { font-weight: var(--w-medium); }
+  :global(.row__go) { width: 22px; height: 22px; flex: none; }
+  .hub__send { margin-top: var(--section-gap); display: grid; gap: var(--s-3); }
+  .hub__note { font-size: var(--fs-caption); text-align: center; }
+</style>

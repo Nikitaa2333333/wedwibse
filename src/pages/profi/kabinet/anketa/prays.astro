@@ -1,13 +1,14 @@
 ---
-// ПРАЙС — прототип. Пакеты строками: название, цена, что входит одной
-// строкой; нажатие открывает редактирование (вживую — шторка .sheet).
-// Способ показа цен — чипами. ЗАГЛУШКА.
+// ПРАЙС — пакеты строками; нажатие открывает шторку редактирования
+// (EditSheet), «+ Пакет» добавляет строку и сразу открывает её. Цена «от»
+// в каталоге — самый дешёвый пакет. ЗАГЛУШКА, на сервер не уходит.
 import SectionShell from '../../../../components/profi/SectionShell.astro';
+import EditSheet from '../../../../components/profi/EditSheet.astro';
 
 const packages = [
-  { name: 'Полный день', price: '40 000 ₽', includes: '10 часов, 500 фото, онлайн-галерея' },
-  { name: 'Половина дня', price: '25 000 ₽', includes: '5 часов, 250 фото' },
-  { name: 'Love story', price: '12 000 ₽', includes: '2 часа, 80 фото' },
+  { name: 'Полный день', price: '40 000', includes: '10 часов, 500 фото, онлайн-галерея' },
+  { name: 'Половина дня', price: '25 000', includes: '5 часов, 250 фото' },
+  { name: 'Love story', price: '12 000', includes: '2 часа, 80 фото' },
 ];
 ---
 
@@ -21,21 +22,67 @@ const packages = [
     </div>
   </fieldset>
 
-  <ul class="packs">
+  <ul class="packs" data-packs>
     {packages.map((p) => (
       <li>
-        <button class="pack" type="button">
+        <button class="pack" type="button" data-sheet-open="pack" data-name={p.name} data-price={p.price} data-includes={p.includes}>
           <span class="pack__main">
             <span class="pack__name">{p.name}</span>
             <span class="pack__inc">{p.includes}</span>
           </span>
-          <span class="pack__price">{p.price}</span>
+          <span class="pack__price">{p.price} ₽</span>
         </button>
       </li>
     ))}
   </ul>
-  <button class="pill" type="button">+ Пакет</button>
+  <button class="pill" type="button" data-pack-add>+ Пакет</button>
+
+  <EditSheet name="pack" title="Пакет">
+    <label class="field"><span class="field__label">Название</span><input class="input" data-f="name" /></label>
+    <label class="field"><span class="field__label">Цена, ₽</span><input class="input" inputmode="numeric" data-f="price" /></label>
+    <label class="field"><span class="field__label">Что входит</span><textarea class="input" rows="3" data-f="includes"></textarea></label>
+    <button class="pill" type="button" data-pack-del>Убрать пакет</button>
+  </EditSheet>
 </SectionShell>
+
+<script>
+  import { bindSheet } from '../../../../lib/sheet';
+  const sheetEl = document.querySelector<HTMLElement>('[data-sheet="pack"]');
+  const list = document.querySelector<HTMLElement>('[data-packs]');
+  if (sheetEl && list) {
+    const f = (k: string) => sheetEl.querySelector<HTMLInputElement>(`[data-f="${k}"]`)!;
+    let current: HTMLElement | null = null;
+    const sheet = bindSheet(sheetEl, {
+      onOpen: (opener) => {
+        current = opener ?? null;
+        f('name').value = current?.dataset.name ?? '';
+        f('price').value = current?.dataset.price ?? '';
+        f('includes').value = current?.dataset.includes ?? '';
+      },
+      onClose: () => {
+        if (!current) return;
+        if (!f('name').value.trim()) { current.closest('li')?.remove(); current = null; return; }
+        current.dataset.name = f('name').value;
+        current.dataset.price = f('price').value;
+        current.dataset.includes = f('includes').value;
+        current.querySelector('.pack__name')!.textContent = f('name').value;
+        current.querySelector('.pack__inc')!.textContent = f('includes').value;
+        current.querySelector('.pack__price')!.textContent = `${f('price').value} ₽`;
+        list.dispatchEvent(new Event('input', { bubbles: true }));
+        current = null;
+      },
+    });
+    sheetEl.querySelector('[data-pack-del]')!.addEventListener('click', () => { f('name').value = ''; sheet.close(); });
+    document.querySelector('[data-pack-add]')!.addEventListener('click', () => {
+      const li = document.createElement('li');
+      li.innerHTML = '<button class="pack" type="button" data-sheet-open="pack" data-name="" data-price="" data-includes=""><span class="pack__main"><span class="pack__name">Новый пакет</span><span class="pack__inc"></span></span><span class="pack__price"></span></button>';
+      list.append(li);
+      const btn = li.querySelector<HTMLElement>('button')!;
+      btn.addEventListener('click', () => sheet.open(btn));
+      sheet.open(btn);
+    });
+  }
+</script>
 
 <style>
   .q { border: 0; padding: 0; margin: 0; display: grid; gap: var(--s-3); }

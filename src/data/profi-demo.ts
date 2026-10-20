@@ -92,3 +92,15 @@ export const DEMO_FORM_SECTIONS: FormSection[] = [
   { slug: 'prays', label: 'Прайс', state: '3 пакета', done: true },
   { slug: 'kontakty', label: 'Контакты', state: 'Телефон, Telegram', done: true },
 ];
+
+// Разделы анкеты площадки (хаб /profi/kabinet/anketa-ploshchadki/). ЗАГЛУШКА
+// на примере оранжереи LЁD.
+export const DEMO_VENUE_SECTIONS: FormSection[] = [
+  { slug: 'osnovnoe', label: 'Основное', state: 'Оранжерея LЁD · Новая Рига', done: true },
+  { slug: 'foto', label: 'Фото', state: '6 из 50', done: true },
+  { slug: 'zaly', label: 'Залы', state: '1 зал · до 60 гостей', done: true },
+  { slug: 'usloviya', label: 'Условия', state: 'Кухня, алкоголь, время', done: true },
+  { slug: 'tekst', label: 'Текст', state: '1 раздел из 5', done: false },
+  { slug: 'voprosy', label: 'Вопросы', state: '2 из 2', done: true },
+  { slug: 'kontakty', label: 'Контакты', state: 'Телефон, почта', done: true },
+];
