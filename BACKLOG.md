@@ -76,6 +76,17 @@
   доступа к VPS: ролики `go-show-*.mp4` не залиты (`media-push.sh`), записей
   в PocketBase нет (`pb-seed-specialists go-show|pustovoy|dremina`) — сделать
   с ноутбука. Фильтров у «Шоу» нет — ждём документ от заказчика.
+  Ролики перегнать из `GO_SHOW.rar` (диск https://disk.yandex.ru/d/7uLT1ZyqoY03CA,
+  папка `03_Videos`) командой VIDEO.md → `public/reels/<имя>.mp4`; постеры
+  уже в `src/assets/reels/`: `go-show-vizitka` ← 01, `-ss 0.3`;
+  `go-show-light` ← 04, `-ss 6`, в фильтр `setsar=1` (иначе 721 px);
+  `go-show-predictions` ← 05, `-ss 0.3`; `go-show-mirror` ← 06, `-ss 2`;
+  `go-show-dragon` ← 07, `-ss 2`, `-crf 33` (на 30 выходит 9 МБ).
+  Потом `verify-video`, `media-push.sh`, `pb-seed-specialists` × 3, мерж PR #69.
+  RAR: `7z` из Debian не умеет, `unar` ронял 4 файла, `bsdtar` берёт всё.
+- **Мост облако → сервер через GitHub Actions** (22.10) — без него облачная
+  сессия не заливает ролики и не пишет в базу. План — `CONTENT-PIPELINE.md`,
+  «Облачная сессия Claude и сервер».
 - **«Гребнево»** — в первом экране 101 кадр: урезать до 50, вертикальные вперёд,
   по кадрам от каждого зала.
 
