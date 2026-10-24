@@ -47,7 +47,8 @@ if (groupsOfCat) {
     if (!allowed[key]) { errors.push(`filters.${key}: такого фильтра нет у категории ${category}`); continue; }
     for (const v of Array.isArray(val) ? val : [val]) if (!allowed[key].includes(v)) errors.push(`filters.${key}: значение «${v}» не из списка (${allowed[key].join(', ')})`);
   }
-} else {
+} else if (Object.keys(s.filters ?? {}).length) {
+  // категория без набора (сейчас — «Шоу», документа заказчика нет) — карточка с пустыми filters допустима
   errors.push(`у категории ${category} нет фильтров в FILTERS_BY_CATEGORY — каталог соберётся без полосы чипов; завести фильтры отдельно`);
 }
 

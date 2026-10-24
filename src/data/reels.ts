@@ -145,6 +145,11 @@ export const REELS: Reel[] = [
   { slug: 'reel-03', src: '/venues/villa-dovil/reel-03.mp4', alt: 'Зал вечером под люстрами', author: '', venue: 'villa-dovil', sound: true },
   { slug: 'reel-04', src: '/venues/villa-dovil/reel-04.mp4', alt: 'Зал ночью: люстры и цветочный декор', author: '', venue: 'villa-dovil', sound: true },
   { slug: 'reel-05', src: '/venues/villa-dovil/reel-05.mp4', alt: 'Зал в драпировках с мраморным полом', author: '', venue: 'villa-dovil', sound: true },
+  { slug: 'go-show-vizitka', src: '/reels/go-show-vizitka.mp4', alt: 'Шоу-персонажи Go Show встречают гостей в зеркальных и красных костюмах', author: 'go-show', sound: true },
+  { slug: 'go-show-lady-furshet', src: '/reels/go-show-lady-furshet.mp4', alt: 'Леди-фуршет: артистка с напитками на юбке-подносе', author: 'go-show', sound: true },
+  { slug: 'go-show-predskazaniya', src: '/reels/go-show-predskazaniya.mp4', alt: 'Персонаж с предсказаниями общается с гостями в холле', author: 'go-show', sound: true },
+  { slug: 'go-show-zerkalnoe', src: '/reels/go-show-zerkalnoe.mp4', alt: 'Зеркальное шоу: артист в зеркальном костюме на сцене в лучах света', author: 'go-show', sound: true },
+  { slug: 'go-show-drakon', src: '/reels/go-show-drakon.mp4', alt: 'Дракон в зеркальном костюме и залп конфетти', author: 'go-show', sound: true },
 ];
 
 /** Есть ли у ролика звук — по пути файла: разметка (PhotoRail, HeroStage,
