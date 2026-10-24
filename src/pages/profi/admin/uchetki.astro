@@ -1,0 +1,75 @@
+---
+// ПОДРЯДЧИКИ — учётки кабинета (`vendors`): как вошли, какие карточки
+// (до 3 на учётку), доверие (CABINET.md §12.4: одобренные правки без
+// возвратов — после N новые фото идут жёлтой полосой), блокировка.
+// ЗАГЛУШКА ACCOUNTS.
+import AdminShell from '../../../components/admin/AdminShell.astro';
+import AdminIcon from '../../../components/admin/AdminIcon.astro';
+import { cardByKey } from '../../../lib/admin-catalog';
+import { ACCOUNTS } from '../../../data/admin-demo';
+
+const trust = (n: number) => (n >= 3 ? { label: 'Проверенный', dot: 'ok' } : { label: 'Новый', dot: 'info' });
+---
+
+<AdminShell title="Подрядчики" section="accounts">
+  <nav class="a-tabs" aria-label="Учётки">
+    <a class="a-tabs__item is-active" href="#" data-filter-tab="ac" data-value="all">Все <span class="a-tabs__n">{ACCOUNTS.length}</span></a>
+    <a class="a-tabs__item" href="#" data-filter-tab="ac" data-value="new">Новые <span class="a-tabs__n">{ACCOUNTS.filter((a) => a.approved < 3).length}</span></a>
+    <a class="a-tabs__item" href="#" data-filter-tab="ac" data-value="trusted">Проверенные <span class="a-tabs__n">{ACCOUNTS.filter((a) => a.approved >= 3).length}</span></a>
+  </nav>
+
+  <div class="a-title">
+    <h1 class="a-h1">Подрядчики в кабинете</h1>
+    <p class="a-lead">Учётка — до трёх карточек. Новые: каждая правка через проверку. Проверенные (от трёх одобренных правок без возвратов): новые фото сразу на сайт, с проверкой после.</p>
+  </div>
+
+  <section class="a-card a-card--flush">
+    <div class="a-card__head">
+      <label class="a-search">
+        <span class="visually-hidden">Поиск</span>
+        <input class="a-input" type="search" placeholder="Имя" data-filter-search="ac" />
+        <AdminIcon name="search" />
+      </label>
+    </div>
+    <div class="a-table-wrap">
+      <table class="a-table a-table--cards" id="ac" data-atable>
+        <thead>
+          <tr>
+            <th><input class="a-check" type="checkbox" aria-label="Выбрать все" /></th>
+            <th data-sort="asc">Подрядчик</th>
+            <th>Карточки</th>
+            <th>Доверие</th>
+            <th class="a-num" data-sort="desc">Одобрено правок</th>
+            <th>Был</th>
+          </tr>
+        </thead>
+        <tbody>
+          {ACCOUNTS.map((a) => {
+            const t = trust(a.approved);
+            return (
+              <tr data-tab={a.approved >= 3 ? 'trusted' : 'new'} data-text={a.name.toLowerCase()}>
+                <td><input class="a-check" type="checkbox" aria-label={`Выбрать: ${a.name}`} /></td>
+                <td data-v={a.name}><span class="a-name">{a.name}</span><span class="a-sub">вход через {a.via} · с {a.registered}</span></td>
+                <td>{a.cards.map((k) => { const c = cardByKey(k); return c ? <a class="a-name ac__card" href={c.url} target="_blank" rel="noopener">{c.name}</a> : null; })}<span class="a-sub">{a.cards.length} из 3</span></td>
+                <td data-bulk-cell><span class={`a-dot a-dot--${t.dot}`}>{t.label}</span></td>
+                <td class="a-num" data-v={a.approved} data-l="Одобрено правок">{a.approved}</td>
+                <td data-l="Был">{a.lastSeen}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="a-bulk" data-bulk="ac" hidden>
+    <span class="a-bulk__count">Выбрано: <span data-bulk-n>0</span></span>
+    <button class="a-bulk__btn" type="button" data-bulk-act="mark" data-bulk-label='<span class="a-dot a-dot--ok">Проверенный</span>'>Сделать проверенными</button>
+    <button class="a-bulk__btn" type="button" data-bulk-act="mark" data-bulk-label='<span class="a-dot a-dot--bad">Заблокирован</span>'>Заблокировать</button>
+    <button class="a-bulk__btn" type="button" data-bulk-clear>Снять выбор</button>
+  </div>
+</AdminShell>
+
+<style>
+  .ac__card { display: block; font-weight: 400; }
+</style>

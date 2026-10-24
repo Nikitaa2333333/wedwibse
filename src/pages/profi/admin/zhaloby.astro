@@ -1,0 +1,68 @@
+---
+// ЖАЛОБЫ на карточки (CABINET.md §17): кнопка на карточке → сюда; сама
+// жалоба карточку не скрывает, решает модератор. ЗАГЛУШКА COMPLAINTS.
+import AdminShell from '../../../components/admin/AdminShell.astro';
+import { cardByKey } from '../../../lib/admin-catalog';
+import { COMPLAINTS, COMPLAINT_STATUS } from '../../../data/admin-demo';
+
+const DOT = { new: 'info', checked: 'ok', rejected: '' } as const;
+---
+
+<AdminShell title="Жалобы" section="complaints">
+  <nav class="a-tabs" aria-label="Статус жалобы">
+    <a class="a-tabs__item is-active" href="#" data-filter-tab="cp" data-value="all">Все <span class="a-tabs__n">{COMPLAINTS.length}</span></a>
+    {(['new', 'checked', 'rejected'] as const).map((s) => (
+      <a class="a-tabs__item" href="#" data-filter-tab="cp" data-value={s}>{COMPLAINT_STATUS[s].label} <span class="a-tabs__n">{COMPLAINTS.filter((c) => c.status === s).length}</span></a>
+    ))}
+  </nav>
+
+  <div class="a-title">
+    <h1 class="a-h1">Жалобы на карточки</h1>
+    <p class="a-lead">Жалоба сама карточку не скрывает. Разбираем, при необходимости скрываем карточку и пишем подрядчику.</p>
+  </div>
+
+  <section class="a-card a-card--flush">
+    <div class="a-table-wrap">
+      <table class="a-table a-table--cards" id="cp" data-atable>
+        <thead>
+          <tr>
+            <th><input class="a-check" type="checkbox" aria-label="Выбрать все" /></th>
+            <th>Карточка</th>
+            <th>Причина</th>
+            <th>От кого</th>
+            <th>Статус</th>
+          </tr>
+        </thead>
+        <tbody>
+          {COMPLAINTS.map((c) => {
+            const card = cardByKey(c.card);
+            return (
+              <tr data-tab={c.status}>
+                <td><input class="a-check" type="checkbox" aria-label="Выбрать жалобу" /></td>
+                <td>
+                  {card ? <a class="a-name" href={card.url} target="_blank" rel="noopener">{card.name}</a> : '—'}
+                  <span class="a-sub">{card?.category} · {c.at}</span>
+                  <span class="a-sublinks"><a href={card?.url} target="_blank" rel="noopener">Открыть карточку</a><a href="/profi/admin/katalog/">Скрыть</a></span>
+                </td>
+                <td class="cp__reason">{c.reason}</td>
+                <td data-l="От кого">{c.from}</td>
+                <td data-bulk-cell><span class={`a-dot ${DOT[c.status] ? `a-dot--${DOT[c.status]}` : ''}`}>{COMPLAINT_STATUS[c.status].label}</span></td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="a-bulk" data-bulk="cp" hidden>
+    <span class="a-bulk__count">Выбрано: <span data-bulk-n>0</span></span>
+    <button class="a-bulk__btn" type="button" data-bulk-act="mark" data-bulk-label='<span class="a-dot a-dot--ok">Разобрали</span>'>Разобрали</button>
+    <button class="a-bulk__btn" type="button" data-bulk-act="mark" data-bulk-label='<span class="a-dot">Отклонили</span>'>Отклонить</button>
+    <button class="a-bulk__btn" type="button" data-bulk-clear>Снять выбор</button>
+  </div>
+</AdminShell>
+
+<style>
+  .cp__reason { min-width: 240px; max-width: 48ch; }
+</style>

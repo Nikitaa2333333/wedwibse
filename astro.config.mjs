@@ -11,4 +11,10 @@ export default defineConfig({
   // Корень раздела «Специалисты» (/moskva/podryadchiki/) — живая страница-хаб
   // с плитками групп (pages/moskva/podryadchiki/index.astro). Редиректа
   // с него в первый каталог быть не должно: он перекрывает страницу.
+
+  // Модерация переехала в админку (24.10.2026) — первые ссылки уже ушли заказчику.
+  redirects: {
+    '/profi/moderaciya': '/profi/admin/moderaciya',
+    '/profi/moderaciya/[id]': '/profi/admin/moderaciya/[id]',
+  },
 });

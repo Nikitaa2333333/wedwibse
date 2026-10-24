@@ -1,0 +1,50 @@
+---
+// Тонкие значки админки — линия 1.6, как у меню Яндекс Метрики (и как
+// Glyph кабинета). Solar Bold сайта сюда не годится: жирный значок рядом
+// с подписью 14 px перетягивает внимание. Цвет и размер — от места вставки.
+export type AdminIconName =
+  | 'overview' | 'moderation' | 'catalog' | 'pilot' | 'leads' | 'interest'
+  | 'accounts' | 'complaints' | 'sync' | 'settings' | 'money'
+  | 'bell' | 'help' | 'search' | 'down' | 'more' | 'external' | 'collapse'
+  | 'up' | 'link' | 'check' | 'plus' | 'filter';
+
+interface Props {
+  name: AdminIconName;
+  class?: string;
+}
+const { name, class: className } = Astro.props;
+
+const PATHS: Record<AdminIconName, string> = {
+  overview: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
+  moderation: 'M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6zM8.5 12l2.5 2.5 4.5-5',
+  catalog: 'M4 6h16M4 12h16M4 18h10',
+  pilot: 'M21 3L10 14M21 3l-7 18-4-7-7-4z',
+  leads: 'M4 13l2.5-8h11L20 13v6H4zM4 13h5l1 2h4l1-2h5',
+  interest: 'M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12zM12 15a3 3 0 100-6 3 3 0 000 6z',
+  accounts: 'M9 11a3.5 3.5 0 100-7 3.5 3.5 0 000 7zM2.5 20c0-3.5 2.9-6 6.5-6s6.5 2.5 6.5 6M16 4.3a3.5 3.5 0 010 6.4M18 14.4c2 .9 3.5 2.9 3.5 5.6',
+  complaints: 'M5 21V4M5 4h11l-2 4 2 4H5',
+  sync: 'M20 11a8 8 0 00-14.6-4.5M4 5v4h4M4 13a8 8 0 0014.6 4.5M20 19v-4h-4',
+  settings: 'M12 15a3 3 0 100-6 3 3 0 000 6zM19.4 15a1.6 1.6 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.6 1.6 0 00-1.8-.3 1.6 1.6 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.6 1.6 0 00-1-1.5 1.6 1.6 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.6 1.6 0 00.3-1.8 1.6 1.6 0 00-1.5-1H3a2 2 0 110-4h.1a1.6 1.6 0 001.5-1 1.6 1.6 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.6 1.6 0 001.8.3H9a1.6 1.6 0 001-1.5V3a2 2 0 114 0v.1a1.6 1.6 0 001 1.5 1.6 1.6 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.6 1.6 0 00-.3 1.8V9a1.6 1.6 0 001.5 1H21a2 2 0 110 4h-.1a1.6 1.6 0 00-1.5 1z',
+  money: 'M3 7h16a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2zM3 7l12-3v3M16.5 13.5h.01',
+  bell: 'M6 8a6 6 0 1112 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 003.4 0',
+  help: 'M12 21a9 9 0 100-18 9 9 0 000 18zM9.1 9a3 3 0 015.8 1c0 2-3 3-3 3M12 17h.01',
+  search: 'M11 18a7 7 0 100-14 7 7 0 000 14zM20 20l-4-4',
+  down: 'M6 9l6 6 6-6',
+  up: 'M6 15l6-6 6 6',
+  more: 'M12 5h.01M12 12h.01M12 19h.01',
+  external: 'M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h5',
+  collapse: 'M15 6l-6 6 6 6',
+  link: 'M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1',
+  check: 'M5 12.5L9.7 17 19 7.5',
+  plus: 'M12 5v14M5 12h14',
+  filter: 'M4 6h16M7 12h10M10 18h4',
+};
+---
+
+<svg class={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <path d={PATHS[name]} />
+</svg>
+
+<style>
+  svg { display: block; width: 20px; height: 20px; flex: none; }
+</style>

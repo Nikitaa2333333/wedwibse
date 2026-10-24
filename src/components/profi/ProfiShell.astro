@@ -13,8 +13,6 @@
 //   в шапке (раньше она прыгала «Войти» ↔ «Регистрация») и без подвала.
 // - look="tech" — кабинет: рабочий инструмент, внизу меню разделов
 //   (та же полоса BottomDock, что у сайта, со своими ссылками).
-// - look="mod" — экран модератора (CABINET.md §12.5): тот же рабочий вид,
-//   без меню подрядчика, в шапке «модерация».
 // Во всех видах, кроме промо, заголовки без антиквы.
 import Layout from '../../layouts/Layout.astro';
 import BottomDock from '../BottomDock.astro';
@@ -28,7 +26,7 @@ interface Props {
   action?: { href: string; label: string };
   /** прототип: закрыт от поиска (по умолчанию да) */
   prototype?: boolean;
-  look?: 'promo' | 'auth' | 'tech' | 'mod';
+  look?: 'promo' | 'auth' | 'tech';
   /** раздел кабинета, подсвеченный в меню */
   section?: Section;
   /** свой знак в шапке вместо «WED Secrets для профи» (экран входа) */
@@ -62,9 +60,9 @@ const menu = [
   <div class={`profi profi--${look}`}>
     <header class="pbar">
       <div class:list={['pbar__in container', { 'pbar__in--center': brand }]}>
-        <a class="pbar__brand" href={look === 'mod' ? '/profi/moderaciya/' : '/profi/'}>
+        <a class="pbar__brand" href="/profi/">
           <span class="pbar__name">{brand ?? 'WED Secrets'}</span>
-          {!brand && <span class="pbar__for">{look === 'mod' ? 'модерация' : 'для профи'}</span>}
+          {!brand && <span class="pbar__for">для профи</span>}
         </a>
         {action && <a class="pill pill--sm pbar__btn" href={action.href}>{action.label}</a>}
       </div>
@@ -133,12 +131,11 @@ const menu = [
 <style is:global>
   /* Кабинет и вход — рабочий инструмент: антиквы образа «крем» здесь нет
      (Никита, 20.10.2026). Селектор тяжелее правила образа в global.css. */
-  html[data-look] :is(.profi--tech, .profi--auth, .profi--mod) :is(h1, h2, h3, h4, .t-display, .t-h1, .t-h2) {
+  html[data-look] :is(.profi--tech, .profi--auth) :is(h1, h2, h3, h4, .t-display, .t-h1, .t-h2) {
     font-family: var(--font-sans);
     font-weight: var(--w-head-lg);
     letter-spacing: -0.01em;
   }
-  /* Кегли — только кабинету; у модерации свои, плотнее (mod.css) */
   html[data-look] :is(.profi--tech, .profi--auth) :is(h1, .t-h1) { font-size: var(--fs-h2); }
   html[data-look] :is(.profi--tech, .profi--auth) :is(h2, .t-h2) { font-size: var(--fs-h3); }
   html[data-look] :is(.profi--tech, .profi--auth) h3 { font-size: var(--fs-body); }

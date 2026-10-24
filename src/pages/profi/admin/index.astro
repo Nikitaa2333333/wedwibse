@@ -1,0 +1,158 @@
+---
+// СВОДКА — первый экран админки, как «Обзор» Метрики: сверху период,
+// дальше «Требует внимания» (куда идти сейчас), общие показатели с графиком
+// и три карточки по разделам. Цифры — заглушки (admin-demo, admin-catalog),
+// карточки каталога — настоящие.
+import AdminShell from '../../../components/admin/AdminShell.astro';
+import AdminIcon from '../../../components/admin/AdminIcon.astro';
+import { CATALOG, INTEREST, cardByKey } from '../../../lib/admin-catalog';
+import { DEMO_REVISIONS } from '../../../data/moderation-demo';
+import { COMPLAINTS, LEADS, PILOT, SYNC_REPORT } from '../../../data/admin-demo';
+import { plural } from '../../../lib/moderation';
+
+const waiting = DEMO_REVISIONS.filter((r) => r.lane === 'red').length;
+const newLeads = LEADS.filter((l) => l.status === 'new').length;
+const newComplaints = COMPLAINTS.filter((c) => c.status === 'new').length;
+const syncIssues = SYNC_REPORT.diffs.length + SYNC_REPORT.links.length;
+const pilotIn = Object.values(PILOT).filter((p) => !['none', 'sent'].includes(p.step)).length;
+
+const attention = [
+  { n: waiting, text: `${plural(waiting, 'правка ждёт', 'правки ждут', 'правок ждут')} решения`, note: 'Ответ подрядчику — до 24 часов', href: '/profi/admin/moderaciya/', dot: 'info' },
+  { n: newLeads, text: `${plural(newLeads, 'новая заявка', 'новые заявки', 'новых заявок')} от пар`, note: 'Ответить паре в тот же день', href: '/profi/admin/zayavki/', dot: 'ok' },
+  { n: newComplaints, text: `${plural(newComplaints, 'жалоба', 'жалобы', 'жалоб')} на карточки`, note: 'Карточка остаётся на сайте до решения', href: '/profi/admin/zhaloby/', dot: 'bad' },
+  { n: syncIssues, text: 'расхождений с таблицей реестра', note: `Утренняя сверка ${SYNC_REPORT.at}`, href: '/profi/admin/sverka/', dot: 'warn' },
+];
+
+const sum = (k: 'views' | 'saves' | 'opens' | 'prevOpens') => INTEREST.reduce((s, r) => s + r[k], 0);
+const opens = sum('opens');
+const prev = sum('prevOpens');
+const delta = prev ? Math.round(((opens - prev) / prev) * 100) : 0;
+const stats = [
+  { label: 'Заявки от пар', num: LEADS.length, delta: '+33 %', up: true },
+  { label: 'Открытия контактов', num: opens, delta: `${delta > 0 ? '+' : ''}${delta} %`, up: delta >= 0 },
+  { label: 'Просмотры карточек', num: sum('views').toLocaleString('ru-RU'), delta: '+12 %', up: true },
+  { label: 'В избранном', num: sum('saves'), delta: '+8 %', up: true },
+  { label: 'Карточек на сайте', num: CATALOG.length, delta: '+1 за неделю', up: true },
+  { label: 'Подрядчиков в кабинете', num: 5, delta: 'пилот идёт', up: true },
+];
+
+// ЗАГЛУШКА графика: заявки по дням за неделю
+const days = ['18.10', '19.10', '20.10', '21.10', '22.10', '23.10', '24.10'];
+const series = [2, 1, 3, 2, 4, 3, 5];
+const W = 640;
+const H = 160;
+const max = Math.max(...series) + 1;
+const pts = series.map((v, i) => [Math.round((i / (series.length - 1)) * W), Math.round(H - (v / max) * H)]);
+const line = pts.map((p) => p.join(',')).join(' ');
+const area = `0,${H} ${line} ${W},${H}`;
+
+const top = [...INTEREST].sort((a, b) => b.opens - a.opens).slice(0, 5);
+---
+
+<AdminShell title="Сводка" section="overview">
+  <div class="a-bar">
+    <div class="a-seg" data-seg>
+      {['Сегодня', 'Вчера', 'Неделя', 'Месяц', 'Квартал'].map((p) => (
+        <button class:list={['a-seg__btn', { 'is-active': p === 'Неделя' }]} type="button">{p}</button>
+      ))}
+    </div>
+    <span class="a-btn a-btn--soft">18 — 24 окт <AdminIcon name="down" /></span>
+    <div class="a-title__actions">
+      <a class="a-btn" href="/profi/admin/pilot/"><AdminIcon name="link" /> Выдать ссылку</a>
+    </div>
+  </div>
+
+  <h1 class="a-section-title">Требует внимания</h1>
+  <section class="a-grid a-grid--2 ov-att">
+    {attention.map((a) => (
+      <a class="a-card ov-att__item" href={a.href}>
+        <span class="ov-att__n">{a.n}</span>
+        <span class="ov-att__body">
+          <span class="ov-att__text">{a.text}</span>
+          <span class="a-sub">{a.note}</span>
+        </span>
+        <AdminIcon name="collapse" class="ov-att__go" />
+      </a>
+    ))}
+  </section>
+
+  <h2 class="a-section-title">Общие показатели</h2>
+  <section class="a-card">
+    <div class="a-card__head"><h3 class="a-h2">Каталог и пары</h3></div>
+    <div class="a-stats" style="--cols: 6">
+      {stats.map((s) => (
+        <div class="a-stat">
+          <span class="a-stat__label">{s.label}</span>
+          <span class="a-stat__num">{s.num}</span>
+          <span class:list={['a-stat__delta', s.up ? 'a-up' : 'a-down']}>{s.delta}</span>
+        </div>
+      ))}
+    </div>
+    <figure class="ov-chart">
+      <figcaption class="a-sub">Заявки от пар по дням</figcaption>
+      <svg viewBox={`0 0 ${W} ${H + 24}`} preserveAspectRatio="none" role="img" aria-label="Заявки по дням: от 1 до 5 в день, растут к концу недели">
+        {[0.25, 0.5, 0.75].map((f) => <line x1="0" x2={W} y1={H * f} y2={H * f} class="ov-chart__grid" />)}
+        <polygon points={area} class="ov-chart__area" />
+        <polyline points={line} class="ov-chart__line" />
+        {pts.map(([x, y]) => <circle cx={x} cy={y} r="3.5" class="ov-chart__dot" />)}
+      </svg>
+      <div class="ov-chart__x">{days.map((d) => <span>{d}</span>)}</div>
+    </figure>
+  </section>
+
+  <h2 class="a-section-title">По разделам</h2>
+  <section class="a-grid a-grid--3">
+    <a class="a-card ov-mini" href="/profi/admin/moderaciya/">
+      <h3 class="a-h2">Модерация</h3>
+      <div class="a-stats" style="--cols: 3">
+        <div class="a-stat"><span class="a-stat__label"><span class="a-dot a-dot--info"></span>Ждут</span><span class="a-stat__num">{waiting}</span></div>
+        <div class="a-stat"><span class="a-stat__label"><span class="a-dot a-dot--warn"></span>Проверить</span><span class="a-stat__num">{DEMO_REVISIONS.filter((r) => r.lane === 'yellow').length}</span></div>
+        <div class="a-stat"><span class="a-stat__label"><span class="a-dot a-dot--ok"></span>Прошли</span><span class="a-stat__num">{DEMO_REVISIONS.filter((r) => r.lane === 'green').length}</span></div>
+      </div>
+      <span class="a-sub">Среднее время ответа — 1 ч 40 мин</span>
+    </a>
+    <a class="a-card ov-mini" href="/profi/admin/pilot/">
+      <h3 class="a-h2">Пилот</h3>
+      <div class="a-stat">
+        <span class="a-stat__label">Владельцы вошли в кабинет</span>
+        <span class="a-stat__num">{pilotIn} из {CATALOG.length}</span>
+      </div>
+      <span class="ov-meter"><span style={`width:${Math.round((pilotIn / CATALOG.length) * 100)}%`}></span></span>
+      <span class="a-sub">Ссылок выдано: {Object.keys(PILOT).length}</span>
+    </a>
+    <a class="a-card ov-mini" href="/profi/admin/interes/">
+      <h3 class="a-h2">Чаще открывают контакты</h3>
+      <ol class="ov-top">
+        {top.map((t) => (
+          <li><span>{cardByKey(t.key)?.name}</span><span class="ov-top__n">{t.opens}</span></li>
+        ))}
+      </ol>
+    </a>
+  </section>
+</AdminShell>
+
+<style>
+  .ov-att { gap: var(--s-3); }
+  .ov-att__item { display: flex; align-items: center; gap: var(--s-4); padding-block: 20px; text-decoration: none; }
+  @media (hover: hover) { .ov-att__item:hover .ov-att__text { color: var(--adm-link); } }
+  .ov-att__n { min-width: 44px; font-size: 32px; line-height: 40px; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .ov-att__body { display: grid; min-width: 0; }
+  .ov-att__text { font-size: 16px; line-height: 24px; font-weight: 500; }
+  :global(.ov-att__go) { margin-left: auto; transform: rotate(180deg); color: var(--adm-text-2); }
+
+  .ov-chart { margin: var(--s-6) 0 0; }
+  .ov-chart svg { display: block; width: 100%; height: 180px; margin-top: var(--s-2); overflow: visible; }
+  .ov-chart__grid { stroke: var(--adm-line); stroke-width: 1; vector-effect: non-scaling-stroke; }
+  .ov-chart__area { fill: color-mix(in srgb, var(--adm-primary) 10%, transparent); }
+  .ov-chart__line { fill: none; stroke: var(--adm-primary); stroke-width: 2; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+  .ov-chart__dot { fill: #fff; stroke: var(--adm-primary); stroke-width: 2; vector-effect: non-scaling-stroke; }
+  .ov-chart__x { display: flex; justify-content: space-between; font-size: var(--adm-fs-sm); color: var(--adm-text-2); }
+
+  .ov-mini { display: grid; gap: var(--s-4); align-content: start; text-decoration: none; }
+  @media (hover: hover) { .ov-mini:hover .a-h2 { color: var(--adm-link); } }
+  .ov-meter { display: block; height: 8px; border-radius: 4px; background: var(--adm-bg); overflow: hidden; }
+  .ov-meter span { display: block; height: 100%; background: var(--adm-primary); border-radius: 4px; }
+  .ov-top { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .ov-top li { display: flex; justify-content: space-between; gap: var(--s-3); }
+  .ov-top__n { font-weight: 500; font-variant-numeric: tabular-nums; }
+</style>

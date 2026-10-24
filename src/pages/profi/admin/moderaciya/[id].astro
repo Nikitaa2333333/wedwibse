@@ -1,0 +1,372 @@
+---
+// РАЗБОР ПРАВКИ — экран «что поменялось» (CABINET.md §12.5).
+// Слева — разделы карточками (Метрика): автопроверка, текст сравнением по
+// словам с видами «Изменения / Было / Стало» (GitHub), цена и фильтры
+// таблицей «было → стало», фото группами. Справа — решение, не уезжает
+// при прокрутке (Zendesk); горячие клавиши A / R / J / K и «Отменить»
+// 5 секунд после решения, потом следующая правка (Gmail, Linear).
+// ПРОТОТИП: кнопки только меняют экран — вживую это запросы к базе.
+import { Image } from 'astro:assets';
+import AdminShell from '../../../../components/admin/AdminShell.astro';
+import AdminIcon from '../../../../components/admin/AdminIcon.astro';
+import Icon from '../../../../components/Icon.astro';
+import { resolveImage, IMG_WIDTHS } from '../../../../lib/images';
+import { buildReview, plural } from '../../../../lib/moderation';
+import { LANE, QUEUE } from '../../../../data/moderation-demo';
+
+export function getStaticPaths() {
+  return QUEUE.map((rev, i) => ({
+    params: { id: rev.id },
+    props: { rev, prev: QUEUE[i - 1]?.id, next: QUEUE[i + 1]?.id, pos: i + 1 },
+  }));
+}
+
+const { rev, prev, next, pos } = Astro.props;
+const r = buildReview(rev);
+const lane = LANE[rev.lane];
+const waits = rev.lane === 'red';
+const DOT = { red: 'info', yellow: 'warn', green: 'ok' } as const;
+const flagged = new Set(rev.flags.map((f) => f.photo).filter(Boolean));
+const pct = r.share.total ? Math.round((r.share.changed / r.share.total) * 100) : 0;
+const rub = (n?: number) => (n ? `${n.toLocaleString('ru-RU')} ₽` : 'пусто');
+const href = (id?: string) => (id ? `/profi/admin/moderaciya/${id}/` : '/profi/admin/moderaciya/');
+
+const photoGroups = [
+  { title: rev.first ? 'Все фото' : 'Добавлены', list: r.photos.added },
+  { title: 'Новая обложка и порядок', list: r.photos.moved },
+  { title: 'Удалены', list: r.photos.removed },
+].filter((g) => g.list.length);
+
+type Para = (typeof r.sections)[number]['paras'][number];
+const runs = (paras: Para[]) => {
+  const out: { fold: boolean; paras: Para[] }[] = [];
+  for (const p of paras) {
+    const fold = !rev.first && !p.changed;
+    const last = out[out.length - 1];
+    if (last && last.fold === fold) last.paras.push(p);
+    else out.push({ fold, paras: [p] });
+  }
+  return out.map((run) => (run.fold && run.paras.length < 2 ? { ...run, fold: false } : run));
+};
+
+const reasons = [
+  ...rev.flags.map((f) => (f.photo ? 'Чужое фото в галерее' : 'Контакты в тексте')),
+  'Мало фото или мелкие кадры',
+  'Текст не о свадьбе',
+].filter((x, i, a) => a.indexOf(x) === i);
+---
+
+<AdminShell title={`Правка: ${r.card.name}`} section="moderation">
+  <div class="mr" data-next={href(next)}>
+    <div class="mr__top">
+      <a class="a-btn a-btn--soft" href="/profi/admin/moderaciya/"><AdminIcon name="collapse" /> Очередь</a>
+      <span class="mr__pos">
+        {pos} из {QUEUE.length}
+        <a class:list={['a-btn a-btn--soft mr__step', { 'is-off': !prev }]} href={href(prev)} aria-label="Предыдущая" data-key-prev><AdminIcon name="collapse" /></a>
+        <a class:list={['a-btn a-btn--soft mr__step', { 'is-off': !next }]} href={href(next)} aria-label="Следующая" data-key-next><AdminIcon name="collapse" class="mr__flip" /></a>
+      </span>
+    </div>
+
+    <header class="a-card mr__head">
+      {r.photos.after[0] && <Image src={resolveImage(r.photos.after[0])} alt="" widths={[...IMG_WIDTHS.thumb]} sizes="64px" class="mr__ava" />}
+      <div class="mr__id">
+        <h1 class="a-h1">{r.card.name}</h1>
+        <p class="a-lead">{r.role} · {rev.first ? 'первая публикация' : 'правка карточки'} · {rev.submitted}</p>
+        <p class="mr__tags">
+          <span class={`a-dot a-dot--${DOT[rev.lane]}`}>{lane.label}</span>
+          {rev.waiting && <span>ждёт <strong>{rev.waiting}</strong> из 24 ч</span>}
+          <a class="mr__link" href={r.url} target="_blank" rel="noopener">{rev.first ? 'Как выглядит на сайте' : 'Карточка на сайте'} <AdminIcon name="external" /></a>
+        </p>
+      </div>
+    </header>
+
+    <div class="a-grid a-grid--main">
+      <div class="a-grid">
+        <section class="a-card">
+          <div class="a-card__head">
+            <h2 class="a-h2">Автопроверка</h2>
+            <span class="a-lead">{rev.flags.length ? `${rev.flags.length} ${plural(rev.flags.length, 'флажок', 'флажка', 'флажков')}` : 'чисто'}</span>
+          </div>
+          {rev.flags.length ? (
+            <ul class="flags">
+              {rev.flags.map((f) => (
+                <li class="flag">
+                  {f.photo && <Image src={resolveImage(f.photo)} alt="" widths={[...IMG_WIDTHS.thumb]} sizes="48px" class="a-thumb" />}
+                  <div>
+                    <p class="flag__rule">{f.rule}</p>
+                    <p class="a-sub">{f.where}</p>
+                    {f.fragment && <p class="flag__frag"><span class="diff-del">{f.fragment}</span></p>}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p class="clean"><AdminIcon name="check" /> Контактов, мата, капса и чужих фото не нашли</p>
+          )}
+        </section>
+
+        {r.sections.length > 0 && (
+          <section class="a-card" data-diff data-mode="diff">
+            <div class="a-card__head">
+              <h2 class="a-h2">Текст</h2>
+              {!rev.first && (
+                <div class="a-seg" data-seg>
+                  <button class="a-seg__btn is-active" type="button" data-mode-btn="diff">Изменения</button>
+                  <button class="a-seg__btn" type="button" data-mode-btn="before">Было</button>
+                  <button class="a-seg__btn" type="button" data-mode-btn="after">Стало</button>
+                </div>
+              )}
+            </div>
+            <p class="a-lead">
+              {rev.first
+                ? `${r.sections.length} ${plural(r.sections.length, 'раздел', 'раздела', 'разделов')}, текст целиком`
+                : `Изменено ${r.share.changed} ${plural(r.share.changed, 'слово', 'слова', 'слов')} из ${r.share.total} (${pct} %)${r.same ? ` · без изменений ещё ${r.same} ${plural(r.same, 'раздел', 'раздела', 'разделов')}` : ''}`}
+            </p>
+            {r.sections.map((s) => (
+              <article class="sec">
+                <h3 class="a-h3">{s.name}</h3>
+                {runs(s.paras).map((run) =>
+                  run.fold ? (
+                    <details class="fold">
+                      <summary class="fold__sum">Без изменений: {run.paras.length} {plural(run.paras.length, 'абзац', 'абзаца', 'абзацев')}</summary>
+                      {run.paras.map((p) => <p class="sec__text">{p.parts.map((x) => x.text)}</p>)}
+                    </details>
+                  ) : (
+                    run.paras.map((p) => (
+                      <p class="sec__text">
+                        {p.parts.map((x) => (rev.first || x.kind === 'same' ? x.text : <span class={`diff-${x.kind}`}>{x.text}</span>))}
+                      </p>
+                    ))
+                  ),
+                )}
+              </article>
+            ))}
+          </section>
+        )}
+
+        {(r.price || r.filters.length > 0) && (
+          <section class="a-card a-card--flush">
+            <div class="a-card__head">
+              <h2 class="a-h2">Цена и фильтры</h2>
+              <span class="a-lead">{rev.first ? 'как заполнил подрядчик' : 'только изменившиеся'}</span>
+            </div>
+            <table class="a-table a-table--cards">
+              <thead><tr><th>Поле</th>{!rev.first && <th>Было</th>}<th>{rev.first ? 'Значение' : 'Стало'}</th></tr></thead>
+              <tbody>
+                {r.price && (
+                  <tr>
+                    <td class="fl__key">Цена от</td>
+                    {!rev.first && <td data-l="Было"><span class="diff-del">{rub(r.price.before)}</span></td>}
+                    <td data-l={rev.first ? undefined : 'Стало'}><span class:list={{ 'diff-add': !rev.first }}>{rub(r.price.after)}</span></td>
+                  </tr>
+                )}
+                {r.filters.map((f) => (
+                  <tr>
+                    <td class="fl__key">{f.label}</td>
+                    {!rev.first && <td data-l="Было"><span class="diff-del">{f.before}</span></td>}
+                    <td data-l={rev.first ? undefined : 'Стало'}><span class:list={{ 'diff-add': !rev.first }}>{f.after}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        )}
+
+        {photoGroups.length > 0 && (
+          <section class="a-card">
+            <div class="a-card__head">
+              <h2 class="a-h2">Фото</h2>
+              <span class="a-lead">после правки: {r.photos.after.length} из 50</span>
+            </div>
+            {photoGroups.map((g) => (
+              <div class="ph">
+                <h3 class="a-h3">{g.title} <span class="a-tabs__n">{g.list.length}</span></h3>
+                <ul class="ph__grid">
+                  {g.list.map((src) => (
+                    <li class:list={['ph__cell', { 'is-flagged': flagged.has(src) }]}>
+                      <Image src={resolveImage(src)} alt="" widths={[...IMG_WIDTHS.thumb]} sizes="(min-width: 1024px) 110px, 23vw" class="ph__img" loading="lazy" />
+                      {flagged.has(src) && <span class="ph__tag">Чужое</span>}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </section>
+        )}
+      </div>
+
+      <aside class="a-card mr__side">
+        <h2 class="a-h2">Решение</h2>
+        <p class="mr__sum">{r.summary}</p>
+        <ul class="mr__why">{rev.why.map((w) => <li>{w}</li>)}</ul>
+        <p class="a-sub">{rev.trust}</p>
+        <p class="a-sub">{lane.note}.</p>
+        <div class="mr__bar" data-actions>
+          {waits ? (
+            <>
+              <button class="a-btn a-btn--primary a-btn--lg a-btn--block" type="button" data-act="approve">Одобрить <kbd>A</kbd></button>
+              <button class="a-btn a-btn--lg a-btn--block" type="button" data-sheet-open="return">Вернуть с причиной <kbd>R</kbd></button>
+            </>
+          ) : (
+            <>
+              <button class="a-btn a-btn--primary a-btn--lg a-btn--block" type="button" data-act="ok">Всё верно <kbd>A</kbd></button>
+              <button class="a-btn a-btn--lg a-btn--block" type="button" data-act="rollback">Откатить <kbd>R</kbd></button>
+            </>
+          )}
+        </div>
+        {!rev.first && <button class="a-btn a-btn--soft a-btn--block a-btn--danger" type="button" data-act="hide">Скрыть карточку с сайта</button>}
+        <p class="a-sub mr__keys">J / K — следующая и предыдущая правка</p>
+      </aside>
+    </div>
+  </div>
+
+  <div class="a-toast" data-toast hidden role="status">
+    <span data-toast-text></span>
+    <button class="a-toast__undo" type="button" data-undo>Отменить</button>
+  </div>
+
+  <div class="sheet" data-sheet="return">
+    <div class="sheet__backdrop" data-sheet-close></div>
+    <section class="sheet__panel adm-sheet" role="dialog" aria-modal="true" aria-labelledby="return-title">
+      <header class="sheet__head">
+        <h2 class="sheet__title" id="return-title">Вернуть с причиной</h2>
+        <button class="icon-btn" type="button" data-sheet-close aria-label="Закрыть"><Icon name="close" /></button>
+      </header>
+      <div class="sheet__body rs" data-sheet-body data-lenis-prevent>
+        <p>Подрядчик увидит причину в кабинете и в сообщении. На сайте остаётся прежняя версия.</p>
+        <div class="rs__chips">
+          {reasons.map((x) => (
+            <label class="chip-opt">
+              <input class="chip-opt__input" type="checkbox" value={x} data-reason />
+              <span class="chip">{x}</span>
+            </label>
+          ))}
+        </div>
+        <textarea class="input" rows="4" data-reason-text placeholder="Что исправить — словами для подрядчика"></textarea>
+      </div>
+      <footer class="sheet__foot">
+        <button class="a-btn a-btn--primary a-btn--lg a-btn--block" type="button" data-act="return">Вернуть подрядчику</button>
+      </footer>
+    </section>
+  </div>
+</AdminShell>
+
+<script>
+  import { bindSheet } from '../../../../lib/sheet';
+
+  const root = document.querySelector<HTMLElement>('[data-next]');
+  const sheetEl = document.querySelector<HTMLElement>('[data-sheet="return"]');
+  const sheet = sheetEl ? bindSheet(sheetEl) : null;
+  const text = document.querySelector<HTMLTextAreaElement>('[data-reason-text]');
+
+  const diff = document.querySelector<HTMLElement>('[data-diff]');
+  document.querySelectorAll<HTMLElement>('[data-mode-btn]').forEach((b) =>
+    b.addEventListener('click', () => diff?.setAttribute('data-mode', b.dataset.modeBtn!)),
+  );
+
+  document.querySelectorAll<HTMLInputElement>('[data-reason]').forEach((cb) =>
+    cb.addEventListener('change', () => {
+      if (!text) return;
+      const picked = [...document.querySelectorAll<HTMLInputElement>('[data-reason]:checked')].map((x) => x.value);
+      text.value = picked.length ? `${picked.join('. ')}.` : '';
+    }),
+  );
+
+  const RESULT: Record<string, string> = {
+    approve: 'Одобрено — изменения на сайте через минуту',
+    ok: 'Проверено — правка остаётся на сайте',
+    rollback: 'Откатили — на сайте прежняя версия',
+    hide: 'Карточка скрыта с сайта',
+    return: 'Вернули подрядчику с причиной',
+  };
+
+  // Решение → «Отменить» 5 секунд → следующая правка
+  const toast = document.querySelector<HTMLElement>('[data-toast]');
+  let timer = 0;
+  const decide = (act: string) => {
+    if (!toast || !RESULT[act]) return;
+    if (act === 'return') sheet?.close();
+    toast.querySelector<HTMLElement>('[data-toast-text]')!.textContent = `${RESULT[act]}. Дальше — следующая правка`;
+    toast.hidden = false;
+    clearTimeout(timer);
+    timer = window.setTimeout(() => { location.href = root?.dataset.next ?? '/profi/admin/moderaciya/'; }, 5000);
+  };
+  document.querySelector('[data-undo]')?.addEventListener('click', () => { clearTimeout(timer); if (toast) toast.hidden = true; });
+  document.querySelectorAll<HTMLElement>('[data-act]').forEach((btn) => btn.addEventListener('click', () => decide(btn.dataset.act!)));
+
+  // A — главное действие, R — второе, J / K — следующая / предыдущая
+  document.addEventListener('keydown', (e) => {
+    const t = e.target as HTMLElement;
+    if (e.metaKey || e.ctrlKey || e.altKey || t.closest('input, textarea, [contenteditable]')) return;
+    const k = e.key.toLowerCase();
+    const click = (sel: string) => document.querySelector<HTMLElement>(sel)?.click();
+    if (k === 'a' || k === 'ф') click('[data-actions] .a-btn--primary');
+    else if (k === 'r' || k === 'к') click('[data-actions] .a-btn:not(.a-btn--primary)');
+    else if (k === 'j' || k === 'о') click('[data-key-next]:not(.is-off)');
+    else if (k === 'k' || k === 'л') click('[data-key-prev]:not(.is-off)');
+  });
+</script>
+
+<style>
+  .mr { display: grid; gap: var(--s-4); }
+  .mr__top { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); }
+  .mr__pos { display: flex; align-items: center; gap: var(--s-2); color: var(--adm-text-2); }
+  .mr__step { width: 36px; padding: 0; }
+  .mr__step.is-off { pointer-events: none; opacity: 0.4; }
+  :global(.mr__flip) { transform: rotate(180deg); }
+
+  .mr__head { display: flex; gap: var(--s-4); align-items: center; }
+  :global(.mr__ava) { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; flex: none; }
+  .mr__id { display: grid; gap: 4px; min-width: 0; }
+  .mr__tags { display: flex; flex-wrap: wrap; align-items: center; gap: 6px var(--s-4); margin-top: 4px; }
+  .mr__link { display: inline-flex; align-items: center; gap: 4px; color: var(--adm-link); text-decoration: none; font-weight: 500; }
+  .mr__link :global(svg) { width: 16px; height: 16px; }
+
+  .mr__side { display: grid; gap: var(--s-3); }
+  @media (min-width: 1024px) { .mr__side { position: sticky; top: calc(var(--adm-head-h) + var(--s-2)); } }
+  .mr__sum { padding: 12px 14px; border-radius: var(--adm-radius-md); background: var(--adm-bg); font-weight: 500; }
+  .mr__why { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+  .mr__bar { display: grid; gap: var(--s-2); margin-top: var(--s-2); }
+  .mr__keys { text-align: center; }
+  @media (hover: none) { .mr__keys { display: none; } }
+  @media (max-width: 1023px) {
+    .mr__bar {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+      grid-template-columns: 1fr 1fr;
+      padding: 12px var(--s-4) calc(12px + var(--safe-b, 0px));
+      background: var(--adm-card); box-shadow: 0 -1px 0 var(--adm-line);
+    }
+    .mr { padding-bottom: 76px; }
+  }
+
+  .flags { list-style: none; margin: 0; padding: 0; }
+  .flag { display: flex; gap: var(--s-3); padding-block: 12px; border-top: 1px solid var(--adm-line); }
+  .flag:first-child { border-top: 0; padding-top: 0; }
+  .flag__rule { color: #c4314b; font-weight: 500; }
+  .flag__frag { margin-top: 6px; }
+  .clean { display: flex; gap: 8px; align-items: center; }
+
+  .sec { margin-top: var(--s-5); }
+  .sec__text { margin-top: 8px; max-width: 72ch; font-size: 15px; line-height: 24px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .diff-del { background: var(--diff-del); text-decoration: line-through; text-decoration-thickness: 1px; }
+  .diff-add { background: var(--diff-add); }
+  [data-mode='before'] .diff-add, [data-mode='after'] .diff-del { display: none; }
+  [data-mode='before'] .diff-del, [data-mode='after'] .diff-add { background: none; text-decoration: none; }
+  .fold { margin-top: 8px; }
+  .fold__sum { display: inline-block; padding: 4px 10px; border-radius: 8px; background: var(--adm-bg); color: var(--adm-link); font-weight: 500; cursor: pointer; list-style: none; }
+  .fold__sum::-webkit-details-marker { display: none; }
+
+  .fl__key { font-weight: 500; white-space: nowrap; }
+  .ph { margin-top: var(--s-4); }
+  .ph:first-of-type { margin-top: 0; }
+  .ph__grid { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  @media (min-width: 1024px) { .ph__grid { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+  .ph__cell { position: relative; aspect-ratio: 4 / 5; border-radius: 10px; overflow: hidden; background: var(--adm-bg); }
+  :global(.ph__img) { width: 100%; height: 100%; object-fit: cover; }
+  .ph__cell.is-flagged { outline: 3px solid #e5484d; outline-offset: -3px; }
+  .ph__tag { position: absolute; left: 4px; bottom: 4px; padding: 1px 6px; border-radius: 6px; background: #e5484d; color: #fff; font-size: 12px; font-weight: 600; }
+
+  .rs { display: grid; gap: var(--s-4); }
+  .rs__chips { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+  .adm-sheet { font-family: var(--adm-font); }
+</style>

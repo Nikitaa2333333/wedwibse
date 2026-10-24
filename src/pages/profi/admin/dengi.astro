@@ -1,0 +1,29 @@
+---
+// ДЕНЬГИ — третий этап (STAGE2.md §1). Раздел есть в меню сразу, чтобы
+// было видно, куда растёт админка; внутри — что появится и на чём оно
+// стоит уже сейчас (журнал «Интерес» копит статистику для цены).
+import AdminShell from '../../../components/admin/AdminShell.astro';
+import { MONEY_LATER } from '../../../data/admin-demo';
+---
+
+<AdminShell title="Деньги" section="money">
+  <div class="a-title">
+    <h1 class="a-h1">Деньги</h1>
+    <span class="a-dot a-dot--warn">Третий этап</span>
+  </div>
+  <p class="a-lead">Сейчас подрядчики размещаются бесплатно. Раздел «Интерес» уже копит, сколько раз пары открывают контакты, — по этим цифрам посчитаем цену, когда включим оплату.</p>
+
+  <section class="a-grid a-grid--3">
+    {MONEY_LATER.map((m) => (
+      <article class="a-card dn">
+        <h2 class="a-h3">{m.name}</h2>
+        <p class="dn__text">{m.text}</p>
+      </article>
+    ))}
+  </section>
+</AdminShell>
+
+<style>
+  .dn { display: grid; gap: var(--s-2); align-content: start; }
+  .dn__text { color: var(--adm-text-2); }
+</style>
