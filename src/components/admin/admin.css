@@ -117,9 +117,7 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
   border-radius: var(--adm-radius);
   background: var(--adm-card);
   text-decoration: none;
-  transition: transform var(--dur-fast, 0.15s) var(--ease-out), box-shadow var(--dur-fast, 0.15s) var(--ease-out);
 }
-@media (hover: hover) { a.a-widget:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(30, 36, 46, 0.08); } }
 .a-widget__ic { display: grid; place-items: center; width: 40px; height: 40px; margin-bottom: 14px; border-radius: 12px; background: var(--adm-bg); color: var(--adm-text-2); }
 .a-widget__ic svg { width: 22px !important; height: 22px !important; }
 .a-widget__n { font-size: 36px; line-height: 40px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
