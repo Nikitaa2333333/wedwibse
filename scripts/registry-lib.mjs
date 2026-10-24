@@ -78,6 +78,13 @@ export async function fetchTab(title) {
 export const norm = (s) => String(s ?? '').toLowerCase().replace(/ё/g, 'е').replace(/[«»"']/g, '').replace(/\s+/g, ' ').trim();
 /** одно имя в таблице и на сайте пишут по-разному: «your food» / «Your Food»,
  *  «Кавер-группа WHY NOT» / «WHY NOT», «Матрешка» / «Матрёшка» */
+/** имя → адрес страницы транслитом, как у карточек: «LiRein» и «Лирейн» → lirein.
+ *  Нужен, когда в таблице и на сайте имя записано разными языками
+ *  («LiRein» / «Студия декора Лирейн»): по буквам они не совпадут, по адресу — да. */
+const TR = { а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'e', ж: 'zh', з: 'z', и: 'i', й: 'y', к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't', у: 'u', ф: 'f', х: 'h', ц: 'ts', ч: 'ch', ш: 'sh', щ: 'shch', ъ: '', ы: 'y', ь: '', э: 'e', ю: 'yu', я: 'ya' };
+export const toSlug = (s) => [...String(s ?? '').toLowerCase()].map((c) => TR[c] ?? c).join('')
+  .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
 export function sameName(a, b) {
   const x = norm(a), y = norm(b);
   return !!x && !!y && (x === y || x.includes(y) || y.includes(x));
