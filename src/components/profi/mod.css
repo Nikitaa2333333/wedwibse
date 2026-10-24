@@ -1,0 +1,181 @@
+/* ============================================================
+   МОДЕРАЦИЯ — админка WED Secrets (CABINET.md §12.5).
+   Реф. — Яндекс Метрика (Никита, 24.10.2026): серое поле, белые
+   карточки-виджеты, таблицы с подписями колонок, меню разделов слева,
+   жёлтая основная кнопка, синие ссылки, плотный мелкий кегль.
+   Ручки — токены --mod-* в global.css. Подключают страницы
+   pages/profi/moderaciya/*, рамка — components/profi/ModFrame.astro.
+   Текст везде тёмный: иерархия кеглем и весом, не серым (правило проекта).
+   ============================================================ */
+
+.profi--mod { background: var(--mod-bg); min-height: 100dvh; font-size: var(--mod-fs); }
+/* Сброс системной кнопки — нулевой вес (:where), классы ниже его перебивают */
+:where(.profi--mod) button { border: 0; background: none; padding: 0; color: inherit; font: inherit; cursor: pointer; }
+.profi--mod .pbar { border-bottom: 1px solid var(--mod-line); }
+
+/* Подпись для экранного чтеца, глазу не видна (поиск, колонка выбора) */
+.profi--mod .visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+/* ---------- рамка: меню слева + рабочая область ---------- */
+.mf { display: grid; gap: var(--s-4); padding: var(--s-4) var(--gutter) var(--s-8); }
+@media (min-width: 1024px) {
+  .mf { grid-template-columns: var(--mod-side-w) minmax(0, 1fr); gap: var(--s-6); align-items: start; }
+}
+.mf__main { display: grid; gap: var(--s-4); min-width: 0; }
+
+/* Меню: на телефоне — вкладки вбок (ход вбок здесь и задуман), на ПК —
+   колонка с подписями и счётчиками, как разделы Метрики */
+.mnav { display: flex; gap: var(--s-1); overflow-x: auto; overflow-y: clip; scrollbar-width: none; margin-inline: calc(-1 * var(--gutter)); padding-inline: var(--gutter); }
+.mnav::-webkit-scrollbar { display: none; }
+@media (min-width: 1024px) {
+  .mnav {
+    position: sticky;
+    top: 68px;
+    flex-direction: column;
+    overflow: visible;
+    margin: 0;
+    padding: var(--s-2);
+    background: var(--mod-card);
+    border-radius: var(--mod-radius);
+  }
+}
+.mnav__group { display: contents; }
+.mnav__label { display: none; }
+@media (min-width: 1024px) {
+  .mnav__label { display: block; padding: var(--s-3) var(--s-3) var(--s-1); font-size: var(--mod-fs-sm); font-weight: var(--w-medium); }
+}
+.mnav__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  flex: none;
+  padding: 8px 12px;
+  border-radius: var(--mod-radius-btn);
+  color: inherit;
+  text-decoration: none;
+  font-size: var(--mod-fs);
+  font-weight: var(--w-body);
+  white-space: nowrap;
+  background: var(--mod-card);
+}
+@media (min-width: 1024px) { .mnav__item { background: none; } }
+.mnav__item.is-active { background: var(--fg); color: var(--bg); font-weight: var(--w-medium); }
+@media (min-width: 1024px) {
+  .mnav__item.is-active { background: var(--mod-hover); color: var(--fg); box-shadow: inset 3px 0 0 var(--mod-accent); }
+}
+@media (hover: hover) { .mnav__item:not(.is-active):hover { background: var(--mod-hover); } }
+.mnav__count { font-size: var(--mod-fs-sm); font-weight: var(--w-medium); }
+
+/* ---------- шапка рабочей области: заголовок + период ---------- */
+.mhead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-3); }
+.mhead__title { font-size: 24px; line-height: 1.15; }
+.mhead__sub { width: 100%; font-size: var(--mod-fs-sm); }
+
+/* Переключатель периода — сегменты в одной рамке */
+.mseg { display: inline-flex; padding: 3px; gap: 2px; background: var(--mod-card); border: 1px solid var(--mod-line); border-radius: var(--mod-radius-btn); }
+.mseg__btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: var(--mod-fs-sm);
+  font-weight: var(--w-medium);
+  color: inherit;
+}
+.mseg__btn.is-active { background: var(--mod-accent); }
+@media (hover: hover) { .mseg__btn:not(.is-active):hover { background: var(--mod-hover); } }
+
+/* ---------- карточка-виджет ---------- */
+.mcard { background: var(--mod-card); border-radius: var(--mod-radius); padding: var(--s-4); min-width: 0; }
+.mcard--flush { padding: 0; overflow: hidden; }
+.mcard__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3); margin-bottom: var(--s-3); }
+.mcard--flush .mcard__head { padding: var(--s-4) var(--s-4) 0; }
+.mcard__title { font-size: 16px; font-weight: var(--w-head); line-height: 1.25; }
+.mcard__note { font-size: var(--mod-fs-sm); line-height: 1.4; }
+
+/* Ряд показателей: крупная цифра, подпись, строка пояснения */
+.mstats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); }
+@media (min-width: 1024px) { .mstats { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-4); } }
+.mstat { display: grid; gap: 4px; align-content: start; }
+.mstat__label { display: flex; align-items: center; gap: 6px; font-size: var(--mod-fs-sm); font-weight: var(--w-medium); }
+.mstat__num { font-size: var(--mod-fs-num); font-weight: var(--w-head-lg); line-height: 1.1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.mstat__note { font-size: var(--mod-fs-sm); line-height: 1.35; }
+
+/* Точка полосы — цвет несёт смысл (как в кабинете) */
+.mdot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--st-muted); }
+.mdot--red { background: var(--st-info); }
+.mdot--yellow { background: var(--st-warn); }
+.mdot--green { background: var(--st-ok); }
+
+/* ---------- вкладки над таблицей ---------- */
+.mtabs { display: flex; gap: var(--s-4); padding-inline: var(--s-4); border-bottom: 1px solid var(--mod-line); overflow-x: auto; overflow-y: clip; scrollbar-width: none; }
+.mtabs::-webkit-scrollbar { display: none; }
+.mtabs__btn {
+  flex: none;
+  padding: 12px 0 10px;
+  border-bottom: 2px solid transparent;
+  font-size: var(--mod-fs);
+  font-weight: var(--w-medium);
+  color: inherit;
+  white-space: nowrap;
+}
+.mtabs__btn.is-active { border-bottom-color: var(--mod-link); color: var(--mod-link); }
+
+/* ---------- таблица ---------- */
+.mtable { width: 100%; border-collapse: collapse; font-size: var(--mod-fs); }
+.mtable th {
+  padding: 10px var(--s-4);
+  text-align: left;
+  font-size: var(--mod-fs-sm);
+  font-weight: var(--w-medium);
+  white-space: nowrap;
+  border-bottom: 1px solid var(--mod-line);
+}
+.mtable td { padding: 12px var(--s-4); vertical-align: middle; border-bottom: 1px solid var(--mod-line); line-height: 1.4; }
+.mtable tbody tr:last-child td { border-bottom: 0; }
+.mtable tbody tr { cursor: pointer; }
+@media (hover: hover) { .mtable tbody tr:hover td { background: var(--mod-hover); } }
+.mtable__num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* На телефоне таблица — строками-карточками: подписи колонок не нужны */
+@media (max-width: 1023px) {
+  .mtable thead { display: none; }
+  .mtable, .mtable tbody, .mtable tr, .mtable td { display: block; }
+  .mtable tr { padding: var(--s-3) var(--s-4); border-bottom: 1px solid var(--mod-line); }
+  .mtable tbody tr:last-child { border-bottom: 0; }
+  .mtable td { padding: 2px 0; border: 0; }
+  .mtable__num { text-align: left; }
+}
+
+/* ---------- ссылки и кнопки ---------- */
+.mlink { color: var(--mod-link); text-decoration: none; font-weight: var(--w-medium); }
+@media (hover: hover) { .mlink:hover { text-decoration: underline; text-underline-offset: 3px; } }
+
+.mbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  min-height: 40px;
+  padding: 8px 18px;
+  border-radius: var(--mod-radius-btn);
+  border: 1px solid var(--mod-line);
+  background: var(--mod-card);
+  color: var(--fg);
+  font-size: var(--mod-fs);
+  font-weight: var(--w-medium);
+  text-decoration: none;
+  transition: background var(--dur-fast, 0.15s) var(--ease-out);
+}
+@media (hover: hover) { .mbtn:hover { background: var(--mod-hover); } }
+.mbtn--primary { background: var(--mod-accent); border-color: var(--mod-accent); }
+@media (hover: hover) { .mbtn--primary:hover { background: var(--mod-accent-hover); } }
+.mbtn--block { width: 100%; }
+.mbtn--danger { color: var(--st-bad-text); border-color: transparent; background: none; }

@@ -1,0 +1,517 @@
+---
+// РАЗБОР ПРАВКИ — прототип экрана «что поменялось» (CABINET.md §12.5).
+// Приёмы лучших рабочих админок (Никита, 24.10.2026; разбор — CABINET-UX.md §5):
+// - Метрика: белые карточки на сером поле, меню разделов слева;
+// - Zendesk: решение — карточкой справа, всегда под рукой (на телефоне — внизу);
+// - GitHub: текст в трёх видах «Изменения / Было / Стало»;
+// - Linear, Gmail: горячие клавиши, после решения — сразу следующая правка,
+//   вместо «Вы уверены?» — 5 секунд на «Отменить».
+// Кнопки в прототипе только меняют экран — вживую это запросы к базе
+// (одобрение переносит ревизию в карточку одной транзакцией).
+import { Image } from 'astro:assets';
+import BackButton from '../../../components/BackButton.astro';
+import Glyph from '../../../components/profi/Glyph.astro';
+import Icon from '../../../components/Icon.astro';
+import ModFrame from '../../../components/profi/ModFrame.astro';
+import ProfiShell from '../../../components/profi/ProfiShell.astro';
+import { resolveImage, IMG_WIDTHS } from '../../../lib/images';
+import { buildReview, plural } from '../../../lib/moderation';
+import { LANE, QUEUE } from '../../../data/moderation-demo';
+
+export function getStaticPaths() {
+  return QUEUE.map((rev, i) => ({
+    params: { id: rev.id },
+    props: { rev, prev: QUEUE[i - 1]?.id, next: QUEUE[i + 1]?.id, pos: i + 1 },
+  }));
+}
+
+const { rev, prev, next, pos } = Astro.props;
+const r = buildReview(rev);
+const lane = LANE[rev.lane];
+const waits = rev.lane === 'red';
+const flagged = new Set(rev.flags.map((f) => f.photo).filter(Boolean));
+const pct = r.share.total ? Math.round((r.share.changed / r.share.total) * 100) : 0;
+const rub = (n?: number) => (n ? `${n.toLocaleString('ru-RU')} ₽` : 'пусто');
+const href = (id?: string) => (id ? `/profi/moderaciya/${id}/` : '/profi/moderaciya/');
+
+const photoGroups = [
+  { title: rev.first ? 'Все фото' : 'Добавлены', list: r.photos.added },
+  { title: 'Новая обложка и порядок', list: r.photos.moved },
+  { title: 'Удалены', list: r.photos.removed },
+].filter((g) => g.list.length);
+
+// Неизменённые абзацы подряд (от двух) сворачиваются; у первой публикации
+// сворачивать нечего — весь текст новый и читается целиком
+type Para = (typeof r.sections)[number]['paras'][number];
+const runs = (paras: Para[]) => {
+  const out: { fold: boolean; paras: Para[] }[] = [];
+  for (const p of paras) {
+    const fold = !rev.first && !p.changed;
+    const last = out[out.length - 1];
+    if (last && last.fold === fold) last.paras.push(p);
+    else out.push({ fold, paras: [p] });
+  }
+  return out.map((run) => (run.fold && run.paras.length < 2 ? { ...run, fold: false } : run));
+};
+
+// Быстрые причины возврата: сначала то, на что сработала автопроверка
+const reasons = [
+  ...rev.flags.map((f) => (f.photo ? 'Чужое фото в галерее' : 'Контакты в тексте')),
+  'Мало фото или мелкие кадры',
+  'Текст не о свадьбе',
+].filter((x, i, a) => a.indexOf(x) === i);
+---
+
+<ProfiShell title={`Правка: ${r.card.name}`} look="mod">
+  <ModFrame active={rev.lane}>
+    <div class="mr" data-next={href(next)}>
+      <nav class="mr__top">
+        <BackButton plain href="/profi/moderaciya/" label="К очереди" />
+        <span class="mr__pos">
+          {pos} из {QUEUE.length}
+          <a class:list={['mr__step', { 'is-off': !prev }]} href={href(prev)} aria-label="Предыдущая правка" data-key-prev><Glyph name="chevronLeft" /></a>
+          <a class:list={['mr__step', { 'is-off': !next }]} href={href(next)} aria-label="Следующая правка" data-key-next><Glyph name="chevronRight" /></a>
+        </span>
+      </nav>
+
+      <header class="mcard mr__head">
+        <div class="mr__who">
+          {r.photos.after[0] && (
+            <Image src={resolveImage(r.photos.after[0])} alt="" widths={[...IMG_WIDTHS.thumb]} sizes="56px" class="mr__ava" />
+          )}
+          <div class="mr__id">
+            <h1 class="mhead__title">{r.card.name}</h1>
+            <p class="mcard__note">{r.role} · {rev.first ? 'первая публикация' : 'правка карточки'} · {rev.submitted}</p>
+          </div>
+        </div>
+        <div class="mr__tags">
+          <span class={`status ${lane.status}`}>{lane.label}</span>
+          {rev.waiting && <span class="mr__wait">ждёт {rev.waiting} из 24 ч</span>}
+          <a class="mlink" href={r.url} target="_blank" rel="noopener">{rev.first ? 'Как выглядит на сайте' : 'Карточка на сайте'}</a>
+        </div>
+      </header>
+
+      <div class="mr__grid">
+        <aside class="mr__side">
+          <section class="mcard mr__decide">
+            <h2 class="mcard__title">Решение</h2>
+            <p class="mr__sum">{r.summary}</p>
+            <ul class="mr__why">
+              {rev.why.map((w) => <li>{w}</li>)}
+            </ul>
+            <p class="mcard__note">{rev.trust}</p>
+            <p class="mcard__note">{lane.note}.</p>
+
+            <div class="mr__bar" data-actions>
+              {waits ? (
+                <>
+                  <button class="mbtn mbtn--primary mbtn--block" type="button" data-act="approve">Одобрить <kbd>A</kbd></button>
+                  <button class="mbtn mbtn--block" type="button" data-sheet-open="return" data-key-return>Вернуть с причиной <kbd>R</kbd></button>
+                </>
+              ) : (
+                <>
+                  <button class="mbtn mbtn--primary mbtn--block" type="button" data-act="ok">Всё верно <kbd>A</kbd></button>
+                  <button class="mbtn mbtn--block" type="button" data-act="rollback">Откатить <kbd>R</kbd></button>
+                </>
+              )}
+            </div>
+            {!rev.first && <button class="mbtn mbtn--danger mbtn--block" type="button" data-act="hide">Скрыть карточку с сайта</button>}
+            <p class="mr__keys">J / K — следующая и предыдущая</p>
+          </section>
+        </aside>
+
+        <div class="mr__body">
+          <section class="mcard">
+            <div class="mcard__head">
+              <h2 class="mcard__title">Автопроверка</h2>
+              <span class="mcard__note">{rev.flags.length ? `${rev.flags.length} ${plural(rev.flags.length, 'флажок', 'флажка', 'флажков')}` : 'чисто'}</span>
+            </div>
+            {rev.flags.length ? (
+              <ul class="flags">
+                {rev.flags.map((f) => (
+                  <li class="flag">
+                    {f.photo && (
+                      <Image src={resolveImage(f.photo)} alt="" widths={[...IMG_WIDTHS.thumb]} sizes="48px" class="flag__img" />
+                    )}
+                    <span class="flag__body">
+                      <span class="flag__rule">{f.rule}</span>
+                      <span class="flag__where">{f.where}</span>
+                      {f.fragment && <span class="flag__frag"><span class="diff-del">{f.fragment}</span></span>}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p class="clean"><Glyph name="check" /> Контактов, мата, капса и чужих фото не нашла</p>
+            )}
+          </section>
+
+          {r.sections.length > 0 && (
+            <section class="mcard" data-diff data-mode="diff">
+              <div class="mcard__head">
+                <h2 class="mcard__title">Текст</h2>
+                {!rev.first && (
+                  <div class="mseg" role="group" aria-label="Вид текста">
+                    <button class="mseg__btn is-active" type="button" data-mode-btn="diff">Изменения</button>
+                    <button class="mseg__btn" type="button" data-mode-btn="before">Было</button>
+                    <button class="mseg__btn" type="button" data-mode-btn="after">Стало</button>
+                  </div>
+                )}
+              </div>
+              <p class="mcard__note">
+                {rev.first
+                  ? `${r.sections.length} ${plural(r.sections.length, 'раздел', 'раздела', 'разделов')}, текст целиком`
+                  : `Изменено ${r.share.changed} ${plural(r.share.changed, 'слово', 'слова', 'слов')} из ${r.share.total} (${pct} %)${r.same ? ` · без изменений ещё ${r.same} ${plural(r.same, 'раздел', 'раздела', 'разделов')}` : ''}`}
+              </p>
+              {r.sections.map((s) => (
+                <article class="sec">
+                  <h3 class="sec__name">{s.name}</h3>
+                  {runs(s.paras).map((run) =>
+                    run.fold ? (
+                      <details class="fold">
+                        <summary class="fold__sum">Без изменений: {run.paras.length} {plural(run.paras.length, 'абзац', 'абзаца', 'абзацев')}</summary>
+                        {run.paras.map((p) => <p class="sec__text">{p.parts.map((x) => x.text)}</p>)}
+                      </details>
+                    ) : (
+                      run.paras.map((p) => (
+                        <p class="sec__text">
+                          {p.parts.map((x) =>
+                            rev.first || x.kind === 'same' ? x.text : <span class={`diff-${x.kind}`}>{x.text}</span>,
+                          )}
+                        </p>
+                      ))
+                    ),
+                  )}
+                </article>
+              ))}
+            </section>
+          )}
+
+          {(r.price || r.filters.length > 0) && (
+            <section class="mcard mcard--flush">
+              <div class="mcard__head">
+                <h2 class="mcard__title">Цена и фильтры</h2>
+                <span class="mcard__note">{rev.first ? 'как заполнил подрядчик' : 'только изменившиеся'}</span>
+              </div>
+              <table class="mtable mtable--static">
+                <thead>
+                  <tr><th>Поле</th>{!rev.first && <th>Было</th>}<th>{rev.first ? 'Значение' : 'Стало'}</th></tr>
+                </thead>
+                <tbody>
+                  {r.price && (
+                    <tr>
+                      <td class="fl__key">Цена от</td>
+                      {!rev.first && <td data-l="Было: "><span class="diff-del">{rub(r.price.before)}</span></td>}
+                      <td data-l={rev.first ? '' : 'Стало: '}><span class:list={{ 'diff-add': !rev.first }}>{rub(r.price.after)}</span></td>
+                    </tr>
+                  )}
+                  {r.filters.map((f) => (
+                    <tr>
+                      <td class="fl__key">{f.label}</td>
+                      {!rev.first && <td data-l="Было: "><span class="diff-del">{f.before}</span></td>}
+                      <td data-l={rev.first ? '' : 'Стало: '}><span class:list={{ 'diff-add': !rev.first }}>{f.after}</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+          )}
+
+          {photoGroups.length > 0 && (
+            <section class="mcard">
+              <div class="mcard__head">
+                <h2 class="mcard__title">Фото</h2>
+                <span class="mcard__note">на карточке после правки: {r.photos.after.length} из 50</span>
+              </div>
+              {photoGroups.map((g) => (
+                <div class="ph">
+                  <h3 class="ph__title">{g.title} <span>{g.list.length}</span></h3>
+                  <ul class="ph__grid">
+                    {g.list.map((src) => (
+                      <li class:list={['ph__cell', { 'is-flagged': flagged.has(src) }]}>
+                        <Image src={resolveImage(src)} alt="" widths={[...IMG_WIDTHS.thumb]} sizes="(min-width: 1024px) 110px, 23vw" class="ph__img" loading="lazy" />
+                        {flagged.has(src) && <span class="ph__tag">Чужое</span>}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </section>
+          )}
+        </div>
+      </div>
+    </div>
+  </ModFrame>
+
+  <div class="mtoast" data-toast hidden role="status">
+    <span class={`status`} data-toast-status></span>
+    <span class="mtoast__text" data-toast-text></span>
+    <button class="mtoast__undo" type="button" data-undo>Отменить</button>
+  </div>
+
+  <div class="sheet" data-sheet="return">
+    <div class="sheet__backdrop" data-sheet-close></div>
+    <section class="sheet__panel" role="dialog" aria-modal="true" aria-labelledby="return-title">
+      <header class="sheet__head">
+        <h2 class="sheet__title" id="return-title">Вернуть с причиной</h2>
+        <button class="icon-btn" type="button" data-sheet-close aria-label="Закрыть">
+          <Icon name="close" />
+        </button>
+      </header>
+      <div class="sheet__body rs" data-sheet-body data-lenis-prevent>
+        <p class="rs__hint">Подрядчик увидит причину в кабинете и в сообщении. На сайте остаётся прежняя версия.</p>
+        <div class="rs__chips">
+          {reasons.map((x) => (
+            <label class="chip-opt">
+              <input class="chip-opt__input" type="checkbox" value={x} data-reason />
+              <span class="chip">{x}</span>
+            </label>
+          ))}
+        </div>
+        <textarea class="input" rows="4" data-reason-text placeholder="Что исправить — словами для подрядчика"></textarea>
+      </div>
+      <footer class="sheet__foot">
+        <button class="mbtn mbtn--primary mbtn--block" type="button" data-act="return">Вернуть подрядчику</button>
+      </footer>
+    </section>
+  </div>
+</ProfiShell>
+
+<script>
+  // ПРОТОТИП: решения только меняют экран. Вживую — запросы к базе
+  // (`/api/wed/moderate`), подрядчику уходит сообщение и письмо.
+  import { bindSheet } from '../../../lib/sheet';
+
+  const root = document.querySelector<HTMLElement>('[data-next]');
+  const sheetEl = document.querySelector<HTMLElement>('[data-sheet="return"]');
+  const sheet = sheetEl ? bindSheet(sheetEl) : null;
+  const text = document.querySelector<HTMLTextAreaElement>('[data-reason-text]');
+
+  // Текст: «Изменения / Было / Стало» — один и тот же разбор, разный показ (CSS)
+  const diff = document.querySelector<HTMLElement>('[data-diff]');
+  document.querySelectorAll<HTMLElement>('[data-mode-btn]').forEach((b, _, all) =>
+    b.addEventListener('click', () => {
+      diff?.setAttribute('data-mode', b.dataset.modeBtn!);
+      all.forEach((x) => x.classList.toggle('is-active', x === b));
+    }),
+  );
+
+  // Быстрые причины собираются в поле — модератор дописывает словами
+  document.querySelectorAll<HTMLInputElement>('[data-reason]').forEach((cb) =>
+    cb.addEventListener('change', () => {
+      if (!text) return;
+      const picked = [...document.querySelectorAll<HTMLInputElement>('[data-reason]:checked')].map((x) => x.value);
+      text.value = picked.length ? `${picked.join('. ')}.` : '';
+    }),
+  );
+
+  const RESULT: Record<string, [string, string]> = {
+    approve: ['status--ok', 'Одобрено — изменения на сайте через минуту'],
+    ok: ['status--ok', 'Проверено — правка остаётся на сайте'],
+    rollback: ['status--bad', 'Откатили — на сайте прежняя версия'],
+    hide: ['status--bad', 'Карточка скрыта с сайта'],
+    return: ['status--bad', 'Вернули подрядчику с причиной'],
+  };
+
+  // Решение → тост с «Отменить» на 5 секунд → следующая правка (Gmail, Linear)
+  const toast = document.querySelector<HTMLElement>('[data-toast]');
+  let timer = 0;
+  const decide = (act: string) => {
+    if (!toast || !RESULT[act]) return;
+    if (act === 'return') sheet?.close();
+    const [cls, label] = RESULT[act];
+    const st = toast.querySelector<HTMLElement>('[data-toast-status]')!;
+    st.className = `status ${cls}`;
+    st.textContent = 'Готово';
+    toast.querySelector<HTMLElement>('[data-toast-text]')!.textContent = `${label}. Дальше — следующая правка`;
+    toast.hidden = false;
+    clearTimeout(timer);
+    timer = window.setTimeout(() => { location.href = root?.dataset.next ?? '/profi/moderaciya/'; }, 5000);
+  };
+  document.querySelector('[data-undo]')?.addEventListener('click', () => {
+    clearTimeout(timer);
+    if (toast) toast.hidden = true;
+  });
+  document.querySelectorAll<HTMLElement>('[data-act]').forEach((btn) =>
+    btn.addEventListener('click', () => decide(btn.dataset.act!)),
+  );
+
+  // Горячие клавиши: A — главное действие, R — второе, J / K — следующая / предыдущая
+  document.addEventListener('keydown', (e) => {
+    const t = e.target as HTMLElement;
+    if (e.metaKey || e.ctrlKey || e.altKey || t.closest('input, textarea, [contenteditable]')) return;
+    const k = e.key.toLowerCase();
+    const click = (sel: string) => document.querySelector<HTMLElement>(sel)?.click();
+    if (k === 'a' || k === 'ф') click('[data-actions] .mbtn--primary');
+    else if (k === 'r' || k === 'к') click('[data-actions] .mbtn:not(.mbtn--primary)');
+    else if (k === 'j' || k === 'о') click('[data-key-next]:not(.is-off)');
+    else if (k === 'k' || k === 'л') click('[data-key-prev]:not(.is-off)');
+  });
+</script>
+
+<style>
+  .mr { display: grid; gap: var(--s-4); }
+
+  .mr__top { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); }
+  .mr__pos { display: flex; align-items: center; gap: var(--s-1); font-size: var(--mod-fs-sm); font-weight: var(--w-medium); }
+  .mr__step {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--mod-radius-btn);
+    background: var(--mod-card);
+    color: inherit;
+  }
+  .mr__step.is-off { pointer-events: none; opacity: 0.35; }
+
+  .mr__head { display: grid; gap: var(--s-3); }
+  .mr__who { display: flex; align-items: center; gap: var(--s-3); min-width: 0; }
+  :global(.mr__ava) { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; flex: none; }
+  .mr__id { display: grid; gap: 4px; min-width: 0; }
+  .mr__tags { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); font-size: var(--mod-fs-sm); }
+  .mr__wait { font-weight: var(--w-medium); }
+
+  /* ПК: тело слева, решение справа и не уезжает при прокрутке (Zendesk) */
+  .mr__grid { display: grid; gap: var(--s-4); }
+  .mr__body { display: grid; gap: var(--s-4); min-width: 0; }
+  @media (min-width: 1200px) {
+    .mr__grid { grid-template-columns: minmax(0, 1fr) 320px; align-items: start; }
+    .mr__side { order: 2; position: sticky; top: 68px; }
+  }
+
+  .mr__decide { display: grid; gap: var(--s-3); }
+  .mr__sum { padding: var(--s-3); background: var(--mod-bg); border-radius: var(--mod-radius-btn); font-weight: var(--w-medium); line-height: 1.45; }
+  .mr__why { list-style: none; display: grid; gap: 6px; }
+  .mr__why li { position: relative; padding-left: var(--bullet-indent); line-height: 1.4; }
+  .mr__why li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.6em;
+    width: var(--bullet-size);
+    height: var(--bullet-size);
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .mr__bar { display: grid; gap: var(--s-2); }
+  .mr__keys { font-size: var(--mod-fs-sm); }
+  kbd {
+    padding: 1px 6px;
+    border: 1px solid currentColor;
+    border-radius: 4px;
+    font: inherit;
+    font-size: 11px;
+    line-height: 1.4;
+  }
+  /* Телефона без клавиатуры подсказки не касаются */
+  @media (hover: none) { kbd, .mr__keys { display: none; } }
+
+  /* На телефоне решение — полосой внизу экрана, разбор листается под ней */
+  @media (max-width: 1199px) {
+    .mr__side { order: 2; }
+    .mr__bar {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: var(--z-nav);
+      grid-template-columns: 1fr 1fr;
+      padding: var(--s-3) var(--gutter) calc(var(--s-3) + var(--safe-b, 0px));
+      background: var(--mod-card);
+      border-top: 1px solid var(--mod-line);
+    }
+    .mr { padding-bottom: 80px; }
+  }
+
+  .flags { list-style: none; border-top: 1px solid var(--mod-line); }
+  .flag { display: flex; gap: var(--s-3); align-items: flex-start; padding-block: var(--s-3); border-bottom: 1px solid var(--mod-line); }
+  .flag:last-child { border-bottom: 0; padding-bottom: 0; }
+  :global(.flag__img) { width: 48px; height: 60px; object-fit: cover; border-radius: 6px; flex: none; }
+  .flag__body { display: grid; gap: 2px; min-width: 0; }
+  .flag__rule { font-weight: var(--w-medium); color: var(--st-bad-text); }
+  .flag__where { font-size: var(--mod-fs-sm); line-height: 1.4; }
+  .flag__frag { margin-top: 4px; overflow-wrap: anywhere; }
+  .clean { display: flex; gap: var(--s-2); align-items: center; }
+
+  .sec { margin-top: var(--s-4); }
+  .sec__name { font-size: var(--mod-fs); font-weight: var(--w-head); }
+  .sec__text { margin-top: 6px; max-width: var(--measure-text); line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .sec__text + .sec__text { margin-top: var(--s-3); }
+
+  .fold { margin-top: var(--s-2); }
+  .fold__sum {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: var(--mod-bg);
+    color: var(--mod-link);
+    font-size: var(--mod-fs-sm);
+    font-weight: var(--w-medium);
+    cursor: pointer;
+    list-style: none;
+  }
+  .fold__sum::-webkit-details-marker { display: none; }
+  .fold[open] .fold__sum { margin-bottom: var(--s-1); }
+
+  .diff-del { background: var(--diff-del); text-decoration: line-through; text-decoration-thickness: 1px; }
+  .diff-add { background: var(--diff-add); }
+  /* «Было» — без добавленного, удалённое обычным текстом; «Стало» — наоборот */
+  [data-mode='before'] .diff-add,
+  [data-mode='after'] .diff-del { display: none; }
+  [data-mode='before'] .diff-del,
+  [data-mode='after'] .diff-add { background: none; text-decoration: none; }
+
+  .mtable--static tbody tr { cursor: default; }
+  @media (hover: hover) { .mtable--static tbody tr:hover td { background: none; } }
+  .fl__key { font-weight: var(--w-medium); white-space: nowrap; }
+  @media (max-width: 1023px) {
+    .mtable--static td:not(.fl__key)::before { content: attr(data-l); }
+  }
+
+  .ph { margin-top: var(--s-3); }
+  .ph__title { display: flex; gap: var(--s-2); font-size: var(--mod-fs); font-weight: var(--w-head); }
+  .ph__grid { list-style: none; margin-top: var(--s-2); display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  @media (min-width: 1024px) { .ph__grid { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+  .ph__cell { position: relative; aspect-ratio: 4 / 5; border-radius: 6px; overflow: hidden; background: var(--surface-dim); }
+  :global(.ph__img) { width: 100%; height: 100%; object-fit: cover; }
+  .ph__cell.is-flagged { outline: 3px solid var(--st-bad); outline-offset: -3px; }
+  .ph__tag {
+    position: absolute;
+    left: 4px;
+    bottom: 4px;
+    padding: 1px 6px;
+    border-radius: var(--radius-status);
+    background: var(--st-bad);
+    color: var(--st-bad-fg);
+    font-size: 12px;
+    font-weight: var(--w-medium);
+  }
+
+  /* Тост решения — снизу по центру, над полосой кнопок телефона */
+  .mtoast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(96px + var(--safe-b, 0px));
+    z-index: calc(var(--z-nav) + 1);
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    width: max-content;
+    max-width: calc(100vw - 2 * var(--gutter));
+    padding: 10px 12px 10px 14px;
+    border-radius: var(--mod-radius);
+    background: var(--fg);
+    color: var(--bg);
+    font-size: var(--mod-fs);
+  }
+  @media (min-width: 1200px) { .mtoast { bottom: var(--s-6); } }
+  .mtoast[hidden] { display: none; }
+  .mtoast__text { min-width: 0; }
+  .mtoast__undo { flex: none; color: var(--mod-accent); font-weight: var(--w-medium); }
+
+  .rs { display: grid; gap: var(--s-4); }
+  .rs__hint { line-height: 1.4; }
+  .rs__chips { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+</style>
