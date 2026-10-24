@@ -121,8 +121,8 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
 .a-widget__ic { display: grid; place-items: center; width: 40px; height: 40px; margin-bottom: 14px; border-radius: 12px; background: var(--adm-bg); color: var(--adm-text-2); }
 .a-widget__ic svg { width: 22px !important; height: 22px !important; }
 .a-widget__n { font-size: 36px; line-height: 40px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
-.a-widget__label { font-weight: 500; line-height: 18px; }
-.a-widget__note { font-size: var(--adm-fs-sm); line-height: 16px; color: var(--adm-text-2); }
+.a-widget__label { font-size: 16px; font-weight: 600; line-height: 22px; }
+.a-widget__note { font-size: 14px; line-height: 20px; color: var(--adm-text-2); }
 .a-widget--blue .a-widget__ic { background: #e8efff; color: var(--adm-primary); }
 .a-widget--orange .a-widget__ic { background: #fff1dc; color: #e07b00; }
 .a-widget--violet .a-widget__ic { background: #f0eaff; color: #7b4dff; }
