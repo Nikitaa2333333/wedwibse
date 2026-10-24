@@ -1,90 +1,54 @@
 ---
-// «ИНТЕРЕС» — раздел меню кабинета, прототип. Что пары делают с карточкой:
-// просмотры, избранное, открытия контактов (журнал второго этапа, без денег;
-// сама заявка подрядчику — третий этап, STAGE2.md §1). Данные — ЗАГЛУШКА.
+// «ИНТЕРЕС» — раздел меню кабинета. Что пары делают с карточкой: просмотры,
+// избранное, открытия контактов (журнал второго этапа, без денег — STAGE2.md
+// §1). Только честные цифры с источником: пока подсчёт не подключён,
+// строка говорит «нет данных», выдуманных чисел и графиков нет (Никита,
+// 24.10.2026). Вживую значения придут из базы и API Метрики.
 import ProfiShell from '../../../components/profi/ProfiShell.astro';
-import { DEMO_INTEREST } from '../../../data/profi-demo';
-
-const peak = Math.max(...DEMO_INTEREST.views);
+import { INTEREST_METRICS } from '../../../data/profi-demo';
 ---
 
 <ProfiShell title="Интерес" section="interest">
   <main class="container ir">
     <h1 class="t-h1">Интерес</h1>
-    <p class="ir__sub">{DEMO_INTEREST.period}, по всем карточкам</p>
+    <p class="ir__sub">Что пары делают с вашими карточками. Считаем с момента, когда карточка опубликована через кабинет.</p>
 
-    <dl class="ir__totals">
-      {DEMO_INTEREST.totals.map((t) => (
-        <div class="ir__total">
-          <dt class="ir__num">{t.value}</dt>
-          <dd class="ir__label">{t.label}</dd>
-        </div>
-      ))}
-    </dl>
-
-    <section class="ir__chart" aria-label="Просмотры карточки по дням">
-      <div class="ir__chart-head">
-        <h2 class="ir__h2">Просмотры по дням</h2>
-        <span class="status status--ok">пик {peak}</span>
-      </div>
-      <div class="ir__bars" role="img" aria-label={`Просмотры за 30 дней, пик ${peak}`}>
-        {DEMO_INTEREST.views.map((v, i) => (
-          <span class={`ir__bar${i === DEMO_INTEREST.views.length - 1 ? ' ir__bar--now' : ''}`} style={`--h:${Math.round((v / peak) * 100)}%`}></span>
-        ))}
-      </div>
-      <div class="ir__axis"><span>30 дней назад</span><span>сегодня</span></div>
-    </section>
-
-    <h2 class="t-h2 ir__h">Последние</h2>
-    <ul class="ir__log">
-      {DEMO_INTEREST.log.map((e) => (
+    <ul class="ir__list">
+      {INTEREST_METRICS.map((m) => (
         <li class="ir__row">
-          <span class="ir__when">{e.when} · {e.card}</span>
-          <span class="ir__what">{e.what}</span>
-          {e.note && <span class="ir__note">{e.note}</span>}
+          <span class="ir__label">{m.label}</span>
+          <span class="ir__source">{m.source}</span>
+          {m.value === null
+            ? <span class="status ir__value">нет данных</span>
+            : <span class="ir__num ir__value">{m.value.toLocaleString('ru-RU')}</span>}
         </li>
       ))}
     </ul>
+
+    <h2 class="t-h2 ir__h">События</h2>
+    <p class="ir__empty">Пока событий нет. Когда пара сохранит карточку или откроет контакты, это появится здесь — с датой и карточкой.</p>
   </main>
 </ProfiShell>
 
 <style>
   .ir { max-width: 720px; padding-top: var(--s-4); }
-  .ir__sub { margin-top: var(--s-2); font-size: var(--fs-small); }
+  .ir__sub { margin-top: var(--s-2); font-size: var(--fs-small); max-width: var(--measure-text); }
 
-  .ir__totals {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: var(--s-2);
-    margin-top: var(--s-6);
-  }
-  .ir__total {
-    padding: var(--s-4) var(--s-3);
-    background: var(--surface);
-    border-radius: var(--radius-card);
-  }
-  .ir__num { font-size: var(--fs-h3); font-weight: var(--w-head-lg); line-height: var(--lh-heading); }
-  .ir__label { margin-top: var(--s-1); font-size: var(--fs-caption); line-height: var(--lh-caption); }
-
-  .ir__chart { margin-top: var(--s-5); display: grid; gap: var(--s-3); }
-  .ir__chart-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); }
-  .ir__h2 { font-family: var(--font-sans); font-size: var(--fs-body); font-weight: var(--w-head-lg); }
-  /* Столбцы без библиотеки: высота каждого — доля от пика, сегодняшний зелёный. */
-  .ir__bars { display: flex; align-items: flex-end; gap: 3px; height: 120px; }
-  .ir__bar { flex: 1; height: var(--h); min-height: 4px; background: var(--st-info); border-radius: 3px 3px 0 0; }
-  .ir__bar--now { background: var(--st-ok); }
-  .ir__axis { display: flex; justify-content: space-between; font-size: var(--fs-caption); color: var(--text-2); }
-
-  .ir__h { margin-top: var(--s-6); }
-  .ir__log { list-style: none; display: grid; gap: var(--s-2); margin-top: var(--s-4); }
+  /* Строки с линиями — в кабинете можно (CLAUDE.md, «Кабинет — это не сайт») */
+  .ir__list { list-style: none; margin-top: var(--s-5); border-top: 1px solid var(--hairline); }
   .ir__row {
     display: grid;
-    gap: var(--s-1);
-    padding: var(--s-4);
-    background: var(--surface);
-    border-radius: var(--radius-card);
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--s-1) var(--s-4);
+    align-items: center;
+    padding-block: var(--s-4);
+    border-bottom: 1px solid var(--hairline);
   }
-  .ir__when { font-size: var(--fs-caption); }
-  .ir__what { font-weight: var(--w-head); }
-  .ir__note { font-size: var(--fs-small); }
+  .ir__label { font-weight: var(--w-head); }
+  .ir__source { grid-column: 1; font-size: var(--fs-caption); line-height: var(--lh-snug); color: var(--text-2); }
+  .ir__value { grid-column: 2; grid-row: 1 / span 2; }
+  .ir__num { font-size: var(--fs-h3); font-weight: var(--w-head-lg); }
+
+  .ir__h { margin-top: var(--s-6); }
+  .ir__empty { margin-top: var(--s-3); font-size: var(--fs-small); max-width: var(--measure-text); }
 </style>

@@ -5,23 +5,22 @@ import AdminShell from '../../../components/admin/AdminShell.astro';
 import { cardByKey } from '../../../lib/admin-catalog';
 import { COMPLAINTS, COMPLAINT_STATUS } from '../../../data/admin-demo';
 
-const DOT = { new: 'info', checked: 'ok', rejected: '' } as const;
+const DOT = { new: 'bad', checked: 'ok', rejected: '' } as const;
 ---
 
 <AdminShell title="Жалобы" section="complaints">
-  <nav class="a-tabs" aria-label="Статус жалобы">
-    <a class="a-tabs__item is-active" href="#" data-filter-tab="cp" data-value="all">Все <span class="a-tabs__n">{COMPLAINTS.length}</span></a>
-    {(['new', 'checked', 'rejected'] as const).map((s) => (
-      <a class="a-tabs__item" href="#" data-filter-tab="cp" data-value={s}>{COMPLAINT_STATUS[s].label} <span class="a-tabs__n">{COMPLAINTS.filter((c) => c.status === s).length}</span></a>
-    ))}
-  </nav>
-
   <div class="a-title">
     <h1 class="a-h1">Жалобы на карточки</h1>
     <p class="a-lead">Жалоба сама карточку не скрывает. Разбираем, при необходимости скрываем карточку и пишем подрядчику.</p>
   </div>
 
   <section class="a-card a-card--flush">
+  <nav class="a-tabs" aria-label="Статус жалобы">
+      <a class="a-tabs__item is-active" href="#" data-filter-tab="cp" data-value="all">Все <span class="a-tabs__n">{COMPLAINTS.length}</span></a>
+      {(['new', 'checked', 'rejected'] as const).map((s) => (
+        <a class="a-tabs__item" href="#" data-filter-tab="cp" data-value={s}>{COMPLAINT_STATUS[s].label} <span class:list={['a-tabs__n', { 'a-tabs__n--bad': s === 'new' }]}>{COMPLAINTS.filter((c) => c.status === s).length}</span></a>
+      ))}
+    </nav>
     <div class="a-table-wrap">
       <table class="a-table a-table--cards" id="cp" data-atable>
         <thead>
@@ -42,7 +41,7 @@ const DOT = { new: 'info', checked: 'ok', rejected: '' } as const;
                 <td>
                   {card ? <a class="a-name" href={card.url} target="_blank" rel="noopener">{card.name}</a> : '—'}
                   <span class="a-sub">{card?.category} · {c.at}</span>
-                  <span class="a-sublinks"><a href={card?.url} target="_blank" rel="noopener">Открыть карточку</a><a href="/profi/admin/katalog/">Скрыть</a></span>
+                  
                 </td>
                 <td class="cp__reason">{c.reason}</td>
                 <td data-l="От кого">{c.from}</td>

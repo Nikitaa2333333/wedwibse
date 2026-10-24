@@ -1,19 +1,23 @@
 ---
-// Оболочка админки WED Secrets (/profi/admin/) — устройство Яндекс Метрики:
-// шапка (знак, выбранный объект, помощь, уведомления, профиль), левое меню
-// группами с тонкими значками и счётчиками, рабочая область на сером поле.
-// На телефоне меню выезжает по кнопке слева. ПРОТОТИП: данные — заглушки
-// (data/admin-demo.ts, moderation-demo.ts) и настоящие карточки каталога.
+// Оболочка админки WED Secrets (/profi/admin/) — устройство Яндекс Директа
+// и Метрики: шапка, левое меню текстом (значков нет, как в Директе) со
+// счётчиками того, что ждёт действия, рабочая область на сером поле.
+// Значки — Solar Bold Duotone (AdminIcon). Карточки — настоящие, заявки,
+// правки и жалобы — примеры до подключения базы (помечено в данных).
+// Переходы между разделами без перезагрузки — ClientRouter Astro: страница
+// не мигает, ссылки меню подгружаются заранее. Поэтому скрипты страниц
+// вешаются на `astro:page-load`, а не выполняются один раз.
+// На телефоне меню — полоса разделов сверху, листается вбок.
 // noindex всегда: индексация сайта открыта, админка в выдачу не должна.
+import { ClientRouter } from 'astro:transitions';
 import Layout from '../../layouts/Layout.astro';
-import AdminIcon, { type AdminIconName } from './AdminIcon.astro';
+import AdminIcon from './AdminIcon.astro';
 import { DEMO_REVISIONS } from '../../data/moderation-demo';
-import { COMPLAINTS, LEADS } from '../../data/admin-demo';
+import { COMPLAINTS } from '../../data/admin-demo';
+import { PARTNER_APPS } from '../../data/partner-demo';
 import './admin.css';
 
-export type AdminSection =
-  | 'overview' | 'moderation' | 'leads' | 'complaints' | 'catalog' | 'pilot'
-  | 'accounts' | 'interest' | 'sync' | 'settings' | 'money';
+export type AdminSection = 'overview' | 'partners' | 'moderation' | 'catalog' | 'complaints';
 
 interface Props {
   title: string;
@@ -21,74 +25,46 @@ interface Props {
 }
 const { title, section } = Astro.props;
 
-const waiting = DEMO_REVISIONS.filter((r) => r.lane === 'red').length;
-const newLeads = LEADS.filter((l) => l.status === 'new').length;
-const newComplaints = COMPLAINTS.filter((c) => c.status === 'new').length;
-
-type Item = { key: AdminSection; href: string; label: string; icon: AdminIconName; badge?: number; soon?: string };
-const groups: Item[][] = [
-  [{ key: 'overview', href: '/profi/admin/', label: 'Сводка', icon: 'overview' }],
-  [
-    { key: 'moderation', href: '/profi/admin/moderaciya/', label: 'Модерация', icon: 'moderation', badge: waiting },
-    { key: 'leads', href: '/profi/admin/zayavki/', label: 'Заявки', icon: 'leads', badge: newLeads },
-    { key: 'complaints', href: '/profi/admin/zhaloby/', label: 'Жалобы', icon: 'complaints', badge: newComplaints },
-  ],
-  [
-    { key: 'catalog', href: '/profi/admin/katalog/', label: 'Карточки', icon: 'catalog' },
-    { key: 'pilot', href: '/profi/admin/pilot/', label: 'Пилот', icon: 'pilot' },
-    { key: 'accounts', href: '/profi/admin/uchetki/', label: 'Подрядчики', icon: 'accounts' },
-    { key: 'interest', href: '/profi/admin/interes/', label: 'Интерес', icon: 'interest' },
-  ],
-  [
-    { key: 'sync', href: '/profi/admin/sverka/', label: 'Сверка с таблицей', icon: 'sync' },
-    { key: 'settings', href: '/profi/admin/nastroyki/', label: 'Настройки', icon: 'settings' },
-    { key: 'money', href: '/profi/admin/dengi/', label: 'Деньги', icon: 'money', soon: '3 этап' },
-  ],
+const items: { key: AdminSection; href: string; label: string; n?: number; tone?: 'info' | 'ok' | 'bad'; gap?: boolean }[] = [
+  { key: 'overview', href: '/profi/admin/', label: 'Сводка' },
+  { key: 'partners', href: '/profi/admin/zayavki/', label: 'Заявки', n: PARTNER_APPS.filter((a) => a.status === 'review').length, tone: 'bad' },
+  { key: 'moderation', href: '/profi/admin/moderaciya/', label: 'Модерация', n: DEMO_REVISIONS.filter((r) => r.state === 'review').length, tone: 'info' },
+  { key: 'catalog', href: '/profi/admin/katalog/', label: 'Карточки' },
+  // Жалобы важны меньше — отдельно, внизу меню
+  { key: 'complaints', href: '/profi/admin/zhaloby/', label: 'Жалобы', n: COMPLAINTS.filter((c) => c.status === 'new').length, tone: 'info', gap: true },
 ];
 ---
 
-<Layout title={`${title} — Админка WED Secrets`} description="Админка WED Secrets: модерация, заявки, каталог.">
+<Layout title={`${title} — Админка WED Secrets`} description="Админка WED Secrets: заявки партнёров, модерация, карточки, жалобы.">
   <Fragment slot="head">
     <meta name="robots" content="noindex, nofollow" />
+    <link rel="preload" href="/fonts/inter-cyrillic.woff2" as="font" type="font/woff2" crossorigin />
+    <ClientRouter />
   </Fragment>
 
   <div class="adm">
     <header class="adm-head">
-      <button class="adm-head__burger" type="button" aria-label="Меню" data-adm-menu>
-        <AdminIcon name="catalog" />
-      </button>
       <a class="adm-logo" href="/profi/admin/">
         <span class="adm-logo__name">WED Secrets</span>
-        <span class="adm-logo__tag">Админка</span>
+        <span class="adm-logo__tag">админка</span>
       </a>
-      <span class="adm-obj">Москва и МО <AdminIcon name="down" class="adm-obj__ic" /></span>
       <div class="adm-head__right">
         <a class="adm-head__link" href="/" target="_blank" rel="noopener">Сайт</a>
-        <a class="adm-head__link" href="/profi/" target="_blank" rel="noopener">Для подрядчиков</a>
-        <span class="adm-head__icon" title="Помощь"><AdminIcon name="help" /></span>
-        <span class="adm-head__icon" title="Уведомления"><AdminIcon name="bell" /><span class="adm-head__dot"></span></span>
-        <span class="adm-user"><span class="adm-user__ava">Н</span><span class="adm-user__name">Никита</span></span>
+        <a class="adm-head__link" href="/profi/" target="_blank" rel="noopener">Кабинет подрядчика</a>
+        <span class="adm-user"><span class="adm-user__ava" aria-hidden="true">Н</span><span class="adm-user__name">Никита</span></span>
       </div>
     </header>
 
     <div class="adm-body">
-      <aside class="adm-side" data-adm-side aria-label="Разделы админки">
-        <nav class="adm-nav">
-          {groups.map((g, gi) => (
-            <>
-              {gi > 0 && <span class="adm-nav__gap"></span>}
-              {g.map((it) => (
-                <a class:list={['adm-nav__item', { 'is-active': it.key === section }]} href={it.href} aria-current={it.key === section ? 'page' : undefined}>
-                  <AdminIcon name={it.icon} />
-                  <span>{it.label}</span>
-                  {it.badge ? <span class="adm-nav__badge">{it.badge}</span> : null}
-                  {it.soon && <span class="adm-nav__soon">{it.soon}</span>}
-                </a>
-              ))}
-            </>
-          ))}
-        </nav>
-      </aside>
+      <nav class="adm-nav" aria-label="Разделы админки">
+        {items.map((it) => (
+          <a class:list={['adm-nav__item', { 'is-active': it.key === section, 'adm-nav__item--gap': it.gap }]} href={it.href} aria-current={it.key === section ? 'page' : undefined}>
+            <AdminIcon name={it.key} class="adm-nav__ic" />
+            <span class="adm-nav__label">{it.label}</span>
+            {it.n ? <span class={`adm-nav__n adm-nav__n--${it.tone}`}>{it.n}</span> : null}
+          </a>
+        ))}
+      </nav>
 
       <main class="adm-main">
         <slot />
@@ -99,19 +75,8 @@ const groups: Item[][] = [
 
 <script>
   import { bindAdminTables } from '../../lib/admin-table';
-  bindAdminTables();
-
-  // Меню на телефоне: выезжает слева, закрывается тапом мимо или Esc.
-  const side = document.querySelector<HTMLElement>('[data-adm-side]');
-  const btn = document.querySelector<HTMLElement>('[data-adm-menu]');
-  const close = () => side?.classList.remove('is-open');
-  btn?.addEventListener('click', (e) => { e.stopPropagation(); side?.classList.toggle('is-open'); });
-  document.addEventListener('click', (e) => {
-    if (side?.classList.contains('is-open') && !side.contains(e.target as Node)) close();
+  // ClientRouter меняет страницу без перезагрузки — привязки заново на каждой
+  document.addEventListener('astro:page-load', () => {
+    if (document.querySelector('.adm')) bindAdminTables();
   });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
 </script>
-
-<style>
-  :global(.adm-obj__ic) { width: 16px; height: 16px; }
-</style>

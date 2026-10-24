@@ -1,10 +1,11 @@
 ---
 // РАЗБОР ПРАВКИ — экран «что поменялось» (CABINET.md §12.5).
-// Слева — разделы карточками (Метрика): автопроверка, текст сравнением по
-// словам с видами «Изменения / Было / Стало» (GitHub), цена и фильтры
-// таблицей «было → стало», фото группами. Справа — решение, не уезжает
-// при прокрутке (Zendesk); горячие клавиши A / R / J / K и «Отменить»
+// Слева — разделы карточками: автопроверка, текст сравнением по словам
+// с видами «Изменения / Было / Стало» (GitHub), цена и фильтры таблицей
+// «было → стало», фото группами. Справа — решение, не уезжает при
+// прокрутке (Zendesk); горячие клавиши A / R / J / K и «Отменить»
 // 5 секунд после решения, потом следующая правка (Gmail, Linear).
+// У проверенной правки справа — кто и когда решил, и «Откатить».
 // ПРОТОТИП: кнопки только меняют экран — вживую это запросы к базе.
 import { Image } from 'astro:assets';
 import AdminShell from '../../../../components/admin/AdminShell.astro';
@@ -12,7 +13,7 @@ import AdminIcon from '../../../../components/admin/AdminIcon.astro';
 import Icon from '../../../../components/Icon.astro';
 import { resolveImage, IMG_WIDTHS } from '../../../../lib/images';
 import { buildReview, plural } from '../../../../lib/moderation';
-import { LANE, QUEUE } from '../../../../data/moderation-demo';
+import { QUEUE, STATE } from '../../../../data/moderation-demo';
 
 export function getStaticPaths() {
   return QUEUE.map((rev, i) => ({
@@ -23,9 +24,8 @@ export function getStaticPaths() {
 
 const { rev, prev, next, pos } = Astro.props;
 const r = buildReview(rev);
-const lane = LANE[rev.lane];
-const waits = rev.lane === 'red';
-const DOT = { red: 'info', yellow: 'warn', green: 'ok' } as const;
+const waits = rev.state === 'review';
+const st = STATE[rev.state];
 const flagged = new Set(rev.flags.map((f) => f.photo).filter(Boolean));
 const pct = r.share.total ? Math.round((r.share.changed / r.share.total) * 100) : 0;
 const rub = (n?: number) => (n ? `${n.toLocaleString('ru-RU')} ₽` : 'пусто');
@@ -59,11 +59,11 @@ const reasons = [
 <AdminShell title={`Правка: ${r.card.name}`} section="moderation">
   <div class="mr" data-next={href(next)}>
     <div class="mr__top">
-      <a class="a-btn a-btn--soft" href="/profi/admin/moderaciya/"><AdminIcon name="collapse" /> Очередь</a>
+      <a class="a-btn a-btn--soft" href="/profi/admin/moderaciya/"><AdminIcon name="back" /> Модерация</a>
       <span class="mr__pos">
         {pos} из {QUEUE.length}
-        <a class:list={['a-btn a-btn--soft mr__step', { 'is-off': !prev }]} href={href(prev)} aria-label="Предыдущая" data-key-prev><AdminIcon name="collapse" /></a>
-        <a class:list={['a-btn a-btn--soft mr__step', { 'is-off': !next }]} href={href(next)} aria-label="Следующая" data-key-next><AdminIcon name="collapse" class="mr__flip" /></a>
+        <a class:list={['a-btn a-btn--soft mr__step', { 'is-off': !prev }]} href={href(prev)} aria-label="Предыдущая" data-key-prev><AdminIcon name="back" /></a>
+        <a class:list={['a-btn a-btn--soft mr__step', { 'is-off': !next }]} href={href(next)} aria-label="Следующая" data-key-next><AdminIcon name="next" /></a>
       </span>
     </div>
 
@@ -73,8 +73,8 @@ const reasons = [
         <h1 class="a-h1">{r.card.name}</h1>
         <p class="a-lead">{r.role} · {rev.first ? 'первая публикация' : 'правка карточки'} · {rev.submitted}</p>
         <p class="mr__tags">
-          <span class={`a-dot a-dot--${DOT[rev.lane]}`}>{lane.label}</span>
-          {rev.waiting && <span>ждёт <strong>{rev.waiting}</strong> из 24 ч</span>}
+          <span class={`a-dot a-dot--${st.dot}`}>{st.label}</span>
+          {waits && rev.waiting && <span class="a-time"><AdminIcon name="clock" />ждёт {rev.waiting} из 24 ч</span>}
           <a class="mr__link" href={r.url} target="_blank" rel="noopener">{rev.first ? 'Как выглядит на сайте' : 'Карточка на сайте'} <AdminIcon name="external" /></a>
         </p>
       </div>
@@ -197,10 +197,17 @@ const reasons = [
 
       <aside class="a-card mr__side">
         <h2 class="a-h2">Решение</h2>
-        <p class="mr__sum">{r.summary}</p>
-        <ul class="mr__why">{rev.why.map((w) => <li>{w}</li>)}</ul>
-        <p class="a-sub">{rev.trust}</p>
-        <p class="a-sub">{lane.note}.</p>
+        <div class="a-chips">
+          {r.changes.map((c) => <span class="a-chip"><b>{c.label}:</b> {c.value}</span>)}
+        </div>
+        {waits ? (
+          <p class="a-sub">На сайте прежняя версия, пока не одобрите. Подрядчику придёт сообщение с решением.</p>
+        ) : (
+          <div class="mr__decided">
+            <span class={`a-dot a-dot--${st.dot}`}>{rev.decided}</span>
+            {rev.reason && <p class="mr__reason">«{rev.reason}»</p>}
+          </div>
+        )}
         <div class="mr__bar" data-actions>
           {waits ? (
             <>
@@ -209,12 +216,11 @@ const reasons = [
             </>
           ) : (
             <>
-              <button class="a-btn a-btn--primary a-btn--lg a-btn--block" type="button" data-act="ok">Всё верно <kbd>A</kbd></button>
-              <button class="a-btn a-btn--lg a-btn--block" type="button" data-act="rollback">Откатить <kbd>R</kbd></button>
+              <button class="a-btn a-btn--lg a-btn--block" type="button" data-act="rollback">Откатить к прежней версии</button>
             </>
           )}
         </div>
-        {!rev.first && <button class="a-btn a-btn--soft a-btn--block a-btn--danger" type="button" data-act="hide">Скрыть карточку с сайта</button>}
+        {!rev.first && waits && <button class="a-btn a-btn--soft a-btn--block a-btn--danger" type="button" data-act="hide">Скрыть карточку с сайта</button>}
         <p class="a-sub mr__keys">J / K — следующая и предыдущая правка</p>
       </aside>
     </div>
@@ -252,50 +258,55 @@ const reasons = [
 </AdminShell>
 
 <script>
+  // ClientRouter: страница меняется без перезагрузки — привязки на каждый
+  // `astro:page-load`; клавиши и тост — один обработчик на документ.
   import { bindSheet } from '../../../../lib/sheet';
-
-  const root = document.querySelector<HTMLElement>('[data-next]');
-  const sheetEl = document.querySelector<HTMLElement>('[data-sheet="return"]');
-  const sheet = sheetEl ? bindSheet(sheetEl) : null;
-  const text = document.querySelector<HTMLTextAreaElement>('[data-reason-text]');
-
-  const diff = document.querySelector<HTMLElement>('[data-diff]');
-  document.querySelectorAll<HTMLElement>('[data-mode-btn]').forEach((b) =>
-    b.addEventListener('click', () => diff?.setAttribute('data-mode', b.dataset.modeBtn!)),
-  );
-
-  document.querySelectorAll<HTMLInputElement>('[data-reason]').forEach((cb) =>
-    cb.addEventListener('change', () => {
-      if (!text) return;
-      const picked = [...document.querySelectorAll<HTMLInputElement>('[data-reason]:checked')].map((x) => x.value);
-      text.value = picked.length ? `${picked.join('. ')}.` : '';
-    }),
-  );
+  import { navigate } from 'astro:transitions/client';
 
   const RESULT: Record<string, string> = {
     approve: 'Одобрено — изменения на сайте через минуту',
-    ok: 'Проверено — правка остаётся на сайте',
     rollback: 'Откатили — на сайте прежняя версия',
     hide: 'Карточка скрыта с сайта',
     return: 'Вернули подрядчику с причиной',
   };
-
-  // Решение → «Отменить» 5 секунд → следующая правка
-  const toast = document.querySelector<HTMLElement>('[data-toast]');
   let timer = 0;
-  const decide = (act: string) => {
-    if (!toast || !RESULT[act]) return;
-    if (act === 'return') sheet?.close();
-    toast.querySelector<HTMLElement>('[data-toast-text]')!.textContent = `${RESULT[act]}. Дальше — следующая правка`;
-    toast.hidden = false;
+
+  document.addEventListener('astro:page-load', () => {
+    const root = document.querySelector<HTMLElement>('.mr[data-next]');
+    if (!root) return;
     clearTimeout(timer);
-    timer = window.setTimeout(() => { location.href = root?.dataset.next ?? '/profi/admin/moderaciya/'; }, 5000);
-  };
-  document.querySelector('[data-undo]')?.addEventListener('click', () => { clearTimeout(timer); if (toast) toast.hidden = true; });
-  document.querySelectorAll<HTMLElement>('[data-act]').forEach((btn) => btn.addEventListener('click', () => decide(btn.dataset.act!)));
+    const sheetEl = document.querySelector<HTMLElement>('[data-sheet="return"]');
+    const sheet = sheetEl ? bindSheet(sheetEl) : null;
+    const text = document.querySelector<HTMLTextAreaElement>('[data-reason-text]');
+    const diff = document.querySelector<HTMLElement>('[data-diff]');
+    document.querySelectorAll<HTMLElement>('[data-mode-btn]').forEach((b) =>
+      b.addEventListener('click', () => diff?.setAttribute('data-mode', b.dataset.modeBtn!)),
+    );
+    document.querySelectorAll<HTMLInputElement>('[data-reason]').forEach((cb) =>
+      cb.addEventListener('change', () => {
+        if (!text) return;
+        const picked = [...document.querySelectorAll<HTMLInputElement>('[data-reason]:checked')].map((x) => x.value);
+        text.value = picked.length ? `${picked.join('. ')}.` : '';
+      }),
+    );
+
+    // Решение → «Отменить» 5 секунд → следующая правка
+    const toast = document.querySelector<HTMLElement>('[data-toast]');
+    const decide = (act: string) => {
+      if (!toast || !RESULT[act]) return;
+      if (act === 'return') sheet?.close();
+      toast.querySelector<HTMLElement>('[data-toast-text]')!.textContent = `${RESULT[act]}. Дальше — следующая правка`;
+      toast.hidden = false;
+      clearTimeout(timer);
+      timer = window.setTimeout(() => navigate(root.dataset.next ?? '/profi/admin/moderaciya/'), 5000);
+    };
+    document.querySelector('[data-undo]')?.addEventListener('click', () => { clearTimeout(timer); if (toast) toast.hidden = true; });
+    document.querySelectorAll<HTMLElement>('[data-act]').forEach((btn) => btn.addEventListener('click', () => decide(btn.dataset.act!)));
+  });
 
   // A — главное действие, R — второе, J / K — следующая / предыдущая
   document.addEventListener('keydown', (e) => {
+    if (!document.querySelector('.mr[data-next]')) return;
     const t = e.target as HTMLElement;
     if (e.metaKey || e.ctrlKey || e.altKey || t.closest('input, textarea, [contenteditable]')) return;
     const k = e.key.toLowerCase();
@@ -313,7 +324,6 @@ const reasons = [
   .mr__pos { display: flex; align-items: center; gap: var(--s-2); color: var(--adm-text-2); }
   .mr__step { width: 36px; padding: 0; }
   .mr__step.is-off { pointer-events: none; opacity: 0.4; }
-  :global(.mr__flip) { transform: rotate(180deg); }
 
   .mr__head { display: flex; gap: var(--s-4); align-items: center; }
   :global(.mr__ava) { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; flex: none; }
@@ -324,8 +334,9 @@ const reasons = [
 
   .mr__side { display: grid; gap: var(--s-3); }
   @media (min-width: 1024px) { .mr__side { position: sticky; top: calc(var(--adm-head-h) + var(--s-2)); } }
-  .mr__sum { padding: 12px 14px; border-radius: var(--adm-radius-md); background: var(--adm-bg); font-weight: 500; }
-  .mr__why { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+  .mr__sum { padding: 12px 14px; border-radius: var(--adm-radius-md); background: var(--adm-bg); }
+  .mr__decided { display: grid; gap: 6px; }
+  .mr__reason { padding: 10px 12px; border-radius: var(--adm-radius-md); background: #fde9e9; }
   .mr__bar { display: grid; gap: var(--s-2); margin-top: var(--s-2); }
   .mr__keys { text-align: center; }
   @media (hover: none) { .mr__keys { display: none; } }

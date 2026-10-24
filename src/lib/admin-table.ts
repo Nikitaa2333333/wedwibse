@@ -12,7 +12,12 @@ export function bindAdminTables(): void {
     const body = table.tBodies[0];
     const rows = () => [...body.rows].filter((r) => !r.classList.contains('a-total'));
     let query = '';
-    let tab = 'all';
+    // вкладка по умолчанию — data-tab-default; ссылка с якорем (#nocontacts)
+    // открывает таблицу сразу на этой вкладке
+    const fromHash = location.hash.slice(1);
+    const hasTab = (v: string) => Boolean(document.querySelector(`[data-filter-tab="${id}"][data-value="${v}"]`));
+    let tab = fromHash && hasTab(fromHash) ? fromHash : table.dataset.tabDefault ?? 'all';
+    document.querySelectorAll<HTMLElement>(`[data-filter-tab="${id}"]`).forEach((t) => t.classList.toggle('is-active', t.dataset.value === tab));
 
     const apply = () => {
       for (const r of rows()) {

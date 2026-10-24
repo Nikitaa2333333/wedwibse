@@ -1,19 +1,18 @@
 ---
-// МОДЕРАЦИЯ — очередь правок (CABINET.md §12). Устройство «Кампаний»
-// Директа: вкладки сверху, строка инструментов, таблица с выбором строк и
-// тёмной панелью действий. Три полосы (§12.2): «Ждут решения» — на сайте
-// прежняя версия; «Проверить после» — уже на сайте, откат одной кнопкой;
-// «Прошли сами» — для сведения. Порядок — по сроку (дольше ждущий выше).
+// МОДЕРАЦИЯ — правки, которые подрядчики и площадки прислали из кабинета
+// (CABINET.md §12). Вкладки: «На проверке» — на сайте прежняя версия, пока
+// не одобрим; «Проверено» — история решений. Порядок — по сроку (ответ до
+// 24 ч, дольше ждущий выше). Вживую — коллекция `revisions` в PocketBase;
+// сейчас — примеры поверх настоящих карточек (moderation-demo.ts).
 import { Image } from 'astro:assets';
 import AdminShell from '../../../../components/admin/AdminShell.astro';
 import AdminIcon from '../../../../components/admin/AdminIcon.astro';
 import { resolveImage, IMG_WIDTHS } from '../../../../lib/images';
 import { buildReview, plural } from '../../../../lib/moderation';
-import { LANE, QUEUE, type Lane } from '../../../../data/moderation-demo';
+import { QUEUE, STATE } from '../../../../data/moderation-demo';
 
 const reviews = QUEUE.map(buildReview);
-const n = (l: Lane) => reviews.filter((r) => r.rev.lane === l).length;
-const DOT: Record<Lane, string> = { red: 'info', yellow: 'warn', green: 'ok' };
+const onReview = reviews.filter((r) => r.rev.state === 'review').length;
 const minutes = (s?: string) => {
   const m = s?.match(/(\d+)\s*ч\s*(\d+)/);
   return m ? Number(m[1]) * 60 + Number(m[2]) : 0;
@@ -21,43 +20,30 @@ const minutes = (s?: string) => {
 ---
 
 <AdminShell title="Модерация" section="moderation">
-  <nav class="a-tabs" aria-label="Полосы">
-    <a class="a-tabs__item is-active" href="#" data-filter-tab="mq" data-value="all">Все <span class="a-tabs__n">{reviews.length}</span></a>
-    {(['red', 'yellow', 'green'] as Lane[]).map((l) => (
-      <a class="a-tabs__item" href="#" data-filter-tab="mq" data-value={l}>{LANE[l].queue} <span class="a-tabs__n">{n(l)}</span></a>
-    ))}
-  </nav>
-
   <div class="a-title">
     <h1 class="a-h1">Модерация</h1>
-    <p class="a-lead">Ответ подрядчику — до 24 часов. Сейчас ждут решения: {n('red')}.</p>
-  </div>
-
-  <div class="a-tools">
-    <label class="a-search">
-      <span class="visually-hidden">Поиск</span>
-      <input class="a-input" type="search" placeholder="Поиск по имени" data-filter-search="mq" />
-      <AdminIcon name="search" />
-    </label>
-    <select class="a-select" aria-label="Категория" data-filter-select="mq">
-      <option value="all">Все категории</option>
-      <option value="cat-venue">Площадки</option>
-      <option value="cat-specialist">Подрядчики</option>
-    </select>
-    <div class="a-tools__right">
-      <span class="a-btn a-btn--soft">Сегодня <AdminIcon name="down" /></span>
-    </div>
+    <p class="a-lead">Правки, которые подрядчики и площадки прислали из кабинета. Пока правка на проверке, на сайте прежняя версия.</p>
   </div>
 
   <section class="a-card a-card--flush">
+    <nav class="a-tabs" aria-label="Состояние правки">
+      <a class="a-tabs__item is-active" href="#" data-filter-tab="mq" data-value="review">На проверке <span class="a-tabs__n">{onReview}</span></a>
+      <a class="a-tabs__item" href="#" data-filter-tab="mq" data-value="done">Проверено <span class="a-tabs__n">{reviews.length - onReview}</span></a>
+      <a class="a-tabs__item" href="#" data-filter-tab="mq" data-value="all">Все <span class="a-tabs__n">{reviews.length}</span></a>
+    </nav>
+    <div class="a-tools">
+      <label class="a-search">
+        <span class="visually-hidden">Поиск</span>
+        <input class="a-input" type="search" placeholder="Имя подрядчика или площадки" data-filter-search="mq" />
+        <AdminIcon name="search" />
+      </label>
+    </div>
     <div class="a-table-wrap">
-      <table class="a-table a-table--cards" id="mq" data-atable>
+      <table class="a-table a-table--cards" id="mq" data-atable data-tab-default="review">
         <thead>
           <tr>
-            <th><input class="a-check" type="checkbox" aria-label="Выбрать все" /></th>
-            <th data-sort="asc">Карточка</th>
-            <th>Полоса</th>
-            <th>Что поменялось</th>
+            <th data-sort="asc">Кто прислал</th>
+            <th class="mq__changes">Что поменялось</th>
             <th>Автопроверка</th>
             <th class="a-num is-sorted" data-sort="desc">Ждёт</th>
           </tr>
@@ -65,48 +51,43 @@ const minutes = (s?: string) => {
         <tbody>
           {reviews.map((r) => {
             const href = `/profi/admin/moderaciya/${r.rev.id}/`;
+            const done = r.rev.state !== 'review';
             return (
-              <tr data-href={href} data-tab={`${r.rev.lane} cat-specialist`} data-text={r.card.name.toLowerCase()}>
-                <td><input class="a-check" type="checkbox" aria-label={`Выбрать: ${r.card.name}`} /></td>
+              <tr data-href={href} data-tab={done ? 'done' : 'review'} data-text={r.card.name.toLowerCase()}>
                 <td data-v={r.card.name}>
                   <div class="a-who">
-                    {r.photos.after[0] && <Image src={resolveImage(r.photos.after[0])} alt="" widths={[...IMG_WIDTHS.thumb]} sizes="40px" class="a-thumb" />}
+                    {r.photos.after[0] && <Image src={resolveImage(r.photos.after[0])} alt="" widths={[...IMG_WIDTHS.thumb]} sizes="32px" class="a-thumb" />}
                     <div>
                       <a class="a-name" href={href}>{r.card.name}</a>
-                      <span class="a-sub">{r.role} · {r.rev.first ? 'первая публикация' : 'правка карточки'}</span>
-                      <span class="a-sublinks"><a href={href}>Разобрать</a><a href={r.url} target="_blank" rel="noopener">На сайте</a></span>
+                      <span class="a-sub">{r.role} · {r.rev.first ? 'новая карточка' : 'правка'} · {r.rev.submitted.toLowerCase()}</span>
                     </div>
                   </div>
                 </td>
-                <td data-bulk-cell>
-                  <span class={`a-dot a-dot--${DOT[r.rev.lane]}`}>{LANE[r.rev.lane].queue}</span>
-                  <span class="a-sub">{LANE[r.rev.lane].label}</span>
+                <td>
+                  <div class="a-chips">
+                    {r.changes.map((c) => <span class="a-chip"><b>{c.label}:</b> {c.value}</span>)}
+                  </div>
                 </td>
-                <td class="mq__sum">{r.summary}</td>
-                <td>{r.rev.flags.length ? <span class="mq__flag">{r.rev.flags.length} {plural(r.rev.flags.length, 'флажок', 'флажка', 'флажков')}</span> : 'чисто'}</td>
+                <td data-l="Автопроверка">
+                  {r.rev.flags.length
+                    ? <span class="a-dot a-dot--bad">{r.rev.flags.length} {plural(r.rev.flags.length, 'флажок', 'флажка', 'флажков')}</span>
+                    : <span class="a-dot a-dot--ok">чисто</span>}
+                </td>
                 <td class="a-num" data-v={minutes(r.rev.waiting)}>
-                  {r.rev.waiting ? <strong class="mq__wait">{r.rev.waiting}</strong> : '—'}
-                  <span class="a-sub">пришло {r.rev.submitted.replace('Сегодня, ', '')}</span>
+                  {done
+                    ? <span class={`a-dot a-dot--${STATE[r.rev.state].dot}`}>{STATE[r.rev.state].label}</span>
+                    : <span class:list={['a-time', { 'a-time--late': minutes(r.rev.waiting) >= 20 * 60 }]}><AdminIcon name="clock" />{r.rev.waiting}</span>}
                 </td>
               </tr>
             );
           })}
         </tbody>
       </table>
-      <div class="a-empty" data-empty="mq" hidden><p>Ничего не нашлось</p><p>Смените вкладку или запрос</p></div>
+      <div class="a-empty" data-empty="mq" hidden>Ничего не нашлось</div>
     </div>
   </section>
-
-  <div class="a-bulk" data-bulk="mq" hidden>
-    <span class="a-bulk__count"><input class="a-check" type="checkbox" checked disabled /> Выбрано: <span data-bulk-n>0</span></span>
-    <button class="a-bulk__btn" type="button" data-bulk-act="mark" data-bulk-label='<span class="a-dot a-dot--ok">Проверено</span>'>Отметить проверенными</button>
-    <button class="a-bulk__btn" type="button" data-bulk-act="mark" data-bulk-label='<span class="a-dot a-dot--bad">Откачено</span>'>Откатить</button>
-    <button class="a-bulk__btn" type="button" data-bulk-clear>Снять выбор</button>
-  </div>
 </AdminShell>
 
 <style>
-  .mq__sum { min-width: 220px; max-width: 36ch; }
-  .mq__flag { color: #c4314b; font-weight: 500; }
-  .mq__wait { font-weight: 600; }
+  .mq__changes { min-width: 320px; }
 </style>

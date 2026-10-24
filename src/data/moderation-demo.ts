@@ -1,11 +1,14 @@
 // ЗАГЛУШКА для прототипа экрана модератора (CABINET.md §12, STAGE2.md
-// «Экран модератора»). «Было» — настоящие карточки сайта, «стало» — правка
+// «Экран модератора»). Здесь только ПРАВКИ уже опубликованных карточек;
+// первая публикация новой карточки — это заявка партнёра (partner-demo.ts). «Было» — настоящие карточки сайта, «стало» — правка
 // поверх них, как её пришлёт кабинет. Вживую правка — запись `revisions`
-// (data = анкета целиком), полосу и флажки ставит хук базы при отправке
-// (`lane`, `flags` — CABINET.md §12.6), браузеру не верим.
+// (data = анкета целиком), флажки автопроверки ставит хук базы при отправке
+// (`flags` — CABINET.md §12.6), браузеру не верим. Три полосы правок
+// (§12.2) в интерфейс пока не выносим: ждут решения Евгения (STAGE2 §4, №4).
 import type { StorySection } from './specialists';
 
-export type Lane = 'red' | 'yellow' | 'green';
+/** На проверке — ждёт решения; проверено — решение принято (история). */
+export type ModState = 'review' | 'approved' | 'returned';
 
 /** Флажок автопроверки: какое правило сработало и где именно (§12.3). */
 export interface ModFlag {
@@ -35,18 +38,16 @@ export interface DemoRevision {
   id: string;
   /** карточка на сайте (slug подрядчика) */
   slug: string;
-  lane: Lane;
+  state: ModState;
   /** первая публикация: «было» пустое, карточка целиком */
   first?: boolean;
   submitted: string;
   /** сколько ждёт решения (срок ответа — 24 ч); у красных */
   waiting?: string;
-  /** у жёлтой и зелёной — уже на сайте */
-  published?: string;
-  /** доверие (§12.4) */
-  trust: string;
-  /** почему эта полоса — словами хука */
-  why: string[];
+  /** решение: когда и кто (у проверенных) */
+  decided?: string;
+  /** причина возврата словами модератора */
+  reason?: string;
   flags: ModFlag[];
   patch: DemoPatch;
 }
@@ -55,15 +56,9 @@ export const DEMO_REVISIONS: DemoRevision[] = [
   {
     id: 'suhorada-2',
     slug: 'suhorada',
-    lane: 'red',
+    state: 'review',
     submitted: 'Сегодня, 12:04',
     waiting: '0 ч 10 мин',
-    trust: 'Новый в кабинете · одобренных правок нет',
-    why: [
-      'Новые фото у нового подрядчика',
-      'Сработала автопроверка: ник в тексте и чужое фото',
-      'Переписана половина раздела «Эмоции в каждом снимке»',
-    ],
     flags: [
       {
         rule: 'Похоже на контакт в тексте',
@@ -97,25 +92,11 @@ export const DEMO_REVISIONS: DemoRevision[] = [
     },
   },
   {
-    id: 'go-show-1',
-    slug: 'go-show',
-    lane: 'red',
-    first: true,
-    submitted: 'Сегодня, 09:38',
-    waiting: '2 ч 36 мин',
-    trust: 'Новая карточка',
-    why: ['Первая публикация — всегда через проверку'],
-    flags: [],
-    patch: {},
-  },
-  {
     id: 'galkin-6',
     slug: 'galkin',
-    lane: 'yellow',
+    state: 'approved',
     submitted: 'Сегодня, 11:20',
-    published: 'На сайте с 11:20',
-    trust: 'Проверенный · 5 правок одобрено без возвратов',
-    why: ['Заметная правка текста у проверенного подрядчика', 'Новые фото — проверенным можно сразу'],
+    decided: 'Одобрено сегодня в 11:25 · Никита',
     flags: [],
     patch: {
       text: {
@@ -136,11 +117,10 @@ export const DEMO_REVISIONS: DemoRevision[] = [
   {
     id: 'nirvani-9',
     slug: 'nirvani',
-    lane: 'green',
+    state: 'returned',
     submitted: 'Сегодня, 10:05',
-    published: 'На сайте с 10:05',
-    trust: 'Проверенный · 8 правок одобрено без возвратов',
-    why: ['Мелкая правка: фильтр, одно число в тексте, порядок фото'],
+    decided: 'Вернули сегодня в 10:40 · Никита',
+    reason: 'Задаток в тексте (15 000 ₽) не совпадает с прайсом — поправьте одно из двух.',
     flags: [],
     patch: {
       text: {
@@ -157,34 +137,18 @@ export const DEMO_REVISIONS: DemoRevision[] = [
   },
 ];
 
-/** Порядок очереди: сначала ждущие решения, дольше ждущие — выше (срок 24 ч),
- *  потом «проверить после», потом «прошли сами». По нему же «Следующая». */
-const LANE_RANK: Record<Lane, number> = { red: 0, yellow: 1, green: 2 };
-const minutes = (s?: string) => {
-  const m = s?.match(/(\d+)\s*ч\s*(\d+)\s*мин/);
+/** Порядок: сначала на проверке, дольше ждущие выше (срок ответа 24 ч),
+ *  потом проверенные. По нему же кнопка «Следующая». */
+const minutes = (t?: string) => {
+  const m = t?.match(/(\d+)\s*ч\s*(\d+)\s*мин/);
   return m ? Number(m[1]) * 60 + Number(m[2]) : 0;
 };
 export const QUEUE: DemoRevision[] = [...DEMO_REVISIONS].sort(
-  (a, b) => LANE_RANK[a.lane] - LANE_RANK[b.lane] || minutes(b.waiting) - minutes(a.waiting),
+  (a, b) => Number(a.state !== 'review') - Number(b.state !== 'review') || minutes(b.waiting) - minutes(a.waiting),
 );
 
-export const LANE: Record<Lane, { label: string; status: string; queue: string; note: string }> = {
-  red: {
-    label: 'Ждёт проверки',
-    status: 'status--info',
-    queue: 'Ждут решения',
-    note: 'На сайте прежняя версия, пока не одобрите',
-  },
-  yellow: {
-    label: 'На сайте · проверить после',
-    status: 'status--warn',
-    queue: 'Проверить после',
-    note: 'Уже на сайте. Если что-то не так — откатите одной кнопкой',
-  },
-  green: {
-    label: 'Прошло само',
-    status: 'status--ok',
-    queue: 'Прошли сами',
-    note: 'Мелкие правки — на сайте сразу, здесь для сведения',
-  },
+export const STATE: Record<ModState, { label: string; dot: string }> = {
+  review: { label: 'На проверке', dot: 'info' },
+  approved: { label: 'Одобрено', dot: 'ok' },
+  returned: { label: 'Вернули', dot: 'bad' },
 };

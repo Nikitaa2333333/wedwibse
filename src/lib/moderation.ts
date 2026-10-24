@@ -59,7 +59,8 @@ export interface Review {
   price?: { before?: number; after?: number };
   filters: FilterRow[];
   photos: { added: string[]; removed: string[]; moved: string[]; after: string[] };
-  summary: string;
+  /** что поменялось — списком «поле: значение» (очередь, сводка, уведомление) */
+  changes: { label: string; value: string }[];
 }
 
 // Тексты карточек прошли типограф: между словами неразрывные пробелы.
@@ -148,6 +149,7 @@ export function buildReview(rev: DemoRevision): Review {
   const priceAfter = p.priceFrom ?? card.priceFrom;
   const price = priceBefore !== priceAfter ? { before: priceBefore, after: priceAfter } : undefined;
 
+  const share = changedShare(all);
   const photos = {
     added: rev.first ? card.photos : added,
     removed: p.photosRemove ?? [],
@@ -155,17 +157,17 @@ export function buildReview(rev: DemoRevision): Review {
     after: afterPhotos,
   };
 
-  // сводка — как в уведомлении модератору (§12.5)
-  const bits: string[] = [];
+  // что поменялось — списком, как уйдёт в уведомление модератору (§12.5)
+  const changes: Review['changes'] = [];
+  const sect = (n: number) => `${n} ${plural(n, 'раздел', 'раздела', 'разделов')}`;
   if (rev.first) {
-    bits.push('новая карточка', `${card.photos.length} фото`, `${sections.length} ${plural(sections.length, 'раздел', 'раздела', 'разделов')} текста`);
+    changes.push({ label: 'Новая карточка', value: `${card.photos.length} фото, ${sect(sections.length)} текста` });
   } else {
-    if (price?.before && price.after) bits.push(`цена от ${rub(price.before)} → ${rub(price.after)}`);
-    if (photos.added.length) bits.push(`+${photos.added.length} фото`);
-    if (photos.removed.length) bits.push(`−${photos.removed.length} фото`);
-    if (photos.moved.length) bits.push('новая обложка');
-    if (sections.length) bits.push(`текст: ${sections.length} ${plural(sections.length, 'раздел', 'раздела', 'разделов')}`);
-    if (filters.length) bits.push(`${filters.length} ${plural(filters.length, 'фильтр', 'фильтра', 'фильтров')}`);
+    if (price?.before && price.after) changes.push({ label: 'Цена от', value: `${rub(price.before)} → ${rub(price.after)}` });
+    const ph = [photos.added.length && `+${photos.added.length}`, photos.removed.length && `−${photos.removed.length}`, photos.moved.length && 'новая обложка'].filter(Boolean);
+    if (ph.length) changes.push({ label: 'Фото', value: ph.join(', ') });
+    if (sections.length) changes.push({ label: 'Текст', value: `${sect(sections.length)}, ${share.changed} ${plural(share.changed, 'слово', 'слова', 'слов')}` });
+    if (filters.length) changes.push({ label: 'Фильтры', value: filters.map((f) => f.label.toLowerCase()).join(', ') });
   }
 
   return {
@@ -175,10 +177,10 @@ export function buildReview(rev: DemoRevision): Review {
     url: specialistUrl(card),
     sections,
     same,
-    share: changedShare(all),
+    share,
     price,
     filters,
     photos,
-    summary: bits.join(' · '),
+    changes,
   };
 }

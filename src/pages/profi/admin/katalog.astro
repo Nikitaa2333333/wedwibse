@@ -1,127 +1,163 @@
 ---
-// КАРТОЧКИ — весь каталог одной таблицей, как «Кампании» Директа: вкладки
-// по виду, поиск, фильтр категории, строка «Итого», выбор строк и тёмная
-// панель действий. Карточки НАСТОЯЩИЕ (lib/admin-catalog.ts); владельцы —
-// из заглушки пилота. Вживую — `venues` / `specialists` с `owner`.
+// КАРТОЧКИ — весь каталог одной таблицей, как «Кампании» Директа. Данные
+// НАСТОЯЩИЕ (lib/admin-catalog.ts): фото из 50, есть ли текст, цена,
+// контакты — без выдуманных процентов и просмотров (просмотры — в Яндекс
+// Метрике). Колонка «Владелец»: ведём мы → ссылка выдана → вошёл → ведёт
+// сам; ссылку для входа модератор копирует и отправляет владельцу сам
+// (решение 20.10) — отдельного раздела «Пилот» не нужно. Владельцы —
+// пример (OWNERS), вживую — `owner` у карточки в базе.
 import { Image } from 'astro:assets';
 import AdminShell from '../../../components/admin/AdminShell.astro';
 import AdminIcon from '../../../components/admin/AdminIcon.astro';
 import { resolveImage, IMG_WIDTHS } from '../../../lib/images';
-import { CATALOG, INTEREST } from '../../../lib/admin-catalog';
-import { PILOT } from '../../../data/admin-demo';
+import { CATALOG, GAPS, PHOTOS_LOW, PHOTOS_MAX } from '../../../lib/admin-catalog';
+import { OWNERS, OWNER_STEP } from '../../../data/admin-demo';
 
-const rows = CATALOG.map((c) => ({ ...c, i: INTEREST.find((x) => x.key === c.key)!, owner: PILOT[c.key] }));
+const rows = CATALOG.map((c) => ({ ...c, owner: OWNERS[c.key] ?? { step: 'none' as const } }));
 const venues = rows.filter((r) => r.kind === 'venue').length;
-const cats = [...new Set(rows.filter((r) => r.kind === 'specialist').map((r) => r.category))].sort();
-const slug = (s: string) => `cat-${s.toLowerCase().replace(/\s+/g, '-')}`;
-const total = (k: 'photos') => rows.reduce((s, r) => s + r[k], 0);
-const avgFilled = Math.round(rows.reduce((s, r) => s + r.filled, 0) / rows.length);
-const opens = rows.reduce((s, r) => s + r.i.opens, 0);
-const ownerLabel = (o?: (typeof rows)[number]['owner']) =>
-  !o ? 'ведём мы' : o.step === 'published' ? 'владелец ведёт сам' : 'выдана ссылка владельцу';
+const tabs = [
+  { v: 'all', label: 'Все', n: rows.length },
+  { v: 'venue', label: 'Площадки', n: venues },
+  { v: 'specialist', label: 'Подрядчики', n: rows.length - venues },
+  { v: 'nocontacts', label: 'Без контактов', n: GAPS.noContacts.length, bad: true },
+  { v: 'fewphotos', label: `Меньше ${PHOTOS_LOW} фото`, n: GAPS.fewPhotos.length, bad: true },
+  { v: 'noprice', label: 'Без цены', n: GAPS.noPrice.length, bad: true },
+];
+// ЗАГЛУШКА токена: вживую — одноразовый, из базы
+const token = (key: string) => [...key].reduce((h, ch) => (h * 33 + ch.charCodeAt(0)) >>> 0, 5381).toString(36);
+const yes = (b: boolean) => (b ? 'есть' : 'нет');
 ---
 
 <AdminShell title="Карточки" section="catalog">
-  <nav class="a-tabs" aria-label="Вид карточек">
-    <a class="a-tabs__item is-active" href="#" data-filter-tab="cat" data-value="all">Все <span class="a-tabs__n">{rows.length}</span></a>
-    <a class="a-tabs__item" href="#" data-filter-tab="cat" data-value="venue">Площадки <span class="a-tabs__n">{venues}</span></a>
-    <a class="a-tabs__item" href="#" data-filter-tab="cat" data-value="specialist">Подрядчики <span class="a-tabs__n">{rows.length - venues}</span></a>
-    <a class="a-tabs__item" href="#" data-filter-tab="cat" data-value="low">Заполнены меньше чем на 70 % <span class="a-tabs__n">{rows.filter((r) => r.filled < 70).length}</span></a>
-  </nav>
-
   <div class="a-title">
     <h1 class="a-h1">Карточки</h1>
-    <div class="a-title__actions">
-      <a class="a-btn a-btn--primary" href="/profi/kabinet/novaya/"><AdminIcon name="plus" /> Добавить карточку</a>
-    </div>
-  </div>
-
-  <div class="a-tools">
-    <label class="a-search">
-      <span class="visually-hidden">Поиск</span>
-      <input class="a-input" type="search" placeholder="Название или категория" data-filter-search="cat" />
-      <AdminIcon name="search" />
-    </label>
-    <select class="a-select" aria-label="Категория" data-filter-select="cat">
-      <option value="all">Все категории</option>
-      <option value="venue">Площадки</option>
-      {cats.map((c) => <option value={slug(c)}>{c}</option>)}
-    </select>
-    <div class="a-tools__right"><span class="a-btn a-btn--soft">Последние 7 дней <AdminIcon name="down" /></span></div>
+    <p class="a-lead">Всё, что сейчас на сайте. Чего не хватает — красным.</p>
   </div>
 
   <section class="a-card a-card--flush">
+    <nav class="a-tabs" aria-label="Отбор карточек">
+      {tabs.map((t) => (
+        <a class:list={['a-tabs__item', { 'is-active': t.v === 'all' }]} href={`#${t.v}`} data-filter-tab="cat" data-value={t.v}>
+          {t.label} <span class:list={['a-tabs__n', { 'a-tabs__n--bad': t.bad && t.n > 0 }]}>{t.n}</span>
+        </a>
+      ))}
+    </nav>
+    <div class="a-tools">
+      <label class="a-search">
+        <span class="visually-hidden">Поиск</span>
+        <input class="a-input" type="search" placeholder="Название или категория" data-filter-search="cat" />
+        <AdminIcon name="search" />
+      </label>
+    </div>
     <div class="a-table-wrap">
       <table class="a-table a-table--cards" id="cat" data-atable>
         <thead>
           <tr>
             <th><input class="a-check" type="checkbox" aria-label="Выбрать все" /></th>
             <th data-sort="asc">Название</th>
-            <th>Статус</th>
-            <th class="a-num" data-sort="desc">Фото</th>
-            <th class="a-num" data-sort="desc">Заполнена</th>
-            <th class="a-num" data-sort="desc">Просмотры</th>
-            <th class="a-num" data-sort="desc">Контакты</th>
+            <th class="a-num" data-sort="asc">Фото</th>
+            <th>Текст</th>
+            <th>Цена</th>
+            <th>Контакты</th>
+            <th>Владелец</th>
           </tr>
         </thead>
         <tbody>
           <tr class="a-total">
             <td></td>
-            <td>Итого</td>
-            <td></td>
-            <td class="a-num">{total('photos')}</td>
-            <td class="a-num">{avgFilled} %</td>
-            <td class="a-num">{rows.reduce((s, r) => s + r.i.views, 0).toLocaleString('ru-RU')}</td>
-            <td class="a-num">{opens}</td>
+            <td>Итого: {rows.length} карточек</td>
+            <td class="a-num">{rows.reduce((s, r) => s + r.photos, 0)}</td>
+            <td>{rows.filter((r) => r.hasText).length} из {rows.length}</td>
+            <td>{rows.filter((r) => r.hasPrice).length} из {rows.length}</td>
+            <td>{rows.filter((r) => r.hasContacts).length} из {rows.length}</td>
+            <td>{rows.filter((r) => r.owner.step === 'own').length} ведут сами</td>
           </tr>
-          {rows.map((r) => (
-            <tr
-              data-tab={[r.kind, r.kind === 'venue' ? 'venue' : slug(r.category), r.filled < 70 ? 'low' : ''].join(' ')}
-              data-text={`${r.name} ${r.category}`.toLowerCase()}
-            >
-              <td><input class="a-check" type="checkbox" aria-label={`Выбрать: ${r.name}`} /></td>
-              <td data-v={r.name}>
-                <div class="a-who">
-                  {r.cover && <Image src={resolveImage(r.cover)} alt="" widths={[...IMG_WIDTHS.thumb]} sizes="40px" class="a-thumb" />}
-                  <div>
-                    <a class="a-name" href={r.url} target="_blank" rel="noopener">{r.name}</a>
-                    <span class="a-sub">{r.category}</span>
-                    <span class="a-sublinks">
-                      <a href={r.url} target="_blank" rel="noopener">На сайте</a>
-                      <a href="/profi/admin/pilot/">Ссылка владельцу</a>
-                      <a href="/profi/admin/interes/">Статистика</a>
-                    </span>
+          {rows.map((r) => {
+            const tab = [
+              r.kind,
+              !r.hasContacts && 'nocontacts',
+              r.photos < PHOTOS_LOW && 'fewphotos',
+              !r.hasPrice && 'noprice',
+            ].filter(Boolean).join(' ');
+            const st = OWNER_STEP[r.owner.step];
+            const link = `https://profi.wed-secrets.ru/v/${token(r.key)}`;
+            return (
+              <tr data-tab={tab} data-text={`${r.name} ${r.category}`.toLowerCase()}>
+                <td><input class="a-check" type="checkbox" aria-label={`Выбрать: ${r.name}`} /></td>
+                <td data-v={r.name}>
+                  <div class="a-who">
+                    {r.cover && <Image src={resolveImage(r.cover)} alt="" widths={[...IMG_WIDTHS.thumb]} sizes="32px" class="a-thumb" />}
+                    <div>
+                      <a class="a-name" href={r.url} target="_blank" rel="noopener">{r.name}</a>
+                      <span class="a-sub">{r.category}</span>
+                    </div>
                   </div>
-                </div>
-              </td>
-              <td data-bulk-cell>
-                <span class="a-dot a-dot--ok">На сайте</span>
-                <span class="a-sub">{ownerLabel(r.owner)}</span>
-              </td>
-              <td class="a-num" data-v={r.photos} data-l="Фото">{r.photos}</td>
-              <td class="a-num" data-v={r.filled} data-l="Заполнена">
-                {r.filled} %
-                <span class="a-bar-meter cat__meter"><span style={`width:${r.filled}%`}></span></span>
-              </td>
-              <td class="a-num" data-v={r.i.views} data-l="Просмотры">{r.i.views.toLocaleString('ru-RU')}</td>
-              <td class="a-num" data-v={r.i.opens} data-l="Контакты">{r.i.opens}</td>
-            </tr>
-          ))}
+                </td>
+                <td class="a-num" data-v={r.photos} data-l="Фото">
+                  <span class:list={{ 'a-no': r.photos < PHOTOS_LOW }}>{r.photos}</span>
+                  <span class="a-sub">из {PHOTOS_MAX}</span>
+                </td>
+                <td data-l="Текст"><span class={r.hasText ? 'a-yes' : 'a-no'}>{yes(r.hasText)}</span></td>
+                <td data-l="Цена"><span class={r.hasPrice ? 'a-yes' : 'a-no'}>{yes(r.hasPrice)}</span></td>
+                <td data-l="Контакты"><span class={r.hasContacts ? 'a-yes' : 'a-no'}>{yes(r.hasContacts)}</span></td>
+                <td data-bulk-cell>
+                  <span class={`a-dot ${st.dot ? `a-dot--${st.dot}` : ''}`}>{st.label}</span>
+                  <span class="a-sub">
+                    {r.owner.at ? `с ${r.owner.at}${r.owner.via ? `, вход через ${r.owner.via}` : ''}` : ''}
+                  </span>
+                  {r.owner.step !== 'own' && (
+                    <button class="cat__link" type="button" data-copy={link}>
+                      <AdminIcon name="link" /> {r.owner.step === 'none' ? 'Выдать ссылку' : 'Скопировать ссылку'}
+                    </button>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
-      <div class="a-empty" data-empty="cat" hidden><p>Ничего не нашлось</p><p>Смените вкладку, категорию или запрос</p></div>
+      <div class="a-empty" data-empty="cat" hidden>Ничего не нашлось</div>
     </div>
   </section>
 
   <div class="a-bulk" data-bulk="cat" hidden>
     <span class="a-bulk__count">Выбрано: <span data-bulk-n>0</span></span>
-    <button class="a-bulk__btn" type="button" data-bulk-act="mark" data-bulk-label='<span class="a-dot a-dot--info">Ссылка выдана</span>'>Выдать ссылки владельцам</button>
-    <button class="a-bulk__btn" type="button" data-bulk-act="mark" data-bulk-label='<span class="a-dot">Скрыта</span><span class="a-sub">снята с сайта</span>'>Скрыть с сайта</button>
-    <button class="a-bulk__btn" type="button">Выгрузить в таблицу</button>
+    <button class="a-bulk__btn" type="button" data-bulk-act="mark" data-bulk-label='<span class="a-dot a-dot--info">Ссылка выдана</span><span class="a-sub">сегодня</span>'>Выдать ссылки владельцам</button>
+    <button class="a-bulk__btn" type="button" data-bulk-act="mark" data-bulk-label='<span class="a-dot a-dot--bad">Скрыта с сайта</span>'>Скрыть с сайта</button>
     <button class="a-bulk__btn" type="button" data-bulk-clear>Снять выбор</button>
   </div>
+
+  <div class="a-toast" data-toast hidden role="status"><span data-toast-text></span></div>
 </AdminShell>
 
+<script>
+  // ПРОТОТИП: «Выдать ссылку» создаёт ссылку (вживую — одноразовый токен
+  // в базе) и копирует её; владельцу её отправляет модератор сам, сайт
+  // никому ничего не шлёт.
+  let t = 0;
+  document.addEventListener('click', async (e) => {
+    const b = (e.target as HTMLElement).closest<HTMLElement>('[data-copy]');
+    if (!b) return;
+    const link = b.dataset.copy!;
+    const cell = b.closest('td');
+    if (cell && b.textContent?.includes('Выдать')) {
+      cell.querySelector('.a-dot')!.className = 'a-dot a-dot--info';
+      cell.querySelector('.a-dot')!.textContent = 'Ссылка выдана';
+      b.lastChild!.textContent = ' Скопировать ссылку';
+    }
+    let msg = `Ссылка скопирована: ${link}`;
+    try { await navigator.clipboard.writeText(link); } catch { msg = link; }
+    const toast = document.querySelector<HTMLElement>('[data-toast]');
+    if (!toast) return;
+    toast.querySelector('[data-toast-text]')!.textContent = msg;
+    toast.hidden = false;
+    clearTimeout(t);
+    t = window.setTimeout(() => (toast.hidden = true), 3500);
+  });
+</script>
+
 <style>
-  .cat__meter { margin-left: auto; }
+  /* Действие в строке — ссылкой, а не кнопкой: строка таблицы остаётся в две строки */
+  .cat__link { display: inline-flex; align-items: center; gap: 4px; margin-top: 2px; color: var(--adm-link); font-size: 13px; font-weight: 500; }
+  .cat__link :global(svg) { width: 14px; height: 14px; }
 </style>

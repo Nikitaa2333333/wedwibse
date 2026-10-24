@@ -1,0 +1,291 @@
+---
+// ЗАЯВКА ПАРТНЁРА — всё по одному подрядчику или площадке на одном экране.
+// Слева: что заполнено в анкете (чипы), что написал, фото, история
+// действий. Справа, не уезжает при прокрутке: как связаться (звонок,
+// Telegram, почта — открываются у модератора, сайт сам никому не пишет),
+// готовый текст напоминания для брошенного черновика (копируется, а не
+// отправляется), комментарии команды и решение: одобрить и опубликовать,
+// вернуть с причиной, отклонить. ПРОТОТИП: решения и комментарии меняют
+// только экран — вживую это записи в базе (`revisions`, `notes`).
+import { Image } from 'astro:assets';
+import AdminShell from '../../../../components/admin/AdminShell.astro';
+import AdminIcon from '../../../../components/admin/AdminIcon.astro';
+import Icon from '../../../../components/Icon.astro';
+import { resolveImage, IMG_WIDTHS } from '../../../../lib/images';
+import { findSpecialist, specialistUrl } from '../../../../data/specialists';
+import { APP_STATUS, PARTNER_APPS, reminderText } from '../../../../data/partner-demo';
+
+export function getStaticPaths() {
+  return PARTNER_APPS.map((app) => ({ params: { id: app.id }, props: { app } }));
+}
+
+const { app } = Astro.props;
+const st = APP_STATUS[app.status];
+const card = app.cardSlug ? findSpecialist(app.cardSlug) : undefined;
+const story = card?.story ?? app.story ?? [];
+const photos = card?.photos ?? [];
+const shown = photos.slice(0, 18);
+const missing = app.sections.filter((s) => !s.done);
+const reminder = missing.length ? reminderText(app) : '';
+const tg = app.contacts.telegram?.replace('@', '');
+---
+
+<AdminShell title={`Заявка: ${app.name}`} section="partners">
+  <div class="ap">
+    <div class="ap__top">
+      <a class="a-btn a-btn--soft" href="/profi/admin/zayavki/"><AdminIcon name="back" /> Заявки</a>
+    </div>
+
+    <header class="a-card ap__head">
+      <div>
+        <h1 class="a-h1">{app.name}</h1>
+        <p class="a-lead">{app.category} · анкету начал {app.started} · последнее действие {app.lastEdit}</p>
+      </div>
+      <p class="ap__status">
+        <span class={`a-dot ${st.dot ? `a-dot--${st.dot}` : ''}`}>{st.label}</span>
+        {app.status === 'review' && app.waitingHours !== undefined && (
+          <span class:list={['a-time', { 'a-time--late': app.waitingHours >= 20 }]}><AdminIcon name="clock" />ждёт {app.waitingHours} ч из 24</span>
+        )}
+        {card && app.status === 'approved' && <a class="a-more" href={specialistUrl(card)} target="_blank" rel="noopener">Карточка на сайте</a>}
+      </p>
+    </header>
+
+    <div class="a-grid a-grid--main">
+      <div class="a-grid">
+        <section class="a-card">
+          <div class="a-card__head">
+            <h2 class="a-h2">Анкета</h2>
+            <span class="a-lead">{missing.length ? `не хватает: ${missing.length}` : 'заполнена целиком'}</span>
+          </div>
+          <div class="a-chips">
+            {app.sections.map((s) => (
+              <span class:list={['a-chip', s.done ? 'a-chip--ok' : 'a-chip--bad']}><b>{s.label}:</b> {s.state}</span>
+            ))}
+          </div>
+        </section>
+
+        {story.length > 0 && (
+          <section class="a-card">
+            <div class="a-card__head"><h2 class="a-h2">Что написал</h2></div>
+            {story.map((s) => (
+              <article class="ap__sec">
+                {(s.title ?? s.lead) && <h3 class="a-h3">{s.title ?? s.lead}</h3>}
+                {s.title && s.lead && <p>{s.lead}</p>}
+                {s.text?.map((t) => <p>{t}</p>)}
+                {s.list && <ul class="ap__list">{s.list.map((li) => <li>{li}</li>)}</ul>}
+                {s.tariffs && <ul class="ap__list">{s.tariffs.map((t) => <li>{t.name} — {t.price}{t.unit ? ` ${t.unit}` : ''}</li>)}</ul>}
+                {s.items && <ul class="ap__list">{s.items.map((it) => <li>{it.title}{it.text ? ` — ${it.text}` : ''}</li>)}</ul>}
+              </article>
+            ))}
+          </section>
+        )}
+
+        <section class="a-card">
+          <div class="a-card__head">
+            <h2 class="a-h2">Фото</h2>
+            <span class="a-lead">{photos.length ? `${photos.length} из 50` : 'не загружено ни одного'}</span>
+          </div>
+          {app.disk && (
+            <p class="ap__disk">
+              <AdminIcon name="disk" />
+              <span>Фото по ссылке на Яндекс.Диск — <a class="a-more" href={app.disk.url} target="_blank" rel="noopener">открыть папку</a><span class="a-sub">{app.disk.state}</span></span>
+            </p>
+          )}
+          {shown.length > 0 ? (
+            <ul class="ap__photos">
+              {shown.map((src) => (
+                <li><Image src={resolveImage(src)} alt="" widths={[...IMG_WIDTHS.thumb]} sizes="(min-width: 1024px) 110px, 23vw" loading="lazy" /></li>
+              ))}
+              {photos.length > shown.length && <li class="ap__more">ещё {photos.length - shown.length}</li>}
+            </ul>
+          ) : (
+            <p class="a-lead">Без фото карточку не опубликовать — напомните подрядчику.</p>
+          )}
+        </section>
+
+        <section class="a-card">
+          <div class="a-card__head"><h2 class="a-h2">История</h2></div>
+          <ol class="ap__hist">
+            {app.history.map((h) => <li><span class="ap__when">{h.at}</span><span>{h.text}</span></li>)}
+          </ol>
+        </section>
+      </div>
+
+      <aside class="ap__side">
+        <section class="a-card ap__box">
+          <h2 class="a-h2">Связаться</h2>
+          <ul class="ap__contacts">
+            {app.contacts.phone && <li><a class="a-btn a-btn--block" href={`tel:${app.contacts.phone.replace(/[^\d+]/g, '')}`}><AdminIcon name="phone" />Позвонить · {app.contacts.phone}</a></li>}
+            {tg && <li><a class="a-btn a-btn--block" href={`https://t.me/${tg}`} target="_blank" rel="noopener"><AdminIcon name="telegram" />Написать в Telegram · {app.contacts.telegram}</a></li>}
+            {app.contacts.email && <li><a class="a-btn a-btn--block" href={`mailto:${app.contacts.email}`}><AdminIcon name="mail" />Написать письмо · {app.contacts.email}</a></li>}
+            {!app.contacts.phone && !tg && !app.contacts.email && <li class="a-lead">Контактов нет — только вход: {app.via}.</li>}
+          </ul>
+          {reminder && (
+            <div class="ap__remind">
+              <p class="a-h3">Напоминание</p>
+              <p class="ap__remind-text" data-remind>{reminder}</p>
+              <button class="a-btn a-btn--soft a-btn--block" type="button" data-copy-remind><AdminIcon name="copy" />Скопировать текст</button>
+              <p class="a-sub">Отправляете сами — в Telegram, MAX или письмом.</p>
+            </div>
+          )}
+        </section>
+
+        <section class="a-card ap__box">
+          <h2 class="a-h2">Решение</h2>
+          {app.status === 'review' ? (
+            <div class="ap__actions" data-actions>
+              <button class="a-btn a-btn--primary a-btn--lg a-btn--block" type="button" data-act="approve">Одобрить и опубликовать</button>
+              <button class="a-btn a-btn--lg a-btn--block" type="button" data-sheet-open="return">Вернуть с причиной</button>
+              <button class="a-btn a-btn--lg a-btn--block a-btn--danger" type="button" data-act="reject">Отклонить</button>
+            </div>
+          ) : app.status === 'draft' ? (
+            <div class="ap__actions" data-actions>
+              <p class="a-lead">Анкету ещё не отправили. Свяжитесь и отметьте результат в комментарии.</p>
+              <button class="a-btn a-btn--block" type="button" data-act="contacted">Отметить: связались</button>
+            </div>
+          ) : (
+            <p class="a-lead">{app.history[app.history.length - 1]?.text}</p>
+          )}
+        </section>
+
+        <section class="a-card ap__box">
+          <h2 class="a-h2">Комментарии команды</h2>
+          <p class="a-sub">Видят только администраторы, хранятся в базе вместе с заявкой. Подрядчик их не видит.</p>
+          <ul class="ap__notes" data-notes>
+            {app.notes.map((n) => <li><span class="a-sub">{n.who} · {n.at}</span>{n.text}</li>)}
+            {app.notes.length === 0 && <li class="a-lead" data-notes-empty>Пока нет.</li>}
+          </ul>
+          <textarea class="ap__input" rows="3" placeholder="Например: позвонил, обещал фото до пятницы" data-note-text></textarea>
+          <button class="a-btn a-btn--block" type="button" data-note-add>Добавить комментарий</button>
+        </section>
+      </aside>
+    </div>
+  </div>
+
+  <div class="a-toast" data-toast hidden role="status"><span data-toast-text></span></div>
+
+  <div class="sheet" data-sheet="return">
+    <div class="sheet__backdrop" data-sheet-close></div>
+    <section class="sheet__panel ap-sheet" role="dialog" aria-modal="true" aria-labelledby="ap-return-title">
+      <header class="sheet__head">
+        <h2 class="sheet__title" id="ap-return-title">Вернуть с причиной</h2>
+        <button class="icon-btn" type="button" data-sheet-close aria-label="Закрыть"><Icon name="close" /></button>
+      </header>
+      <div class="sheet__body ap-sheet__body" data-sheet-body data-lenis-prevent>
+        <p>Подрядчик увидит причину в кабинете и сможет исправить анкету.</p>
+        <textarea class="ap__input" rows="4" data-return-text placeholder="Что исправить — словами для подрядчика"></textarea>
+      </div>
+      <footer class="sheet__foot">
+        <button class="a-btn a-btn--primary a-btn--lg a-btn--block" type="button" data-act="return">Вернуть подрядчику</button>
+      </footer>
+    </section>
+  </div>
+</AdminShell>
+
+<script>
+  // ClientRouter: привязки — на каждый `astro:page-load` этой страницы.
+  import { bindSheet } from '../../../../lib/sheet';
+
+  const RESULT: Record<string, string> = {
+    approve: 'Одобрено — карточка появится на сайте, подрядчику придёт сообщение',
+    return: 'Вернули с причиной — подрядчик увидит её в кабинете',
+    reject: 'Заявка отклонена',
+    contacted: 'Отмечено: связались',
+  };
+
+  document.addEventListener('astro:page-load', () => {
+    if (!document.querySelector('.ap')) return;
+    const toast = document.querySelector<HTMLElement>('[data-toast]');
+    let t = 0;
+    const say = (msg: string) => {
+      if (!toast) return;
+      toast.querySelector('[data-toast-text]')!.textContent = msg;
+      toast.hidden = false;
+      clearTimeout(t);
+      t = window.setTimeout(() => (toast.hidden = true), 4000);
+    };
+
+    const sheetEl = document.querySelector<HTMLElement>('[data-sheet="return"]');
+    const sheet = sheetEl ? bindSheet(sheetEl) : null;
+
+    document.querySelectorAll<HTMLElement>('[data-act]').forEach((b) =>
+      b.addEventListener('click', () => {
+        if (b.dataset.act === 'return') sheet?.close();
+        say(RESULT[b.dataset.act!]);
+      }),
+    );
+
+    // Напоминание копируется — отправляет модератор сам
+    document.querySelector('[data-copy-remind]')?.addEventListener('click', async () => {
+      const text = document.querySelector('[data-remind]')?.textContent ?? '';
+      try { await navigator.clipboard.writeText(text); say('Текст скопирован — отправьте его подрядчику'); }
+      catch { say('Не удалось скопировать — выделите текст вручную'); }
+    });
+
+    // Комментарий команды (вживую — запись `notes` в базе)
+    const list = document.querySelector<HTMLElement>('[data-notes]');
+    const input = document.querySelector<HTMLTextAreaElement>('[data-note-text]');
+    document.querySelector('[data-note-add]')?.addEventListener('click', () => {
+      const text = input?.value.trim();
+      if (!text || !list || !input) return;
+      list.querySelector('[data-notes-empty]')?.remove();
+      const li = document.createElement('li');
+      const who = document.createElement('span');
+      who.className = 'a-sub';
+      who.textContent = 'Никита · сейчас';
+      li.append(who, text);
+      list.append(li);
+      input.value = '';
+    });
+  });
+</script>
+
+<style>
+  .ap { display: grid; gap: var(--s-4); }
+  .ap__head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s-3); }
+  .ap__status { display: flex; flex-wrap: wrap; align-items: center; gap: 8px var(--s-4); }
+
+  .ap__sec + .ap__sec { margin-top: var(--s-4); }
+  .ap__sec p { margin-top: 6px; max-width: 72ch; font-size: 15px; line-height: 24px; }
+  .ap__list { margin-top: 6px; display: grid; gap: 4px; }
+  .ap__list li { position: relative; padding-left: 16px; font-size: 15px; line-height: 22px; }
+  .ap__list li::before { content: ''; position: absolute; left: 2px; top: 9px; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+  .ap__photos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  @media (min-width: 1024px) { .ap__photos { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+  .ap__photos li { aspect-ratio: 4 / 5; border-radius: 10px; overflow: hidden; background: var(--adm-bg); }
+  .ap__photos :global(img) { width: 100%; height: 100%; object-fit: cover; border-radius: 0; }
+  .ap__more { display: grid; place-items: center; font-weight: 500; color: var(--adm-text-2); }
+
+  .ap__hist { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+  .ap__hist li { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: var(--s-3); }
+  .ap__when { color: var(--adm-text-2); white-space: nowrap; }
+
+  .ap__side { display: grid; gap: var(--s-4); align-content: start; }
+  @media (min-width: 1024px) { .ap__side { position: sticky; top: var(--s-4); } }
+  .ap__box { display: grid; gap: var(--s-3); }
+  .ap__contacts { display: grid; gap: 8px; }
+  .ap__disk { display: flex; gap: 10px; align-items: flex-start; margin-bottom: var(--s-3); padding: 12px; border-radius: var(--adm-radius-md); background: var(--adm-bg); }
+  .ap__disk :global(svg) { width: 22px; height: 22px; color: var(--adm-primary); }
+  .ap__contacts .a-btn :global(svg) { color: var(--adm-primary); }
+  .ap__contacts .a-btn { justify-content: flex-start; height: auto; min-height: 40px; padding: 8px 12px; white-space: normal; text-align: left; }
+  .ap__remind { display: grid; gap: 8px; padding-top: var(--s-3); border-top: 1px solid var(--adm-line); }
+  .ap__remind-text { padding: 12px; border-radius: var(--adm-radius-md); background: var(--adm-bg); line-height: 20px; }
+  .ap__actions { display: grid; gap: 8px; }
+
+  .ap__notes { display: grid; gap: 10px; }
+  .ap__notes li { display: grid; gap: 2px; padding: 10px 12px; border-radius: var(--adm-radius-md); background: var(--adm-bg); }
+  .ap__input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--adm-line);
+    border-radius: var(--adm-radius-btn);
+    background: var(--adm-card);
+    color: var(--adm-text);
+    font: inherit;
+    resize: vertical;
+  }
+  .ap__input:focus-visible { outline: 2px solid var(--adm-primary); outline-offset: -1px; }
+  .ap-sheet { font-family: var(--adm-font); }
+  .ap-sheet__body { display: grid; gap: var(--s-3); }
+</style>

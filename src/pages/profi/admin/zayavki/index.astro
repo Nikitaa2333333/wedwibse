@@ -1,0 +1,86 @@
+---
+// ЗАЯВКИ ПАРТНЁРОВ — подрядчики и площадки, которые хотят на сайт: завели
+// учётку и заполняют анкету новой карточки. Вкладки: «На проверке» —
+// отправили, ждут решения (срок 24 ч); «Черновики» — начали и бросили,
+// им звоним или пишем; «Вернули», «Одобрены», «Отклонены». В строке —
+// чипами, что заполнено, а чего нет. Сейчас — примеры (partner-demo.ts);
+// вживую — `vendors` + `revisions` первой публикации.
+import AdminShell from '../../../../components/admin/AdminShell.astro';
+import AdminIcon from '../../../../components/admin/AdminIcon.astro';
+import { APP_STATUS, PARTNER_APPS, type AppStatus } from '../../../../data/partner-demo';
+
+const tabs: AppStatus[] = ['review', 'draft', 'returned', 'approved', 'rejected'];
+const count = (s: AppStatus) => PARTNER_APPS.filter((a) => a.status === s).length;
+---
+
+<AdminShell title="Заявки" section="partners">
+  <div class="a-title">
+    <h1 class="a-h1">Заявки</h1>
+    <p class="a-lead">Подрядчики и площадки, которые хотят на сайт. Заполненную анкету проверяем за 24 часа. Кто не закончил анкету — звоним или пишем.</p>
+  </div>
+
+  <section class="a-card a-card--flush">
+    <nav class="a-tabs" aria-label="Статус заявки">
+      {tabs.map((t) => (
+        <a class:list={['a-tabs__item', { 'is-active': t === 'review' }]} href={`#${t}`} data-filter-tab="ap" data-value={t}>
+          {APP_STATUS[t].tab} <span class:list={['a-tabs__n', { 'a-tabs__n--bad': t === 'review' && count(t) > 0 }]}>{count(t)}</span>
+        </a>
+      ))}
+      <a class="a-tabs__item" href="#all" data-filter-tab="ap" data-value="all">Все <span class="a-tabs__n">{PARTNER_APPS.length}</span></a>
+    </nav>
+    <div class="a-tools">
+      <label class="a-search">
+        <span class="visually-hidden">Поиск</span>
+        <input class="a-input" type="search" placeholder="Имя или категория" data-filter-search="ap" />
+        <AdminIcon name="search" />
+      </label>
+    </div>
+    <div class="a-table-wrap">
+      <table class="a-table a-table--cards" id="ap" data-atable data-tab-default="review">
+        <thead>
+          <tr>
+            <th data-sort="asc">Кто</th>
+            <th>Анкета</th>
+            <th>Статус</th>
+            <th>Последнее действие</th>
+          </tr>
+        </thead>
+        <tbody>
+          {PARTNER_APPS.map((a) => {
+            const href = `/profi/admin/zayavki/${a.id}/`;
+            const st = APP_STATUS[a.status];
+            return (
+              <tr data-href={href} data-tab={a.status} data-text={`${a.name} ${a.category}`.toLowerCase()}>
+                <td data-v={a.name}>
+                  <a class="a-name" href={href}>{a.name}</a>
+                  <span class="a-sub">{a.category} · вход: {a.via.toLowerCase() === 'почта' ? 'почта' : a.via}</span>
+                </td>
+                <td>
+                  <div class="a-chips">
+                    {a.sections.map((s) => (
+                      <span class:list={['a-chip', s.done ? 'a-chip--ok' : 'a-chip--bad']}><b>{s.label}:</b> {s.state}</span>
+                    ))}
+                  </div>
+                </td>
+                <td data-l="Статус">
+                  <span class={`a-dot ${st.dot ? `a-dot--${st.dot}` : ''}`}>{st.label}</span>
+                  {a.notes.length > 0 && <span class="a-sub">{a.notes.length} коммент.</span>}
+                </td>
+                <td data-l="Последнее действие">
+                  {a.status === 'review' && a.waitingHours !== undefined
+                    ? <span class:list={['a-time', { 'a-time--late': a.waitingHours >= 20 }]}><AdminIcon name="clock" />ждёт {a.waitingHours} ч из 24</span>
+                    : a.lastEdit}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      <div class="a-empty" data-empty="ap" hidden>В этой вкладке пусто</div>
+    </div>
+  </section>
+</AdminShell>
+
+<style>
+  #ap td:nth-child(2) { min-width: 300px; }
+</style>
