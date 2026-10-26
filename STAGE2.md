@@ -63,7 +63,12 @@
 - [ ] **2. GitHub → Settings → Secrets and variables → Actions → Variables:**
       `TG_BOT_ID` = цифры до «:» в токене; `PB_PUBLIC_URL` = `https://wed-secrets.ru`
       (ставить после шага 4, иначе деплой будет стучаться в закрытый `/api/`).
-- [ ] **3. Схема и хуки на сервер** (сначала бэкап):
+- [x] **3. Схема и хуки на сервер** (сначала бэкап) — 26.10.2026: бэкап
+      `pb-2026-10-26.tar.gz`, три миграции кабинета применились, хуки на месте.
+      В юните `EnvironmentFile` не было — добавлен drop-in
+      `/etc/systemd/system/wedsecrets-pb.service.d/env.conf`, `SITE_URL` в `.env`.
+      **`TG_BOT_TOKEN` и `TG_CHAT_ID` Никита вписывает в `.env` сам**, затем
+      `systemctl restart wedsecrets-pb`:
       ```
       ssh -i ~/.ssh/timeweb_wed root@193.124.47.78 '/srv/wedsecrets-pb/backup.sh && ls -t /srv/wedsecrets-pb/backups | head -1'
       scp -i ~/.ssh/timeweb_wed -r pb/pb_migrations/* root@193.124.47.78:/srv/wedsecrets-pb/pb_migrations/
@@ -79,10 +84,13 @@
       `TG_BOT_TOKEN=…`, `TG_CHAT_ID=-100…`, `SITE_URL=https://wed-secrets.ru`.
       Затем `systemctl daemon-reload && systemctl restart wedsecrets-pb`
       и `journalctl -u wedsecrets-pb -n 30` — миграции применились без ошибок.
-- [ ] **4. `/api/` через nginx** (админка базы `/_/` наружу НЕ открывается):
-      в `/etc/nginx/sites-available/wedsecrets`, в блок `server` с 443:
+- [x] **4. `/api/` через nginx** (админка базы `/_/` наружу НЕ открывается) —
+      26.10.2026: `/api/health` → healthy, `/_/` → 404; копия конфига до правки —
+      `/root/wedsecrets.nginx.bak-2026-10-26`. Именно `^~ /api/`: без `^~`
+      regex статики (`\.(jpg|webp…)$`) перехватывает `/api/files/…` → 404.
+      В `/etc/nginx/sites-available/wedsecrets`, в блок `server` с 443:
       ```
-      location /api/ {
+      location ^~ /api/ {
         proxy_pass http://127.0.0.1:8090;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -93,10 +101,13 @@
       `nginx -t && systemctl reload nginx`; проверка:
       `curl -s https://wed-secrets.ru/api/health` → `API is healthy`,
       `curl -sI https://wed-secrets.ru/_/` → не 200.
-- [ ] **5. Тесты против боевой базы** через туннель (`bash scripts/pb-tunnel.sh`):
+- [x] **5. Тесты против боевой базы** через туннель (`bash scripts/pb-tunnel.sh`):
       `node scripts/pb-test-cabinet.mjs` (без `TG_BOT_TOKEN` раздел Telegram
-      пропускается; тестовые записи скрипт удаляет сам).
-- [ ] **6. Модераторы и условия** (через туннель):
+      пропускается; тестовые записи скрипт удаляет сам) — 26.10.2026: 54 прошло,
+      0 не прошло, остатков в базе нет. Telegram-раздел — после бота.
+- [ ] **6. Модераторы и условия** (через туннель) — 26.10.2026: тестовые
+      условия заведены (`vendor-offer`, `vendor-pdn`); **модераторов заводит
+      Никита сам** (почты и пароли в чат не идут):
       `node scripts/pb-cabinet-setup.mjs moderator <почта> <пароль> Никита`,
       то же для Евгения; `node scripts/pb-cabinet-setup.mjs test-terms`.
 - [ ] **7. Выложить сайт:** влить `claude/cabinet-loop` в `master` (или
