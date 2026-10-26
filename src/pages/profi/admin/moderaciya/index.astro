@@ -127,7 +127,8 @@ const minutes = (s?: string) => {
             const href = `/profi/admin/moderaciya/pravka/?id=${r.id}`;
             const who = r.expand?.owner?.name || 'без имени';
             const what = `${KIND[r.kind] ?? r.categorySlug} · ${r.venue || r.specialist ? 'правка' : 'новая карточка'} · ${(r.photos ?? []).length} фото`;
-            return `<tr data-href="${href}"><td><a class="a-name" href="${href}">${esc(r.data?.name || 'Без названия')}</a><span class="a-sub">${esc(who)}</span></td><td>${esc(what)}</td><td class="a-num">${esc(fmt(r.submittedAt))}</td></tr>`;
+            // data-astro-reload: переходом ClientRouter разбор не запускался (26.10)
+            return `<tr data-href="${href}"><td><a class="a-name" href="${href}" data-astro-reload>${esc(r.data?.name || 'Без названия')}</a><span class="a-sub">${esc(who)}</span></td><td>${esc(what)}</td><td class="a-num">${esc(fmt(r.submittedAt))}</td></tr>`;
           }).join('')
         : '<tr><td colspan="3" class="a-sub">На проверке ничего нет.</td></tr>';
     } catch (err) {
