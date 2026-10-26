@@ -18,7 +18,9 @@ import '../../../components/profi/live.css';
     <p class="live__error" data-error hidden></p>
     <div class="live__actions" data-add hidden>
       <a class="live__link" href="/profi/moi/kartochka/?new=specialist">+ Карточка подрядчика</a>
-      <a class="live__link" href="/profi/moi/kartochka/?new=venue">+ Карточка площадки</a>
+      <!-- Карточка площадки — когда площадки из кабинета начнут выходить
+           на сайт (страница из блоков, BACKLOG.md); сейчас одобренная
+           площадка осталась бы только в базе. -->
     </div>
     <div class="live__actions">
       <a class="live__link" href="#" data-logout>Выйти</a>
@@ -51,8 +53,9 @@ import '../../../components/profi/live.css';
       const rows: string[] = [];
       for (const c of cards.items) {
         const r = c.revision;
-        const st = r ? REV_STATUS[r.status] : REV_STATUS.approved;
-        const note = r?.status === 'rejected' ? `Вернули: ${esc(r.rejectReason)}` : r?.status === 'review' ? 'Правка на проверке, на сайте прежняя версия' : r ? 'Есть неотправленная правка' : 'На сайте';
+        const live = c.status === 'published';
+        const st = r ? REV_STATUS[r.status] : live ? REV_STATUS.approved : { label: 'Снята с сайта', cls: '' };
+        const note = r?.status === 'rejected' ? `Вернули: ${esc(r.rejectReason)}` : r?.status === 'review' ? 'Правка на проверке' : r ? 'Есть неотправленная правка' : live ? 'На сайте' : 'Сейчас её нет на сайте — напишите нам';
         const href = r ? `/profi/moi/kartochka/?id=${r.id}` : `/profi/moi/kartochka/?card=${c.id}&kind=${c.kind}`;
         rows.push(`<li><a class="live-row" href="${href}"><span class="status ${st.cls}">${st.label}</span><span class="live-row__name">${esc(c.name)}</span><span class="live-row__note">${note}</span></a></li>`);
       }

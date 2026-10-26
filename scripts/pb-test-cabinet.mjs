@@ -156,6 +156,13 @@ check('модератор видит очередь с учёткой', res.stat
 res = await call(A.token, 'PATCH', `/api/collections/revisions/records/${rev.id}`, { status: 'review', rejectReason: 'x' });
 check('подрядчик не пишет причину возврата', refused(res), res.text);
 
+res = await call(M.token, 'PATCH', `/api/collections/revisions/records/${rev.id}`, { status: 'approved', data: { name: 'Подмена' } });
+check('модератор не правит текст вместе с одобрением', refused(res), res.text);
+res = await call(M.token, 'PATCH', `/api/collections/revisions/records/${rev.id}`, { owner: B.id });
+check('модератор не меняет владельца', refused(res), res.text);
+res = await call(M.token, 'PATCH', `/api/collections/revisions/records/${rev.id}`, { status: 'draft' });
+check('модератор не переводит в черновик', refused(res), res.text);
+
 res = await call(M.token, 'PATCH', `/api/collections/revisions/records/${rev.id}`, { status: 'rejected' });
 check('вернуть без причины нельзя', refused(res) && says(res, 'причин'), res.text);
 

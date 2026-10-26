@@ -175,11 +175,20 @@ function isModerator(e) {
   return !!e.auth && e.auth.collection().name === 'moderators';
 }
 
-function photoLimit(r) {
+function photoLimit(app, r) {
   // в обработчике запроса новые файлы ещё не сохранены: в значении поля
   // их нет, они лежат отдельно до сохранения записи
   const n = photosOf(r).length + r.getUnsavedFiles('photos').length;
-  if (n > MAX_PHOTOS) throw new BadRequestError(`На карточке до ${MAX_PHOTOS} фото, сейчас ${n} — уберите лишние.`);
+  // у карточек, заведённых нами, кадров бывает больше 50 (Гребнево — 102):
+  // правка их не режет, потолок для неё — сколько уже на карточке
+  let cap = MAX_PHOTOS;
+  const kind = r.getString('kind');
+  const cardId = r.getString(cardField(kind));
+  if (cardId) {
+    const card = findOne(app, cardCollection(kind), 'id = {:id}', { id: cardId });
+    if (card) cap = Math.max(cap, photosOf(card).length);
+  }
+  if (n > cap) throw new BadRequestError(`На карточке до ${cap} фото, сейчас ${n} — уберите лишние.`);
 }
 
 /** сколько карточек у учётки: свои опубликованные + новые, ещё не закрытые модератором */
@@ -286,7 +295,7 @@ function vendorCreateRevision(e) {
   if (cardCount(e.app, e.auth.id) >= MAX_CARDS) {
     throw new BadRequestError(`На одной учётке не больше ${MAX_CARDS} карточек.`);
   }
-  photoLimit(r);
+  photoLimit(e.app, r);
   return e.next();
 }
 
@@ -326,7 +335,7 @@ function vendorUpdateRevision(e) {
     }
   }
 
-  photoLimit(r);
+  photoLimit(e.app, r);
   const submitting = to === 'review';
   if (submitting) {
     const problems = submitProblems(r);
@@ -353,6 +362,15 @@ function moderateRevision(e) {
   const r = e.record;
   const from = r.original().getString('status');
   const to = r.getString('status');
+  // Модератор (не суперпользователь) решает, а не правит: из запроса —
+  // только статус и причина. Иначе вместе с одобрением можно подменить
+  // карточку (specialist/venue + baseVersion), владельца, текст или фото.
+  if (!e.hasSuperuserAuth()) {
+    denyExtra(e.requestInfo().body, ['status', 'rejectReason']);
+    if (to !== from && to !== 'approved' && to !== 'rejected') {
+      throw new BadRequestError('Модератор может одобрить правку или вернуть её с причиной.');
+    }
+  }
   if (from === to) return e.next();
 
   if (to === 'approved') {
@@ -372,7 +390,7 @@ function moderateRevision(e) {
     const kind = r.getString('kind');
     const url = cardUrl(kind, r.getString('categorySlug'), r.getString('slug'));
     mailVendor(app, r.getString('owner'), 'Карточка опубликована — WED Secrets',
-      `<p>Карточка «${str(data.name, 120)}» опубликована: <a href="${url}">${url}</a>.</p>` +
+      `<p>Карточку «${str(data.name, 120)}» одобрили — она появится на сайте с ближайшей выкладкой: <a href="${url}">${url}</a>.</p>` +
       `<p>Теперь в кабинете можно добавить видео — пришлите ссылку на Яндекс.Диск, ролики мы обработаем сами.</p>`);
     return;
   }
@@ -539,7 +557,9 @@ function startEdit(e) {
   try {
     const base = card.baseFilesPath() + '/';
     const photos = photosOf(card);
-    rev.set('photos', photos.slice(0, 30).map((n) => fsys.getReuploadableFile(base + n, false)));
+    // все кадры: набор правки при одобрении заменяет набор карточки целиком,
+    // обрезка здесь стёрла бы лишние кадры с сайта
+    rev.set('photos', photos.map((n) => fsys.getReuploadableFile(base + n, false)));
     if (kind === 'specialist' && card.getString('avatar')) {
       rev.set('avatar', fsys.getReuploadableFile(base + card.getString('avatar'), false));
     }
@@ -664,6 +684,9 @@ function claimInvite(app, vendor, token) {
   const card = app.findRecordById(cardCollection(kind), inv.getString(cardField(kind)));
   const owner = card.getString('owner');
   if (owner && owner !== vendor.id) throw new BadRequestError('У этой карточки уже есть владелец — напишите нам.');
+  if (owner !== vendor.id && cardCount(app, vendor.id) >= MAX_CARDS) {
+    throw new BadRequestError(`На одной учётке не больше ${MAX_CARDS} карточек — напишите нам.`);
+  }
   card.set('owner', vendor.id);
   app.save(card);
   inv.set('usedAt', new DateTime());

@@ -8,13 +8,14 @@
 // (прототип /profi/kabinet/anketa/) переделывается отдельно, данные
 // хранятся общим JSON `data`, новый вид ляжет на них без миграции.
 import ProfiShell from '../../../components/profi/ProfiShell.astro';
+import BackButton from '../../../components/BackButton.astro';
 import { SPECIALIST_CATEGORIES } from '../../../data/specialists';
 import '../../../components/profi/live.css';
 ---
 
 <ProfiShell title="Карточка" dock={false}>
   <main class="section container live" data-card>
-    <a class="live__link" href="/profi/moi/">← Мои карточки</a>
+    <BackButton plain href="/profi/moi/" label="Мои карточки" />
     <div class="live__head">
       <span class="status" data-status hidden></span>
       <h1 class="t-h1" data-title>Карточка</h1>

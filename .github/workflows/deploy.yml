@@ -41,8 +41,11 @@ jobs:
       # только на этом раннере (STAGE2.md, «Сквозная проверка»). Переменная
       # PB_PUBLIC_URL (Settings → Variables) ставится, когда /api/ открыт через
       # nginx; без неё и при недоступной базе сайт собирается как раньше.
+      # Сбой здесь не останавливает выкладку: сайт соберётся без карточек
+      # из кабинета (канал GitHub → VPS бывает медленным — CLAUDE.md, 12.10).
       - name: Cabinet cards from base
-        timeout-minutes: 3
+        timeout-minutes: 10
+        continue-on-error: true
         env:
           PB_PUBLIC_URL: ${{ vars.PB_PUBLIC_URL }}
         run: node scripts/pb-pull-cabinet.mjs

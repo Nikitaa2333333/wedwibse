@@ -415,16 +415,20 @@ export const FOTOGRAFY: Specialist[] = [
 // только для порядка. Новый файл = карточка в каталоге и визитка, код
 // не трогаем. Позже эти JSON станут записями коллекции specialists.
 // ============================================================
+// Карточки из кабинета подрядчика: кладёт scripts/pb-pull-cabinet.mjs
+// перед сборкой на раннере деплоя, папка в .gitignore (в git их нет).
+// Карточка, которую владелец получил по приглашению и поправил в кабинете,
+// есть и в git (конвейер), и здесь: кабинет — источник правды (решение
+// 20.10), его версия заменяет файл из git, а не встаёт второй копией.
+const cabinetSpecialists = Object.values(
+  import.meta.glob<Specialist>('./cabinet/specialists/*.json', { eager: true, import: 'default' })
+).map((s) => ({ ...s, category: SPECIALIST_CATEGORIES.find((c) => c.slug === s.categorySlug)?.label ?? s.categorySlug }));
+const fromCabinet = new Set(cabinetSpecialists.map((s) => `${s.categorySlug}/${s.slug}`));
 const jsonSpecialists = Object.values(
   import.meta.glob<Specialist>('./specialists/*/*.json', { eager: true, import: 'default' })
-).concat(
-  // Карточки из кабинета подрядчика: кладёт scripts/pb-pull-cabinet.mjs
-  // перед сборкой на раннере деплоя, папка в .gitignore (в git их нет).
-  Object.values(import.meta.glob<Specialist>('./cabinet/specialists/*.json', { eager: true, import: 'default' })).map((s) => ({
-    ...s,
-    category: SPECIALIST_CATEGORIES.find((c) => c.slug === s.categorySlug)?.label ?? s.categorySlug,
-  }))
-);
+)
+  .filter((s) => !fromCabinet.has(`${s.categorySlug}/${s.slug}`))
+  .concat(cabinetSpecialists);
 
 export const SPECIALISTS_BY_CATEGORY: Record<string, Specialist[]> = (() => {
   // Ведущие целиком из JSON: демо-набор на стоковых кадрах снят 18.09.2026,

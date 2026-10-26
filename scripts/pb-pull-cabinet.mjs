@@ -26,18 +26,36 @@ await rm(DATA, { recursive: true, force: true });
 await rm(ASSETS, { recursive: true, force: true });
 
 const filter = encodeURIComponent('status = "published" && source = "кабинет"');
-let res;
+const items = [];
 try {
-  const r = await fetch(`${BASE}/api/collections/specialists/records?perPage=200&filter=${filter}`, { signal: AbortSignal.timeout(20000) });
-  if (!r.ok) throw new Error(`${r.status} ${await r.text()}`);
-  res = await r.json();
+  for (let page = 1; ; page++) {
+    const r = await fetch(`${BASE}/api/collections/specialists/records?perPage=200&page=${page}&filter=${filter}`, { signal: AbortSignal.timeout(20000) });
+    if (!r.ok) throw new Error(`${r.status} ${await r.text()}`);
+    const res = await r.json();
+    items.push(...res.items);
+    if (page >= res.totalPages) break;
+  }
 } catch (err) {
   console.log(`pb-pull-cabinet: база не ответила (${err.message}) — собираю без карточек из кабинета`);
   process.exit(0);
 }
 
+/** файл карточки; сбой сети по одному кадру не роняет деплой — кадр пропускается */
+async function download(url, dest) {
+  try {
+    const r = await fetch(url, { signal: AbortSignal.timeout(60000) });
+    if (!r.ok) throw new Error(String(r.status));
+    await writeFile(dest, Buffer.from(await r.arrayBuffer()));
+    return true;
+  } catch (err) {
+    console.error(`  ${dest}: ${err.message}`);
+    return false;
+  }
+}
+
 await mkdir(DATA, { recursive: true });
-for (const rec of res.items) {
+let written = 0;
+for (const rec of items) {
   const p = rec.page ?? {};
   if (p.source !== 'cabinet' || !rec.slug || !rec.categorySlug) continue;
   const dir = join(ASSETS, rec.categorySlug, rec.slug);
@@ -49,9 +67,7 @@ for (const rec of res.items) {
   for (const [i, name] of [...cover, ...names].entries()) {
     const ext = (name.match(/\.(webp|jpe?g|png)$/i)?.[1] ?? 'jpg').toLowerCase();
     const file = `p${String(i + 1).padStart(2, '0')}.${ext}`;
-    const r = await fetch(`${BASE}/api/files/${rec.collectionId}/${rec.id}/${encodeURIComponent(name)}`);
-    if (!r.ok) { console.error(`  ${rec.slug}/${name}: ${r.status}`); continue; }
-    await writeFile(join(dir, file), Buffer.from(await r.arrayBuffer()));
+    if (!(await download(`${BASE}/api/files/${rec.collectionId}/${rec.id}/${encodeURIComponent(name)}`, join(dir, file)))) continue;
     photos.push(`/cabinet/${rec.categorySlug}/${rec.slug}/${file}`);
   }
   if (!photos.length) { console.error(`  ${rec.slug}: нет фото, пропуск`); continue; }
@@ -71,6 +87,7 @@ for (const rec of res.items) {
     story: [{ text: String(p.about ?? '').split(/\n\s*\n/).map((x) => x.trim()).filter(Boolean) }],
   };
   await writeFile(join(DATA, `${rec.categorySlug}--${rec.slug}.json`), JSON.stringify(card, null, 2) + '\n');
+  written++;
   console.log(`  ${rec.categorySlug}/${rec.slug}: ${photos.length} фото`);
 }
-console.log(`pb-pull-cabinet: карточек из кабинета ${res.items.length}`);
+console.log(`pb-pull-cabinet: карточек из кабинета ${written} из ${items.length}`);

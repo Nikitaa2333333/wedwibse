@@ -5,7 +5,7 @@
 //   vendors      — вход паролем включён (почта подтверждается кодом из
 //                  письма, сброс — ссылкой из письма), вход через Telegram
 //                  (поле telegramId, подпись виджета проверяет хук).
-//                  Регистрация — только маршрутом /api/wed/register: без
+//                  Регистрация — только маршрутом /api/wed/telegram: без
 //                  принятых условий учётку не создаём (createRule закрыт).
 //   legal_docs   — редакции оферты и согласий; только добавление
 //   signatures   — кто, что и когда подписал; пишет только хук
@@ -25,7 +25,7 @@ migrate(
     // войти можно с подтверждённой почтой или через Telegram. Код из письма
     // подтверждает почту сам: учётка, вошедшая кодом, становится verified
     vendors.authRule = 'verified = true || telegramId != ""';
-    // регистрация — маршрутом /api/wed/register, вместе с подписью условий
+    // регистрация — маршрутом /api/wed/telegram, вместе с подписью условий
     vendors.createRule = null;
     // учётке из Telegram почта не нужна: её можно добавить позже
     vendors.fields.getByName('email').required = false;
@@ -217,7 +217,8 @@ migrate(
     add('brides:authWithOTP', 30, 600);
     add('brides:authWithPassword', 30, 600);
     add('brides:requestPasswordReset', 10, 3600);
-    add('/api/wed/register', 10, 3600);
+    add('/api/wed/telegram', 30, 600);
+    add('/api/wed/invite', 10, 600);
     add('/api/wed/lead', 10, 3600);
     app.save(s);
   },
