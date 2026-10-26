@@ -55,12 +55,13 @@
 
 Облако до сервера не достаёт. По порядку; вывод каждого шага — в чат.
 
-- [ ] **1. Бот.** @BotFather: `/newbot` (WED Secrets), `/setdomain` →
+- [x] **1. Бот** — 26.10.2026: `@wed_secrets_bot`, домен `wed-secrets.ru`,
+      группа модерации `-5187647877` (бот в ней), токен и id — в `.env` сервера. @BotFather: `/newbot` (WED Secrets), `/setdomain` →
       `wed-secrets.ru`. Токен — в `/srv/wedsecrets-pb/.env` (шаг 3), не в чат
       и не в git. Создать группу «WED Secrets — модерация», добавить бота,
       узнать её id (`https://api.telegram.org/bot<токен>/getUpdates` после
       сообщения в группе, число вида `-100…`).
-- [ ] **2. GitHub → Settings → Secrets and variables → Actions → Variables:**
+- [x] **2. GitHub → Settings** (26.10.2026, через `gh variable set`) → Secrets and variables → Actions → Variables:**
       `TG_BOT_ID` = цифры до «:» в токене; `PB_PUBLIC_URL` = `https://wed-secrets.ru`
       (ставить после шага 4, иначе деплой будет стучаться в закрытый `/api/`).
 - [x] **3. Схема и хуки на сервер** (сначала бэкап) — 26.10.2026: бэкап

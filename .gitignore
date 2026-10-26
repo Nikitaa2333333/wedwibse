@@ -16,6 +16,7 @@ pnpm-debug.log*
 # environment variables
 .env
 .env.production
+.env.tg
 
 # кэш справочника регионов Wordstat (~200 КБ, тянется одним вызовом)
 scripts/wordstat-out/regions-tree.json
