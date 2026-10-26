@@ -223,10 +223,23 @@ import '../../../components/profi/live.css';
         fd.append('categorySlug', input('categorySlug').value);
       }
       removed.forEach((n) => fd.append('photos-', n));
-      added.forEach((f) => fd.append('photos+', f, f.name));
       rev = await api('vendor', 'PATCH', `/api/collections/revisions/records/${rev.id}`, fd);
       removed = [];
-      added = [];
+      // фото — порциями до PART байт: одним запросом 8+ кадров с телефона
+      // упираются в лимит nginx (20 МБ) и PocketBase (~32 МБ) → 413.
+      // Ушедшая порция сразу выбывает из added, повтор её не задвоит.
+      const PART = 15 * 1024 * 1024;
+      while (added.length) {
+        const part = new FormData();
+        let size = 0;
+        let n = 0;
+        while (n < added.length && (n === 0 || size + added[n].size <= PART)) size += added[n++].size;
+        added.slice(0, n).forEach((f) => part.append('photos+', f, f.name));
+        say(okEl, `Загружаем фото… осталось ${added.length}`);
+        rev = await api('vendor', 'PATCH', `/api/collections/revisions/records/${rev.id}`, part);
+        added = added.slice(n);
+      }
+      say(okEl, '');
       if (rev.photos?.length && !token) token = await fileToken('vendor');
       renderState();
       return true;

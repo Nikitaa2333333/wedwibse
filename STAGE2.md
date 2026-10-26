@@ -113,7 +113,7 @@
       той же командой:
       `node scripts/pb-cabinet-setup.mjs moderator <почта> <пароль> Никита`,
       то же для Евгения; `node scripts/pb-cabinet-setup.mjs test-terms`.
-- [ ] **7. Выложить сайт:** влить `claude/cabinet-loop` в `master` (или
+- [x] **7. Выложить сайт** (26.10.2026, fast-forward в `master`, деплой зелёный): влить `claude/cabinet-loop` в `master` (или
       Actions → Deploy → Run workflow после шага 2).
 - [ ] **8. Пройти путь:** телефон → `wed-secrets.ru/profi/vhod/` → Telegram →
       условия → «+ Карточка подрядчика» → 8+ фото → «Отправить на проверку»;
