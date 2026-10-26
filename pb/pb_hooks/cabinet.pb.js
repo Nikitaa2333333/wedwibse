@@ -12,7 +12,7 @@ onRecordCreateRequest((e) => {
 
 onRecordUpdateRequest((e) => {
   const cab = require(`${__hooks}/lib/cabinet.js`);
-  return e.hasSuperuserAuth() ? cab.moderateRevision(e) : cab.vendorUpdateRevision(e);
+  return cab.isModerator(e) ? cab.moderateRevision(e) : cab.vendorUpdateRevision(e);
 }, 'revisions');
 
 // ---------- видео ----------
@@ -36,3 +36,12 @@ onRecordUpdateRequest((e) => {
 routerAdd('POST', '/api/wed/edit', (e) => require(`${__hooks}/lib/cabinet.js`).startEdit(e), $apis.requireAuth('vendors'));
 
 routerAdd('GET', '/api/wed/slug', (e) => require(`${__hooks}/lib/cabinet.js`).checkSlug(e), $apis.requireAuth('vendors'));
+
+// вход и регистрация через Telegram (виджет входа), погашение приглашения
+routerAdd('POST', '/api/wed/telegram', (e) => require(`${__hooks}/lib/cabinet.js`).telegramAuth(e));
+
+routerAdd('POST', '/api/wed/invite', (e) => require(`${__hooks}/lib/cabinet.js`).claimInviteRoute(e), $apis.requireAuth('vendors'));
+
+// мои карточки: опубликованные (с владельцем) — у подрядчика нет доступа
+// к закрытым полям карточки, список отдаёт маршрут
+routerAdd('GET', '/api/wed/my-cards', (e) => require(`${__hooks}/lib/cabinet.js`).myCards(e), $apis.requireAuth('vendors'));

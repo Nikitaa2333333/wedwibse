@@ -17,6 +17,10 @@
 const MIN_PHOTOS = 8;
 /** «о себе» короче этого — визитка выйдет пустой (CABINET.md, 11.4) */
 const MIN_ABOUT = 150;
+/** фото на карточку (решение 16.10) */
+const MAX_PHOTOS = 50;
+/** карточек на одну учётку, включая новые на проверке (решение 16.10) */
+const MAX_CARDS = 3;
 /** ревизия ещё не закрыта модератором */
 const OPEN_FILTER = '(status = "draft" || status = "review" || status = "rejected")';
 const SITE_URL = ($os.getenv('SITE_URL') || 'https://wed-secrets.ru').replace(/\/$/, '');
@@ -165,6 +169,29 @@ function photosOf(record) {
   return record.getStringSlice('photos').filter((n) => !!n);
 }
 
+/** модератор — учётка moderators или суперпользователь */
+function isModerator(e) {
+  if (e.hasSuperuserAuth()) return true;
+  return !!e.auth && e.auth.collection().name === 'moderators';
+}
+
+function photoLimit(r) {
+  // в обработчике запроса новые файлы ещё не сохранены: в значении поля
+  // их нет, они лежат отдельно до сохранения записи
+  const n = photosOf(r).length + r.getUnsavedFiles('photos').length;
+  if (n > MAX_PHOTOS) throw new BadRequestError(`На карточке до ${MAX_PHOTOS} фото, сейчас ${n} — уберите лишние.`);
+}
+
+/** сколько карточек у учётки: свои опубликованные + новые, ещё не закрытые модератором */
+function cardCount(app, vendorId) {
+  let n = 0;
+  for (const c of ['venues', 'specialists']) {
+    n += app.findRecordsByFilter(c, 'owner = {:v}', '', 0, 0, { v: vendorId }).length;
+  }
+  n += app.findRecordsByFilter('revisions', `owner = {:v} && venue = "" && specialist = "" && ${OPEN_FILTER}`, '', 0, 0, { v: vendorId }).length;
+  return n;
+}
+
 function telegram(text) {
   const token = $os.getenv('TG_BOT_TOKEN');
   const chat = $os.getenv('TG_CHAT_ID');
@@ -256,6 +283,10 @@ function vendorCreateRevision(e) {
   if (slug && slugTaken(e.app, r.getString('kind'), r.getString('categorySlug'), slug, '')) {
     throw new BadRequestError(`Адрес «${slug}» уже занят — выберите другое название.`);
   }
+  if (cardCount(e.app, e.auth.id) >= MAX_CARDS) {
+    throw new BadRequestError(`На одной учётке не больше ${MAX_CARDS} карточек.`);
+  }
+  photoLimit(r);
   return e.next();
 }
 
@@ -295,6 +326,7 @@ function vendorUpdateRevision(e) {
     }
   }
 
+  photoLimit(r);
   const submitting = to === 'review';
   if (submitting) {
     const problems = submitProblems(r);
@@ -309,7 +341,7 @@ function vendorUpdateRevision(e) {
   if (submitting) {
     const data = jsonOf(r, 'data');
     telegram(`На проверку: ${str(data.name, 120)} (${r.getString('kind') === 'venue' ? 'площадка' : r.getString('categorySlug')})` +
-      `${isNewCard ? ', новая карточка' : ', правка'}\n${SITE_URL}/_/#/collections?collection=revisions&recordId=${r.id}`);
+      `${isNewCard ? ', новая карточка' : ', правка'}\n${SITE_URL}/profi/admin/moderaciya/pravka/?id=${r.id}`);
     mailVendor(e.app, r.getString('owner'), 'Карточка отправлена на проверку — WED Secrets',
       `<p>Получили вашу карточку «${str(data.name, 120)}» и проверим её в ближайшее время.</p>` +
       `<p>Когда она появится на сайте, пришлём письмо со ссылкой.</p>`);
@@ -587,6 +619,122 @@ function vendorCreateVideoRequest(e) {
   telegram(`Видео: ${card.getString('name')} — ${url}${r.getString('comment') ? '\n' + r.getString('comment') : ''}`);
 }
 
+// ---------- вход через Telegram ----------
+// Учётку подрядчика создаёт только этот маршрут: вместе с подписью
+// условий (оферта + согласие на ПДн), без них учётки нет (CABINET.md §21).
+// Почта и MAX подключатся рядом, этот путь от них не зависит.
+const VENDOR_DOCS = ['vendor-offer', 'vendor-pdn'];
+
+/** действующая редакция каждого документа подрядчика; нет хоть одной — регистрация закрыта */
+function currentDocs(app) {
+  return VENDOR_DOCS.map((kind) => app.findRecordsByFilter('legal_docs', 'kind = {:kind}', '-created', 1, 0, { kind })[0] || null);
+}
+
+function sign(app, e, vendor, doc, method) {
+  const sig = new Record(app.findCollectionByNameOrId('signatures'));
+  sig.set('vendor', vendor.id);
+  sig.set('doc', doc.id);
+  sig.set('kind', doc.getString('kind'));
+  sig.set('docVersion', doc.getString('version'));
+  sig.set('docHash', $security.sha256(doc.getString('text')));
+  sig.set('checkbox', doc.getString('checkbox'));
+  sig.set('method', method);
+  sig.set('ip', e.realIP());
+  sig.set('userAgent', str(e.request.header.get('User-Agent'), 500));
+  app.save(sig);
+}
+
+/**
+ * Приглашение пилота: личная ссылка привязывает готовую карточку к учётке.
+ * В ссылке сам ключ, в базе — его SHA-256 (утёкшая база ключей не выдаёт).
+ */
+function claimInvite(app, vendor, token) {
+  const t = str(token, 200);
+  if (!t) return null;
+  const inv = findOne(app, 'invites', 'tokenHash = {:h}', { h: $security.sha256(t) });
+  if (!inv) throw new BadRequestError('Ссылка-приглашение не найдена — попросите прислать новую.');
+  if (inv.getString('usedAt')) {
+    if (inv.getString('usedBy') === vendor.id) return inv; // повторный вход по той же ссылке
+    throw new BadRequestError('По этой ссылке уже вошли. Если это были не вы — напишите нам.');
+  }
+  if (inv.getDateTime('expiresAt').unix() < Math.floor(Date.now() / 1000)) {
+    throw new BadRequestError('Срок ссылки-приглашения истёк — попросите прислать новую.');
+  }
+  const kind = inv.getString('venue') ? 'venue' : 'specialist';
+  const card = app.findRecordById(cardCollection(kind), inv.getString(cardField(kind)));
+  const owner = card.getString('owner');
+  if (owner && owner !== vendor.id) throw new BadRequestError('У этой карточки уже есть владелец — напишите нам.');
+  card.set('owner', vendor.id);
+  app.save(card);
+  inv.set('usedAt', new DateTime());
+  inv.set('usedBy', vendor.id);
+  app.save(inv);
+  return inv;
+}
+
+/**
+ * POST /api/wed/telegram { tg: {данные виджета}, accept?: true, invite?: ключ }
+ *   учётка есть           → вход (токен как у обычного входа)
+ *   нет и accept не стоит → { status: 'needs-accept' }: кабинет показывает условия
+ *   нет и accept          → учётка + подписи + вход
+ */
+function telegramAuth(e) {
+  const body = e.requestInfo().body || {};
+  const botToken = $os.getenv('TG_BOT_TOKEN');
+  if (!botToken) throw new BadRequestError('Вход через Telegram ещё не настроен.');
+  const tg = require(`${__hooks}/lib/telegram.js`).verifyTelegram(body.tg, botToken);
+
+  let vendor = findOne(e.app, 'vendors', 'telegramId = {:id}', { id: tg.id });
+  if (!vendor) {
+    if (body.accept !== true) return e.json(200, { status: 'needs-accept' });
+    const docs = currentDocs(e.app);
+    if (docs.some((d) => !d)) throw new BadRequestError('Условия работы ещё не опубликованы — регистрация пока закрыта.');
+    e.app.runInTransaction((tx) => {
+      vendor = new Record(tx.findCollectionByNameOrId('vendors'));
+      vendor.set('telegramId', tg.id);
+      vendor.set('name', tg.name);
+      vendor.setPassword($security.randomString(40));
+      tx.save(vendor);
+      for (const d of docs) sign(tx, e, vendor, d, 'telegram');
+      if (body.invite) claimInvite(tx, vendor, body.invite);
+    });
+  } else if (body.invite) {
+    e.app.runInTransaction((tx) => claimInvite(tx, vendor, body.invite));
+  }
+  return $apis.recordAuthResponse(e, vendor, 'telegram');
+}
+
+/** POST /api/wed/invite { invite } — уже вошедший подрядчик открыл ссылку-приглашение */
+function claimInviteRoute(e) {
+  const body = e.requestInfo().body || {};
+  let inv;
+  e.app.runInTransaction((tx) => { inv = claimInvite(tx, e.auth, body.invite); });
+  if (!inv) throw new BadRequestError('Нет ключа приглашения.');
+  return e.json(200, { ok: true });
+}
+
+/** GET /api/wed/my-cards — карточки учётки с открытой правкой, если она есть */
+function myCards(e) {
+  const out = [];
+  for (const kind of ['venue', 'specialist']) {
+    const cards = e.app.findRecordsByFilter(cardCollection(kind), 'owner = {:v}', '-updated', 0, 0, { v: e.auth.id });
+    for (const c of cards) {
+      const open = findOne(e.app, 'revisions', `${cardField(kind)} = {:id} && ${OPEN_FILTER}`, { id: c.id });
+      out.push({
+        kind,
+        id: c.id,
+        name: c.getString('name'),
+        slug: c.getString('slug'),
+        categorySlug: kind === 'venue' ? '' : c.getString('categorySlug'),
+        status: c.getString('status'),
+        url: cardUrl(kind, c.getString('categorySlug'), c.getString('slug')),
+        revision: open ? { id: open.id, status: open.getString('status'), rejectReason: open.getString('rejectReason') } : null,
+      });
+    }
+  }
+  return e.json(200, { items: out });
+}
+
 // ---------- учётки ----------
 function vendorCreateAccount(e) {
   denyExtra(e.requestInfo().body, ['email', 'password', 'passwordConfirm', 'name', 'phone', 'kind', 'emailVisibility']);
@@ -599,6 +747,11 @@ function vendorUpdateAccount(e) {
 
 module.exports = {
   MIN_PHOTOS,
+  MAX_PHOTOS,
+  isModerator,
+  telegramAuth,
+  claimInviteRoute,
+  myCards,
   findContact,
   slugify,
   vendorCreateRevision,
