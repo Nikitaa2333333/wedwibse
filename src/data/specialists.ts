@@ -417,6 +417,13 @@ export const FOTOGRAFY: Specialist[] = [
 // ============================================================
 const jsonSpecialists = Object.values(
   import.meta.glob<Specialist>('./specialists/*/*.json', { eager: true, import: 'default' })
+).concat(
+  // Карточки из кабинета подрядчика: кладёт scripts/pb-pull-cabinet.mjs
+  // перед сборкой на раннере деплоя, папка в .gitignore (в git их нет).
+  Object.values(import.meta.glob<Specialist>('./cabinet/specialists/*.json', { eager: true, import: 'default' })).map((s) => ({
+    ...s,
+    category: SPECIALIST_CATEGORIES.find((c) => c.slug === s.categorySlug)?.label ?? s.categorySlug,
+  }))
 );
 
 export const SPECIALISTS_BY_CATEGORY: Record<string, Specialist[]> = (() => {

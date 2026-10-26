@@ -9,9 +9,114 @@
   https://docs.google.com/document/d/1J3FRwUkirhatNYbm_A-AyDE71ZPE0Ht8BlpKY0-lEjU
 - Доска со схемами (FigJam): https://www.figma.com/board/SMJGYoL0JUtkwhRShtPeIH
 - Подробные решения и разборы: `CABINET.md`; база: `pb/README.md`.
-- Код базы и хуков: ветка `claude/cabinet-plan`, запрос №40 (в `master` не влит).
+- Код базы и хуков: `pb/` в `master` (№40 влит 20.10); модераторы, вход через
+  Telegram и живые экраны — ветка `claude/cabinet-loop` (26.10).
 
 **Срок: 6 недель** (решение 16.10). Деньги — третий этап.
+
+## Сквозная проверка — первая цель (решение Никиты, 26.10)
+
+Пока путь не пройден своими руками, подрядчиков не зовём. Цель: Никита
+и Евгений сами проходят весь цикл в двух ролях —
+
+> подрядчик входит через Telegram → принимает условия → заполняет карточку
+> → отправляет на проверку → модератор видит её в админке → возвращает
+> с причиной / одобряет → карточка выходит на сайт.
+
+Почта и MAX для этого не нужны. Договоров нет — до текстов юриста стоит
+**тестовая редакция условий** (прямо так и подписана). Вид кабинета
+подрядчика Никита переделывает отдельно: живые экраны ниже — минимум
+для проверки, данные карточки лежат общим JSON и переживут новый вид.
+
+### Сделано в облаке — 26.10, ветка `claude/cabinet-loop`
+
+- [x] База: учётки модераторов (`moderators`, вход почтой и паролем —
+      токен суперпользователя в браузер не нужен), вход и регистрация
+      через Telegram `POST /api/wed/telegram` (учётка только вместе
+      с подписью оферты и согласия), приглашения `POST /api/wed/invite`,
+      `GET /api/wed/my-cards`, лимиты 50 фото и 3 карточки на учётку —
+      миграция `1761500000_cabinet_moderators.js` и `1760900000_cabinet_stage2.js`
+      (черновик из `claude/cabinet-base` доделан); `pb-test-cabinet`: 60 проверок
+      на локальной PocketBase 0.40.4, все проходят
+- [x] Экраны подрядчика на базе: `/profi/vhod/` (кнопка Telegram живая при
+      `TG_BOT_ID`), `/profi/usloviya/`, `/profi/moi/`, `/profi/moi/kartochka/`
+- [x] Админка на базе: `/profi/admin/vhod/`, очередь «Из базы» в «Модерации»,
+      разбор `/profi/admin/moderaciya/pravka/?id=` — одобрить / вернуть с причиной
+- [x] Одобренная карточка — на сайт: деплой перед сборкой забирает карточки
+      из кабинета (`scripts/pb-pull-cabinet.mjs`, в git их нет) — визитка
+      и каталог как у всех. Площадки из кабинета — следующим шагом (BACKLOG)
+- [x] `scripts/pb-cabinet-setup.mjs`: модераторы, тестовые условия, приглашения
+- [x] Весь путь пройден в браузере против локальной базы (окно Telegram
+      подменено подписанными тестовыми данными — его можно проверить только
+      на боевом домене)
+
+### Подхватывает ноутбук (Claude Code локально, Git Bash)
+
+Облако до сервера не достаёт. По порядку; вывод каждого шага — в чат.
+
+- [ ] **1. Бот.** @BotFather: `/newbot` (WED Secrets), `/setdomain` →
+      `wed-secrets.ru`. Токен — в `/srv/wedsecrets-pb/.env` (шаг 3), не в чат
+      и не в git. Создать группу «WED Secrets — модерация», добавить бота,
+      узнать её id (`https://api.telegram.org/bot<токен>/getUpdates` после
+      сообщения в группе, число вида `-100…`).
+- [ ] **2. GitHub → Settings → Secrets and variables → Actions → Variables:**
+      `TG_BOT_ID` = цифры до «:» в токене; `PB_PUBLIC_URL` = `https://wed-secrets.ru`
+      (ставить после шага 4, иначе деплой будет стучаться в закрытый `/api/`).
+- [ ] **3. Схема и хуки на сервер** (сначала бэкап):
+      ```
+      ssh -i ~/.ssh/timeweb_wed root@193.124.47.78 '/srv/wedsecrets-pb/backup.sh && ls -t /srv/wedsecrets-pb/backups | head -1'
+      scp -i ~/.ssh/timeweb_wed -r pb/pb_migrations/* root@193.124.47.78:/srv/wedsecrets-pb/pb_migrations/
+      scp -i ~/.ssh/timeweb_wed -r pb/pb_hooks/* root@193.124.47.78:/srv/wedsecrets-pb/pb_hooks/
+      ssh -i ~/.ssh/timeweb_wed root@193.124.47.78 '
+        chown -R deploy:deploy /srv/wedsecrets-pb/pb_migrations /srv/wedsecrets-pb/pb_hooks
+        systemctl cat wedsecrets-pb | grep -E "ExecStart|EnvironmentFile"'
+      ```
+      В `ExecStart` должны быть `--hooksDir /srv/wedsecrets-pb/pb_hooks`
+      и `--migrationsDir /srv/wedsecrets-pb/pb_migrations`; нет — дописать
+      (`systemctl edit --full wedsecrets-pb`). Переменные базы — в
+      `EnvironmentFile` (`/srv/wedsecrets-pb/.env`, chmod 600):
+      `TG_BOT_TOKEN=…`, `TG_CHAT_ID=-100…`, `SITE_URL=https://wed-secrets.ru`.
+      Затем `systemctl daemon-reload && systemctl restart wedsecrets-pb`
+      и `journalctl -u wedsecrets-pb -n 30` — миграции применились без ошибок.
+- [ ] **4. `/api/` через nginx** (админка базы `/_/` наружу НЕ открывается):
+      в `/etc/nginx/sites-available/wedsecrets`, в блок `server` с 443:
+      ```
+      location /api/ {
+        proxy_pass http://127.0.0.1:8090;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        client_max_body_size 20m;
+        proxy_read_timeout 120s;
+      }
+      ```
+      `nginx -t && systemctl reload nginx`; проверка:
+      `curl -s https://wed-secrets.ru/api/health` → `API is healthy`,
+      `curl -sI https://wed-secrets.ru/_/` → не 200.
+- [ ] **5. Тесты против боевой базы** через туннель (`bash scripts/pb-tunnel.sh`):
+      `node scripts/pb-test-cabinet.mjs` (без `TG_BOT_TOKEN` раздел Telegram
+      пропускается; тестовые записи скрипт удаляет сам).
+- [ ] **6. Модераторы и условия** (через туннель):
+      `node scripts/pb-cabinet-setup.mjs moderator <почта> <пароль> Никита`,
+      то же для Евгения; `node scripts/pb-cabinet-setup.mjs test-terms`.
+- [ ] **7. Выложить сайт:** влить `claude/cabinet-loop` в `master` (или
+      Actions → Deploy → Run workflow после шага 2).
+- [ ] **8. Пройти путь:** телефон → `wed-secrets.ru/profi/vhod/` → Telegram →
+      условия → «+ Карточка подрядчика» → 8+ фото → «Отправить на проверку»;
+      ноутбук → `wed-secrets.ru/profi/admin/vhod/` → «Модерация» → «Из базы»
+      → вернуть с причиной → поправить → одобрить → Actions → Deploy →
+      Run workflow → карточка на `/moskva/podryadchiki/<категория>/<адрес>/`.
+      То же — Евгений. **После проверки тестовые карточки снять** (в админке
+      базы `status` → `hidden` или удалить запись) и выложить сайт ещё раз:
+      сайт открыт поиску.
+
+### Дальше, после проверки
+
+- Новый вид кабинета подрядчика и площадки (Никита) — на тот же API
+  (`src/lib/cabinet-api.ts`), экраны `/profi/moi/` уходят.
+- Пилот: `pb-cabinet-setup.mjs invite <кат>/<slug>` → личная ссылка
+  владельцу (`/profi/vhod/?invite=…`); перед этим — скрипт «карточка →
+  анкета», чтобы правка не открывалась пустой.
+- Тексты юриста вместо тестовой редакции — новая запись `legal_docs`.
 
 ## Где остановились — 20.10, вечер (продолжаем с ноутбука)
 

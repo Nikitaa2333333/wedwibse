@@ -36,6 +36,17 @@ jobs:
           restore-keys: |
             astro-images-
 
+      # КАРТОЧКИ ИЗ КАБИНЕТА ПОДРЯДЧИКА: одобренные модератором лежат в базе,
+      # в git их нет. Скрипт кладёт их в src/data/cabinet/ и src/assets/cabinet/
+      # только на этом раннере (STAGE2.md, «Сквозная проверка»). Переменная
+      # PB_PUBLIC_URL (Settings → Variables) ставится, когда /api/ открыт через
+      # nginx; без неё и при недоступной базе сайт собирается как раньше.
+      - name: Cabinet cards from base
+        timeout-minutes: 3
+        env:
+          PB_PUBLIC_URL: ${{ vars.PB_PUBLIC_URL }}
+        run: node scripts/pb-pull-cabinet.mjs
+
       - name: Build
         env:
           SITE_URL: https://wed-secrets.ru
@@ -45,6 +56,9 @@ jobs:
           # в поиске не место, ставит свой <meta name="robots" content="noindex">.
           SITE_INDEXABLE: 'true'
           YANDEX_MAPS_API_KEY: ${{ secrets.YANDEX_MAPS_API_KEY }}
+          # номер бота (цифры до «:» в токене) — не секрет: без него кнопка
+          # «Войти через Telegram» остаётся ссылкой прототипа
+          PUBLIC_TG_BOT_ID: ${{ vars.TG_BOT_ID }}
         run: npx astro build
 
       # Карта сайта из готовой сборки (страницы с noindex в неё не идут).

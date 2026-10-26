@@ -48,3 +48,7 @@ pb/LICENSE.md
 # постеры (src/assets/**/*.webp) по-прежнему в git — их пережимает сборка
 public/**/*.mp4
 public/**/*.webm
+
+# карточки из кабинета: кладёт scripts/pb-pull-cabinet.mjs на раннере деплоя, в git не попадают
+src/data/cabinet/
+src/assets/cabinet/

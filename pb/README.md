@@ -23,6 +23,13 @@ Timeweb. Здесь — локальный экземпляр для разра�
 `--hooksDir` обязателен: без хуков кабинет подрядчика остаётся без правил
 модерации (`pb/pb_hooks/cabinet.pb.js`, логика — `pb/pb_hooks/lib/cabinet.js`).
 
+Переменные окружения базы: `TG_BOT_TOKEN` (вход через Telegram и
+уведомления), `TG_CHAT_ID` (чат модераторов), `SITE_URL`. Модераторы
+и тестовая редакция условий — `node scripts/pb-cabinet-setup.mjs`.
+Проверка: `node scripts/pb-test-cabinet.mjs` (с тем же `TG_BOT_TOKEN`
+в окружении — и раздел входа через Telegram). Сквозной путь и выкладка
+на сервер — `STAGE2.md`, «Сквозная проверка».
+
 Первый суперпользователь: `./pb/pocketbase.exe superuser upsert <email> <pass> --dir pb/pb_data`.
 
 ## Поток данных
