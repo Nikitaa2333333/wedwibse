@@ -1,0 +1,72 @@
+---
+// МОИ КАРТОЧКИ — живой экран на базе (сквозная проверка, STAGE2.md).
+// Опубликованные карточки учётки (/api/wed/my-cards) и новые, ещё не
+// одобренные (свои ревизии без карточки). До 3 карточек на учётку.
+// Прототип того же экрана на заглушках — /profi/kabinet/ (его вид
+// переделывается отдельно; этот экран потом ляжет на новый вид).
+import ProfiShell from '../../../components/profi/ProfiShell.astro';
+import '../../../components/profi/live.css';
+---
+
+<ProfiShell title="Мои карточки" dock={false}>
+  <main class="section container live" data-mine>
+    <div class="live__head">
+      <h1 class="t-h1">Мои карточки</h1>
+      <p class="live__note" data-who></p>
+    </div>
+    <ul class="live-list" data-list><li class="live__note">Загружаем…</li></ul>
+    <p class="live__error" data-error hidden></p>
+    <div class="live__actions" data-add hidden>
+      <a class="live__link" href="/profi/moi/kartochka/?new=specialist">+ Карточка подрядчика</a>
+      <a class="live__link" href="/profi/moi/kartochka/?new=venue">+ Карточка площадки</a>
+    </div>
+    <div class="live__actions">
+      <a class="live__link" href="#" data-logout>Выйти</a>
+    </div>
+  </main>
+</ProfiShell>
+
+<script>
+  import { api, esc, requireSession, saveSession, REV_STATUS } from '../../../lib/cabinet-api';
+
+  const MAX_CARDS = 3;
+  const root = document.querySelector<HTMLElement>('[data-mine]')!;
+  const list = root.querySelector<HTMLElement>('[data-list]')!;
+  const error = root.querySelector<HTMLElement>('[data-error]')!;
+  const s = requireSession('vendor');
+
+  root.querySelector('[data-logout]')!.addEventListener('click', (e) => {
+    e.preventDefault();
+    saveSession('vendor', null);
+    location.href = '/profi/vhod/';
+  });
+
+  if (s) {
+    root.querySelector('[data-who]')!.textContent = s.record.name ? `Вы вошли как ${s.record.name}` : '';
+    try {
+      const [cards, revs] = await Promise.all([
+        api('vendor', 'GET', '/api/wed/my-cards'),
+        api('vendor', 'GET', `/api/collections/revisions/records?perPage=50&sort=-updated&filter=${encodeURIComponent('venue = "" && specialist = "" && status != "approved"')}`),
+      ]);
+      const rows: string[] = [];
+      for (const c of cards.items) {
+        const r = c.revision;
+        const st = r ? REV_STATUS[r.status] : REV_STATUS.approved;
+        const note = r?.status === 'rejected' ? `Вернули: ${esc(r.rejectReason)}` : r?.status === 'review' ? 'Правка на проверке, на сайте прежняя версия' : r ? 'Есть неотправленная правка' : 'На сайте';
+        const href = r ? `/profi/moi/kartochka/?id=${r.id}` : `/profi/moi/kartochka/?card=${c.id}&kind=${c.kind}`;
+        rows.push(`<li><a class="live-row" href="${href}"><span class="status ${st.cls}">${st.label}</span><span class="live-row__name">${esc(c.name)}</span><span class="live-row__note">${note}</span></a></li>`);
+      }
+      for (const r of revs.items) {
+        const st = REV_STATUS[r.status];
+        const note = r.status === 'rejected' ? `Вернули: ${esc(r.rejectReason)}` : r.status === 'review' ? 'Новая карточка на проверке' : 'Черновик новой карточки';
+        rows.push(`<li><a class="live-row" href="/profi/moi/kartochka/?id=${r.id}"><span class="status ${st.cls}">${st.label}</span><span class="live-row__name">${esc(r.data?.name || 'Без названия')}</span><span class="live-row__note">${note}</span></a></li>`);
+      }
+      list.innerHTML = rows.join('') || '<li class="live__note">Карточек пока нет — создайте первую.</li>';
+      root.querySelector<HTMLElement>('[data-add]')!.hidden = cards.items.length + revs.items.length >= MAX_CARDS;
+    } catch (err) {
+      list.innerHTML = '';
+      error.textContent = (err as Error).message;
+      error.hidden = false;
+    }
+  }
+</script>

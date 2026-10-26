@@ -1,0 +1,36 @@
+/* Живые экраны кабинета (/profi/moi/, /profi/usloviya/) — рабочий
+   инструмент на базе, плотнее сайта (CLAUDE.md, «Кабинет — это не сайт»).
+   Вид кабинета переделывается отдельно; здесь — минимум, чтобы пройти
+   путь «вход → карточка → модерация» на настоящих данных. */
+.live { max-width: 720px; padding-top: var(--s-4); padding-bottom: var(--s-7); display: grid; gap: var(--s-5); }
+.live__head { display: grid; gap: var(--s-2); }
+.live__note { font-size: var(--fs-small); line-height: var(--lh-snug); }
+.live__error { color: var(--st-bad-text); font-size: var(--fs-small); line-height: var(--lh-snug); white-space: pre-line; }
+.live__ok { font-size: var(--fs-small); line-height: var(--lh-snug); }
+.live__link { color: inherit; font-weight: var(--w-head-lg); text-underline-offset: 3px; }
+.live__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3) var(--s-5); }
+
+.live-list { list-style: none; display: grid; }
+.live-list > li + li { border-top: 1px solid var(--line); }
+.live-row { display: grid; gap: var(--s-1); padding-block: var(--s-3); color: inherit; text-decoration: none; justify-items: start; }
+.live-row__name { font-weight: var(--w-head-lg); line-height: var(--lh-caption); }
+.live-row__note { font-size: var(--fs-small); line-height: var(--lh-snug); }
+
+.live-form { display: grid; gap: var(--s-4); }
+.live-form fieldset { border: 0; display: grid; gap: var(--s-4); min-width: 0; }
+.live-form [disabled] { opacity: 1; }
+.live-form textarea.input { min-height: 200px; }
+
+.live-photos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-2); list-style: none; }
+.live-photo { position: relative; aspect-ratio: 4 / 5; border-radius: var(--radius-card); overflow: hidden; background: var(--surface-dim); }
+.live-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.live-photo__tag { position: absolute; left: var(--s-1); top: var(--s-1); }
+.live-photo__btns { position: absolute; inset: auto var(--s-1) var(--s-1) var(--s-1); display: flex; justify-content: space-between; gap: var(--s-1); }
+.live-photo__btns button { font: inherit; font-size: var(--fs-caption); padding: 4px 8px; border: 0; border-radius: var(--radius-pill); background: var(--bg); color: var(--fg); cursor: pointer; }
+@media (min-width: 640px) { .live-photos { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+.live-doc { display: grid; gap: var(--s-3); }
+.live-doc__text { max-height: 40vh; overflow-y: auto; overflow-x: clip; font-size: var(--fs-small); line-height: var(--lh-body); padding: var(--s-4); background: var(--surface); border-radius: var(--radius-card); }
+
+/* .field — grid, и атрибут hidden без этого не прячет поле */
+.live [hidden] { display: none !important; }

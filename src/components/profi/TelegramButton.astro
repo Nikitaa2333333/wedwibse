@@ -1,8 +1,8 @@
 ---
 // «Войти через Telegram» — главный вход подрядчика (решение 20.10.2026,
-// CABINET.md §22). В прототипе — ссылка-заглушка на кабинет. Вживую здесь
-// встанет виджет входа Telegram (бот + /setdomain), а хук базы проверит
-// подпись данных ключом бота. Знак Telegram — декоративный svg, не фото.
+// CABINET.md §22). С PUBLIC_TG_BOT_ID в сборке кнопка открывает окно
+// Telegram (lib/tg-login.ts), хук базы проверяет подпись ключом бота;
+// без него — ссылка прототипа на кабинет. Знак Telegram — декоративный svg.
 interface Props {
   href?: string;
   label?: string;
@@ -11,14 +11,46 @@ interface Props {
 const { href = '/profi/kabinet/', label = 'Войти через Telegram' } = Astro.props;
 ---
 
-<a class="pill pill--lg pill--solid pill--block tg" href={href}>
+<a class="pill pill--lg pill--solid pill--block tg" href={href} data-tg-login>
   <svg class="tg__mark" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
     <path d="M21.9 4.3c.2-.9-.7-1.6-1.5-1.3L2.6 9.9c-.9.4-.9 1.6 0 1.9l4.5 1.5 1.7 5.4c.2.7 1.1.9 1.6.4l2.5-2.4 4.7 3.4c.6.5 1.5.1 1.7-.7L21.9 4.3Zm-4 3.3-7.6 6.9-.3 3.2-1.3-4.3 8.5-5.9c.4-.3.9.1.7.1Z" />
   </svg>
   {label}
 </a>
 
+<p class="tg__error" data-tg-error hidden></p>
+
+<script>
+  import { TG_BOT_ID, telegramPopup, signIn, afterLogin } from '../../lib/tg-login';
+
+  if (TG_BOT_ID) {
+    document.querySelectorAll<HTMLAnchorElement>('[data-tg-login]').forEach((btn) => {
+      const error = btn.nextElementSibling as HTMLElement | null;
+      btn.addEventListener('click', async (ev) => {
+        ev.preventDefault();
+        // кнопка за галочками согласия (регистрация) не живёт, пока они не стоят
+        if (btn.closest('[aria-disabled="true"]')) return;
+        if (error) error.hidden = true;
+        try {
+          const tg = await telegramPopup();
+          if (!tg) return;
+          const q = new URLSearchParams(location.search);
+          const p = { tg, invite: q.get('invite') || undefined, next: q.get('next') || undefined };
+          if ((await signIn(p)) === 'needs-accept') location.href = '/profi/usloviya/';
+          else afterLogin(p.next);
+        } catch (err) {
+          if (error) {
+            error.textContent = (err as Error).message;
+            error.hidden = false;
+          }
+        }
+      });
+    });
+  }
+</script>
+
 <style>
+  .tg__error { color: var(--st-bad-text); font-size: var(--fs-small); line-height: var(--lh-snug); }
   .tg { align-items: center; gap: var(--s-3); background: var(--brand-telegram); color: var(--brand-fg); border-color: transparent; }
   @media (hover: hover) { .tg:hover { background: var(--brand-telegram); color: var(--brand-fg); border-color: transparent; } }
   .tg__mark { width: 22px; height: 22px; flex: none; }

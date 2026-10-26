@@ -31,6 +31,8 @@ interface Props {
   section?: Section;
   /** свой знак в шапке вместо «WED Secrets для профи» (экран входа) */
   brand?: string;
+  /** меню разделов внизу (у живых экранов /profi/moi/ своего меню пока нет) */
+  dock?: boolean;
 }
 
 const {
@@ -41,6 +43,7 @@ const {
   look = 'tech',
   section,
   brand,
+  dock = true,
 } = Astro.props;
 
 // Разделы кабинета. «Интерес» — журнал: кто открыл контакты, сколько раз
@@ -79,7 +82,7 @@ const menu = [
       </footer>
     )}
 
-    {look === 'tech' && <BottomDock items={menu} active={section} label="Разделы кабинета" />}
+    {look === 'tech' && dock && <BottomDock items={menu} active={section} label="Разделы кабинета" />}
   </div>
 </Layout>
 

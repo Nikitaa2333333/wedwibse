@@ -1,0 +1,81 @@
+---
+// УСЛОВИЯ ПЕРЕД ПЕРВЫМ ВХОДОМ — учётка подрядчика появляется только вместе
+// с подписью действующих редакций оферты и согласия на ПДн (CABINET.md §16,
+// §21). Тексты берутся из базы (legal_docs), подпись пишет хук
+// /api/wed/telegram вместе с учёткой — по одной кнопке, без «учётки без условий».
+// Сюда попадают после окна Telegram, если учётки ещё нет (lib/tg-login.ts).
+import ProfiShell from '../../components/profi/ProfiShell.astro';
+import '../../components/profi/auth.css';
+import '../../components/profi/live.css';
+---
+
+<ProfiShell title="Условия" look="auth">
+  <main class="container live" data-terms>
+    <div class="live__head">
+      <h1 class="t-h1">Условия размещения</h1>
+      <p class="live__note" data-who></p>
+    </div>
+    <div data-docs><p class="live__note">Загружаем…</p></div>
+    <p class="live__error" data-error hidden></p>
+    <button class="pill pill--lg pill--solid pill--block" type="button" data-accept disabled>Принять и войти</button>
+    <p class="auth__alt"><a href="/profi/vhod/">Назад ко входу</a></p>
+  </main>
+</ProfiShell>
+
+<script>
+  import { api, esc } from '../../lib/cabinet-api';
+  import { pending, signIn, afterLogin } from '../../lib/tg-login';
+
+  const root = document.querySelector<HTMLElement>('[data-terms]')!;
+  const docsEl = root.querySelector<HTMLElement>('[data-docs]')!;
+  const btn = root.querySelector<HTMLButtonElement>('[data-accept]')!;
+  const error = root.querySelector<HTMLElement>('[data-error]')!;
+  const p = pending();
+
+  const fail = (msg: string) => { error.textContent = msg; error.hidden = false; };
+
+  if (!p) {
+    location.replace('/profi/vhod/');
+  } else {
+    const name = [p.tg.first_name, p.tg.last_name].filter(Boolean).join(' ');
+    root.querySelector('[data-who]')!.textContent = name ? `${name}, прочитайте и отметьте оба пункта — после этого откроется кабинет.` : '';
+    try {
+      const res = await api(null, 'GET', `/api/collections/legal_docs/records?sort=-created&perPage=50&filter=${encodeURIComponent('kind = "vendor-offer" || kind = "vendor-pdn"')}`);
+      // действует последняя редакция каждого вида
+      const latest = ['vendor-offer', 'vendor-pdn'].map((k) => res.items.find((d: any) => d.kind === k)).filter(Boolean);
+      if (latest.length < 2) {
+        docsEl.innerHTML = '';
+        fail('Условия ещё не опубликованы — регистрация пока закрыта. Напишите нам.');
+      } else {
+        // текст документа пишем мы сами в базе (редактор), поэтому как HTML
+        docsEl.innerHTML = latest.map((d: any) => `
+          <section class="live-doc">
+            <h2 class="t-h2">${esc(d.title)}</h2>
+            <div class="live-doc__text">${d.text}</div>
+            <label class="check">
+              <input class="check__input" type="checkbox" data-box />
+              <span class="check__box"></span>
+              <span>${esc(d.checkbox)}</span>
+            </label>
+          </section>`).join('');
+        const boxes = [...docsEl.querySelectorAll<HTMLInputElement>('[data-box]')];
+        const sync = () => { btn.disabled = !boxes.every((b) => b.checked); };
+        boxes.forEach((b) => b.addEventListener('change', sync));
+      }
+    } catch (err) {
+      fail((err as Error).message);
+    }
+
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      error.hidden = true;
+      try {
+        await signIn({ ...p, accept: true });
+        afterLogin(p.next);
+      } catch (err) {
+        fail((err as Error).message + '\nЕсли вход устарел — вернитесь ко входу и нажмите Telegram ещё раз.');
+        btn.disabled = false;
+      }
+    });
+  }
+</script>

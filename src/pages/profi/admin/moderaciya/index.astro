@@ -25,6 +25,21 @@ const minutes = (s?: string) => {
     <p class="a-lead">Правки, которые подрядчики и площадки прислали из кабинета. Пока правка на проверке, на сайте прежняя версия.</p>
   </div>
 
+  <!-- Живая очередь из базы (revisions, status = review) — сквозная проверка
+       STAGE2.md. Ниже — примеры на заглушках, по ним отрабатывался вид. -->
+  <section class="a-card a-card--flush" data-live-queue>
+    <div class="a-card__head mq__live-head">
+      <h2 class="a-h2">Из базы</h2>
+      <a class="a-btn a-btn--soft a-btn--sm" href="/profi/admin/vhod/" data-live-login>Войти модератором</a>
+    </div>
+    <div class="a-table-wrap">
+      <table class="a-table a-table--cards">
+        <thead><tr><th>Кто прислал</th><th>Что</th><th class="a-num">Прислали</th></tr></thead>
+        <tbody data-live-rows><tr><td colspan="3" class="a-sub">Очередь из базы видна после входа модератора.</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
   <section class="a-card a-card--flush">
     <nav class="a-tabs" aria-label="Состояние правки">
       <a class="a-tabs__item is-active" href="#" data-filter-tab="mq" data-value="review">На проверке <span class="a-tabs__n">{onReview}</span></a>
@@ -90,4 +105,33 @@ const minutes = (s?: string) => {
 
 <style>
   .mq__changes { min-width: 320px; }
+  .mq__live-head { display: flex; justify-content: space-between; align-items: center; gap: var(--s-3); }
 </style>
+
+<script>
+  import { api, esc, session } from '../../../../lib/cabinet-api';
+
+  const KIND: Record<string, string> = { venue: 'площадка' };
+  const fmt = (d: string) => (d ? new Date(d.replace(' ', 'T')).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '');
+
+  document.addEventListener('astro:page-load', async () => {
+    const rows = document.querySelector<HTMLElement>('[data-live-rows]');
+    if (!rows) return;
+    const s = session('moderator');
+    if (!s) return;
+    document.querySelector<HTMLElement>('[data-live-login]')!.textContent = s.record.name || s.record.email;
+    try {
+      const res = await api('moderator', 'GET', `/api/collections/revisions/records?perPage=100&sort=submittedAt&expand=owner&filter=${encodeURIComponent('status = "review"')}`);
+      rows.innerHTML = res.items.length
+        ? res.items.map((r: any) => {
+            const href = `/profi/admin/moderaciya/pravka/?id=${r.id}`;
+            const who = r.expand?.owner?.name || 'без имени';
+            const what = `${KIND[r.kind] ?? r.categorySlug} · ${r.venue || r.specialist ? 'правка' : 'новая карточка'} · ${(r.photos ?? []).length} фото`;
+            return `<tr data-href="${href}"><td><a class="a-name" href="${href}">${esc(r.data?.name || 'Без названия')}</a><span class="a-sub">${esc(who)}</span></td><td>${esc(what)}</td><td class="a-num">${esc(fmt(r.submittedAt))}</td></tr>`;
+          }).join('')
+        : '<tr><td colspan="3" class="a-sub">На проверке ничего нет.</td></tr>';
+    } catch (err) {
+      rows.innerHTML = `<tr><td colspan="3" class="a-sub">${esc((err as Error).message)}</td></tr>`;
+    }
+  });
+</script>

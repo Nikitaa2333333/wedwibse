@@ -1,0 +1,60 @@
+---
+// ВХОД МОДЕРАТОРА — почта и пароль учётки `moderators` (заводит
+// суперпользователь: node scripts/pb-cabinet-setup.mjs). Токен модератора
+// открывает только модерацию: очередь, разбор, одобрить / вернуть.
+import AdminShell from '../../../components/admin/AdminShell.astro';
+---
+
+<AdminShell title="Вход модератора" section="moderation">
+  <div class="a-title">
+    <h1 class="a-h1">Вход модератора</h1>
+    <p class="a-lead" data-mod-who>Почта и пароль модератора.</p>
+  </div>
+  <section class="a-card mv">
+    <form class="mv__form" data-mod-login>
+      <input class="a-input" type="email" name="email" placeholder="Почта" autocomplete="username" required />
+      <input class="a-input" type="password" name="password" placeholder="Пароль" autocomplete="current-password" required />
+      <p class="mv__error" data-mod-error hidden></p>
+      <button class="a-btn a-btn--primary a-btn--lg" type="submit">Войти</button>
+      <button class="a-btn a-btn--soft" type="button" data-mod-logout hidden>Выйти</button>
+    </form>
+  </section>
+</AdminShell>
+
+<style>
+  .mv { max-width: 420px; }
+  .mv__form { display: grid; gap: var(--s-3); }
+  .mv__error { color: var(--st-bad-text); font-size: var(--fs-small); }
+</style>
+
+<script>
+  import { api, session, saveSession, type ApiError } from '../../../lib/cabinet-api';
+
+  document.addEventListener('astro:page-load', () => {
+    const form = document.querySelector<HTMLFormElement>('[data-mod-login]');
+    if (!form) return;
+    const error = form.querySelector<HTMLElement>('[data-mod-error]')!;
+    const logout = form.querySelector<HTMLButtonElement>('[data-mod-logout]')!;
+    const who = document.querySelector<HTMLElement>('[data-mod-who]')!;
+    const s = session('moderator');
+    if (s) {
+      who.textContent = `Вы вошли как ${s.record.name || s.record.email}.`;
+      logout.hidden = false;
+    }
+    logout.addEventListener('click', () => { saveSession('moderator', null); location.reload(); });
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      error.hidden = true;
+      const fd = new FormData(form);
+      try {
+        const r = await api(null, 'POST', '/api/collections/moderators/auth-with-password', { identity: fd.get('email'), password: fd.get('password') });
+        saveSession('moderator', { token: r.token, record: r.record });
+        const next = new URLSearchParams(location.search).get('next');
+        location.href = next && next.startsWith('/profi/admin/') ? next : '/profi/admin/moderaciya/';
+      } catch (err) {
+        error.textContent = (err as ApiError).status === 400 ? 'Неверная почта или пароль.' : (err as Error).message;
+        error.hidden = false;
+      }
+    });
+  });
+</script>

@@ -1,0 +1,277 @@
+---
+// КАРТОЧКА В КАБИНЕТЕ — живая форма на базе (сквозная проверка, STAGE2.md).
+//   ?new=specialist|venue  — новая карточка (ревизия-черновик появится при первом сохранении)
+//   ?id=<ревизия>          — черновик / вернувшаяся / на проверке
+//   ?card=<id>&kind=…      — править опубликованную: /api/wed/edit даёт черновик-копию
+// Что можно и когда — решает хук (pb_hooks/lib/cabinet.js): форма только
+// показывает его ответ. Поля — минимум для проверки пути; полная анкета
+// (прототип /profi/kabinet/anketa/) переделывается отдельно, данные
+// хранятся общим JSON `data`, новый вид ляжет на них без миграции.
+import ProfiShell from '../../../components/profi/ProfiShell.astro';
+import { SPECIALIST_CATEGORIES } from '../../../data/specialists';
+import '../../../components/profi/live.css';
+---
+
+<ProfiShell title="Карточка" dock={false}>
+  <main class="section container live" data-card>
+    <a class="live__link" href="/profi/moi/">← Мои карточки</a>
+    <div class="live__head">
+      <span class="status" data-status hidden></span>
+      <h1 class="t-h1" data-title>Карточка</h1>
+      <p class="live__error" data-reason hidden></p>
+    </div>
+
+    <form class="live-form" data-form hidden>
+      <fieldset data-fields>
+        <label class="field" data-only="new-specialist">
+          <span class="field__label">Категория</span>
+          <select class="input" name="categorySlug">
+            {SPECIALIST_CATEGORIES.map((c) => <option value={c.slug}>{c.role}</option>)}
+          </select>
+        </label>
+        <label class="field">
+          <span class="field__label" data-name-label>Имя или название</span>
+          <input class="input" name="name" maxlength="120" required />
+        </label>
+        <label class="field" data-only="specialist">
+          <span class="field__label">Коротко о себе</span>
+          <input class="input" name="tagline" maxlength="200" />
+        </label>
+        <label class="field" data-only="venue">
+          <span class="field__label">Адрес</span>
+          <input class="input" name="address" maxlength="300" />
+        </label>
+        <label class="field" data-only="venue">
+          <span class="field__label">Гостей на банкете, до</span>
+          <input class="input" name="capacityBanquet" inputmode="numeric" />
+        </label>
+        <label class="field">
+          <span class="field__label">О себе</span>
+          <textarea class="input" name="about" maxlength="20000"></textarea>
+          <span class="field__note">От 150 знаков. Телефоны, ссылки и ники — только в контактах ниже.</span>
+        </label>
+        <label class="field">
+          <span class="field__label" data-price-label>Цена от, ₽</span>
+          <input class="input" name="priceFrom" inputmode="numeric" />
+        </label>
+        <label class="field">
+          <span class="field__label">Про цену</span>
+          <input class="input" name="priceNote" maxlength="300" />
+        </label>
+        <label class="field">
+          <span class="field__label">Телефон</span>
+          <input class="input" name="phone" type="tel" autocomplete="tel" />
+          <span class="field__note">Клиент откроет его кнопкой «Показать контакты».</span>
+        </label>
+        <label class="field">
+          <span class="field__label">Telegram</span>
+          <input class="input" name="telegram" placeholder="@ник" />
+        </label>
+
+        <div class="field">
+          <span class="field__label">Фото <span data-photo-count></span></span>
+          <ul class="live-photos" data-photos></ul>
+          <input class="input" type="file" accept="image/jpeg,image/png,image/webp" multiple data-files />
+          <span class="field__note">От 8 до 50 фото, каждое до 15 МБ. Первое — обложка.</span>
+        </div>
+      </fieldset>
+
+      <p class="live__error" data-error hidden></p>
+      <p class="live__ok" data-ok hidden></p>
+      <div class="live__actions">
+        <button class="pill pill--solid" type="button" data-submit>Отправить на проверку</button>
+        <button class="pill" type="button" data-save>Сохранить черновик</button>
+        <button class="pill" type="button" data-withdraw hidden>Отозвать с проверки</button>
+      </div>
+    </form>
+  </main>
+</ProfiShell>
+
+<script>
+  import { api, esc, fileToken, fileUrl, requireSession, REV_STATUS } from '../../../lib/cabinet-api';
+
+  const root = document.querySelector<HTMLElement>('[data-card]')!;
+  const form = root.querySelector<HTMLFormElement>('[data-form]')!;
+  const fields = root.querySelector<HTMLFieldSetElement>('[data-fields]')!;
+  const errorEl = root.querySelector<HTMLElement>('[data-error]')!;
+  const okEl = root.querySelector<HTMLElement>('[data-ok]')!;
+  const photosEl = root.querySelector<HTMLElement>('[data-photos]')!;
+  const filesEl = root.querySelector<HTMLInputElement>('[data-files]')!;
+  const btnSubmit = root.querySelector<HTMLButtonElement>('[data-submit]')!;
+  const btnSave = root.querySelector<HTMLButtonElement>('[data-save]')!;
+  const btnWithdraw = root.querySelector<HTMLButtonElement>('[data-withdraw]')!;
+  const q = new URLSearchParams(location.search);
+  const s = requireSession('vendor');
+
+  let rev: any = null; // ревизия из базы
+  let kind: 'specialist' | 'venue' = q.get('new') === 'venue' ? 'venue' : 'specialist';
+  let removed: string[] = []; // фото, убранные до сохранения
+  let added: File[] = []; // фото, выбранные до сохранения
+  let token = '';
+
+  const say = (el: HTMLElement, msg: string) => { el.textContent = msg; el.hidden = !msg; };
+  const input = (name: string) => form.elements.namedItem(name) as HTMLInputElement;
+  const isNew = () => !rev || (!rev.venue && !rev.specialist);
+
+  function layout() {
+    root.querySelectorAll<HTMLElement>('[data-only]').forEach((el) => {
+      const want = el.dataset.only!;
+      el.hidden = want === 'new-specialist' ? !(kind === 'specialist' && isNew() && (!rev || rev.status === 'draft' || rev.status === 'rejected')) : want !== kind;
+    });
+    root.querySelector('[data-name-label]')!.textContent = kind === 'venue' ? 'Название площадки' : 'Имя или название';
+    root.querySelector('[data-price-label]')!.textContent = kind === 'venue' ? 'Аренда от, ₽' : 'Цена от, ₽';
+  }
+
+  function fill() {
+    const d = rev?.data ?? {};
+    for (const k of ['name', 'tagline', 'address', 'capacityBanquet', 'about', 'priceFrom', 'priceNote']) input(k).value = d[k] ?? '';
+    if (kind === 'venue') input('priceFrom').value = d.rentFrom ?? d.priceFrom ?? '';
+    input('phone').value = d.contacts?.phone ?? '';
+    input('telegram').value = d.contacts?.telegram ?? '';
+    if (rev?.categorySlug) input('categorySlug').value = rev.categorySlug;
+  }
+
+  function collect() {
+    const d: Record<string, any> = { ...(rev?.data ?? {}) };
+    for (const k of ['name', 'tagline', 'address', 'capacityBanquet', 'about', 'priceFrom', 'priceNote']) d[k] = input(k).value.trim();
+    if (kind === 'venue') d.rentFrom = d.priceFrom;
+    d.contacts = { ...(d.contacts ?? {}), phone: input('phone').value.trim(), telegram: input('telegram').value.trim() };
+    return d;
+  }
+
+  function renderPhotos() {
+    const names: string[] = (rev?.photos ?? []).filter((n: string) => !removed.includes(n));
+    const cover = rev?.cover && names.includes(rev.cover) ? rev.cover : names[0];
+    const locked = fields.disabled;
+    const items = names.map((n) => `
+      <li class="live-photo">
+        <img src="${fileUrl(rev, n, { thumb: '400x0', token })}" alt="" loading="lazy" />
+        ${n === cover ? '<span class="status live-photo__tag">Обложка</span>' : ''}
+        ${locked ? '' : `<span class="live-photo__btns">${n === cover ? '<span></span>' : `<button type="button" data-cover="${esc(n)}">Обложка</button>`}<button type="button" data-remove="${esc(n)}">Убрать</button></span>`}
+      </li>`);
+    const fresh = added.map((f, i) => `
+      <li class="live-photo">
+        <img src="${URL.createObjectURL(f)}" alt="" />
+        <span class="status status--info live-photo__tag">Новое</span>
+        ${locked ? '' : `<span class="live-photo__btns"><span></span><button type="button" data-unadd="${i}">Убрать</button></span>`}
+      </li>`);
+    photosEl.innerHTML = items.concat(fresh).join('');
+    root.querySelector('[data-photo-count]')!.textContent = `· ${names.length + added.length}`;
+  }
+
+  function renderState() {
+    const st = rev ? REV_STATUS[rev.status] : REV_STATUS.draft;
+    const statusEl = root.querySelector<HTMLElement>('[data-status]')!;
+    statusEl.className = `status ${st.cls}`;
+    statusEl.textContent = st.label;
+    statusEl.hidden = false;
+    root.querySelector('[data-title]')!.textContent = rev?.data?.name || (kind === 'venue' ? 'Новая площадка' : 'Новая карточка');
+    say(root.querySelector('[data-reason]')!, rev?.status === 'rejected' && rev.rejectReason ? `Вернули с причиной: ${rev.rejectReason}` : '');
+    const locked = rev?.status === 'review' || rev?.status === 'approved';
+    fields.disabled = locked;
+    filesEl.hidden = locked;
+    btnSubmit.hidden = locked;
+    btnSave.hidden = locked;
+    btnWithdraw.hidden = rev?.status !== 'review';
+    if (rev?.status === 'review') say(okEl, 'Карточка на проверке. Пока ждёт ответа, на сайте прежняя версия.');
+    layout();
+    renderPhotos();
+  }
+
+  async function load() {
+    try {
+      if (q.get('card')) {
+        const r = await api('vendor', 'POST', '/api/wed/edit', { kind: q.get('kind'), card: q.get('card') });
+        location.replace(`/profi/moi/kartochka/?id=${r.id}`);
+        return;
+      }
+      if (q.get('id')) {
+        rev = await api('vendor', 'GET', `/api/collections/revisions/records/${encodeURIComponent(q.get('id')!)}`);
+        kind = rev.kind;
+        if (rev.photos?.length) token = await fileToken('vendor');
+      }
+      fill();
+      renderState();
+      form.hidden = false;
+    } catch (err) {
+      say(errorEl, (err as Error).message);
+      form.hidden = false;
+      fields.disabled = true;
+    }
+  }
+
+  /** сохранить черновик; true — получилось */
+  async function save(): Promise<boolean> {
+    say(errorEl, '');
+    say(okEl, '');
+    const data = collect();
+    if (!data.name) { say(errorEl, 'Укажите имя или название.'); return false; }
+    try {
+      if (!rev) {
+        const category = kind === 'venue' ? '' : input('categorySlug').value;
+        const slug = await api('vendor', 'GET', `/api/wed/slug?kind=${kind}&category=${category}&name=${encodeURIComponent(data.name)}`);
+        if (!slug.suggestion) throw new Error('Не получилось подобрать адрес страницы — уточните название.');
+        rev = await api('vendor', 'POST', '/api/collections/revisions/records', {
+          owner: s!.record.id, kind, categorySlug: category, slug: slug.suggestion, status: 'draft', data,
+        });
+        history.replaceState(null, '', `/profi/moi/kartochka/?id=${rev.id}`);
+      }
+      const fd = new FormData();
+      fd.append('data', JSON.stringify(data));
+      if (isNew() && kind === 'specialist' && !fields.querySelector<HTMLElement>('[data-only="new-specialist"]')!.hidden) {
+        fd.append('categorySlug', input('categorySlug').value);
+      }
+      removed.forEach((n) => fd.append('photos-', n));
+      added.forEach((f) => fd.append('photos+', f, f.name));
+      rev = await api('vendor', 'PATCH', `/api/collections/revisions/records/${rev.id}`, fd);
+      removed = [];
+      added = [];
+      if (rev.photos?.length && !token) token = await fileToken('vendor');
+      renderState();
+      return true;
+    } catch (err) {
+      say(errorEl, (err as Error).message);
+      return false;
+    }
+  }
+
+  async function setStatus(status: string, okMsg: string) {
+    try {
+      rev = await api('vendor', 'PATCH', `/api/collections/revisions/records/${rev.id}`, { status });
+      renderState();
+      say(okEl, okMsg);
+    } catch (err) {
+      say(errorEl, (err as Error).message);
+    }
+  }
+
+  const busy = async (btn: HTMLButtonElement, fn: () => Promise<void>) => {
+    btn.disabled = true;
+    try { await fn(); } finally { btn.disabled = false; }
+  };
+
+  btnSave.addEventListener('click', () => busy(btnSave, async () => { if (await save()) say(okEl, 'Черновик сохранён.'); }));
+  btnSubmit.addEventListener('click', () => busy(btnSubmit, async () => {
+    if (await save()) await setStatus('review', 'Отправили на проверку. Ответ — в течение суток.');
+  }));
+  btnWithdraw.addEventListener('click', () => busy(btnWithdraw, () => setStatus('draft', 'Карточка снова черновик — можно править.')));
+
+  filesEl.addEventListener('change', () => {
+    added = added.concat([...(filesEl.files ?? [])]);
+    filesEl.value = '';
+    renderPhotos();
+  });
+  photosEl.addEventListener('click', async (e) => {
+    const t = e.target as HTMLElement;
+    if (t.dataset.remove) { removed.push(t.dataset.remove); renderPhotos(); }
+    if (t.dataset.unadd) { added.splice(Number(t.dataset.unadd), 1); renderPhotos(); }
+    if (t.dataset.cover) {
+      try {
+        rev = await api('vendor', 'PATCH', `/api/collections/revisions/records/${rev.id}`, { cover: t.dataset.cover });
+        renderPhotos();
+      } catch (err) { say(errorEl, (err as Error).message); }
+    }
+  });
+
+  if (s) load();
+</script>

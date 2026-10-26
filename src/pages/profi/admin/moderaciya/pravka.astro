@@ -1,0 +1,136 @@
+---
+// РАЗБОР ПРАВКИ ИЗ БАЗЫ — ?id=<ревизия> (сквозная проверка, STAGE2.md).
+// Поля «было → стало», фото черновика (закрыты, открываются токеном
+// модератора), одобрить / вернуть с причиной. Одобрение переносит
+// правку в карточку одной транзакцией (хук moderateRevision); на сайт
+// карточка выходит со следующей выкладкой. Полный экран разбора
+// по словам — /profi/admin/moderaciya/<demo>/, он ляжет сюда же.
+import AdminShell from '../../../../components/admin/AdminShell.astro';
+import AdminIcon from '../../../../components/admin/AdminIcon.astro';
+import { SPECIALIST_CATEGORIES } from '../../../../data/specialists';
+
+const ROLES = Object.fromEntries(SPECIALIST_CATEGORIES.map((c) => [c.slug, c.role]));
+---
+
+<AdminShell title="Разбор правки" section="moderation">
+  <div class="a-title">
+    <a class="a-btn a-btn--soft" href="/profi/admin/moderaciya/"><AdminIcon name="back" /> Модерация</a>
+    <h1 class="a-h1" data-pr-title>Правка</h1>
+    <p class="a-lead" data-pr-lead></p>
+  </div>
+
+  <div class="a-grid a-grid--main" data-pr data-roles={JSON.stringify(ROLES)}>
+    <div class="pr__main">
+      <section class="a-card">
+        <h2 class="a-h2">Что прислали</h2>
+        <dl class="pr__fields" data-pr-fields><dd class="a-sub">Загружаем…</dd></dl>
+      </section>
+      <section class="a-card">
+        <h2 class="a-h2">Фото · <span data-pr-photo-n></span></h2>
+        <ul class="pr__photos" data-pr-photos></ul>
+      </section>
+    </div>
+    <aside class="a-card pr__side">
+      <p class="pr__state" data-pr-state></p>
+      <div class="pr__acts" data-pr-acts hidden>
+        <button class="a-btn a-btn--primary a-btn--lg a-btn--block" type="button" data-pr-approve>Одобрить</button>
+        <textarea class="a-input pr__reason" rows="4" placeholder="Что исправить — уйдёт подрядчику" data-pr-reason></textarea>
+        <button class="a-btn a-btn--lg a-btn--block" type="button" data-pr-reject>Вернуть с причиной</button>
+      </div>
+      <p class="pr__error" data-pr-error hidden></p>
+    </aside>
+  </div>
+</AdminShell>
+
+<style>
+  .pr__main { display: grid; gap: var(--s-4); min-width: 0; }
+  .pr__fields { display: grid; gap: var(--s-1); margin-top: var(--s-3); }
+  /* строки приходят из базы через innerHTML — без scope-атрибута, поэтому :global */
+  .pr__fields :global(dt) { font-weight: var(--w-head-lg); font-size: var(--fs-small); margin-top: var(--s-2); }
+  .pr__fields :global(dd) { white-space: pre-line; overflow-wrap: anywhere; line-height: var(--lh-snug); }
+  :global(.pr__was) { display: block; text-decoration: line-through; background: var(--diff-del); }
+  :global(.pr__now) { background: var(--diff-add); }
+  .pr__photos { margin-top: var(--s-3); list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: var(--s-2); }
+  :global(.pr__photos img) { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-radius: var(--radius-card); display: block; }
+  .pr__side { display: grid; gap: var(--s-3); align-content: start; }
+  .pr__acts { display: grid; gap: var(--s-3); }
+  .pr__acts[hidden], .pr__error[hidden] { display: none; }
+  .pr__reason { resize: vertical; min-height: 96px; height: auto; padding-block: var(--s-2); }
+  .pr__error { color: var(--st-bad-text); font-size: var(--fs-small); white-space: pre-line; }
+</style>
+
+<script>
+  import { api, esc, fileToken, fileUrl, requireSession, REV_STATUS } from '../../../../lib/cabinet-api';
+
+  const LABELS: [string, string][] = [
+    ['name', 'Название'], ['tagline', 'Коротко о себе'], ['address', 'Адрес'], ['capacityBanquet', 'Гостей до'],
+    ['about', 'О себе'], ['priceFrom', 'Цена от'], ['priceNote', 'Про цену'],
+  ];
+
+  document.addEventListener('astro:page-load', async () => {
+    const root = document.querySelector<HTMLElement>('[data-pr]');
+    if (!root) return;
+    const s = requireSession('moderator');
+    if (!s) return;
+    const roles = JSON.parse(root.dataset.roles!);
+    const $ = <T extends HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
+    const error = $('[data-pr-error]');
+    const fail = (m: string) => { error.textContent = m; error.hidden = false; };
+    const id = new URLSearchParams(location.search).get('id') || '';
+
+    let rev: any;
+    async function render() {
+      rev = await api('moderator', 'GET', `/api/collections/revisions/records/${encodeURIComponent(id)}?expand=owner`);
+      const cardId = rev.venue || rev.specialist;
+      let was: any = null;
+      if (cardId) {
+        const card = await api('moderator', 'GET', `/api/collections/${rev.kind === 'venue' ? 'venues' : 'specialists'}/records/${cardId}`);
+        // у карточки из кабинета прежние ответы лежат в page; у карточек
+        // конвейера — только плоские поля
+        was = card.page?.source === 'cabinet' ? card.page : card;
+      }
+      const d = rev.data ?? {};
+      const role = rev.kind === 'venue' ? 'Площадка' : roles[rev.categorySlug] ?? rev.categorySlug;
+      $('[data-pr-title]').textContent = d.name || 'Без названия';
+      $('[data-pr-lead]').textContent = `${role} · ${cardId ? 'правка опубликованной' : 'новая карточка'} · прислал ${rev.expand?.owner?.name || 'без имени'} · адрес /${rev.slug}/`;
+
+      const rows = LABELS.filter(([k]) => (d[k] ?? '') !== '' || (was && (was[k] ?? '') !== '')).map(([k, label]) => {
+        const now = String(d[k] ?? '');
+        const before = was ? String(was[k] ?? '') : null;
+        const changed = before !== null && before !== now;
+        return `<dt>${label}</dt><dd>${changed ? `<span class="pr__was">${esc(before) || 'пусто'}</span><span class="pr__now">${esc(now) || 'пусто'}</span>` : esc(now) || 'пусто'}</dd>`;
+      });
+      const c = d.contacts ?? {};
+      rows.push(`<dt>Контакты (скрыты, за кнопкой)</dt><dd>${esc([c.phone, c.telegram].filter(Boolean).join(' · ')) || 'пусто'}</dd>`);
+      $('[data-pr-fields]').innerHTML = rows.join('');
+
+      const token = rev.photos?.length ? await fileToken('moderator') : '';
+      $('[data-pr-photo-n]').textContent = String(rev.photos?.length ?? 0);
+      $('[data-pr-photos]').innerHTML = (rev.photos ?? []).map((n: string) =>
+        `<li><a href="${fileUrl(rev, n, { token })}" target="_blank" rel="noopener"><img src="${fileUrl(rev, n, { thumb: '400x0', token })}" alt="" loading="lazy" /></a></li>`).join('');
+
+      const st = REV_STATUS[rev.status];
+      $('[data-pr-state]').innerHTML = `<span class="status ${st.cls}">${st.label}</span>${rev.status === 'rejected' && rev.rejectReason ? `<br><span class="a-sub">Причина: ${esc(rev.rejectReason)}</span>` : ''}${rev.status === 'approved' ? '<br><span class="a-sub">Карточка опубликована в базе. На сайте появится со следующей выкладкой.</span>' : ''}`;
+      $('[data-pr-acts]').hidden = rev.status !== 'review';
+    }
+
+    async function act(body: Record<string, string>) {
+      error.hidden = true;
+      try {
+        await api('moderator', 'PATCH', `/api/collections/revisions/records/${rev.id}`, body);
+        await render();
+      } catch (err) {
+        fail((err as Error).message);
+      }
+    }
+
+    $('[data-pr-approve]').addEventListener('click', () => act({ status: 'approved' }));
+    $('[data-pr-reject]').addEventListener('click', () => {
+      const reason = $<HTMLTextAreaElement>('[data-pr-reason]').value.trim();
+      if (!reason) return fail('Напишите причину — без неё подрядчик не поймёт, что исправить.');
+      act({ status: 'rejected', rejectReason: reason });
+    });
+
+    try { await render(); } catch (err) { fail((err as Error).message); }
+  });
+</script>
