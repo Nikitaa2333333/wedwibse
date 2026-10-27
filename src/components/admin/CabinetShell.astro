@@ -28,22 +28,16 @@ const { title, bare = false } = Astro.props;
   </Fragment>
 
   <div class="adm cab">
-    <header class="adm-head">
-      <a class="adm-logo" href="/profi/moi/">
-        <span class="adm-logo__name">Wed Secrets</span>
-        <span class="adm-logo__tag">кабинет</span>
-      </a>
-      {!bare && (
-        <div class="adm-head__right">
-          <a class="adm-head__link" href="/" target="_blank" rel="noopener">Сайт</a>
-          <span class="adm-user" data-cab-user>
-            <span class="adm-user__ava" aria-hidden="true" data-cab-ava></span>
-            <span class="adm-user__name" data-cab-name></span>
-          </span>
-          <a class="adm-head__link adm-head__out" href="#" data-cab-logout>Выйти</a>
-        </div>
-      )}
-    </header>
+    {/* шапки в кабинете нет (Никита, 27.10: минимализм) — знак только
+        на экранах входа и условий; «Выйти» — внизу «Моих карточек» */}
+    {bare && (
+      <header class="adm-head">
+        <a class="adm-logo" href="/profi/moi/">
+          <span class="adm-logo__name">Wed Secrets</span>
+          <span class="adm-logo__tag">кабинет</span>
+        </a>
+      </header>
+    )}
 
     {bare ? (
       <main class="adm-bare"><slot /></main>
@@ -56,14 +50,7 @@ const { title, bare = false } = Astro.props;
 </Layout>
 
 <script>
-  import { session, saveSession } from '../../lib/cabinet-api';
-  const s = session('vendor');
-  const user = document.querySelector<HTMLElement>('[data-cab-user]');
-  if (user && s) {
-    const name = s.record.name || 'Без имени';
-    user.querySelector('[data-cab-name]')!.textContent = name;
-    user.querySelector('[data-cab-ava]')!.textContent = name.slice(0, 1).toUpperCase();
-  }
+  import { saveSession } from '../../lib/cabinet-api';
   document.querySelector('[data-cab-logout]')?.addEventListener('click', (e) => {
     e.preventDefault();
     saveSession('vendor', null);
