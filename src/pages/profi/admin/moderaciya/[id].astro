@@ -10,7 +10,6 @@
 import { Image } from 'astro:assets';
 import AdminShell from '../../../../components/admin/AdminShell.astro';
 import AdminIcon from '../../../../components/admin/AdminIcon.astro';
-import Icon from '../../../../components/Icon.astro';
 import { resolveImage, IMG_WIDTHS } from '../../../../lib/images';
 import { buildReview, plural } from '../../../../lib/moderation';
 import { QUEUE, STATE } from '../../../../data/moderation-demo';
@@ -67,17 +66,15 @@ const reasons = [
       </span>
     </div>
 
-    <header class="a-card mr__head">
-      {r.photos.after[0] && <Image src={resolveImage(r.photos.after[0])} alt="" widths={[...IMG_WIDTHS.thumb]} sizes="64px" class="mr__ava" />}
-      <div class="mr__id">
-        <h1 class="a-h1">{r.card.name}</h1>
-        <p class="a-lead">{r.role} · {rev.first ? 'первая публикация' : 'правка карточки'} · {rev.submitted}</p>
-        <p class="mr__tags">
-          <span class={`a-dot a-dot--${st.dot}`}>{st.label}</span>
-          {waits && rev.waiting && <span class="a-time"><AdminIcon name="clock" />ждёт {rev.waiting} из 24 ч</span>}
-          <a class="mr__link" href={r.url} target="_blank" rel="noopener">{rev.first ? 'Как выглядит на сайте' : 'Карточка на сайте'} <AdminIcon name="external" /></a>
-        </p>
-      </div>
+    <header class="mr__head">
+      <h1 class="a-h1">{r.card.name}</h1>
+      <p class="mr__line">
+        <span>{rev.first ? 'Новая карточка' : 'Правка'}</span>
+        {waits && rev.waiting
+          ? <span class:list={['mr__when', { 'mr__when--late': parseInt(rev.waiting, 10) >= 20 }]}>ждёт {rev.waiting} из 24 ч</span>
+          : <span class={`a-dot a-dot--${st.dot}`}>{st.label}</span>}
+        <a class="a-more" href={r.url} target="_blank" rel="noopener">{rev.first ? 'Как на сайте' : 'На сайте'}</a>
+      </p>
     </header>
 
     <div class="a-grid a-grid--main">
@@ -196,13 +193,7 @@ const reasons = [
       </div>
 
       <aside class="a-card mr__side">
-        <h2 class="a-h2">Решение</h2>
-        <div class="a-chips">
-          {r.changes.map((c) => <span class="a-chip"><b>{c.label}:</b> {c.value}</span>)}
-        </div>
-        {waits ? (
-          <p class="a-sub">На сайте прежняя версия, пока не одобрите. Подрядчику придёт сообщение с решением.</p>
-        ) : (
+        {waits ? null : (
           <div class="mr__decided">
             <span class={`a-dot a-dot--${st.dot}`}>{rev.decided}</span>
             {rev.reason && <p class="mr__reason">«{rev.reason}»</p>}
@@ -211,8 +202,8 @@ const reasons = [
         <div class="mr__bar" data-actions>
           {waits ? (
             <>
-              <button class="a-btn a-btn--primary a-btn--lg a-btn--block" type="button" data-act="approve">Одобрить <kbd>A</kbd></button>
-              <button class="a-btn a-btn--lg a-btn--block" type="button" data-sheet-open="return">Вернуть с причиной <kbd>R</kbd></button>
+              <button class="a-btn a-btn--primary a-btn--lg a-btn--block" type="button" data-act="approve">Одобрить<kbd>A</kbd></button>
+              <button class="a-btn a-btn--lg a-btn--block" type="button" data-sheet-open="return">Вернуть<kbd>R</kbd></button>
             </>
           ) : (
             <>
@@ -231,36 +222,24 @@ const reasons = [
     <button class="a-toast__undo" type="button" data-undo>Отменить</button>
   </div>
 
-  <div class="sheet" data-sheet="return">
-    <div class="sheet__backdrop" data-sheet-close></div>
-    <section class="sheet__panel adm-sheet" role="dialog" aria-modal="true" aria-labelledby="return-title">
-      <header class="sheet__head">
-        <h2 class="sheet__title" id="return-title">Вернуть с причиной</h2>
-        <button class="icon-btn" type="button" data-sheet-close aria-label="Закрыть"><Icon name="close" /></button>
-      </header>
-      <div class="sheet__body rs" data-sheet-body data-lenis-prevent>
-        <p>Подрядчик увидит причину в кабинете и в сообщении. На сайте остаётся прежняя версия.</p>
-        <div class="rs__chips">
-          {reasons.map((x) => (
-            <label class="chip-opt">
-              <input class="chip-opt__input" type="checkbox" value={x} data-reason />
-              <span class="chip">{x}</span>
-            </label>
-          ))}
-        </div>
-        <textarea class="input" rows="4" data-reason-text placeholder="Что исправить — словами для подрядчика"></textarea>
+  <dialog class="a-dialog" data-return>
+    <form method="dialog" class="a-dialog__body">
+      <div class="a-dialog__head">
+        <h2 class="a-h2">Вернуть с причиной</h2>
+        <button class="a-dialog__x" value="cancel" aria-label="Закрыть"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.6" d="M6 6l12 12M18 6L6 18"/></svg></button>
       </div>
-      <footer class="sheet__foot">
-        <button class="a-btn a-btn--primary a-btn--lg a-btn--block" type="button" data-act="return">Вернуть подрядчику</button>
-      </footer>
-    </section>
-  </div>
+      <div class="a-chips">
+        {reasons.map((x) => <button class="a-pick" type="button" aria-pressed="false" data-reason={x}>{x}</button>)}
+      </div>
+      <textarea class="a-field__input rs__text" rows="4" data-reason-text placeholder="Что исправить — словами для подрядчика"></textarea>
+      <button class="a-btn a-btn--primary a-btn--lg a-btn--block" type="button" data-act="return">Вернуть подрядчику</button>
+    </form>
+  </dialog>
 </AdminShell>
 
 <script>
   // ClientRouter: страница меняется без перезагрузки — привязки на каждый
   // `astro:page-load`; клавиши и тост — один обработчик на документ.
-  import { bindSheet } from '../../../../lib/sheet';
   import { navigate } from 'astro:transitions/client';
 
   const RESULT: Record<string, string> = {
@@ -275,17 +254,20 @@ const reasons = [
     const root = document.querySelector<HTMLElement>('.mr[data-next]');
     if (!root) return;
     clearTimeout(timer);
-    const sheetEl = document.querySelector<HTMLElement>('[data-sheet="return"]');
-    const sheet = sheetEl ? bindSheet(sheetEl) : null;
+    const dlg = document.querySelector<HTMLDialogElement>('[data-return]');
+    document.querySelectorAll<HTMLElement>('[data-sheet-open="return"]').forEach((b) => b.addEventListener('click', () => dlg?.showModal()));
+    dlg?.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
     const text = document.querySelector<HTMLTextAreaElement>('[data-reason-text]');
     const diff = document.querySelector<HTMLElement>('[data-diff]');
     document.querySelectorAll<HTMLElement>('[data-mode-btn]').forEach((b) =>
       b.addEventListener('click', () => diff?.setAttribute('data-mode', b.dataset.modeBtn!)),
     );
-    document.querySelectorAll<HTMLInputElement>('[data-reason]').forEach((cb) =>
-      cb.addEventListener('change', () => {
+    // готовые причины — кнопками; выбранные складываются в текст для подрядчика
+    document.querySelectorAll<HTMLButtonElement>('[data-reason]').forEach((b) =>
+      b.addEventListener('click', () => {
+        b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true'));
         if (!text) return;
-        const picked = [...document.querySelectorAll<HTMLInputElement>('[data-reason]:checked')].map((x) => x.value);
+        const picked = [...document.querySelectorAll<HTMLElement>('[data-reason][aria-pressed="true"]')].map((x) => x.dataset.reason);
         text.value = picked.length ? `${picked.join('. ')}.` : '';
       }),
     );
@@ -294,7 +276,7 @@ const reasons = [
     const toast = document.querySelector<HTMLElement>('[data-toast]');
     const decide = (act: string) => {
       if (!toast || !RESULT[act]) return;
-      if (act === 'return') sheet?.close();
+      if (act === 'return') dlg?.close();
       toast.querySelector<HTMLElement>('[data-toast-text]')!.textContent = `${RESULT[act]}. Дальше — следующая правка`;
       toast.hidden = false;
       clearTimeout(timer);
@@ -325,12 +307,11 @@ const reasons = [
   .mr__step { width: 36px; padding: 0; }
   .mr__step.is-off { pointer-events: none; opacity: 0.4; }
 
-  .mr__head { display: flex; gap: var(--s-4); align-items: center; }
-  :global(.mr__ava) { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; flex: none; }
-  .mr__id { display: grid; gap: 4px; min-width: 0; }
-  .mr__tags { display: flex; flex-wrap: wrap; align-items: center; gap: 6px var(--s-4); margin-top: 4px; }
-  .mr__link { display: inline-flex; align-items: center; gap: 4px; color: var(--adm-link); text-decoration: none; font-weight: 500; }
-  .mr__link :global(svg) { width: 16px; height: 16px; }
+  /* шапка: имя и одна строка — что это, срок, ссылка (Никита, 27.10: «слишком много») */
+  .mr__head { display: grid; gap: 4px; }
+  .mr__line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px var(--s-3); color: var(--adm-text-2); }
+  .mr__when { font-weight: 500; color: var(--adm-text); }
+  .mr__when--late { color: var(--st-bad-text); }
 
   .mr__side { display: grid; gap: var(--s-3); }
   @media (min-width: 1024px) { .mr__side { position: sticky; top: calc(var(--adm-head-h) + var(--s-2)); } }
@@ -339,15 +320,22 @@ const reasons = [
   .mr__reason { padding: 10px 12px; border-radius: var(--adm-radius-md); background: #fde9e9; }
   .mr__bar { display: grid; gap: var(--s-2); margin-top: var(--s-2); }
   .mr__keys { text-align: center; }
-  @media (hover: none) { .mr__keys { display: none; } }
+  /* горячие клавиши — только на ПК: на телефоне клавиатуры нет */
+  .mr__bar :global(kbd) { margin-left: 8px; padding: 0 5px; border-radius: 4px; background: rgba(255, 255, 255, 0.16); font: inherit; font-size: 12px; }
+  .mr__bar .a-btn:not(.a-btn--primary) :global(kbd) { background: var(--adm-bg); }
+  @media (max-width: 1023px), (hover: none) { .mr__keys, .mr__bar :global(kbd) { display: none; } }
   @media (max-width: 1023px) {
+    /* кнопки решения прибиты к низу на растворении — как «Войти» и кабинет */
     .mr__bar {
       position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
       grid-template-columns: 1fr 1fr;
-      padding: 12px var(--s-4) calc(12px + var(--safe-b, 0px));
-      background: var(--adm-card); box-shadow: 0 -1px 0 var(--adm-line);
+      padding: var(--cab-bar-fade) var(--s-4) calc(16px + env(safe-area-inset-bottom));
+      background: linear-gradient(to bottom, transparent 0, color-mix(in srgb, var(--adm-bg) 55%, transparent) 40%, var(--adm-bg) calc(var(--cab-bar-fade) - 8px));
+      pointer-events: none;
     }
-    .mr { padding-bottom: 76px; }
+    .mr__bar > * { pointer-events: auto; }
+    .mr__bar .a-btn { height: 52px; border-radius: 999px; border: 0; }
+    .mr { padding-bottom: 96px; }
   }
 
   .flags { list-style: none; margin: 0; padding: 0; }
@@ -377,7 +365,5 @@ const reasons = [
   .ph__cell.is-flagged { outline: 3px solid #e5484d; outline-offset: -3px; }
   .ph__tag { position: absolute; left: 4px; bottom: 4px; padding: 1px 6px; border-radius: 6px; background: #e5484d; color: #fff; font-size: 12px; font-weight: 600; }
 
-  .rs { display: grid; gap: var(--s-4); }
-  .rs__chips { display: flex; flex-wrap: wrap; gap: var(--s-2); }
-  .adm-sheet { font-family: var(--adm-font); }
+  .rs__text { height: auto; padding: 12px 14px; line-height: 1.5; resize: vertical; }
 </style>

@@ -19,19 +19,22 @@ const tabs = [
   { v: 'all', label: 'Все', n: rows.length },
   { v: 'venue', label: 'Площадки', n: venues },
   { v: 'specialist', label: 'Подрядчики', n: rows.length - venues },
-  { v: 'nocontacts', label: 'Без контактов', n: GAPS.noContacts.length, bad: true },
   { v: 'fewphotos', label: `Меньше ${PHOTOS_LOW} фото`, n: GAPS.fewPhotos.length, bad: true },
   { v: 'noprice', label: 'Без цены', n: GAPS.noPrice.length, bad: true },
 ];
 // ЗАГЛУШКА токена: вживую — одноразовый, из базы
 const token = (key: string) => [...key].reduce((h, ch) => (h * 33 + ch.charCodeAt(0)) >>> 0, 5381).toString(36);
-const yes = (b: boolean) => (b ? 'есть' : 'нет');
+// чего не хватает — одной строкой; всё есть — так и пишем
+const gaps = (r: (typeof rows)[number]) => [
+  r.photos < PHOTOS_LOW && `${r.photos} фото из ${PHOTOS_MAX}`,
+  !r.hasText && 'нет текста',
+  !r.hasPrice && 'нет цены',
+].filter(Boolean).join(' · ');
 ---
 
 <AdminShell title="Карточки" section="catalog">
   <div class="a-title">
     <h1 class="a-h1">Карточки</h1>
-    <p class="a-lead">Всё, что сейчас на сайте. Чего не хватает — красным.</p>
   </div>
 
   <section class="a-card a-card--flush">
@@ -50,65 +53,27 @@ const yes = (b: boolean) => (b ? 'есть' : 'нет');
       </label>
     </div>
     <div class="a-table-wrap">
-      <table class="a-table a-table--cards" id="cat" data-atable>
-        <thead>
-          <tr>
-            <th><input class="a-check" type="checkbox" aria-label="Выбрать все" /></th>
-            <th data-sort="asc">Название</th>
-            <th class="a-num" data-sort="asc">Фото</th>
-            <th>Текст</th>
-            <th>Цена</th>
-            <th>Контакты</th>
-            <th>Владелец</th>
-          </tr>
-        </thead>
+      <table class="a-table cat" id="cat" data-atable>
         <tbody>
-          <tr class="a-total">
-            <td></td>
-            <td>Итого: {rows.length} карточек</td>
-            <td class="a-num">{rows.reduce((s, r) => s + r.photos, 0)}</td>
-            <td>{rows.filter((r) => r.hasText).length} из {rows.length}</td>
-            <td>{rows.filter((r) => r.hasPrice).length} из {rows.length}</td>
-            <td>{rows.filter((r) => r.hasContacts).length} из {rows.length}</td>
-            <td>{rows.filter((r) => r.owner.step === 'own').length} ведут сами</td>
-          </tr>
           {rows.map((r) => {
-            const tab = [
-              r.kind,
-              !r.hasContacts && 'nocontacts',
-              r.photos < PHOTOS_LOW && 'fewphotos',
-              !r.hasPrice && 'noprice',
-            ].filter(Boolean).join(' ');
+            const tab = [r.kind, r.photos < PHOTOS_LOW && 'fewphotos', !r.hasPrice && 'noprice'].filter(Boolean).join(' ');
             const st = OWNER_STEP[r.owner.step];
             const link = `https://profi.wed-secrets.ru/v/${token(r.key)}`;
+            const miss = gaps(r);
             return (
               <tr data-tab={tab} data-text={`${r.name} ${r.category}`.toLowerCase()}>
-                <td><input class="a-check" type="checkbox" aria-label={`Выбрать: ${r.name}`} /></td>
-                <td data-v={r.name}>
-                  <div class="a-who">
-                    {r.cover && <Image src={resolveImage(r.cover)} alt="" widths={[...IMG_WIDTHS.thumb]} sizes="32px" class="a-thumb" />}
-                    <div>
-                      <a class="a-name" href={r.url} target="_blank" rel="noopener">{r.name}</a>
-                      <span class="a-sub">{r.category}</span>
-                    </div>
-                  </div>
-                </td>
-                <td class="a-num" data-v={r.photos} data-l="Фото">
-                  <span class:list={{ 'a-no': r.photos < PHOTOS_LOW }}>{r.photos}</span>
-                  <span class="a-sub">из {PHOTOS_MAX}</span>
-                </td>
-                <td data-l="Текст"><span class={r.hasText ? 'a-yes' : 'a-no'}>{yes(r.hasText)}</span></td>
-                <td data-l="Цена"><span class={r.hasPrice ? 'a-yes' : 'a-no'}>{yes(r.hasPrice)}</span></td>
-                <td data-l="Контакты"><span class={r.hasContacts ? 'a-yes' : 'a-no'}>{yes(r.hasContacts)}</span></td>
-                <td data-bulk-cell>
-                  <span class={`a-dot ${st.dot ? `a-dot--${st.dot}` : ''}`}>{st.label}</span>
-                  <span class="a-sub">
-                    {r.owner.at ? `с ${r.owner.at}${r.owner.via ? `, вход через ${r.owner.via}` : ''}` : ''}
+                <td class="cat__card" data-v={r.name}>
+                  {r.cover ? <Image src={resolveImage(r.cover)} alt="" widths={[...IMG_WIDTHS.thumb]} sizes="56px" class="cat__img" /> : <span class="cat__img"></span>}
+                  <span class="cat__body">
+                    <a class="cat__name" href={r.url} target="_blank" rel="noopener">{r.name}</a>
+                    <span class="a-sub">{r.category}</span>
+                    <span class:list={['cat__gaps', { 'cat__gaps--ok': !miss }]}>{miss || 'всё на месте'}</span>
                   </span>
+                </td>
+                <td class="cat__owner">
+                  <span class={`a-dot ${st.dot ? `a-dot--${st.dot}` : ''}`}>{st.label}</span>
                   {r.owner.step !== 'own' && (
-                    <button class="cat__link" type="button" data-copy={link}>
-                      <AdminIcon name="link" /> {r.owner.step === 'none' ? 'Выдать ссылку' : 'Скопировать ссылку'}
-                    </button>
+                    <button class="cat__link" type="button" data-copy={link}>{r.owner.step === 'none' ? 'Выдать ссылку' : 'Скопировать ссылку'}</button>
                   )}
                 </td>
               </tr>
@@ -119,13 +84,6 @@ const yes = (b: boolean) => (b ? 'есть' : 'нет');
       <div class="a-empty" data-empty="cat" hidden>Ничего не нашлось</div>
     </div>
   </section>
-
-  <div class="a-bulk" data-bulk="cat" hidden>
-    <span class="a-bulk__count">Выбрано: <span data-bulk-n>0</span></span>
-    <button class="a-bulk__btn" type="button" data-bulk-act="mark" data-bulk-label='<span class="a-dot a-dot--info">Ссылка выдана</span><span class="a-sub">сегодня</span>'>Выдать ссылки владельцам</button>
-    <button class="a-bulk__btn" type="button" data-bulk-act="mark" data-bulk-label='<span class="a-dot a-dot--bad">Скрыта с сайта</span>'>Скрыть с сайта</button>
-    <button class="a-bulk__btn" type="button" data-bulk-clear>Снять выбор</button>
-  </div>
 
   <div class="a-toast" data-toast hidden role="status"><span data-toast-text></span></div>
 </AdminShell>
@@ -143,7 +101,7 @@ const yes = (b: boolean) => (b ? 'есть' : 'нет');
     if (cell && b.textContent?.includes('Выдать')) {
       cell.querySelector('.a-dot')!.className = 'a-dot a-dot--info';
       cell.querySelector('.a-dot')!.textContent = 'Ссылка выдана';
-      b.lastChild!.textContent = ' Скопировать ссылку';
+      b.textContent = 'Скопировать ссылку';
     }
     let msg = `Ссылка скопирована: ${link}`;
     try { await navigator.clipboard.writeText(link); } catch { msg = link; }
@@ -157,7 +115,21 @@ const yes = (b: boolean) => (b ? 'есть' : 'нет');
 </script>
 
 <style>
-  /* Действие в строке — ссылкой, а не кнопкой: строка таблицы остаётся в две строки */
-  .cat__link { display: inline-flex; align-items: center; gap: 4px; margin-top: 2px; color: var(--adm-link); font-size: 13px; font-weight: 500; }
-  .cat__link :global(svg) { width: 14px; height: 14px; }
+  /* Строка карточки — как «Мои карточки» кабинета (Никита, 27.10: таблица
+     на телефоне разваливалась в стопку «Фото / Текст / Цена / Контакты»):
+     кадр, имя, категория, красным — только чего не хватает. Справа
+     владелец и действие текстом; на телефоне — под карточкой. */
+  .cat :global(tr) { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-2); padding: 14px var(--adm-pad); border-top: 1px solid var(--adm-line); }
+  @media (min-width: 768px) { .cat :global(tr) { grid-template-columns: minmax(0, 1fr) 220px; align-items: center; } }
+  .cat :global(td) { padding: 0; border: 0; }
+  .cat__card { display: grid !important; grid-template-columns: 56px minmax(0, 1fr); gap: var(--s-3); align-items: center; }
+  .cat__img, .cat :global(.cat__img) { width: 56px; height: 70px; border-radius: 10px; object-fit: cover; background: var(--adm-bg); display: block; }
+  .cat__body { display: grid; gap: 2px; min-width: 0; }
+  .cat__name { font-size: 16px; line-height: 22px; font-weight: 600; color: inherit; text-decoration: none; overflow-wrap: anywhere; }
+  .cat__gaps { font-size: var(--adm-fs); color: var(--st-bad-text); }
+  .cat__gaps--ok { color: var(--st-ok-text); }
+  .cat__owner { display: flex; flex-wrap: wrap; align-items: center; gap: 4px var(--s-3); }
+  @media (min-width: 768px) { .cat__owner { display: grid; justify-items: start; } }
+  /* действие в строке — ссылкой, не кнопкой */
+  .cat__link { color: var(--adm-link); font-size: var(--adm-fs); font-weight: 500; }
 </style>

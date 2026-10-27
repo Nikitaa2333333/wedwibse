@@ -435,3 +435,16 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
 
 .adm kbd { padding: 0 5px; border: 1px solid currentColor; border-radius: 4px; font: inherit; font-size: 11px; line-height: 16px; }
 @media (hover: none) { .adm kbd { display: none; } }
+
+/* ---------- модалка админки (27.10): нативный <dialog>, снизу на телефоне,
+   по центру на ПК; вместо .sheet сайта — свой шрифт и плашки без обводки ---------- */
+.a-dialog { border: 0; padding: 0; margin: auto auto 0; width: 100%; max-width: 520px; max-height: 88vh; border-radius: var(--adm-radius) var(--adm-radius) 0 0; background: var(--adm-card); color: var(--adm-text); font-family: var(--adm-font); overflow-x: clip; overflow-y: auto; box-sizing: border-box; }
+@media (min-width: 640px) { .a-dialog { margin: auto; border-radius: var(--adm-radius); } }
+.a-dialog::backdrop { background: rgba(15, 20, 30, 0.45); }
+.a-dialog__body { display: grid; gap: var(--s-4); padding: var(--s-5) var(--s-4) calc(var(--s-4) + env(safe-area-inset-bottom)); }
+.a-dialog__head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); }
+.a-dialog__x { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--adm-bg); color: var(--adm-text); flex: none; }
+.a-dialog__x svg { width: 18px; height: 18px; }
+/* вариант на выбор — серая капсула, выбранный — почти-чёрный */
+.a-pick { height: 36px; padding: 0 14px; border-radius: 10px; background: var(--adm-bg); font: inherit; font-size: var(--adm-fs); color: var(--adm-text); white-space: nowrap; }
+.a-pick[aria-pressed="true"] { background: var(--adm-primary); color: #fff; }
