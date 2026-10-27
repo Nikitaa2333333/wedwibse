@@ -5,7 +5,7 @@
 // человеку «что ещё не заполнено», без обещаний, которых сервер не держит.
 //
 // Данные карточки (revisions.data) — схема CABINET-UX.md §3:
-//   name, tagline                          — основное (подрядчик)
+//   firstName, lastName → name, tagline    — основное (подрядчик; name собирается сам)
 //   address, rentFrom, checkFrom           — основное (площадка)
 //   sections: [{ title, body }]            — текст разделами, как написан
 //   filters: { ключ группы: значение | [значения] } — ответы на вопросы
@@ -13,7 +13,7 @@
 //   priceNote                              — от чего зависит цена
 //   halls: [{ name, area, banquet, buffet, priceFrom, note }] — залы (площадка)
 //   terms: { kitchen, alcohol, until, parking } — условия (площадка)
-//   contacts: { phone, telegram, max, site, email } — за кнопкой «Показать контакты»
+//   contacts: { phone (E.164), phoneCountry, telegram, max, site, email } — за кнопкой «Показать контакты»
 
 export type Kind = 'venue' | 'specialist';
 export type SectionKey = 'osnovnoe' | 'foto' | 'tekst' | 'voprosy' | 'prays' | 'zaly' | 'usloviya' | 'kontakty';
@@ -32,7 +32,7 @@ export const MIN_TEXT = 150;
 
 export const SECTIONS: Record<Kind, { key: SectionKey; title: string; icon: string }[]> = {
   specialist: [
-    { key: 'osnovnoe', title: 'Основное', icon: 'cards' },
+    { key: 'osnovnoe', title: 'Основное', icon: 'profile' },
     { key: 'foto', title: 'Фото', icon: 'photo' },
     { key: 'tekst', title: 'Текст', icon: 'text' },
     { key: 'voprosy', title: 'Вопросы', icon: 'check' },
@@ -40,7 +40,7 @@ export const SECTIONS: Record<Kind, { key: SectionKey; title: string; icon: stri
     { key: 'kontakty', title: 'Контакты', icon: 'phone' },
   ],
   venue: [
-    { key: 'osnovnoe', title: 'Основное', icon: 'cards' },
+    { key: 'osnovnoe', title: 'Основное', icon: 'profile' },
     { key: 'foto', title: 'Фото', icon: 'photo' },
     { key: 'zaly', title: 'Залы', icon: 'catalog' },
     { key: 'usloviya', title: 'Условия', icon: 'notes' },
@@ -143,7 +143,8 @@ export function sectionState(key: SectionKey, rev: any, questions: Question[]): 
     case 'prays': {
       const n = (d.tariffs ?? []).filter((t: any) => str(t?.name) && Number(t?.price) > 0).length;
       const p = priceFrom(d);
-      return { done: n > 0 || filled(d.priceNote), sub: n ? `${n} ${n === 1 ? 'пакет' : n < 5 ? 'пакета' : 'пакетов'} · от ${rub(p!)}` : filled(d.priceNote) ? 'цена по запросу' : 'пусто', empty: !n && !filled(d.priceNote) };
+      // нужен хотя бы один пакет с ценой: одна приписка «ни от чего» проходила (прогон 27.10)
+      return { done: n > 0, sub: n ? `${n} ${n === 1 ? 'пакет' : n < 5 ? 'пакета' : 'пакетов'} · от ${rub(p!)}` : 'нет пакета с ценой', empty: !n };
     }
     case 'zaly': {
       const halls = (d.halls ?? []).filter((h: any) => str(h?.name));

@@ -24,6 +24,7 @@ const MAP = {
   complaints: 'danger-triangle-linear',
   // показатели и разделы экранов
   cards: 'layers-linear',
+  profile: 'user-rounded-linear',
   noContacts: 'phone-linear',
   photo: 'gallery-linear',
   clock: 'clock-circle-linear',

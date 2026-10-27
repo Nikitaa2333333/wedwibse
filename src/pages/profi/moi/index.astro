@@ -23,7 +23,6 @@ const ROLES = Object.fromEntries(SPECIALIST_CATEGORIES.map((c) => [c.slug, c.rol
       <div class="c-rows" data-list><p class="c-row c-row__sub">Загружаем…</p></div>
     </section>
     <p class="c-error" data-error hidden></p>
-    <p class="a-login__note">На одной учётке — до трёх карточек. Карточка появляется на сайте после проверки модератором, обычно в течение суток.</p>
   </div>
 </CabinetShell>
 
@@ -48,7 +47,7 @@ const ROLES = Object.fromEntries(SPECIALIST_CATEGORIES.map((c) => [c.slug, c.rol
       const token = revs.items.some((r: any) => r.photos?.length) ? await fileToken('vendor') : '';
       const role = (kind: string, cat: string) => (kind === 'venue' ? 'Площадка' : roles[cat] ?? cat);
       const row = (href: string, thumb: string, title: string, sub: string, st: { label: string; cls: string }, bad = false) => `
-        <a class="c-row" href="${href}">
+        <a class="c-row c-row--card" href="${href}">
           ${thumb ? `<img class="c-row__thumb" src="${thumb}" alt="" loading="lazy" />` : '<span class="c-row__thumb"></span>'}
           <span class="c-row__body">
             <span class="c-row__title">${esc(title)}</span>

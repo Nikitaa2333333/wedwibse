@@ -5,9 +5,10 @@
 // классы admin.css. Отличия от AdminShell: свой знак («кабинет»), своя
 // учётка (подрядчик, вход через Telegram) и свои разделы. Без ClientRouter:
 // экраны кабинета — живые формы, каждый переход — полная загрузка.
+// Меню разделов нет (Никита, 27.10: раздел один — плашка «Карточки» лишняя);
+// вернётся, когда появится второй раздел.
 // noindex всегда: индексация сайта открыта, кабинет в выдачу не должен.
 import Layout from '../../layouts/Layout.astro';
-import AdminIcon from './AdminIcon.astro';
 import './admin.css';
 import './cabinet.css';
 
@@ -17,9 +18,7 @@ interface Props {
   bare?: boolean;
   section?: 'cards';
 }
-const { title, bare = false, section } = Astro.props;
-
-const items = [{ key: 'cards', href: '/profi/moi/', label: 'Карточки', icon: 'cards' }] as const;
+const { title, bare = false } = Astro.props;
 ---
 
 <Layout title={`${title} — Кабинет Wed Secrets`} description="Кабинет подрядчика и площадки Wed Secrets.">
@@ -49,15 +48,7 @@ const items = [{ key: 'cards', href: '/profi/moi/', label: 'Карточки', i
     {bare ? (
       <main class="adm-bare"><slot /></main>
     ) : (
-      <div class="adm-body">
-        <nav class="adm-nav" aria-label="Разделы кабинета">
-          {items.map((it) => (
-            <a class:list={['adm-nav__item', { 'is-active': it.key === section }]} href={it.href} aria-current={it.key === section ? 'page' : undefined}>
-              <AdminIcon name={it.icon} class="adm-nav__ic" />
-              <span class="adm-nav__label">{it.label}</span>
-            </a>
-          ))}
-        </nav>
+      <div class="adm-body cab-body">
         <main class="adm-main cab-main"><slot /></main>
       </div>
     )}

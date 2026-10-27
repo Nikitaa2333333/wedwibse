@@ -33,6 +33,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
 <script>
   import { api, esc, fileToken, fileUrl, requireSession } from '../../../lib/cabinet-api';
   import { ADMIN_ICONS } from '../../../lib/admin-icons';
+  import { PHONE_COUNTRIES, DEFAULT_PHONE_COUNTRY, findCountry, flagSrc, nationalDigits, isComplete, fullE164, attachPhoneField } from '../../../lib/phone';
   import {
     SECTIONS, VENUE_QUESTIONS, VENUE_TERMS, MAX_PHOTOS, MIN_PHOTOS, MIN_TEXT,
     sectionState, cardState, priceFrom, rub, textLength, shrinkPhoto,
@@ -82,6 +83,8 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     } else {
       const p = priceFrom({ tariffs: data.tariffs });
       data.priceFrom = p ?? '';
+      // имя в каталоге — «Имя Фамилия»; у студии фамилии нет
+      data.name = [data.firstName, data.lastName].map((x) => String(x ?? '').trim()).filter(Boolean).join(' ');
     }
   }
 
@@ -179,22 +182,83 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
   }
 
   // ---------- экраны разделов ----------
-  const field = (label: string, bind: string, value: unknown, opts: { type?: string; note?: string; area?: boolean; placeholder?: string; mode?: string } = {}) => `
+  // пример в пустом поле текста: абзацы и список, чтобы было видно, как писать
+  const TEXT_EXAMPLE = [
+    'Например:',
+    'Снимаю свадьбы с 2015 года. Работаю в репортажном стиле — без долгих постановок.',
+    '',
+    'Что входит в день съёмки:',
+    '— сборы невесты',
+    '— регистрация и прогулка',
+    '— банкет до первого танца',
+  ].join('\n');
+
+  // телефон с кодом страны — механика сайта клиники (lib/phone.ts)
+  const phoneField = (value: unknown, code: unknown) => {
+    const c = findCountry(String(code || DEFAULT_PHONE_COUNTRY));
+    return `
+    <div class="a-field">
+      <span class="a-field__label" id="c-phone-label">Телефон</span>
+      <div class="c-phone">
+        <div class="cc-picker">
+          <button type="button" class="cc-toggle" aria-haspopup="menu" aria-expanded="false">
+            <img class="cc-flag" src="${flagSrc(c)}" alt="" width="22" height="16" />
+            <span class="cc-code">+${c.dial}</span>
+            <svg class="cc-chevron" viewBox="0 0 24 24" aria-hidden="true">${(ADMIN_ICONS as Record<string, string>).down}</svg>
+          </button>
+          <div class="cc-list" role="menu" hidden>${PHONE_COUNTRIES.map((x) => `
+            <button type="button" class="cc-option" role="menuitemradio" aria-checked="${x.code === c.code}" data-code="${x.code}">
+              <img class="cc-opt-flag" src="${flagSrc(x)}" alt="" width="20" height="14" />
+              <span class="cc-opt-name">${x.name}</span><span class="cc-opt-dial">+${x.dial}</span>
+            </button>`).join('')}
+          </div>
+          <input type="hidden" name="phoneCountry" value="${c.code}" />
+        </div>
+        <input class="c-phone__input" type="tel" name="phone" autocomplete="tel" aria-labelledby="c-phone-label" value="${esc(value)}" data-phone />
+      </div>
+      <span class="a-field__note c-error" data-phone-error hidden></span>
+    </div>`;
+  };
+
+  /** телефон → data: полный номер в E.164, страна отдельно; неполный не теряем */
+  function bindPhone() {
+    const picker = view.querySelector<HTMLElement>('.cc-picker');
+    const input = view.querySelector<HTMLInputElement>('[data-phone]');
+    if (!picker || !input) return;
+    attachPhoneField(picker, input);
+    const hidden = picker.querySelector<HTMLInputElement>('input[name="phoneCountry"]')!;
+    const err = view.querySelector<HTMLElement>('[data-phone-error]')!;
+    const sync = () => {
+      const c = findCountry(hidden.value);
+      const digits = nationalDigits(input.value, c);
+      data.contacts ??= {};
+      data.contacts.phone = digits ? fullE164(digits, c) : '';
+      data.contacts.phoneCountry = c.code;
+      return { c, digits };
+    };
+    input.addEventListener('input', () => { sync(); err.hidden = true; later(); });
+    picker.addEventListener('click', (e) => { if ((e.target as HTMLElement).closest('.cc-option')) { sync(); later(); } });
+    input.addEventListener('blur', () => {
+      const { c, digits } = sync();
+      err.textContent = digits && !isComplete(digits, c) ? `Номер неполный: +${c.dial} и ${c.len} цифр.` : '';
+      err.hidden = !err.textContent;
+    });
+  }
+  const field = (label: string, bind: string, value: unknown, opts: { type?: string; note?: string; area?: boolean; placeholder?: string; mode?: string; max?: number } = {}) => `
     <label class="a-field">
       <span class="a-field__label">${label}</span>
       ${opts.area
         ? `<textarea class="a-field__input" data-bind="${bind}" placeholder="${esc(opts.placeholder ?? '')}">${esc(value)}</textarea>`
-        : `<input class="a-field__input" data-bind="${bind}" type="${opts.type ?? 'text'}" ${opts.mode ? `inputmode="${opts.mode}"` : ''} value="${esc(value)}" placeholder="${esc(opts.placeholder ?? '')}" />`}
+        : `<input class="a-field__input" data-bind="${bind}" type="${opts.type ?? 'text'}" ${opts.mode ? `inputmode="${opts.mode}"` : ''} ${opts.max ? `maxlength="${opts.max}"` : ''} value="${esc(value)}" placeholder="${esc(opts.placeholder ?? '')}" />`}
       ${opts.note ? `<span class="a-field__note">${opts.note}</span>` : ''}
     </label>`;
 
   const choices = (qs: Question[], scope: 'filters' | 'terms') => qs.map((g) => {
     const cur = data[scope]?.[g.key];
-    const has = Array.isArray(cur) ? cur.length > 0 : !!cur;
     const on = (v: string) => (Array.isArray(cur) ? cur.includes(v) : cur === v);
     return `
       <div class="c-q">
-        <span class="c-q__label">${esc(g.label)}${g.type === 'multi' ? '<span class="c-q__hint">· можно несколько</span>' : ''}${has ? '' : '<span class="c-q__empty">· пусто</span>'}</span>
+        <span class="c-q__label">${esc(g.label)}${g.type === 'multi' ? '<span class="c-q__hint">· можно несколько</span>' : ''}</span>
         <div class="c-opts">${g.options.map((o) => `<button class="c-opt" type="button" aria-pressed="${on(o.value)}" data-scope="${scope}" data-q="${g.key}" data-v="${esc(o.value)}" data-multi="${g.type === 'multi'}">${esc(o.label)}</button>`).join('')}</div>
       </div>`;
   }).join('');
@@ -210,40 +274,43 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     switch (key) {
       case 'osnovnoe':
         return kind === 'venue'
-          ? { title: 'Основное', lead: 'Как площадку найдут в каталоге.', html: `
+          ? { title: 'Основное', lead: '', html: `
               ${field('Название площадки', 'name', data.name)}
               ${field('Адрес', 'address', data.address, { placeholder: 'Москва, улица, дом — или посёлок и шоссе' })}
               <div class="c-grid2">
                 ${field('Аренда от, ₽', 'rentFrom', data.rentFrom, { mode: 'numeric', note: 'За день; нет аренды — оставьте пустым' })}
                 ${field('Средний чек от, ₽ на гостя', 'checkFrom', data.checkFrom, { mode: 'numeric' })}
               </div>` }
-          : { title: 'Основное', lead: 'Как вас найдут в каталоге.', html: `
-              ${field('Имя или название', 'name', data.name, { placeholder: 'Как вас знают пары' })}
-              ${field('Коротко о себе', 'tagline', data.tagline, { placeholder: 'Одна строка под именем в каталоге', note: 'Например: «Репортаж без постановки, плёнка по желанию»' })}
-              <div class="a-field"><span class="a-field__label">Категория</span><span>${esc(role())}</span><span class="a-field__note">Вторая профессия — вторая карточка.</span></div>` };
+          : { title: 'Основное', lead: '', html: `
+              <div class="c-grid2">
+                ${field('Имя', 'firstName', data.firstName, { placeholder: 'Елена' })}
+                ${field('Фамилия', 'lastName', data.lastName, { placeholder: 'Каморина' })}
+              </div>
+              <p class="a-field__note">Студия или команда — название в поле «Имя», фамилию оставьте пустой.</p>
+              ${field('Строка под именем', 'tagline', data.tagline, { placeholder: 'Репортаж без постановки, плёнка по желанию', note: 'Видна в каталоге под вашим именем. Одна фраза, до 80 знаков.', max: 80 })}` };
       case 'foto':
         return { title: 'Фото', lead: `От ${MIN_PHOTOS} до ${MAX_PHOTOS} кадров. Первый — обложка в каталоге. Лучше вертикальные: каталог смотрят с телефона.`, html: '<div class="c-photos" data-photos></div><p class="c-ok" data-upload hidden></p><p class="c-error" data-photo-error hidden></p>' };
       case 'tekst': {
         const st = kind === 'venue' ? cfg.structures._venue : cfg.structures[rev.categorySlug] ?? cfg.structures._default;
         const secs = data.sections ?? [];
-        return { title: 'Текст', lead: `Разделами, как в мессенджере: строки с «—» станут списком, пустая строка — новый абзац. Всего от ${MIN_TEXT} знаков. Телефоны, ссылки и ники — только в «Контактах».`, html: `
+        return { title: 'Текст', lead: '', html: `
           ${secs.length ? '' : `<p class="a-field__note">Не знаете, с чего начать? <button class="c-link" type="button" data-template>Взять за основу: ${esc(st.label.toLowerCase())}</button></p>`}
           <div class="c-items">${secs.map((x: any, i: number) => `
             <div class="c-item">
-              ${field('Заголовок раздела', `sections.${i}.title`, x.title)}
-              ${field('Текст', `sections.${i}.body`, x.body, { area: true, placeholder: x.hint ?? '' })}
+              ${field('Заголовок раздела', `sections.${i}.title`, x.title, { placeholder: 'Как я работаю' })}
+              ${field('Текст', `sections.${i}.body`, x.body, { area: true, placeholder: x.hint ? `${x.hint}\n\n${TEXT_EXAMPLE}` : TEXT_EXAMPLE })}
               ${tools('sections', i, secs.length)}
             </div>`).join('')}</div>
           <button class="c-add" type="button" data-add="sections">${icon('plus')} Раздел</button>
           <p class="a-field__note" data-count>${textLength(data)} знаков</p>` };
       }
       case 'voprosy':
-        return { title: 'Вопросы', lead: questions.length ? 'По этим ответам пары находят вас фильтрами каталога. Отвечайте честно — модератор сверяет с текстом и фото.' : 'Для этой категории фильтров в каталоге пока нет — раздел можно пропустить.', html: choices(questions, 'filters') };
+        return { title: 'Вопросы', lead: questions.length ? 'По этим ответам вас найдут в фильтрах каталога.' : 'Для этой категории фильтров в каталоге пока нет — раздел можно пропустить.', html: choices(questions, 'filters') };
       case 'prays': {
         const ts = data.tariffs ?? [];
         const p = priceFrom({ tariffs: ts });
-        return { title: 'Прайс', lead: 'Пакеты — как на визитке. В каталоге покажем цену самого дешёвого.', html: `
-          ${p ? `<p>В каталоге: <span class="c-badge c-badge--ok">от ${rub(p)}</span></p>` : ''}
+        return { title: 'Прайс', lead: 'Каждый пакет — отдельная карточка с ценой на вашей странице. В каталоге рядом с именем покажем самую низкую цену.', html: `
+          <p class="c-preview">В каталоге: <b>${p ? `от ${rub(p)}` : 'добавьте пакет с ценой'}</b></p>
           <div class="c-items">${ts.map((t: any, i: number) => `
             <div class="c-item">
               <div class="c-grid2">
@@ -254,7 +321,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
               ${tools('tariffs', i, ts.length)}
             </div>`).join('')}</div>
           <button class="c-add" type="button" data-add="tariffs">${icon('plus')} Пакет</button>
-          ${field('От чего зависит цена', 'priceNote', data.priceNote, { placeholder: 'Например: выезд за МКАД оплачивается отдельно', note: 'Пакетов нет — напишите здесь, как считаете цену' })}` };
+          ${field('Что ещё важно про цену', 'priceNote', data.priceNote, { placeholder: 'Выезд за МКАД — 3 000 ₽, предоплата 30 %', note: 'Необязательно. Встанет под пакетами на вашей странице.' })}` };
       }
       case 'zaly': {
         const hs = data.halls ?? [];
@@ -280,8 +347,8 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
           ${field('Парковка', 'terms.parking', data.terms?.parking, { placeholder: 'Своя, бесплатная, 30 мест' })}
           ${field('Что ещё важно знать', 'terms.more', data.terms?.more, { area: true, placeholder: 'Депозит, пробковый сбор, декор, ночёвка' })}` };
       case 'kontakty':
-        return { title: 'Контакты', lead: 'Пара видит их по кнопке «Показать контакты». В текст карточки контакты не пишем — не пройдёт проверку.', html: `
-          ${field('Телефон', 'contacts.phone', data.contacts?.phone, { type: 'tel', placeholder: '+7 900 000-00-00' })}
+        return { title: 'Контакты', lead: 'Пара видит их по кнопке «Показать контакты».', html: `
+          ${phoneField(data.contacts?.phone, data.contacts?.phoneCountry)}
           ${field('Telegram', 'contacts.telegram', data.contacts?.telegram, { placeholder: '@ник' })}
           ${field('MAX', 'contacts.max', data.contacts?.max, { placeholder: 'Номер или ник' })}
           ${field('Сайт или соцсеть', 'contacts.site', data.contacts?.site, { placeholder: 'site.ru' })}
@@ -295,7 +362,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       <div class="c-head">
         <a class="c-back" href="${url()}">${icon('back')} ${esc(data.name || 'Анкета')}</a>
         <div class="c-head__row"><h1 class="a-h1">${b.title}</h1><span class="c-saved" data-saved></span></div>
-        <p class="a-lead">${b.lead}</p>
+        ${b.lead ? `<p class="a-lead">${b.lead}</p>` : ''}
         ${locked() ? '<p class="c-reason c-reason--info">Карточка на проверке — менять её сейчас нельзя.</p>' : ''}
       </div>
       <section class="a-card"><div class="c-form" data-form>${b.html}</div></section>
@@ -303,6 +370,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     savedLabel();
     if (locked()) view.querySelectorAll<HTMLInputElement>('input, textarea, button.c-opt, button.c-add, button.c-tool, button.c-link').forEach((x) => (x.disabled = true));
     if (key === 'foto') renderPhotos();
+    if (key === 'kontakty') bindPhone();
   }
 
   // ---------- фото ----------
@@ -499,6 +567,8 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       rev = await api('vendor', 'GET', `/api/collections/revisions/records/${encodeURIComponent(q.get('id') ?? '')}`);
       kind = rev.kind;
       data = rev.data && typeof rev.data === 'object' ? rev.data : {};
+      // карточки до 27.10: имя одним полем — в «Имя», фамилию человек допишет
+      if (kind === 'specialist' && data.firstName == null && data.name) data.firstName = data.name;
       // правка старой карточки с «О себе» одним полем — первым разделом текста
       if (!data.sections?.length && data.about) data.sections = [{ title: '', body: data.about }];
       questions = kind === 'venue' ? VENUE_QUESTIONS : cfg.questions[rev.categorySlug] ?? [];
