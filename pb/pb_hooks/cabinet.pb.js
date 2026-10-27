@@ -15,6 +15,12 @@ onRecordUpdateRequest((e) => {
   return cab.isModerator(e) ? cab.moderateRevision(e) : cab.vendorUpdateRevision(e);
 }, 'revisions');
 
+// ---------- карточки из кабинета → выкладка сайта ----------
+// после записи (одобрение — уже после транзакции): решение модератора
+// или снятие карточки в админке базы сразу запускает деплой
+onRecordAfterCreateSuccess((e) => require(`${__hooks}/lib/cabinet.js`).cardSaved(e), 'specialists');
+onRecordAfterUpdateSuccess((e) => require(`${__hooks}/lib/cabinet.js`).cardSaved(e), 'specialists');
+
 // ---------- видео ----------
 onRecordCreateRequest((e) => {
   if (e.hasSuperuserAuth()) return e.next();

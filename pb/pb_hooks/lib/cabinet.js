@@ -291,6 +291,56 @@ function telegram(text) {
   }
 }
 
+/**
+ * Выкладка сайта сразу после решения по карточке из кабинета (27.10):
+ * пока страницы собирает сборка, а не сервер из базы, одобренная карточка
+ * ждала бы следующего пуша. Запускает Deploy в GitHub Actions — тот же
+ * pb-pull-cabinet + сборка. Частые решения не копятся: у деплоя
+ * concurrency с отменой, последний запуск забирает всё.
+ * Окружение: GH_DEPLOY_TOKEN — fine-grained токен только на этот репозиторий,
+ * право Actions: read and write; GH_REPO — «владелец/репозиторий».
+ * Без токена молчит: локально и в тестах ничего не выкладывается.
+ */
+function deploySite(why) {
+  const token = $os.getenv('GH_DEPLOY_TOKEN');
+  if (!token) return;
+  // одобрение сохраняет карточку дважды — один запуск на решение. Второе
+  // решение в те же 10 с не теряется: деплой забирает базу (pb-pull-cabinet)
+  // позже, после установки зависимостей
+  const now = Date.now();
+  if (now - ($app.store().get('wedDeployAt') || 0) < 10000) return;
+  $app.store().set('wedDeployAt', now);
+  const repo = $os.getenv('GH_REPO') || 'Nikitaa2333333/wedwibse';
+  try {
+    const res = $http.send({
+      url: `https://api.github.com/repos/${repo}/actions/workflows/deploy.yml/dispatches`,
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${token}`,
+        accept: 'application/vnd.github+json',
+        'content-type': 'application/json',
+        'user-agent': 'wedsecrets-pb',
+      },
+      body: JSON.stringify({ ref: 'master' }),
+      timeout: 10,
+    });
+    if (res.statusCode !== 204) {
+      $app.logger().warn('cabinet: выкладка не запустилась', 'why', why, 'status', res.statusCode, 'body', toString(res.body).slice(0, 500));
+    } else {
+      $app.logger().info('cabinet: выкладка запущена', 'why', why);
+    }
+  } catch (err) {
+    $app.logger().warn('cabinet: GitHub не ответил', 'why', why, 'error', String(err));
+  }
+}
+
+/** карточка из кабинета сохранена (одобрение, снятие, правка в админке базы) — на сайт */
+function cardSaved(e) {
+  e.next();
+  const page = jsonOf(e.record, 'page');
+  if (page.source === 'cabinet') deploySite(`${e.record.getString('categorySlug')}/${e.record.getString('slug')} → ${e.record.getString('status')}`);
+}
+
 function mailVendor(app, vendorId, subject, html) {
   try {
     const vendor = app.findRecordById('vendors', vendorId);
@@ -851,6 +901,7 @@ function vendorUpdateAccount(e) {
 }
 
 module.exports = {
+  cardSaved,
   MIN_PHOTOS,
   parseSection,
   MAX_PHOTOS,
