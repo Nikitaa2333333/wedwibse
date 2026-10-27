@@ -22,27 +22,11 @@ const minutes = (s?: string) => {
 <AdminShell title="Модерация" section="moderation">
   <div class="a-title">
     <h1 class="a-h1">Модерация</h1>
-    <p class="a-lead">Правки, которые подрядчики и площадки прислали из кабинета. Пока правка на проверке, на сайте прежняя версия.</p>
   </div>
-
-  <!-- Живая очередь из базы (revisions, status = review) — сквозная проверка
-       STAGE2.md. Ниже — примеры на заглушках, по ним отрабатывался вид. -->
-  <section class="a-card a-card--flush" data-live-queue>
-    <div class="a-card__head mq__live-head">
-      <h2 class="a-h2">Из базы</h2>
-      <a class="a-btn a-btn--soft a-btn--sm" href="/profi/admin/vhod/" data-live-login>Войти модератором</a>
-    </div>
-    <div class="a-table-wrap">
-      <table class="a-table a-table--cards">
-        <thead><tr><th>Кто прислал</th><th>Что</th><th class="a-num">Прислали</th></tr></thead>
-        <tbody data-live-rows><tr><td colspan="3" class="a-sub">Очередь из базы видна после входа модератора.</td></tr></tbody>
-      </table>
-    </div>
-  </section>
 
   <section class="a-card a-card--flush">
     <nav class="a-tabs" aria-label="Состояние правки">
-      <a class="a-tabs__item is-active" href="#" data-filter-tab="mq" data-value="review">На проверке <span class="a-tabs__n">{onReview}</span></a>
+      <a class="a-tabs__item is-active" href="#" data-filter-tab="mq" data-value="review">На проверке <span class="a-tabs__n" data-mq-n>{onReview}</span></a>
       <a class="a-tabs__item" href="#" data-filter-tab="mq" data-value="done">Проверено <span class="a-tabs__n">{reviews.length - onReview}</span></a>
       <a class="a-tabs__item" href="#" data-filter-tab="mq" data-value="all">Все <span class="a-tabs__n">{reviews.length}</span></a>
     </nav>
@@ -55,43 +39,26 @@ const minutes = (s?: string) => {
     </div>
     <div class="a-table-wrap">
       <table class="a-table a-table--cards" id="mq" data-atable data-tab-default="review">
-        <thead>
-          <tr>
-            <th data-sort="asc">Кто прислал</th>
-            <th class="mq__changes">Что поменялось</th>
-            <th>Автопроверка</th>
-            <th class="a-num is-sorted" data-sort="desc">Ждёт</th>
-          </tr>
-        </thead>
-        <tbody>
+        <tbody data-live-rows>
           {reviews.map((r) => {
             const href = `/profi/admin/moderaciya/${r.rev.id}/`;
             const done = r.rev.state !== 'review';
+            const late = minutes(r.rev.waiting) >= 20 * 60;
             return (
               <tr data-href={href} data-tab={done ? 'done' : 'review'} data-text={r.card.name.toLowerCase()}>
                 <td data-v={r.card.name}>
                   <div class="a-who">
-                    {r.photos.after[0] && <Image src={resolveImage(r.photos.after[0])} alt="" widths={[...IMG_WIDTHS.thumb]} sizes="32px" class="a-thumb" />}
+                    {r.photos.after[0] && <Image src={resolveImage(r.photos.after[0])} alt="" widths={[...IMG_WIDTHS.thumb]} sizes="40px" class="a-thumb mq__thumb" />}
                     <div>
-                      <a class="a-name" href={href}>{r.card.name}</a>
-                      <span class="a-sub">{r.role} · {r.rev.first ? 'новая карточка' : 'правка'} · {r.rev.submitted.toLowerCase()}</span>
+                      <a class="a-name a-task__title" href={href}>{r.rev.first ? 'Проверить новую карточку' : 'Проверить правку'}</a>
+                      <span class="a-sub">{r.card.name} · {r.role}</span>
                     </div>
                   </div>
-                </td>
-                <td>
-                  <div class="a-chips">
-                    {r.changes.map((c) => <span class="a-chip"><b>{c.label}:</b> {c.value}</span>)}
-                  </div>
-                </td>
-                <td data-l="Автопроверка">
-                  {r.rev.flags.length
-                    ? <span class="a-dot a-dot--bad">{r.rev.flags.length} {plural(r.rev.flags.length, 'флажок', 'флажка', 'флажков')}</span>
-                    : <span class="a-dot a-dot--ok">чисто</span>}
                 </td>
                 <td class="a-num" data-v={minutes(r.rev.waiting)}>
                   {done
                     ? <span class={`a-dot a-dot--${STATE[r.rev.state].dot}`}>{STATE[r.rev.state].label}</span>
-                    : <span class:list={['a-time', { 'a-time--late': minutes(r.rev.waiting) >= 20 * 60 }]}><AdminIcon name="clock" />{r.rev.waiting}</span>}
+                    : <span class:list={['mq__when', { 'mq__when--late': late }]}>{r.rev.waiting}</span>}
                 </td>
               </tr>
             );
@@ -104,8 +71,10 @@ const minutes = (s?: string) => {
 </AdminShell>
 
 <style>
-  .mq__changes { min-width: 320px; }
-  .mq__live-head { display: flex; justify-content: space-between; align-items: center; gap: var(--s-3); }
+  .mq__thumb { width: 40px; height: 40px; }
+  #mq :global(td) { padding-block: 14px; vertical-align: middle; }
+  .mq__when, :global(.mq__when) { font-weight: 500; white-space: nowrap; }
+  .mq__when--late { color: var(--st-bad-text); }
 </style>
 
 <script>
@@ -114,25 +83,27 @@ const minutes = (s?: string) => {
   const KIND: Record<string, string> = { venue: 'площадка' };
   const fmt = (d: string) => (d ? new Date(d.replace(' ', 'T')).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '');
 
+  // Живые правки из базы (revisions, status = review) встают в общий список
+  // первыми, той же строкой, что примеры; блока «Из базы» нет (Никита, 27.10).
   document.addEventListener('astro:page-load', async () => {
     const rows = document.querySelector<HTMLElement>('[data-live-rows]');
-    if (!rows) return;
+    if (!rows || rows.dataset.live) return;
     const s = session('moderator');
     if (!s) return;
-    document.querySelector<HTMLElement>('[data-live-login]')!.textContent = s.record.name || s.record.email;
+    rows.dataset.live = '1';
     try {
       const res = await api('moderator', 'GET', `/api/collections/revisions/records?perPage=100&sort=submittedAt&expand=owner&filter=${encodeURIComponent('status = "review"')}`);
-      rows.innerHTML = res.items.length
-        ? res.items.map((r: any) => {
-            const href = `/profi/admin/moderaciya/pravka/?id=${r.id}`;
-            const who = r.expand?.owner?.name || 'без имени';
-            const what = `${KIND[r.kind] ?? r.categorySlug} · ${r.venue || r.specialist ? 'правка' : 'новая карточка'} · ${(r.photos ?? []).length} фото`;
-            // data-astro-reload: переходом ClientRouter разбор не запускался (26.10)
-            return `<tr data-href="${href}"><td><a class="a-name" href="${href}" data-astro-reload>${esc(r.data?.name || 'Без названия')}</a><span class="a-sub">${esc(who)}</span></td><td>${esc(what)}</td><td class="a-num">${esc(fmt(r.submittedAt))}</td></tr>`;
-          }).join('')
-        : '<tr><td colspan="3" class="a-sub">На проверке ничего нет.</td></tr>';
-    } catch (err) {
-      rows.innerHTML = `<tr><td colspan="3" class="a-sub">${esc((err as Error).message)}</td></tr>`;
-    }
+      const html = res.items.map((r: any) => {
+        const href = `/profi/admin/moderaciya/pravka/?id=${r.id}`;
+        const role = KIND[r.kind] ?? r.categorySlug;
+        const name = r.data?.name || 'Без названия';
+        const task = r.venue || r.specialist ? 'Проверить правку' : 'Проверить новую карточку';
+        // data-astro-reload: переходом ClientRouter разбор не запускался (26.10)
+        return `<tr data-href="${href}" data-tab="review" data-text="${esc(name.toLowerCase())}"><td><div class="a-who"><div><a class="a-name a-task__title" href="${href}" data-astro-reload>${task}</a><span class="a-sub">${esc(name)} · ${esc(role)}</span></div></div></td><td class="a-num"><span class="mq__when">${esc(fmt(r.submittedAt))}</span></td></tr>`;
+      }).join('');
+      rows.insertAdjacentHTML('afterbegin', html);
+      const n = document.querySelector<HTMLElement>('[data-mq-n]');
+      if (n) n.textContent = String(Number(n.textContent) + res.items.length);
+    } catch {}
   });
 </script>

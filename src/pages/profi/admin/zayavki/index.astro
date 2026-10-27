@@ -1,9 +1,9 @@
 ---
 // ЗАЯВКИ ПАРТНЁРОВ — подрядчики и площадки, которые хотят на сайт: завели
-// учётку и заполняют анкету новой карточки. Вкладки: «На проверке» —
-// отправили, ждут решения (срок 24 ч); «Черновики» — начали и бросили,
-// им звоним или пишем; «Вернули», «Одобрены», «Отклонены». В строке —
-// чипами, что заполнено, а чего нет. Сейчас — примеры (partner-demo.ts);
+// учётку и заполняют анкету новой карточки. Вкладки: «Проверить» —
+// отправили, ждут решения (срок 24 ч); «Не закончили» — звоним или пишем;
+// «Вернули», «Опубликованы», «Отклонены». В строке — кто, сколько
+// заполнено и срок справа; что именно пусто — на экране заявки (27.10). Сейчас — примеры (partner-demo.ts);
 // вживую — `vendors` + `revisions` первой публикации.
 import AdminShell from '../../../../components/admin/AdminShell.astro';
 import AdminIcon from '../../../../components/admin/AdminIcon.astro';
@@ -16,7 +16,6 @@ const count = (s: AppStatus) => PARTNER_APPS.filter((a) => a.status === s).lengt
 <AdminShell title="Заявки" section="partners">
   <div class="a-title">
     <h1 class="a-h1">Заявки</h1>
-    <p class="a-lead">Подрядчики и площадки, которые хотят на сайт. Заполненную анкету проверяем за 24 часа. Кто не закончил анкету — звоним или пишем.</p>
   </div>
 
   <section class="a-card a-card--flush">
@@ -37,39 +36,22 @@ const count = (s: AppStatus) => PARTNER_APPS.filter((a) => a.status === s).lengt
     </div>
     <div class="a-table-wrap">
       <table class="a-table a-table--cards" id="ap" data-atable data-tab-default="review">
-        <thead>
-          <tr>
-            <th data-sort="asc">Кто</th>
-            <th>Анкета</th>
-            <th>Статус</th>
-            <th>Последнее действие</th>
-          </tr>
-        </thead>
         <tbody>
           {PARTNER_APPS.map((a) => {
             const href = `/profi/admin/zayavki/${a.id}/`;
             const st = APP_STATUS[a.status];
+            const pct = Math.round((a.sections.filter((x) => x.done).length / a.sections.length) * 100);
+            const late = a.status === 'review' && (a.waitingHours ?? 0) >= 20;
             return (
               <tr data-href={href} data-tab={a.status} data-text={`${a.name} ${a.category}`.toLowerCase()}>
                 <td data-v={a.name}>
-                  <a class="a-name" href={href}>{a.name}</a>
-                  <span class="a-sub">{a.category} · вход: {a.via.toLowerCase() === 'почта' ? 'почта' : a.via}</span>
+                  <a class="a-name a-task__title" href={href}>{a.name}</a>
+                  <span class="a-sub"><span class={`a-dot ${st.dot ? `a-dot--${st.dot}` : ''}`}>{st.label}</span> · {a.category} · заполнено {pct} %</span>
                 </td>
-                <td>
-                  <div class="a-chips">
-                    {a.sections.map((s) => (
-                      <span class:list={['a-chip', s.done ? 'a-chip--ok' : 'a-chip--bad']}><b>{s.label}:</b> {s.state}</span>
-                    ))}
-                  </div>
-                </td>
-                <td data-l="Статус">
-                  <span class={`a-dot ${st.dot ? `a-dot--${st.dot}` : ''}`}>{st.label}</span>
-                  {a.notes.length > 0 && <span class="a-sub">{a.notes.length} коммент.</span>}
-                </td>
-                <td data-l="Последнее действие">
-                  {a.status === 'review' && a.waitingHours !== undefined
-                    ? <span class:list={['a-time', { 'a-time--late': a.waitingHours >= 20 }]}><AdminIcon name="clock" />ждёт {a.waitingHours} ч из 24</span>
-                    : a.lastEdit}
+                <td class="a-num">
+                  <span class:list={['ap__when', { 'ap__when--late': late }]}>
+                    {a.status === 'review' && a.waitingHours !== undefined ? `${a.waitingHours} ч из 24` : a.lastEdit}
+                  </span>
                 </td>
               </tr>
             );
@@ -82,5 +64,7 @@ const count = (s: AppStatus) => PARTNER_APPS.filter((a) => a.status === s).lengt
 </AdminShell>
 
 <style>
-  #ap td:nth-child(2) { min-width: 300px; }
+  #ap :global(td) { padding-block: 14px; vertical-align: middle; }
+  .ap__when { font-weight: 500; white-space: nowrap; }
+  .ap__when--late { color: var(--st-bad-text); }
 </style>

@@ -1,14 +1,11 @@
 ---
-// СВОДКА — первый экран админки. Сверху — виджеты: узкие высокие плитки со
-// значком и крупной цифрой, каждая ведёт в свой раздел. Под ними главное
-// (Никита, 24.10.2026) — новые заявки партнёров: чью анкету проверить и кто
-// бросил анкету на середине (им звоним или пишем).
+// СВОДКА — первый экран админки: что сделать (действия со сроком), под
+// ними новые заявки задачами, внизу строкой — сколько карточек на сайте.
 // Только то, что будет настоящим: заявки, правки и жалобы придут из базы
 // (сейчас — примеры), цифры по карточкам — по настоящему каталогу.
 import AdminShell from '../../../components/admin/AdminShell.astro';
 import AdminIcon from '../../../components/admin/AdminIcon.astro';
-import type { AdminIconName } from '../../../lib/admin-icons';
-import { CATALOG, GAPS } from '../../../lib/admin-catalog';
+import { CATALOG } from '../../../lib/admin-catalog';
 import { plural } from '../../../lib/moderation';
 import { DEMO_REVISIONS } from '../../../data/moderation-demo';
 import { COMPLAINTS } from '../../../data/admin-demo';
@@ -20,71 +17,55 @@ const fresh = [...review, ...drafts];
 const edits = DEMO_REVISIONS.filter((r) => r.state === 'review').length;
 const complaints = COMPLAINTS.filter((c) => c.status === 'new').length;
 
-const widgets: { n: number; label: string; note: string; href: string; icon: AdminIconName; tone: string }[] = [
-  { n: review.length, label: plural(review.length, 'анкету проверить', 'анкеты проверить', 'анкет проверить'), note: 'новые партнёры, срок 24 ч', href: '/profi/admin/zayavki/#review', icon: 'partners', tone: 'blue' },
-  { n: drafts.length, label: 'не закончили анкету', note: 'позвонить или написать', href: '/profi/admin/zayavki/#draft', icon: 'clock', tone: 'orange' },
-  { n: edits, label: plural(edits, 'правка карточки', 'правки карточек', 'правок карточек'), note: plural(edits, 'ждёт проверки', 'ждут проверки', 'ждут проверки'), href: '/profi/admin/moderaciya/', icon: 'moderation', tone: 'violet' },
-  { n: complaints, label: plural(complaints, 'новая жалоба', 'новые жалобы', 'новых жалоб'), note: 'на карточки', href: '/profi/admin/zhaloby/', icon: 'complaints', tone: 'red' },
-  { n: CATALOG.length, label: 'карточек на сайте', note: `${CATALOG.filter((c) => c.kind === 'venue').length} площадок, ${CATALOG.filter((c) => c.kind === 'specialist').length} подрядчиков`, href: '/profi/admin/katalog/', icon: 'cards', tone: 'green' },
-  { n: GAPS.noContacts.length, label: 'карточек без контактов', note: 'паре нечего показать', href: '/profi/admin/katalog/#nocontacts', icon: 'noContacts', tone: 'red' },
-];
+// Сводка — список ДЕЙСТВИЙ (Никита, 27.10): что сделать и сколько, срок
+// рядом. Число внутри фразы, а не отдельной цифрой над подписью — строки
+// одной высоты и не прыгают. Пустое действие не показываем.
+const actions = [
+  { n: review.length, text: `Проверить ${review.length} ${plural(review.length, 'анкету', 'анкеты', 'анкет')}`, note: 'срок 24 ч', href: '/profi/admin/zayavki/#review', bad: true },
+  { n: drafts.length, text: `Связаться: ${drafts.length} не ${plural(drafts.length, 'закончил', 'закончили', 'закончили')} анкету`, note: 'перезвонить или написать', href: '/profi/admin/zayavki/#draft' },
+  { n: edits, text: `Проверить ${edits} ${plural(edits, 'правку', 'правки', 'правок')} карточек`, note: 'срок 24 ч', href: '/profi/admin/moderaciya/' },
+  { n: complaints, text: `Разобрать ${complaints} ${plural(complaints, 'жалобу', 'жалобы', 'жалоб')}`, note: 'на карточки', href: '/profi/admin/zhaloby/' },
+].filter((a) => a.n > 0);
+const venues = CATALOG.filter((c) => c.kind === 'venue').length;
+const percent = (a: (typeof fresh)[number]) => Math.round((a.sections.filter((x) => x.done).length / a.sections.length) * 100);
 ---
 
 <AdminShell title="Сводка" section="overview">
   <div class="a-title"><h1 class="a-h1">Сводка</h1></div>
 
-  <section class="a-widgets" aria-label="Коротко">
-    {widgets.map((w) => (
-      <a class={`a-widget a-widget--${w.tone}`} href={w.href}>
-        <span class="a-widget__ic"><AdminIcon name={w.icon} /></span>
-        <span class="a-widget__n">{w.n}</span>
-        <span class="a-widget__label">{w.label}</span>
-        <span class="a-widget__note">{w.note}</span>
+  <section class="a-acts" aria-label="Что сделать">
+    {actions.map((a) => (
+      <a class:list={['a-act', { 'a-act--bad': a.bad }]} href={a.href}>
+        <span class="a-act__text">{a.text}</span>
+        <span class="a-act__note">{a.note}</span>
+        <AdminIcon name="next" class="a-act__go" />
       </a>
     ))}
   </section>
 
-  <section class="a-card a-card--flush ov-new">
+  <section class="a-card a-card--flush">
     <div class="a-card__head">
-      <div>
-        <h2 class="ov-new__title">Новые заявки</h2>
-        <p class="a-lead">Подрядчики и площадки, которые хотят на сайт: чью анкету проверить и кто не закончил.</p>
-      </div>
-      <a class="a-more" href="/profi/admin/zayavki/">Все заявки</a>
+      <h2 class="a-h2">Новые заявки</h2>
+      <a class="a-more" href="/profi/admin/zayavki/">Все</a>
     </div>
-    <table class="a-table a-table--cards">
-      <tbody>
-        {fresh.map((a) => {
-          const href = `/profi/admin/zayavki/${a.id}/`;
-          const st = APP_STATUS[a.status];
-          const missing = a.sections.filter((s) => !s.done);
-          return (
-            <tr data-href={href}>
-              <td>
-                <a class="a-name ov-new__name" href={href}>{a.name}</a>
-                <span class="a-sub">{a.category} · {a.lastEdit}</span>
-              </td>
-              <td><span class={`a-dot a-dot--${st.dot}`}>{st.label}</span></td>
-              <td>
-                {missing.length
-                  ? <div class="a-chips">{missing.map((s) => <span class="a-chip a-chip--bad"><b>{s.label}:</b> {s.state}</span>)}</div>
-                  : <span class="a-chip a-chip--ok">Всё заполнено</span>}
-              </td>
-              <td class="a-num">
-                {a.status === 'review'
-                  ? <span class:list={['a-time', { 'a-time--late': (a.waitingHours ?? 0) >= 20 }]}><AdminIcon name="clock" />{a.waitingHours} ч из 24</span>
-                  : <a class="a-more" href={href}>Связаться</a>}
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
+    <div class="a-tasks">
+      {fresh.map((a) => {
+        const href = `/profi/admin/zayavki/${a.id}/`;
+        const late = a.status === 'review' && (a.waitingHours ?? 0) >= 20;
+        return (
+          <a class="a-task" href={href}>
+            <span class="a-task__body">
+              <span class="a-task__title">{a.status === 'review' ? 'Проверить анкету' : 'Связаться'}</span>
+              <span class="a-task__sub">{a.name} · {a.category} · заполнено {percent(a)} %</span>
+            </span>
+            <span class:list={['a-task__when', { 'a-task__when--late': late }]}>
+              {a.status === 'review' ? `${a.waitingHours} ч из 24` : a.lastEdit}
+            </span>
+          </a>
+        );
+      })}
+    </div>
   </section>
-</AdminShell>
 
-<style>
-  .ov-new__title { font-size: 22px; line-height: 30px; font-weight: 600; letter-spacing: -0.015em; }
-  .ov-new__name { font-size: 16px; }
-  .ov-new :global(td) { vertical-align: middle; padding-block: 14px; }
-</style>
+  <p class="a-total">На сайте {CATALOG.length} {plural(CATALOG.length, 'карточка', 'карточки', 'карточек')}: {venues} {plural(venues, 'площадка', 'площадки', 'площадок')}, {CATALOG.length - venues} {plural(CATALOG.length - venues, 'подрядчик', 'подрядчика', 'подрядчиков')}. <a class="a-more" href="/profi/admin/katalog/">Все карточки</a></p>
+</AdminShell>

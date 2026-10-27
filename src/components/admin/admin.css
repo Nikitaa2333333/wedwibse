@@ -142,32 +142,29 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
 .adm-nav__n--ok { color: #1a8f43; }
 .adm-nav__n--bad { color: #d23a3a; }
 
-/* ---------- виджеты сводки: узкие высокие плитки, значок в цветной
-   подложке, крупная цифра, подпись. Цвет подложки — смысл. ---------- */
-.a-widgets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); }
-@media (min-width: 768px) { .a-widgets { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-@media (min-width: 1200px) { .a-widgets { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
-.a-widget {
-  display: grid;
-  align-content: start;
-  gap: 4px;
-  min-height: 168px;
-  padding: 18px;
-  border-radius: var(--adm-radius);
-  background: var(--adm-card);
-  text-decoration: none;
-}
-.a-widget__ic { display: grid; place-items: center; width: 40px; height: 40px; margin-bottom: 14px; border-radius: 12px; background: var(--adm-bg); color: var(--adm-text-2); }
-.a-widget__ic svg { width: 22px !important; height: 22px !important; }
-.a-widget__n { font-size: 36px; line-height: 40px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
-.a-widget__label { font-size: 16px; font-weight: 600; line-height: 22px; }
-.a-widget__note { font-size: 14px; line-height: 20px; color: var(--adm-text-2); }
-.a-widget--blue .a-widget__ic { background: #e8efff; color: var(--adm-primary); }
-.a-widget--orange .a-widget__ic { background: #fff1dc; color: #e07b00; }
-.a-widget--violet .a-widget__ic { background: #f0eaff; color: #7b4dff; }
-.a-widget--red .a-widget__ic { background: #fde9e9; color: #d23a3a; }
-.a-widget--green .a-widget__ic { background: #e3f6e9; color: #1a8f43; }
-.a-widget--red .a-widget__n { color: #d23a3a; }
+/* ---------- сводка: действия (Никита, 27.10) — «Проверить 3 анкеты · срок
+   24 ч». Число внутри фразы: строки одной высоты, ничего не прыгает. ---------- */
+.a-acts { display: grid; gap: var(--s-2); }
+@media (min-width: 768px) { .a-acts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.a-act { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2px var(--s-3); min-height: 76px; padding: 14px 18px; border-radius: var(--adm-radius); background: var(--adm-card); text-decoration: none; color: inherit; }
+.a-act__text { font-size: 17px; line-height: 24px; font-weight: 600; }
+.a-act__note { grid-row: 2; font-size: var(--adm-fs); color: var(--adm-text-2); }
+.a-act__go { grid-row: 1 / span 2; grid-column: 2; width: 18px !important; height: 18px !important; color: var(--adm-text-2); }
+.a-act--bad .a-act__note { color: var(--st-bad-text); }
+@media (hover: hover) { .a-act:hover { background: var(--adm-hover); } }
+
+/* ---------- задачи списком: крупно что сделать, под ним кто, срок справа ---------- */
+.a-tasks { display: grid; }
+.a-task { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--s-3); padding: 14px var(--adm-pad); border-top: 1px solid var(--adm-line); text-decoration: none; color: inherit; }
+@media (hover: hover) { .a-task:hover { background: var(--adm-hover); } }
+.a-task__body { display: grid; gap: 2px; min-width: 0; }
+.a-task__title { font-size: 16px; line-height: 22px; font-weight: 600; }
+.a-task__sub { font-size: var(--adm-fs); color: var(--adm-text-2); overflow-wrap: anywhere; }
+.a-task__when { font-size: var(--adm-fs); font-weight: 500; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.a-task__when--late { color: var(--st-bad-text); }
+
+/* общая строка без плашки: сколько всего на сайте */
+.a-total { color: var(--adm-text-2); padding-inline: 4px; }
 
 /* ---------- заголовок экрана ---------- */
 .a-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px var(--s-4); }
@@ -191,6 +188,7 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
   white-space: nowrap;
 }
 .a-tabs__item.is-active { color: var(--adm-text); }
+@media (hover: hover) { .a-tabs__item:hover { color: var(--adm-text); } }
 .a-tabs__item.is-active::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--adm-text); }
 .a-tabs__n { font-variant-numeric: tabular-nums; color: var(--adm-text-2); font-weight: 400; }
 .a-tabs__n--bad { color: #d23a3a; font-weight: 600; }
@@ -243,6 +241,9 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
 
 /* Строка инструментов над таблицей (Директ) */
 .a-tools { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); padding: 12px var(--adm-pad); }
+/* поиск — на всю ширину строки, поле без обводки (27.10) */
+.a-tools .a-search { flex: 1 1 100%; }
+.a-tools .a-input { width: 100%; height: 44px; border-color: transparent; background: var(--adm-bg); font-size: 16px; }
 
 /* ---------- карточка ---------- */
 .a-card { background: var(--adm-card); border-radius: var(--adm-radius); padding: var(--adm-pad); min-width: 0; }
@@ -252,7 +253,8 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
 .a-h2 { font-size: 18px; line-height: 26px; font-weight: 500; letter-spacing: -0.01em; }
 .a-h3 { font-size: 15px; line-height: 22px; font-weight: 500; }
 .a-more { color: var(--adm-link); text-decoration: none; font-weight: 500; white-space: nowrap; }
-@media (hover: hover) { .a-more:hover { text-decoration: underline; text-underline-offset: 3px; } }
+/* ссылка-действие как в кабинете: без подчёркивания при наведении */
+@media (hover: hover) { .a-more:hover { color: var(--adm-text-2); } }
 .a-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-4); }
 @media (min-width: 1024px) {
   .a-grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
