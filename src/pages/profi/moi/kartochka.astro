@@ -131,9 +131,9 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     const siteUrl = kind === 'venue' ? `/moskva/ploshchadki/${rev.slug}/` : `/moskva/podryadchiki/${rev.categorySlug}/${rev.slug}/`;
     view.innerHTML = `
       <div class="c-head">
-        <a class="c-back" href="/profi/moi/">${icon('back')} Мои карточки</a>
-        <div class="c-head__row"><h1 class="a-h1">${esc(title)}</h1><span data-saved></span></div>
-        ${rev.slug ? `<p class="a-lead">Ваша ссылка: wed-secrets.ru${esc(siteUrl)}</p>` : ''}
+        <div class="c-head__top"><a class="c-back" href="/profi/moi/">${icon('back')} Мои карточки</a><span data-saved></span></div>
+        <h1 class="a-h1">${esc(title)}</h1>
+        ${rev.slug ? `<p class="c-url" title="wed-secrets.ru${esc(siteUrl)}">Ваша ссылка: wed-secrets.ru/…/${esc(rev.slug)}/</p>` : ''}
       </div>
       ${rev.status === 'rejected' && rev.rejectReason ? `<p class="c-reason"><b>Вернули с причиной:</b> ${esc(rev.rejectReason)}<br>Исправьте и отправьте снова.</p>` : ''}
       ${rev.status === 'review' ? '<p class="c-reason c-reason--info">Карточка на проверке — ответим в течение суток. Пока она на проверке, менять её нельзя; можно отозвать.</p>' : ''}
@@ -476,8 +476,8 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     const b = sectionBody(key);
     view.innerHTML = `
       <div class="c-head">
-        <a class="c-back" href="${url()}">${icon('back')} ${esc(data.name || 'Анкета')}</a>
-        <div class="c-head__row"><h1 class="a-h1">${b.title}</h1><span data-saved></span></div>
+        <div class="c-head__top"><a class="c-back" href="${url()}">${icon('back')} ${esc(data.name || 'Анкета')}</a><span data-saved></span></div>
+        <h1 class="a-h1">${b.title}</h1>
         ${b.lead ? `<p class="a-lead">${b.lead}</p>` : ''}
         ${locked() ? '<p class="c-reason c-reason--info">Карточка на проверке — менять её сейчас нельзя.</p>' : ''}
       </div>

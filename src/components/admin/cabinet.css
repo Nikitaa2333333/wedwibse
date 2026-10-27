@@ -43,6 +43,12 @@
 .c-back svg { width: 16px; height: 16px; flex: none; }
 @media (hover: hover) { .c-back:hover { color: var(--adm-text); } }
 .c-head__row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-3); }
+/* верхняя строка: «‹ назад» слева, плашка статуса справа — заголовок ниже на всю ширину */
+.c-head__top { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); min-height: 28px; }
+.c-head__top .c-back { min-width: 0; }
+.c-head__top .c-state { margin-left: 0; flex: none; }
+/* ссылка страницы — одной строкой, без разрыва посреди слова */
+.c-url { color: var(--adm-text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* «Сохранено» — тихо в углу строки заголовка, не отдельной строкой */
 .c-saved { margin-left: auto; font-size: var(--adm-fs-sm); color: var(--adm-text-2); white-space: nowrap; }
 .c-saved--bad { color: var(--st-bad-text); }
