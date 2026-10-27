@@ -259,7 +259,8 @@ select.a-field__input { appearance: none; background-image: linear-gradient(45de
 
 /* ---------- превью, второй заход (27.10): кусок визитки без подписей ---------- */
 .c-title { display: flex; align-items: center; gap: 8px; }
-.c-title .c-help { width: 24px; height: 24px; line-height: 24px; font-size: 13px; margin: 0; flex: none; }
+.c-title .c-help { width: 28px; height: 28px; line-height: 28px; font-size: 15px; margin: 0; flex: none; background: var(--adm-card); color: var(--cab-ink); }
+@media (hover: hover) { .c-title .c-help:hover { background: var(--cab-ink); color: #fff; } }
 /* длинное слово без пробелов не распирает панель вбок (CLAUDE.md, «панель ездит») */
 .c-sheet { box-sizing: border-box; }
 .c-sheet__body { position: relative; min-width: 0; overflow-wrap: anywhere; }
