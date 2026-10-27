@@ -287,7 +287,8 @@ const good = {
   name: 'Борис', tagline: 'Репортаж',
   sections: [
     { title: 'Как я снимаю', body: ABOUT + '\n\n— репортаж\n— плёнка\n\nПишу заранее план дня.' },
-    { title: 'Что получаете', body: '— 500 кадров\n— галерея' },
+    // подводка в одном абзаце со списком — до списка (прогон 27.10)
+    { title: 'Что получаете', body: 'В день съёмки:\n— 500 кадров\n— галерея' },
   ],
   tariffs: [{ name: 'Полный день', price: '40000', includes: '— 10 часов\n— 500 кадров' }, { name: 'Половина дня', price: '25000', includes: '' }],
   filters: { style: ['reportage'] },
@@ -305,7 +306,7 @@ check('полная анкета одобрена', res.status === 200, res.text
 cleanup.specialists.push(res.json?.specialist);
 res = await call(null, 'GET', `/api/collections/specialists/records/${res.json?.specialist}`);
 const story = res.json?.page?.story ?? [];
-check('разделы текста разобраны в story', story.length === 2 && story[0].title === 'Как я снимаю' && story[0].list?.length === 2 && story[0].after?.length === 1 && story[1].list?.length === 2, JSON.stringify(story));
+check('разделы текста разобраны в story', story.length === 2 && story[0].title === 'Как я снимаю' && story[0].list?.length === 2 && story[0].after?.length === 1 && story[1].list?.length === 2 && story[1].text?.[0] === 'В день съёмки:' && !story[1].after, JSON.stringify(story));
 check('цена от — самый дешёвый пакет', res.json?.priceFrom === 25000 && res.json?.page?.tariffs?.[0]?.includes?.length === 2, res.text);
 check('первым кадром — обложка в новом порядке', res.json?.page?.photos?.length === 8, res.text);
 

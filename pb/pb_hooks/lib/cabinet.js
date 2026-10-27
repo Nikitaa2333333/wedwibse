@@ -108,12 +108,15 @@ function parseSection(sec) {
   if (sec.title) out.title = sec.title;
   for (const para of sec.body.split(/\n\s*\n/)) {
     const lines = para.split('\n').map((l) => l.trim()).filter((l) => !!l);
-    const plain = [];
+    // подводка «Что входит:» в одном абзаце со списком — до списка, а не после
+    // (прогон 27.10): место строки решает, начался ли список к ней
+    let plain = [];
+    const flush = () => { if (plain.length) (out.list.length ? out.after : out.text).push(plain.join(' ')); plain = []; };
     for (const line of lines) {
-      if (BULLET.test(line)) out.list.push(line.replace(BULLET, ''));
+      if (BULLET.test(line)) { flush(); out.list.push(line.replace(BULLET, '')); }
       else plain.push(line);
     }
-    if (plain.length) (out.list.length ? out.after : out.text).push(plain.join(' '));
+    flush();
   }
   for (const k of ['text', 'list', 'after']) if (!out[k].length) delete out[k];
   return out;
