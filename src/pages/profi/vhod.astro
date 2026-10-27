@@ -1,30 +1,59 @@
 ---
-// ВХОД ПОДРЯДЧИКА — прототип. Почта и пароль, ниже «или» и плашки
-// Telegram и MAX (CABINET.md §22–23). Форма никуда не отправляет — ЗАГЛУШКА до базы.
-import ProfiShell from '../../components/profi/ProfiShell.astro';
-import AuthMethods from '../../components/profi/AuthMethods.astro';
-import '../../components/profi/auth.css';
+// ВХОД В КАБИНЕТ ПОДРЯДЧИКА И ПЛОЩАДКИ — через Telegram (CABINET.md §22).
+// Кнопка открывает окно Telegram (lib/tg-login.ts), база проверяет подпись
+// ключом бота. Учётки нет — дальше экран условий (/profi/usloviya/), есть —
+// сразу «Мои карточки». ?invite=… — личная ссылка пилота: карточка
+// привяжется к учётке при входе. Вид — система админки (CabinetShell).
+import CabinetShell from '../../components/admin/CabinetShell.astro';
+import AdminIcon from '../../components/admin/AdminIcon.astro';
 ---
 
-<ProfiShell title="Вход" look="auth" brand="pro.wedsecrets">
-  <main class="container auth">
-    <div class="auth__head">
-      <h1 class="t-h1">Вход</h1>
+<CabinetShell title="Вход" bare>
+  <section class="a-card a-login">
+    <div class="a-login__head">
+      <h1 class="a-h1">Вход в кабинет</h1>
+      <p class="a-lead">Для подрядчиков и площадок. Карточку в каталоге заполняете сами, мы проверяем и публикуем.</p>
     </div>
+    <button class="a-btn a-btn--lg a-btn--block c-tg" type="button" data-tg-login>
+      <AdminIcon name="telegram" />
+      Войти через Telegram
+    </button>
+    <p class="a-login__error" role="alert" data-tg-error hidden></p>
+    <p class="a-login__note">Первый вход — это и регистрация: учётка появится после того, как вы примете условия.</p>
+  </section>
+</CabinetShell>
 
-    <form class="auth__form auth__form--lg" action="/profi/kabinet/" method="get">
-      <input class="input" type="email" name="email" placeholder="Почта" aria-label="Почта" autocomplete="email" />
-      <input class="input" type="password" name="password" placeholder="Пароль" aria-label="Пароль" autocomplete="current-password" />
-      <a class="auth__forgot" href="/profi/parol/">Забыли пароль?</a>
-      <button class="pill pill--lg pill--solid pill--block" type="submit">Войти</button>
-    </form>
+<style>
+  .c-tg { background: var(--brand-telegram); color: var(--brand-fg); }
+  @media (hover: hover) { .c-tg:hover { background: var(--brand-telegram); filter: brightness(0.95); } }
+</style>
 
-    <p class="auth__divider">или</p>
+<script>
+  import { session } from '../../lib/cabinet-api';
+  import { TG_BOT_ID, telegramPopup, signIn, afterLogin } from '../../lib/tg-login';
 
-    <AuthMethods />
+  const q = new URLSearchParams(location.search);
+  const btn = document.querySelector<HTMLButtonElement>('[data-tg-login]')!;
+  const error = document.querySelector<HTMLElement>('[data-tg-error]')!;
+  const fail = (m: string) => { error.textContent = m; error.hidden = false; };
 
-    <p class="auth__or auth__or--lg">или по почте</p>
+  // вошли раньше и это не приглашение — сразу в кабинет
+  if (session('vendor') && !q.get('invite')) afterLogin(q.get('next') || undefined);
 
-    <p class="auth__alt">Нет учётки? <a href="/profi/registraciya/">Зарегистрироваться</a></p>
-  </main>
-</ProfiShell>
+  btn.addEventListener('click', async () => {
+    error.hidden = true;
+    if (!TG_BOT_ID) return fail('Вход через Telegram ещё не настроен.');
+    btn.disabled = true;
+    try {
+      const tg = await telegramPopup();
+      if (!tg) return;
+      const p = { tg, invite: q.get('invite') || undefined, next: q.get('next') || undefined };
+      if ((await signIn(p)) === 'needs-accept') location.href = '/profi/usloviya/';
+      else afterLogin(p.next);
+    } catch (err) {
+      fail((err as Error).message);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+</script>

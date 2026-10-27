@@ -1,70 +1,77 @@
 ---
-// МОИ КАРТОЧКИ — живой экран на базе (сквозная проверка, STAGE2.md).
-// Опубликованные карточки учётки (/api/wed/my-cards) и новые, ещё не
+// МОИ КАРТОЧКИ — живой экран на базе. Опубликованные карточки учётки
+// (/api/wed/my-cards, с открытой правкой, если она есть) и новые, ещё не
 // одобренные (свои ревизии без карточки). До 3 карточек на учётку.
-// Прототип того же экрана на заглушках — /profi/kabinet/ (его вид
-// переделывается отдельно; этот экран потом ляжет на новый вид).
-import ProfiShell from '../../../components/profi/ProfiShell.astro';
-import '../../../components/profi/live.css';
+// Вид — система админки (CabinetShell, cabinet.css): строками, статус
+// одним словом и цветом, действие — на экране карточки.
+import CabinetShell from '../../../components/admin/CabinetShell.astro';
+import AdminIcon from '../../../components/admin/AdminIcon.astro';
+import { SPECIALIST_CATEGORIES } from '../../../data/specialists';
+
+const ROLES = Object.fromEntries(SPECIALIST_CATEGORIES.map((c) => [c.slug, c.role]));
 ---
 
-<ProfiShell title="Мои карточки" dock={false}>
-  <main class="section container live" data-mine>
-    <div class="live__head">
-      <h1 class="t-h1">Мои карточки</h1>
-      <p class="live__note" data-who></p>
+<CabinetShell title="Мои карточки" section="cards">
+  <div class="cab-col" data-mine data-roles={JSON.stringify(ROLES)}>
+    <div class="a-title">
+      <h1 class="a-h1">Мои карточки</h1>
+      <div class="a-title__actions">
+        <a class="a-btn a-btn--primary" href="/profi/moi/novaya/" data-add hidden><AdminIcon name="plus" /> Новая карточка</a>
+      </div>
     </div>
-    <ul class="live-list" data-list><li class="live__note">Загружаем…</li></ul>
-    <p class="live__error" data-error hidden></p>
-    <div class="live__actions" data-add hidden>
-      <a class="live__link" href="/profi/moi/kartochka/?new=specialist">+ Карточка подрядчика</a>
-      <!-- Карточка площадки — когда площадки из кабинета начнут выходить
-           на сайт (страница из блоков, BACKLOG.md); сейчас одобренная
-           площадка осталась бы только в базе. -->
-    </div>
-    <div class="live__actions">
-      <a class="live__link" href="#" data-logout>Выйти</a>
-    </div>
-  </main>
-</ProfiShell>
+    <section class="a-card a-card--flush">
+      <div class="c-rows" data-list><p class="c-row c-row__sub">Загружаем…</p></div>
+    </section>
+    <p class="c-error" data-error hidden></p>
+    <p class="a-login__note">На одной учётке — до трёх карточек. Карточка появляется на сайте после проверки модератором, обычно в течение суток.</p>
+  </div>
+</CabinetShell>
 
 <script>
-  import { api, esc, requireSession, saveSession, REV_STATUS } from '../../../lib/cabinet-api';
+  import { api, esc, fileToken, fileUrl, requireSession } from '../../../lib/cabinet-api';
+  import { cardState } from '../../../lib/cabinet-form';
 
   const MAX_CARDS = 3;
   const root = document.querySelector<HTMLElement>('[data-mine]')!;
+  const roles: Record<string, string> = JSON.parse(root.dataset.roles!);
   const list = root.querySelector<HTMLElement>('[data-list]')!;
   const error = root.querySelector<HTMLElement>('[data-error]')!;
+  const go = '<svg class="c-row__go" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M9 5l6 7-6 7"/></svg>';
+
   const s = requireSession('vendor');
-
-  root.querySelector('[data-logout]')!.addEventListener('click', (e) => {
-    e.preventDefault();
-    saveSession('vendor', null);
-    location.href = '/profi/vhod/';
-  });
-
   if (s) {
-    root.querySelector('[data-who]')!.textContent = s.record.name ? `Вы вошли как ${s.record.name}` : '';
     try {
       const [cards, revs] = await Promise.all([
         api('vendor', 'GET', '/api/wed/my-cards'),
         api('vendor', 'GET', `/api/collections/revisions/records?perPage=50&sort=-updated&filter=${encodeURIComponent('venue = "" && specialist = "" && status != "approved"')}`),
       ]);
+      const token = revs.items.some((r: any) => r.photos?.length) ? await fileToken('vendor') : '';
+      const role = (kind: string, cat: string) => (kind === 'venue' ? 'Площадка' : roles[cat] ?? cat);
+      const row = (href: string, thumb: string, title: string, sub: string, st: { label: string; cls: string }, bad = false) => `
+        <a class="c-row" href="${href}">
+          ${thumb ? `<img class="c-row__thumb" src="${thumb}" alt="" loading="lazy" />` : '<span class="c-row__thumb"></span>'}
+          <span class="c-row__body">
+            <span class="c-row__title">${esc(title)}</span>
+            <span class="c-row__sub${bad ? ' c-row__sub--bad' : ''}">${sub}</span>
+          </span>
+          <span class="c-badge ${st.cls}">${st.label}</span>
+          ${go}
+        </a>`;
       const rows: string[] = [];
       for (const c of cards.items) {
         const r = c.revision;
-        const live = c.status === 'published';
-        const st = r ? REV_STATUS[r.status] : live ? REV_STATUS.approved : { label: 'Снята с сайта', cls: '' };
-        const note = r?.status === 'rejected' ? `Вернули: ${esc(r.rejectReason)}` : r?.status === 'review' ? 'Правка на проверке' : r ? 'Есть неотправленная правка' : live ? 'На сайте' : 'Сейчас её нет на сайте — напишите нам';
+        const st = cardState(r?.status, c.status === 'published');
+        const sub = r?.status === 'rejected' ? `Вернули: ${esc(r.rejectReason)}` : `${role(c.kind, c.categorySlug)} · ${st.note}`;
         const href = r ? `/profi/moi/kartochka/?id=${r.id}` : `/profi/moi/kartochka/?card=${c.id}&kind=${c.kind}`;
-        rows.push(`<li><a class="live-row" href="${href}"><span class="status ${st.cls}">${st.label}</span><span class="live-row__name">${esc(c.name)}</span><span class="live-row__note">${note}</span></a></li>`);
+        rows.push(row(href, '', c.name, sub, st, r?.status === 'rejected'));
       }
       for (const r of revs.items) {
-        const st = REV_STATUS[r.status];
-        const note = r.status === 'rejected' ? `Вернули: ${esc(r.rejectReason)}` : r.status === 'review' ? 'Новая карточка на проверке' : 'Черновик новой карточки';
-        rows.push(`<li><a class="live-row" href="/profi/moi/kartochka/?id=${r.id}"><span class="status ${st.cls}">${st.label}</span><span class="live-row__name">${esc(r.data?.name || 'Без названия')}</span><span class="live-row__note">${note}</span></a></li>`);
+        const st = cardState(r.status, false);
+        const sub = r.status === 'rejected' ? `Вернули: ${esc(r.rejectReason)}` : `${role(r.kind, r.categorySlug)} · ${st.note}`;
+        const thumb = r.photos?.[0] ? fileUrl(r, r.photos[0], { thumb: '400x0', token }) : '';
+        rows.push(row(`/profi/moi/kartochka/?id=${r.id}`, thumb, r.data?.name || 'Без названия', sub, st, r.status === 'rejected'));
       }
-      list.innerHTML = rows.join('') || '<li class="live__note">Карточек пока нет — создайте первую.</li>';
+      list.innerHTML = rows.join('') || '<p class="c-row c-row__sub">Карточек пока нет. Нажмите «Новая карточка» — площадка или подрядчик.</p>';
       root.querySelector<HTMLElement>('[data-add]')!.hidden = cards.items.length + revs.items.length >= MAX_CARDS;
     } catch (err) {
       list.innerHTML = '';

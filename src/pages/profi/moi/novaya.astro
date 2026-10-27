@@ -1,0 +1,83 @@
+---
+// НОВАЯ КАРТОЧКА — что заводим: площадку или подрядчика какой категории.
+// Категория закрепляется при создании (решение 16.10): от неё зависят
+// вопросы анкеты (фильтры каталога) и предложенная структура текста.
+// Нажатие сразу заводит черновик в базе и открывает анкету.
+import CabinetShell from '../../../components/admin/CabinetShell.astro';
+import AdminIcon from '../../../components/admin/AdminIcon.astro';
+import { SPECIALIST_CATEGORIES, SPECIALIST_GROUPS } from '../../../data/specialists';
+
+const role = (slug: string) => SPECIALIST_CATEGORIES.find((c) => c.slug === slug)?.role ?? slug;
+const listed = new Set(SPECIALIST_GROUPS.flatMap((g) => g.categories));
+const rest = SPECIALIST_CATEGORIES.filter((c) => !listed.has(c.slug)).map((c) => c.slug);
+const groups = [...SPECIALIST_GROUPS.map((g) => ({ label: g.label, categories: g.categories })), ...(rest.length ? [{ label: 'Другое', categories: rest }] : [])];
+const go = '<svg class="c-row__go" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M9 5l6 7-6 7"/></svg>';
+---
+
+<CabinetShell title="Новая карточка" section="cards">
+  <div class="cab-col" data-new>
+    <div class="c-head">
+      <a class="c-back" href="/profi/moi/"><AdminIcon name="back" /> Мои карточки</a>
+      <h1 class="a-h1">Новая карточка</h1>
+      <p class="a-lead">Кого заводим? Категорию потом не поменять — для второй профессии заведите вторую карточку.</p>
+    </div>
+    <p class="c-error" data-error hidden></p>
+    <section class="a-card a-card--flush">
+      <div class="c-rows">
+        <button class="c-row" type="button" data-kind="venue" data-cat="">
+          <span class="c-row__ic"><AdminIcon name="catalog" /></span>
+          <span class="c-row__body"><span class="c-row__title">Площадка</span><span class="c-row__sub">Ресторан, усадьба, лофт, шатёр, загородный клуб</span></span>
+          <span></span>
+          <Fragment set:html={go} />
+        </button>
+      </div>
+    </section>
+    <section class="a-card a-card--flush">
+      <div class="c-rows">
+        {groups.map((g) => (
+          <>
+            <p class="c-group">{g.label}</p>
+            {g.categories.map((slug) => (
+              <button class="c-row" type="button" data-kind="specialist" data-cat={slug}>
+                <span></span>
+                <span class="c-row__body"><span class="c-row__title">{role(slug)}</span></span>
+                <span></span>
+                <Fragment set:html={go} />
+              </button>
+            ))}
+          </>
+        ))}
+      </div>
+    </section>
+  </div>
+</CabinetShell>
+
+<style>
+  .c-row { width: 100%; text-align: left; }
+  .c-group + .c-row { border-top: 0; }
+</style>
+
+<script>
+  import { api, requireSession } from '../../../lib/cabinet-api';
+
+  const s = requireSession('vendor');
+  const root = document.querySelector<HTMLElement>('[data-new]')!;
+  const error = root.querySelector<HTMLElement>('[data-error]')!;
+  root.querySelectorAll<HTMLButtonElement>('[data-kind]').forEach((b) =>
+    b.addEventListener('click', async () => {
+      if (!s) return;
+      error.hidden = true;
+      root.querySelectorAll<HTMLButtonElement>('[data-kind]').forEach((x) => (x.disabled = true));
+      try {
+        const rev = await api('vendor', 'POST', '/api/collections/revisions/records', {
+          owner: s.record.id, kind: b.dataset.kind, categorySlug: b.dataset.cat, status: 'draft', data: {},
+        });
+        location.href = `/profi/moi/kartochka/?id=${rev.id}`;
+      } catch (err) {
+        error.textContent = (err as Error).message;
+        error.hidden = false;
+        root.querySelectorAll<HTMLButtonElement>('[data-kind]').forEach((x) => (x.disabled = false));
+      }
+    }),
+  );
+</script>

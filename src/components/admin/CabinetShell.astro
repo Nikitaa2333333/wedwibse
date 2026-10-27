@@ -1,0 +1,81 @@
+---
+// Оболочка кабинета подрядчика и площадки — та же система, что у админки
+// (Никита, 27.10.2026: «применить стили и принципы админки»): Inter, поле
+// #eff2f7, белые карточки, синяя кнопка, меню текстом — токены --adm-*,
+// классы admin.css. Отличия от AdminShell: свой знак («кабинет»), своя
+// учётка (подрядчик, вход через Telegram) и свои разделы. Без ClientRouter:
+// экраны кабинета — живые формы, каждый переход — полная загрузка.
+// noindex всегда: индексация сайта открыта, кабинет в выдачу не должен.
+import Layout from '../../layouts/Layout.astro';
+import AdminIcon from './AdminIcon.astro';
+import './admin.css';
+import './cabinet.css';
+
+interface Props {
+  title: string;
+  /** экран входа и условий: только знак, без меню и учётки */
+  bare?: boolean;
+  section?: 'cards';
+}
+const { title, bare = false, section } = Astro.props;
+
+const items = [{ key: 'cards', href: '/profi/moi/', label: 'Карточки', icon: 'cards' }] as const;
+---
+
+<Layout title={`${title} — Кабинет WED Secrets`} description="Кабинет подрядчика и площадки WED Secrets.">
+  <Fragment slot="head">
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="preload" href="/fonts/inter-cyrillic.woff2" as="font" type="font/woff2" crossorigin />
+  </Fragment>
+
+  <div class="adm cab">
+    <header class="adm-head">
+      <a class="adm-logo" href="/profi/moi/">
+        <span class="adm-logo__name">WED Secrets</span>
+        <span class="adm-logo__tag">кабинет</span>
+      </a>
+      {!bare && (
+        <div class="adm-head__right">
+          <a class="adm-head__link" href="/" target="_blank" rel="noopener">Сайт</a>
+          <span class="adm-user" data-cab-user>
+            <span class="adm-user__ava" aria-hidden="true" data-cab-ava></span>
+            <span class="adm-user__name" data-cab-name></span>
+          </span>
+          <a class="adm-head__link adm-head__out" href="#" data-cab-logout>Выйти</a>
+        </div>
+      )}
+    </header>
+
+    {bare ? (
+      <main class="adm-bare"><slot /></main>
+    ) : (
+      <div class="adm-body">
+        <nav class="adm-nav" aria-label="Разделы кабинета">
+          {items.map((it) => (
+            <a class:list={['adm-nav__item', { 'is-active': it.key === section }]} href={it.href} aria-current={it.key === section ? 'page' : undefined}>
+              <AdminIcon name={it.icon} class="adm-nav__ic" />
+              <span class="adm-nav__label">{it.label}</span>
+            </a>
+          ))}
+        </nav>
+        <main class="adm-main cab-main"><slot /></main>
+      </div>
+    )}
+  </div>
+</Layout>
+
+<script>
+  import { session, saveSession } from '../../lib/cabinet-api';
+  const s = session('vendor');
+  const user = document.querySelector<HTMLElement>('[data-cab-user]');
+  if (user && s) {
+    const name = s.record.name || 'Без имени';
+    user.querySelector('[data-cab-name]')!.textContent = name;
+    user.querySelector('[data-cab-ava]')!.textContent = name.slice(0, 1).toUpperCase();
+  }
+  document.querySelector('[data-cab-logout]')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    saveSession('vendor', null);
+    location.href = '/profi/vhod/';
+  });
+</script>

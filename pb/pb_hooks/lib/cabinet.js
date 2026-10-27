@@ -17,6 +17,8 @@
 const MIN_PHOTOS = 8;
 /** «о себе» короче этого — визитка выйдет пустой (CABINET.md, 11.4) */
 const MIN_ABOUT = 150;
+/** цена выше — опечатка (прогон 26.10: прошло 3 000 000 000 000 ₽) */
+const MAX_PRICE = 50000000;
 /** фото на карточку (решение 16.10) */
 const MAX_PHOTOS = 50;
 /** карточек на одну учётку, включая новые на проверке (решение 16.10) */
@@ -69,8 +71,70 @@ function findContact(value, path) {
 /** как поле шаблона называется у подрядчика в форме */
 const FIELD_LABELS = {
   name: 'Название', tagline: 'Коротко о себе', about: 'О себе', priceNote: 'Про цену',
-  address: 'Адрес', halls: 'Залы', filters: 'Ответы на вопросы',
+  address: 'Адрес', halls: 'Залы', filters: 'Ответы на вопросы', sections: 'Текст',
+  tariffs: 'Прайс', terms: 'Условия',
 };
+
+// ---------- текст карточки ----------
+// В анкете текст пишут разделами, как в мессенджере (CABINET-UX.md §2 п.6):
+// заголовок + тело; строки с «—», «-», «•» — список, пустая строка — новый
+// абзац. Храним как написано ({ title, body }) — правка открывается тем же
+// текстом; в разделы визитки (StorySection) разбираем при публикации.
+const BULLET = /^\s*[—–\-•·*]\s+/;
+
+function sectionsOf(data) {
+  return (Array.isArray(data.sections) ? data.sections : [])
+    .map((x) => ({ title: str(x && x.title, 200), body: str(x && x.body, 20000) }))
+    // раздел из шаблона без текста — только заголовок: на визитку не идёт
+    .filter((x) => !!x.body);
+}
+
+/** длина текста карточки: разделы анкеты, у старых правок — «О себе» */
+function textLength(data) {
+  const fromSections = sectionsOf(data).reduce((n, x) => n + x.body.replace(/\s+/g, ' ').length, 0);
+  return Math.max(fromSections, str(data.about).length);
+}
+
+/** «ыыыыыы…» без пробелов — не текст: в длинном тексте должны быть слова */
+function looksLikeText(data) {
+  const all = sectionsOf(data).map((x) => x.body).join(' ') + ' ' + str(data.about);
+  const words = all.split(/\s+/).filter((w) => w.length >= 2);
+  return words.length >= 20;
+}
+
+/** тело раздела → StorySection: абзацы до списка — text, список — list, после — after */
+function parseSection(sec) {
+  const out = { text: [], list: [], after: [] };
+  if (sec.title) out.title = sec.title;
+  for (const para of sec.body.split(/\n\s*\n/)) {
+    const lines = para.split('\n').map((l) => l.trim()).filter((l) => !!l);
+    const plain = [];
+    for (const line of lines) {
+      if (BULLET.test(line)) out.list.push(line.replace(BULLET, ''));
+      else plain.push(line);
+    }
+    if (plain.length) (out.list.length ? out.after : out.text).push(plain.join(' '));
+  }
+  for (const k of ['text', 'list', 'after']) if (!out[k].length) delete out[k];
+  return out;
+}
+
+/** пакеты прайса: { name, price, includes } — includes строками */
+function tariffsOf(data) {
+  return (Array.isArray(data.tariffs) ? data.tariffs : [])
+    .map((t) => ({
+      name: str(t && t.name, 120),
+      price: int(t && t.price),
+      includes: str(t && t.includes, 4000).split('\n').map((l) => l.replace(BULLET, '').trim()).filter((l) => !!l),
+    }))
+    .filter((t) => t.name || t.price);
+}
+
+/** «цена от» — самый дешёвый пакет; пакетов нет — что указано руками */
+function priceFromOf(data) {
+  const prices = tariffsOf(data).map((t) => t.price).filter((p) => p !== null && p > 0);
+  return prices.length ? Math.min.apply(null, prices) : int(data.priceFrom);
+}
 function fieldLabel(path) {
   const root = String(path || '').split('.')[0];
   return FIELD_LABELS[root] || root;
@@ -206,13 +270,18 @@ function telegram(text) {
   const chat = $os.getenv('TG_CHAT_ID');
   if (!token || !chat) return;
   try {
-    $http.send({
+    const res = $http.send({
       url: `https://api.telegram.org/bot${token}/sendMessage`,
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ chat_id: chat, text, disable_web_page_preview: true }),
+      body: JSON.stringify({ chat_id: chat, text, link_preview_options: { is_disabled: true } }),
       timeout: 5,
     });
+    // отказ Telegram (не тот чат, бот не в группе) раньше проходил молча —
+    // прогон 26.10: уведомление не пришло, а в логах пусто
+    if (res.statusCode !== 200) {
+      $app.logger().warn('cabinet: telegram отказал', 'status', res.statusCode, 'body', toString(res.body).slice(0, 500));
+    }
   } catch (err) {
     $app.logger().warn('cabinet: telegram не ответил', 'error', String(err));
   }
@@ -247,7 +316,11 @@ function submitProblems(rev) {
   if (kind === 'specialist' && !rev.getString('categorySlug')) problems.push('выберите категорию');
   const photos = photosOf(rev).length;
   if (photos < MIN_PHOTOS) problems.push(`загрузите не меньше ${MIN_PHOTOS} фото (сейчас ${photos})`);
-  if (str(data.about).length < MIN_ABOUT) problems.push(`расскажите о себе подробнее — от ${MIN_ABOUT} знаков`);
+  if (textLength(data) < MIN_ABOUT) problems.push(`напишите текст карточки подробнее — от ${MIN_ABOUT} знаков`);
+  else if (!looksLikeText(data)) problems.push('в тексте карточки должны быть слова — напишите о себе по-настоящему');
+  const price = priceFromOf(data);
+  if (price !== null && price > MAX_PRICE) problems.push('проверьте цену — больше 50 млн ₽ не бывает');
+  if (tariffsOf(data).some((t) => t.price !== null && t.price > MAX_PRICE)) problems.push('проверьте цены в прайсе');
   const contacts = data.contacts && typeof data.contacts === 'object' ? data.contacts : {};
   if (!str(contacts.phone)) problems.push('укажите телефон в блоке «Контакты» — клиент откроет его кнопкой');
   const hit = findContact(data, '');
@@ -477,11 +550,12 @@ function applyData(kind, card, data) {
   const filters = data.filters && typeof data.filters === 'object' ? data.filters : {};
   if (kind === 'specialist') {
     card.set('tagline', str(data.tagline, 200));
-    card.set('priceFrom', int(data.priceFrom));
+    card.set('priceFrom', priceFromOf(data));
     card.set('filters', filters);
     return;
   }
   card.set('address', str(data.address, 300));
+  if (!int(data.rentFrom)) data.rentFrom = priceFromOf(data);
   for (const key of ['capacityBanquet', 'capacityBuffet', 'checkFrom', 'rentFrom']) card.set(key, int(data[key]));
   // select-поля карточки принимают только свои значения: лишнее отбрасываем,
   // а не роняем одобрение
@@ -503,7 +577,10 @@ function buildPage(kind, card, data, photos, coverIndex) {
     slug: card.getString('slug'),
     name: str(data.name, 120),
     about: str(data.about, 20000),
-    priceFrom: int(data.priceFrom),
+    // текст разделами анкеты — уже разобранный в StorySection
+    story: sectionsOf(data).map(parseSection),
+    tariffs: tariffsOf(data),
+    priceFrom: priceFromOf(data),
     priceNote: str(data.priceNote, 300),
     filters: data.filters && typeof data.filters === 'object' ? data.filters : {},
     photos,
@@ -518,6 +595,7 @@ function buildPage(kind, card, data, photos, coverIndex) {
   }
   common.address = str(data.address, 300);
   common.halls = Array.isArray(data.halls) ? data.halls : [];
+  common.terms = data.terms && typeof data.terms === 'object' ? data.terms : {};
   for (const key of ['capacityBanquet', 'capacityBuffet', 'checkFrom', 'rentFrom']) common[key] = int(data[key]);
   return common;
 }
@@ -770,6 +848,7 @@ function vendorUpdateAccount(e) {
 
 module.exports = {
   MIN_PHOTOS,
+  parseSection,
   MAX_PHOTOS,
   isModerator,
   telegramAuth,

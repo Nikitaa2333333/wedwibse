@@ -1,26 +1,34 @@
 ---
 // УСЛОВИЯ ПЕРЕД ПЕРВЫМ ВХОДОМ — учётка подрядчика появляется только вместе
 // с подписью действующих редакций оферты и согласия на ПДн (CABINET.md §16,
-// §21). Тексты берутся из базы (legal_docs), подпись пишет хук
-// /api/wed/telegram вместе с учёткой — по одной кнопке, без «учётки без условий».
-// Сюда попадают после окна Telegram, если учётки ещё нет (lib/tg-login.ts).
-import ProfiShell from '../../components/profi/ProfiShell.astro';
-import '../../components/profi/auth.css';
-import '../../components/profi/live.css';
+// §21). Тексты — из базы (legal_docs), подпись пишет /api/wed/telegram
+// вместе с учёткой, одной кнопкой. Сюда попадают после окна Telegram,
+// если учётки ещё нет (lib/tg-login.ts).
+import CabinetShell from '../../components/admin/CabinetShell.astro';
 ---
 
-<ProfiShell title="Условия" look="auth">
-  <main class="container live" data-terms>
-    <div class="live__head">
-      <h1 class="t-h1">Условия размещения</h1>
-      <p class="live__note" data-who></p>
+<CabinetShell title="Условия" bare>
+  <section class="a-card a-login c-terms" data-terms>
+    <div class="a-login__head">
+      <h1 class="a-h1">Условия размещения</h1>
+      <p class="a-lead" data-who>Прочитайте и отметьте оба пункта — после этого откроется кабинет.</p>
     </div>
-    <div data-docs><p class="live__note">Загружаем…</p></div>
-    <p class="live__error" data-error hidden></p>
-    <button class="pill pill--lg pill--solid pill--block" type="button" data-accept disabled>Принять и войти</button>
-    <p class="auth__alt"><a href="/profi/vhod/">Назад ко входу</a></p>
-  </main>
-</ProfiShell>
+    <div class="c-terms__docs" data-docs><p class="a-lead">Загружаем…</p></div>
+    <p class="a-login__error" role="alert" data-error hidden></p>
+    <button class="a-btn a-btn--primary a-btn--lg a-btn--block" type="button" data-accept disabled>Принять и войти</button>
+    <a class="c-link" href="/profi/vhod/">Назад ко входу</a>
+  </section>
+</CabinetShell>
+
+<style>
+  .c-terms { max-width: 560px; }
+  .c-terms__docs { display: grid; gap: var(--s-4); }
+  .c-terms :global(.c-doc) { display: grid; gap: var(--s-2); }
+  .c-terms :global(.c-doc__title) { font-size: 16px; font-weight: 600; }
+  .c-terms :global(.c-doc__text) { max-height: 32vh; overflow-y: auto; overflow-x: clip; padding: 12px 14px; border-radius: var(--adm-radius-md); background: var(--adm-bg); font-size: 13px; line-height: 1.5; }
+  .c-terms :global(.c-doc__check) { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
+  .c-terms :global(.c-doc__check input) { width: 20px; height: 20px; margin: 0; flex: none; accent-color: var(--adm-primary); }
+</style>
 
 <script>
   import { api, esc } from '../../lib/cabinet-api';
@@ -31,17 +39,15 @@ import '../../components/profi/live.css';
   const btn = root.querySelector<HTMLButtonElement>('[data-accept]')!;
   const error = root.querySelector<HTMLElement>('[data-error]')!;
   const p = pending();
-
   const fail = (msg: string) => { error.textContent = msg; error.hidden = false; };
 
   if (!p) {
     location.replace('/profi/vhod/');
   } else {
     const name = [p.tg.first_name, p.tg.last_name].filter(Boolean).join(' ');
-    root.querySelector('[data-who]')!.textContent = name ? `${name}, прочитайте и отметьте оба пункта — после этого откроется кабинет.` : '';
+    if (name) root.querySelector('[data-who]')!.textContent = `${name}, прочитайте и отметьте оба пункта — после этого откроется кабинет.`;
     try {
       const res = await api(null, 'GET', `/api/collections/legal_docs/records?sort=-created&perPage=50&filter=${encodeURIComponent('kind = "vendor-offer" || kind = "vendor-pdn"')}`);
-      // действует последняя редакция каждого вида
       const latest = ['vendor-offer', 'vendor-pdn'].map((k) => res.items.find((d: any) => d.kind === k)).filter(Boolean);
       if (latest.length < 2) {
         docsEl.innerHTML = '';
@@ -49,18 +55,13 @@ import '../../components/profi/live.css';
       } else {
         // текст документа пишем мы сами в базе (редактор), поэтому как HTML
         docsEl.innerHTML = latest.map((d: any) => `
-          <section class="live-doc">
-            <h2 class="t-h2">${esc(d.title)}</h2>
-            <div class="live-doc__text">${d.text}</div>
-            <label class="check">
-              <input class="check__input" type="checkbox" data-box />
-              <span class="check__box"></span>
-              <span>${esc(d.checkbox)}</span>
-            </label>
+          <section class="c-doc">
+            <h2 class="c-doc__title">${esc(d.title)}</h2>
+            <div class="c-doc__text">${d.text}</div>
+            <label class="c-doc__check"><input type="checkbox" data-box /><span>${esc(d.checkbox)}</span></label>
           </section>`).join('');
         const boxes = [...docsEl.querySelectorAll<HTMLInputElement>('[data-box]')];
-        const sync = () => { btn.disabled = !boxes.every((b) => b.checked); };
-        boxes.forEach((b) => b.addEventListener('change', sync));
+        boxes.forEach((b) => b.addEventListener('change', () => { btn.disabled = !boxes.every((x) => x.checked); }));
       }
     } catch (err) {
       fail((err as Error).message);

@@ -53,6 +53,25 @@ async function download(url, dest) {
   }
 }
 
+const rub = (n) => `${Number(n).toLocaleString('ru-RU').replace(/\u00a0/g, ' ')} ₽`;
+
+/** текст визитки: разделы анкеты (уже StorySection) + пакеты прайса отдельным
+ *  разделом; у старых правок без разделов — «О себе» абзацами */
+function storyOf(p) {
+  const story = Array.isArray(p.story) && p.story.length
+    ? p.story
+    : [{ text: String(p.about ?? '').split(/\n\s*\n/).map((x) => x.trim()).filter(Boolean) }];
+  const tariffs = (p.tariffs ?? []).filter((t) => t.name && t.price);
+  if (tariffs.length) {
+    story.push({
+      title: 'Пакеты',
+      tariffs: tariffs.map((t) => ({ name: t.name, price: rub(t.price), ...(t.includes?.length ? { includes: t.includes } : {}) })),
+      ...(p.priceNote ? { after: [p.priceNote] } : {}),
+    });
+  }
+  return story;
+}
+
 await mkdir(DATA, { recursive: true });
 let written = 0;
 for (const rec of items) {
@@ -82,9 +101,8 @@ for (const rec of items) {
     ...(p.priceFrom ? { priceFrom: p.priceFrom } : {}),
     ...(p.priceNote ? { priceNote: p.priceNote } : {}),
     ...(p.filters && Object.keys(p.filters).length ? { filters: p.filters } : {}),
-    // визитка собирается у карточки с текстом (hasProfile): «О себе»
-    // подрядчика — разделом story, абзацы по пустой строке
-    story: [{ text: String(p.about ?? '').split(/\n\s*\n/).map((x) => x.trim()).filter(Boolean) }],
+    ...(p.filters?.gender ? { gender: p.filters.gender } : {}),
+    story: storyOf(p),
   };
   await writeFile(join(DATA, `${rec.categorySlug}--${rec.slug}.json`), JSON.stringify(card, null, 2) + '\n');
   written++;

@@ -272,6 +272,43 @@ for (let i = 0; i < 51; i++) many.append('photos', new Blob([PNG], { type: 'imag
 res = await call(A.token, 'PATCH', `/api/collections/revisions/records/${extra[0]}`, many);
 check('больше 50 фото не принимается', refused(res) && says(res, '50'), res.text);
 
+console.log('\nполная анкета');
+const full = await call(B.token, 'POST', '/api/collections/revisions/records', {
+  owner: B.id, kind: 'specialist', categorySlug: 'fotografy', slug: `test-full-${stamp}`, status: 'draft',
+  data: { name: 'Борис', sections: [{ title: 'Как я снимаю', body: 'ы'.repeat(200) }], contacts: { phone: '+7 916 000-00-01' } },
+});
+cleanup.revisions.push(full.json?.id);
+const fullPhotos = new FormData();
+for (let i = 0; i < 8; i++) fullPhotos.append('photos', new Blob([PNG], { type: 'image/png' }), `f${i}.png`);
+res = await call(B.token, 'PATCH', `/api/collections/revisions/records/${full.json?.id}`, fullPhotos);
+res = await call(B.token, 'PATCH', `/api/collections/revisions/records/${full.json?.id}`, { status: 'review' });
+check('«ыыыы» без слов не проходит', refused(res) && says(res, 'слова'), res.text);
+const good = {
+  name: 'Борис', tagline: 'Репортаж',
+  sections: [
+    { title: 'Как я снимаю', body: ABOUT + '\n\n— репортаж\n— плёнка\n\nПишу заранее план дня.' },
+    { title: 'Что получаете', body: '— 500 кадров\n— галерея' },
+  ],
+  tariffs: [{ name: 'Полный день', price: '40000', includes: '— 10 часов\n— 500 кадров' }, { name: 'Половина дня', price: '25000', includes: '' }],
+  filters: { style: ['reportage'] },
+  contacts: { phone: '+7 916 000-00-01' },
+};
+res = await call(B.token, 'PATCH', `/api/collections/revisions/records/${full.json?.id}`, { data: { ...good, tariffs: [{ name: 'Ошибка', price: '3000000000000' }] }, status: 'review' });
+check('цена с опечаткой не проходит', refused(res) && says(res, 'цен'), res.text);
+const order = (await call(B.token, 'GET', `/api/collections/revisions/records/${full.json?.id}`)).json.photos;
+res = await call(B.token, 'PATCH', `/api/collections/revisions/records/${full.json?.id}`, { photos: [...order].reverse() });
+check('порядок фото меняется', res.status === 200 && res.json.photos[0] === order[order.length - 1], res.text);
+res = await call(B.token, 'PATCH', `/api/collections/revisions/records/${full.json?.id}`, { data: good, status: 'review' });
+check('полная анкета уходит на проверку', res.status === 200, res.text);
+res = await call(M.token, 'PATCH', `/api/collections/revisions/records/${full.json?.id}`, { status: 'approved' });
+check('полная анкета одобрена', res.status === 200, res.text);
+cleanup.specialists.push(res.json?.specialist);
+res = await call(null, 'GET', `/api/collections/specialists/records/${res.json?.specialist}`);
+const story = res.json?.page?.story ?? [];
+check('разделы текста разобраны в story', story.length === 2 && story[0].title === 'Как я снимаю' && story[0].list?.length === 2 && story[0].after?.length === 1 && story[1].list?.length === 2, JSON.stringify(story));
+check('цена от — самый дешёвый пакет', res.json?.priceFrom === 25000 && res.json?.page?.tariffs?.[0]?.includes?.length === 2, res.text);
+check('первым кадром — обложка в новом порядке', res.json?.page?.photos?.length === 8, res.text);
+
 const BOT = process.env.TG_BOT_TOKEN;
 if (!BOT) {
   console.log('\nTelegram — пропуск: нет TG_BOT_TOKEN в окружении скрипта');

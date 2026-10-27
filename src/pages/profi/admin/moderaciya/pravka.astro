@@ -7,9 +7,13 @@
 // по словам — /profi/admin/moderaciya/<demo>/, он ляжет сюда же.
 import AdminShell from '../../../../components/admin/AdminShell.astro';
 import AdminIcon from '../../../../components/admin/AdminIcon.astro';
-import { SPECIALIST_CATEGORIES } from '../../../../data/specialists';
+import { SPECIALIST_CATEGORIES, FILTERS_BY_CATEGORY } from '../../../../data/specialists';
 
 const ROLES = Object.fromEntries(SPECIALIST_CATEGORIES.map((c) => [c.slug, c.role]));
+// подписи ответов анкеты: в данных — значения фильтров, модератору — слова
+const QUESTIONS = Object.fromEntries(
+  Object.entries(FILTERS_BY_CATEGORY).map(([k, groups]) => [k, groups.map((g) => ({ key: g.key, label: g.label, options: g.options.map((o) => ({ value: o.value, label: o.label })) }))]),
+);
 ---
 
 <AdminShell title="Разбор правки" section="moderation">
@@ -19,7 +23,7 @@ const ROLES = Object.fromEntries(SPECIALIST_CATEGORIES.map((c) => [c.slug, c.rol
     <p class="a-lead" data-pr-lead></p>
   </div>
 
-  <div class="a-grid a-grid--main" data-pr data-roles={JSON.stringify(ROLES)}>
+  <div class="a-grid a-grid--main" data-pr data-roles={JSON.stringify(ROLES)} data-questions={JSON.stringify(QUESTIONS)}>
     <div class="pr__main">
       <section class="a-card">
         <h2 class="a-h2">Что прислали</h2>
@@ -61,11 +65,18 @@ const ROLES = Object.fromEntries(SPECIALIST_CATEGORIES.map((c) => [c.slug, c.rol
 
 <script>
   import { api, esc, fileToken, fileUrl, requireSession, REV_STATUS } from '../../../../lib/cabinet-api';
+  import { VENUE_QUESTIONS, VENUE_TERMS, priceFrom, rub } from '../../../../lib/cabinet-form';
 
   const LABELS: [string, string][] = [
-    ['name', 'Название'], ['tagline', 'Коротко о себе'], ['address', 'Адрес'], ['capacityBanquet', 'Гостей до'],
-    ['about', 'О себе'], ['priceFrom', 'Цена от'], ['priceNote', 'Про цену'],
+    ['name', 'Название'], ['tagline', 'Коротко о себе'], ['address', 'Адрес'], ['rentFrom', 'Аренда от, ₽'],
+    ['checkFrom', 'Средний чек от, ₽'], ['capacityBanquet', 'Гостей до'], ['about', 'О себе'], ['priceFrom', 'Цена от, ₽'], ['priceNote', 'Про цену'],
   ];
+  /** ответ на вопрос словами: значения фильтра → подписи вариантов */
+  const answer = (qs: any[], key: string, v: unknown) => {
+    const q = qs.find((x) => x.key === key);
+    const vals = ([] as unknown[]).concat(v ?? []).map(String).filter(Boolean);
+    return vals.map((x) => q?.options.find((o: any) => o.value === x)?.label ?? x).join(', ');
+  };
 
   document.addEventListener('astro:page-load', async () => {
     const root = document.querySelector<HTMLElement>('[data-pr]');
@@ -100,8 +111,31 @@ const ROLES = Object.fromEntries(SPECIALIST_CATEGORIES.map((c) => [c.slug, c.rol
         const changed = before !== null && before !== now;
         return `<dt>${label}</dt><dd>${changed ? `<span class="pr__was">${esc(before) || 'пусто'}</span><span class="pr__now">${esc(now) || 'пусто'}</span>` : esc(now) || 'пусто'}</dd>`;
       });
+      // текст разделами — как написал подрядчик
+      for (const sec of d.sections ?? []) {
+        if (!String(sec?.body ?? '').trim()) continue;
+        rows.push(`<dt>Текст: ${esc(sec.title || 'без заголовка')}</dt><dd>${esc(sec.body) || 'пусто'}</dd>`);
+      }
+      const qs = rev.kind === 'venue' ? VENUE_QUESTIONS : JSON.parse(root.dataset.questions!)[rev.categorySlug] ?? [];
+      const answered = qs.filter((q: any) => answer(qs, q.key, d.filters?.[q.key]));
+      if (qs.length) rows.push(`<dt>Вопросы · ${answered.length} из ${qs.length}</dt><dd>${answered.map((q: any) => `${esc(q.label)}: <b>${esc(answer(qs, q.key, d.filters[q.key]))}</b>`).join('<br>') || 'пусто'}</dd>`);
+      const tariffs = (d.tariffs ?? []).filter((t: any) => t?.name || t?.price);
+      if (tariffs.length) {
+        const p = priceFrom(d);
+        rows.push(`<dt>Прайс${p ? ` · в каталоге от ${rub(p)}` : ''}</dt><dd>${tariffs.map((t: any) => `<b>${esc(t.name)}</b> — ${t.price ? rub(Number(t.price)) : 'без цены'}${t.includes ? `\n${esc(t.includes)}` : ''}`).join('\n\n')}</dd>`);
+      }
+      const halls = (d.halls ?? []).filter((h: any) => h?.name);
+      if (halls.length) rows.push(`<dt>Залы</dt><dd>${halls.map((h: any) => `<b>${esc(h.name)}</b> — банкет до ${esc(h.banquet || '—')}, фуршет до ${esc(h.buffet || '—')}${h.area ? `, ${esc(h.area)} м²` : ''}${h.priceFrom ? `, от ${rub(Number(h.priceFrom))}` : ''}${h.note ? `\n${esc(h.note)}` : ''}`).join('\n\n')}</dd>`);
+      if (rev.kind === 'venue') {
+        const t = d.terms ?? {};
+        const lines = [
+          ...VENUE_TERMS.map((q) => `${q.label}: ${answer(VENUE_TERMS, q.key, t[q.key]) || 'пусто'}`),
+          t.until && `До скольки: ${t.until}`, t.parking && `Парковка: ${t.parking}`, t.more,
+        ].filter(Boolean);
+        rows.push(`<dt>Условия</dt><dd>${esc(lines.join('\n'))}</dd>`);
+      }
       const c = d.contacts ?? {};
-      rows.push(`<dt>Контакты (скрыты, за кнопкой)</dt><dd>${esc([c.phone, c.telegram].filter(Boolean).join(' · ')) || 'пусто'}</dd>`);
+      rows.push(`<dt>Контакты (скрыты, за кнопкой)</dt><dd>${esc([c.phone, c.telegram && `Telegram ${c.telegram}`, c.max && `MAX ${c.max}`, c.site, c.email].filter(Boolean).join(' · ')) || 'пусто'}</dd>`);
       $('[data-pr-fields]').innerHTML = rows.join('');
 
       const token = rev.photos?.length ? await fileToken('moderator') : '';
