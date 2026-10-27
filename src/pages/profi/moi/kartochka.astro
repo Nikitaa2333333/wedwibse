@@ -534,23 +534,23 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         // (кейтеринг, кавер-группа). На визитке — «от N ₽» и под ней «за что».
         const mode = priceMode();
         const ts = data.tariffs ?? [];
-        const modes = [['one', 'Одна цена'], ['tariffs', 'Несколько тарифов'], ['request', 'По запросу']];
+        const modes = [['one', 'Одна цена'], ['tariffs', 'Тарифы'], ['request', 'По запросу']];
         const unitChips = (bind: string, cur: unknown) => `<div class="c-opts">${PRICE_UNITS.map((u) => `<button class="c-opt" type="button" aria-pressed="${cur === u}" data-unit="${bind}" data-v="${u}">${u}</button>`).join('')}</div>`;
         return { title: 'Цена', lead: '', html: `
-          <div class="c-opts">${modes.map(([v, l]) => `<button class="c-opt" type="button" aria-pressed="${mode === v}" data-pmode="${v}">${l}</button>`).join('')}</div>
+          <div class="c-seg">${modes.map(([v, l]) => `<button type="button" aria-pressed="${mode === v}" data-pmode="${v}">${l}</button>`).join('')}</div>
           ${mode === 'one' ? `
             ${field('Цена от, ₽', 'priceFrom', data.priceFrom, { mode: 'numeric', placeholder: '40000' })}
             ${field('За что', 'priceNote', data.priceNote, { placeholder: 'за 6 часов работы' })}
             ${unitChips('priceNote', data.priceNote)}` : ''}
           ${mode === 'tariffs' ? `
             <div class="c-items">${ts.map((t: any, i: number) => `
-              <div class="c-item">
-                ${field('Название тарифа', `tariffs.${i}.name`, t.name, { placeholder: 'Полный день' })}
-                <div class="c-grid2">
-                  ${field('Цена, ₽', `tariffs.${i}.price`, t.price, { mode: 'numeric', placeholder: '40000' })}
-                  ${field('За что', `tariffs.${i}.unit`, t.unit, { placeholder: 'за 8 часов' })}
+              <div class="c-tcard">
+                <input class="c-tcard__name" data-bind="tariffs.${i}.name" value="${esc(t.name)}" placeholder="Название тарифа" aria-label="Название тарифа" />
+                <div class="c-tcard__price">
+                  <input data-bind="tariffs.${i}.price" inputmode="numeric" value="${esc(t.price)}" placeholder="Цена" aria-label="Цена, ₽" size="7" /><span>₽</span>
+                  <input class="c-tcard__unit" data-bind="tariffs.${i}.unit" value="${esc(t.unit)}" placeholder="за что: за 8 часов" aria-label="За что" />
                 </div>
-                ${field('Что входит', `tariffs.${i}.includes`, t.includes, { area: true, placeholder: '— 10 часов съёмки\n— 500 кадров в обработке\n— онлайн-галерея' })}
+                <textarea class="c-tcard__inc" data-bind="tariffs.${i}.includes" rows="4" placeholder="Что входит — каждый пункт с новой строки:&#10;10 часов съёмки&#10;500 кадров в обработке&#10;онлайн-галерея" aria-label="Что входит">${esc(t.includes)}</textarea>
                 ${tools('tariffs', i, ts.length)}
               </div>`).join('')}</div>
             <button class="a-btn a-btn--lg c-add-btn" type="button" data-add="tariffs">${icon('plus')} Добавить тариф</button>` : ''}
