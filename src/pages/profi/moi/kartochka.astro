@@ -66,11 +66,15 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
   const time = () => new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
   // ---------- сохранение ----------
+  /** плашка в углу: статус карточки и время сохранения — одним местом */
   function savedLabel() {
     const el = view.querySelector<HTMLElement>('[data-saved]');
     if (!el) return;
-    el.classList.toggle('c-saved--bad', !!saveError);
-    el.textContent = saveError ? `Не сохранилось: ${saveError}` : saving ? 'Сохраняем…' : savedAt ? `Сохранено · ${savedAt}` : '';
+    const st = cardState(rev.status, !isNew());
+    el.className = `c-state ${st.cls}`;
+    el.classList.toggle('c-state--bad', !!saveError);
+    const when = saveError ? `не сохранилось: ${saveError}` : saving ? 'сохраняем…' : savedAt ? `сохранено ${savedAt}` : '';
+    el.textContent = [st.label, when].filter(Boolean).join(' · ');
   }
 
   /** производные поля — то, что человек не вводит руками */
@@ -83,6 +87,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     } else {
       const p = priceFrom({ tariffs: data.tariffs });
       data.priceFrom = p ?? '';
+      if (data.contacts?.maxSame) data.contacts.max = data.contacts.phone ?? '';
       // имя в каталоге — «Имя Фамилия»; у студии фамилии нет
       data.name = [data.firstName, data.lastName].map((x) => String(x ?? '').trim()).filter(Boolean).join(' ');
     }
@@ -113,7 +118,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     saving = null;
     savedLabel();
   }
-  const later = () => { clearTimeout(timer); saveError = ''; timer = window.setTimeout(save, 900); const el = view.querySelector('[data-saved]'); if (el) el.textContent = 'Изменено…'; };
+  const later = () => { clearTimeout(timer); saveError = ''; timer = window.setTimeout(save, 900); const el = view.querySelector('[data-saved]'); if (el) el.textContent = `${cardState(rev.status, !isNew()).label} · изменено`; };
 
   // ---------- обзор: список разделов ----------
   function renderOverview() {
@@ -121,19 +126,19 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     const secs = SECTIONS[kind];
     const states = secs.map((x) => ({ ...x, ...sectionState(x.key, rev, questions) }));
     const done = states.filter((x) => x.done).length;
+    const canDelete = isNew() && rev.status === 'draft';
     const title = data.name || (kind === 'venue' ? 'Новая площадка' : 'Новая карточка');
     const siteUrl = kind === 'venue' ? `/moskva/ploshchadki/${rev.slug}/` : `/moskva/podryadchiki/${rev.categorySlug}/${rev.slug}/`;
     view.innerHTML = `
       <div class="c-head">
         <a class="c-back" href="/profi/moi/">${icon('back')} Мои карточки</a>
-        <div class="c-head__row"><h1 class="a-h1">${esc(title)}</h1><span class="c-badge ${st.cls}">${st.label}</span></div>
-        <p class="a-lead">${esc(role())}${rev.slug ? ` · адрес страницы ${esc(siteUrl)}` : ''}</p>
+        <div class="c-head__row"><h1 class="a-h1">${esc(title)}</h1><span data-saved></span></div>
+        ${rev.slug ? `<p class="a-lead">Ваша ссылка: wed-secrets.ru${esc(siteUrl)}</p>` : ''}
       </div>
       ${rev.status === 'rejected' && rev.rejectReason ? `<p class="c-reason"><b>Вернули с причиной:</b> ${esc(rev.rejectReason)}<br>Исправьте и отправьте снова.</p>` : ''}
       ${rev.status === 'review' ? '<p class="c-reason c-reason--info">Карточка на проверке — ответим в течение суток. Пока она на проверке, менять её нельзя; можно отозвать.</p>' : ''}
-      <div class="c-progress">
+      <div class="c-progress" role="progressbar" aria-label="Заполнено разделов" aria-valuemin="0" aria-valuemax="${secs.length}" aria-valuenow="${done}">
         <div class="c-progress__bar"><i style="width:${Math.round((done / secs.length) * 100)}%"></i></div>
-        <span class="c-progress__label">Заполнено ${done} из ${secs.length} разделов</span>
       </div>
       <section class="a-card a-card--flush"><div class="c-rows">
         ${states.map((x) => `
@@ -152,7 +157,9 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
             : '<button class="a-btn a-btn--primary a-btn--lg" type="button" data-submit>Отправить на проверку</button>'}
         <span class="c-error" data-error hidden></span>
         <span class="c-ok" data-ok hidden></span>
-      </div>`;
+      </div>
+      ${canDelete ? '<button class="c-link c-link--danger" type="button" data-delete>Удалить карточку</button>' : ''}`;
+    savedLabel();
     const err = view.querySelector<HTMLElement>('[data-error]')!;
     const ok = view.querySelector<HTMLElement>('[data-ok]')!;
     view.querySelector<HTMLButtonElement>('[data-submit]')?.addEventListener('click', async (e) => {
@@ -178,7 +185,99 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         renderOverview();
       } catch (x) { err.textContent = (x as Error).message; err.hidden = false; }
     });
+    // удаление — без системного «Вы уверены?»: первое нажатие спрашивает, второе удаляет
+    view.querySelector<HTMLButtonElement>('[data-delete]')?.addEventListener('click', async (e) => {
+      const b = e.currentTarget as HTMLButtonElement;
+      if (!b.dataset.sure) { b.dataset.sure = '1'; b.textContent = 'Удалить насовсем? Нажмите ещё раз'; return; }
+      try {
+        await api('vendor', 'DELETE', `/api/collections/revisions/records/${rev.id}`);
+        location.href = '/profi/moi/';
+      } catch (x) { err.textContent = (x as Error).message; err.hidden = false; }
+    });
     void ok;
+  }
+
+  // ---------- «как это выглядит на сайте» ----------
+  // Мини-копии того, что пара увидит: карточка каталога, разделы текста
+  // визитки (StoryText), пакеты прайса. Шрифты и токены — сайта (cabinet.css, .c-pv).
+  const lines = (t: unknown) => String(t ?? '').split('\n').map((x) => x.trim());
+  /** текст раздела как на визитке: пустая строка — абзац, «— » — пункт списка */
+  function storyHtml(body: unknown): string {
+    return String(body ?? '').split(/\n\s*\n/).map((block) => {
+      const ls = lines(block).filter(Boolean);
+      const items = ls.filter((l) => /^[—–-]\s*/.test(l));
+      const text = ls.filter((l) => !/^[—–-]\s*/.test(l));
+      return (text.length ? `<p>${esc(text.join(' '))}</p>` : '') +
+        (items.length ? `<ul>${items.map((l) => `<li>${esc(l.replace(/^[—–-]\s*/, ''))}</li>`).join('')}</ul>` : '');
+    }).join('');
+  }
+  function pricePreview(): string {
+    const ts = (data.tariffs ?? []).filter((t: any) => String(t?.name ?? '').trim() || Number(t?.price) > 0);
+    const p = priceFrom({ tariffs: ts });
+    const cards = ts.map((t: any) => {
+      const inc = lines(t.includes).filter(Boolean).map((l) => l.replace(/^[—–-]\s*/, ''));
+      return `<article class="c-pv-tariff">
+        <header><h4>${esc(t.name || 'Пакет')}</h4><b>${Number(t.price) > 0 ? rub(Number(String(t.price).replace(/\s/g, ''))) : '—'}</b></header>
+        ${inc.length ? `<ul>${inc.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
+      </article>`;
+    }).join('');
+    return `<div class="c-pv">
+      <p class="c-pv__cap">В каталоге, рядом с именем</p>
+      <p class="c-pv-from">${p ? `от ${rub(p)}` : 'добавьте пакет с ценой'}</p>
+      ${cards ? `<p class="c-pv__cap">На вашей странице</p><div class="c-pv-tariffs">${cards}</div>` : ''}
+    </div>`;
+  }
+  function previewHtml(kindOf: string): string {
+    if (kindOf === 'tagline') {
+      const cover = rev.photos?.[0] ? `<img src="${fileUrl(rev, rev.photos[0], { thumb: '400x0', token })}" alt="" />` : '';
+      const p = priceFrom({ tariffs: data.tariffs });
+      return `<p class="c-pv__cap">Так карточка выглядит в каталоге</p>
+        <div class="c-pv c-pv-card">
+          <div class="c-pv-card__img">${cover}</div>
+          <p class="c-pv-card__name">${esc(data.name || 'Имя Фамилия')}</p>
+          <p class="c-pv-card__tag">${esc(data.tagline || 'Строка под именем')}</p>
+          ${p ? `<p class="c-pv-card__price">от ${rub(p)}</p>` : ''}
+        </div>`;
+    }
+    if (kindOf === 'text') {
+      const secs = (data.sections ?? []).filter((x: any) => String(x?.title ?? '').trim() || String(x?.body ?? '').trim());
+      return `<p class="c-pv__cap">Так текст ляжет на вашей странице</p>
+        <div class="c-pv c-pv-story">${secs.map((x: any) => `<section>${x.title ? `<h3>${esc(x.title)}</h3>` : ''}${storyHtml(x.body)}</section>`).join('') || '<p>Текста пока нет.</p>'}</div>`;
+    }
+    return pricePreview();
+  }
+  function openPreview(kindOf: string) {
+    let dlg = document.querySelector<HTMLDialogElement>('dialog.c-sheet');
+    if (!dlg) {
+      dlg = document.createElement('dialog');
+      dlg.className = 'c-sheet';
+      dlg.addEventListener('click', (e) => { if (e.target === dlg || (e.target as HTMLElement).closest('[data-close]')) dlg!.close(); });
+      document.body.append(dlg);
+    }
+    dlg.innerHTML = `<div class="c-sheet__body">${previewHtml(kindOf)}<button class="a-btn a-btn--lg c-sheet__close" type="button" data-close>Понятно</button></div>`;
+    dlg.showModal();
+  }
+
+  // ---------- портрет ----------
+  async function uploadAvatar(file: File) {
+    const fd = new FormData();
+    fd.append('avatar', await shrinkPhoto(file));
+    try {
+      rev = await api('vendor', 'PATCH', `/api/collections/revisions/records/${rev.id}`, fd);
+      if (!token) token = await fileToken('vendor');
+      savedAt = time();
+      renderSection('osnovnoe');
+    } catch (x) {
+      saveError = (x as Error).message;
+      savedLabel();
+    }
+  }
+
+  /** Telegram: принимаем @ник, ник и ссылку t.me/… — храним «@ник» */
+  function normalizeTelegram(v: string): { value: string; ok: boolean } {
+    const nick = v.trim().replace(/^https?:\/\//, '').replace(/^(t\.me|telegram\.me)\//i, '').replace(/^@/, '').replace(/\/.*$/, '');
+    if (!nick) return { value: '', ok: true };
+    return { value: '@' + nick, ok: /^[A-Za-z0-9_]{5,32}$/.test(nick) };
   }
 
   // ---------- экраны разделов ----------
@@ -244,9 +343,9 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       err.hidden = !err.textContent;
     });
   }
-  const field = (label: string, bind: string, value: unknown, opts: { type?: string; note?: string; area?: boolean; placeholder?: string; mode?: string; max?: number } = {}) => `
+  const field = (label: string, bind: string, value: unknown, opts: { type?: string; note?: string; area?: boolean; placeholder?: string; mode?: string; max?: number; help?: string } = {}) => `
     <label class="a-field">
-      <span class="a-field__label">${label}</span>
+      <span class="a-field__label">${label}${opts.help ? ` <button class="c-help" type="button" data-preview="${opts.help}" aria-label="Как это выглядит на сайте">?</button>` : ''}</span>
       ${opts.area
         ? `<textarea class="a-field__input" data-bind="${bind}" placeholder="${esc(opts.placeholder ?? '')}">${esc(value)}</textarea>`
         : `<input class="a-field__input" data-bind="${bind}" type="${opts.type ?? 'text'}" ${opts.mode ? `inputmode="${opts.mode}"` : ''} ${opts.max ? `maxlength="${opts.max}"` : ''} value="${esc(value)}" placeholder="${esc(opts.placeholder ?? '')}" />`}
@@ -287,7 +386,16 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
                 ${field('Фамилия', 'lastName', data.lastName, { placeholder: 'Каморина' })}
               </div>
               <p class="a-field__note">Студия или команда — название в поле «Имя», фамилию оставьте пустой.</p>
-              ${field('Строка под именем', 'tagline', data.tagline, { placeholder: 'Репортаж без постановки, плёнка по желанию', note: 'Видна в каталоге под вашим именем. Одна фраза, до 80 знаков.', max: 80 })}` };
+              ${field('Строка под именем', 'tagline', data.tagline, { placeholder: 'Репортаж без постановки, плёнка по желанию', note: 'Одна фраза, до 80 знаков.', max: 80, help: 'tagline' })}
+              <div class="a-field">
+                <span class="a-field__label">Портрет</span>
+                <label class="c-ava">
+                  <span class="c-ava__img" data-ava>${rev.avatar ? `<img src="${fileUrl(rev, rev.avatar, { thumb: '200x200', token })}" alt="" />` : icon('profile')}</span>
+                  <span class="c-link">${rev.avatar ? 'Заменить фото' : 'Загрузить фото'}</span>
+                  <input type="file" accept="image/jpeg,image/png,image/webp" hidden data-avatar />
+                </label>
+                <span class="a-field__note">Ваше лицо, а не работа: пара видит, с кем будет иметь дело.</span>
+              </div>` };
       case 'foto':
         return { title: 'Фото', lead: `От ${MIN_PHOTOS} до ${MAX_PHOTOS} кадров. Первый — обложка в каталоге. Лучше вертикальные: каталог смотрят с телефона.`, html: '<div class="c-photos" data-photos></div><p class="c-ok" data-upload hidden></p><p class="c-error" data-photo-error hidden></p>' };
       case 'tekst': {
@@ -301,16 +409,17 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
               ${field('Текст', `sections.${i}.body`, x.body, { area: true, placeholder: x.hint ? `${x.hint}\n\n${TEXT_EXAMPLE}` : TEXT_EXAMPLE })}
               ${tools('sections', i, secs.length)}
             </div>`).join('')}</div>
-          <button class="c-add" type="button" data-add="sections">${icon('plus')} Раздел</button>
+          <div class="c-actions">
+            <button class="a-btn a-btn--lg c-add-btn" type="button" data-add="sections">${icon('plus')} Добавить раздел</button>
+            ${secs.length ? '<button class="a-btn a-btn--lg c-add-btn" type="button" data-preview="text">Как это будет на странице</button>' : ''}
+          </div>
           <p class="a-field__note" data-count>${textLength(data)} знаков</p>` };
       }
       case 'voprosy':
         return { title: 'Вопросы', lead: questions.length ? 'По этим ответам вас найдут в фильтрах каталога.' : 'Для этой категории фильтров в каталоге пока нет — раздел можно пропустить.', html: choices(questions, 'filters') };
       case 'prays': {
         const ts = data.tariffs ?? [];
-        const p = priceFrom({ tariffs: ts });
-        return { title: 'Прайс', lead: 'Каждый пакет — отдельная карточка с ценой на вашей странице. В каталоге рядом с именем покажем самую низкую цену.', html: `
-          <p class="c-preview">В каталоге: <b>${p ? `от ${rub(p)}` : 'добавьте пакет с ценой'}</b></p>
+        return { title: 'Прайс', lead: '', html: `
           <div class="c-items">${ts.map((t: any, i: number) => `
             <div class="c-item">
               <div class="c-grid2">
@@ -320,8 +429,11 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
               ${field('Что входит', `tariffs.${i}.includes`, t.includes, { area: true, placeholder: '— 10 часов съёмки\n— 500 кадров в обработке\n— онлайн-галерея' })}
               ${tools('tariffs', i, ts.length)}
             </div>`).join('')}</div>
-          <button class="c-add" type="button" data-add="tariffs">${icon('plus')} Пакет</button>
-          ${field('Что ещё важно про цену', 'priceNote', data.priceNote, { placeholder: 'Выезд за МКАД — 3 000 ₽, предоплата 30 %', note: 'Необязательно. Встанет под пакетами на вашей странице.' })}` };
+          <button class="a-btn a-btn--lg c-add-btn" type="button" data-add="tariffs">${icon('plus')} Добавить пакет</button>
+          <div class="c-pv-inline">
+            <p class="c-pv-inline__label">Так увидит пара</p>
+            <div data-price-preview>${pricePreview()}</div>
+          </div>` };
       }
       case 'zaly': {
         const hs = data.halls ?? [];
@@ -349,9 +461,13 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       case 'kontakty':
         return { title: 'Контакты', lead: 'Пара видит их по кнопке «Показать контакты».', html: `
           ${phoneField(data.contacts?.phone, data.contacts?.phoneCountry)}
-          ${field('Telegram', 'contacts.telegram', data.contacts?.telegram, { placeholder: '@ник' })}
-          ${field('MAX', 'contacts.max', data.contacts?.max, { placeholder: 'Номер или ник' })}
-          ${field('Сайт или соцсеть', 'contacts.site', data.contacts?.site, { placeholder: 'site.ru' })}
+          ${field('Telegram', 'contacts.telegram', data.contacts?.telegram, { placeholder: '@ник или ссылка t.me/…' })}
+          <span class="a-field__note c-error" data-tg-error hidden></span>
+          <div class="a-field">
+            <span class="a-field__label">MAX</span>
+            <div class="c-opts"><button class="c-opt" type="button" aria-pressed="${!!data.contacts?.maxSame}" data-maxsame>Пишите мне в MAX на этот номер</button></div>
+          </div>
+          ${field('Сайт или страница в соцсети', 'contacts.site', data.contacts?.site, { placeholder: 'site.ru или vk.com/…', note: 'Пара увидит вместе с телефоном.' })}
           ${field('Почта', 'contacts.email', data.contacts?.email, { type: 'email' })}` };
     }
   }
@@ -361,7 +477,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     view.innerHTML = `
       <div class="c-head">
         <a class="c-back" href="${url()}">${icon('back')} ${esc(data.name || 'Анкета')}</a>
-        <div class="c-head__row"><h1 class="a-h1">${b.title}</h1><span class="c-saved" data-saved></span></div>
+        <div class="c-head__row"><h1 class="a-h1">${b.title}</h1><span data-saved></span></div>
         ${b.lead ? `<p class="a-lead">${b.lead}</p>` : ''}
         ${locked() ? '<p class="c-reason c-reason--info">Карточка на проверке — менять её сейчас нельзя.</p>' : ''}
       </div>
@@ -460,17 +576,40 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     setPath(t.dataset.bind, t.value);
     const count = view.querySelector('[data-count]');
     if (count) count.textContent = `${textLength(data)} знаков`;
+    const pp = view.querySelector('[data-price-preview]');
+    if (pp) pp.innerHTML = pricePreview();
+    later();
+  });
+
+  view.addEventListener('focusout', (e) => {
+    const t = e.target as HTMLInputElement;
+    if (t.dataset.bind !== 'contacts.telegram') return;
+    const { value, ok } = normalizeTelegram(t.value);
+    t.value = value;
+    setPath('contacts.telegram', value);
+    const err = view.querySelector<HTMLElement>('[data-tg-error]');
+    if (err) { err.textContent = ok ? '' : 'Ник в Telegram — латиница, цифры и «_», от 5 знаков.'; err.hidden = ok; }
     later();
   });
 
   view.addEventListener('change', async (e) => {
     const t = e.target as HTMLInputElement;
     if (t.matches('[data-pfiles]') && t.files?.length) await upload([...t.files]);
+    if (t.matches('[data-avatar]') && t.files?.[0]) await uploadAvatar(t.files[0]);
   });
 
   view.addEventListener('click', async (e) => {
     const b = (e.target as HTMLElement).closest<HTMLElement>('button, a[data-done]');
     if (!b || (b as HTMLButtonElement).disabled) return;
+    if (b.dataset.preview) { e.preventDefault(); openPreview(b.dataset.preview); return; }
+    if (b.hasAttribute('data-maxsame')) {
+      data.contacts ??= {};
+      data.contacts.maxSame = !data.contacts.maxSame;
+      if (!data.contacts.maxSame) data.contacts.max = '';
+      b.setAttribute('aria-pressed', String(data.contacts.maxSame));
+      later();
+      return;
+    }
     // вопросы и условия: один вариант или несколько
     if (b.dataset.q) {
       const scope = b.dataset.scope!;
@@ -566,6 +705,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       }
       rev = await api('vendor', 'GET', `/api/collections/revisions/records/${encodeURIComponent(q.get('id') ?? '')}`);
       kind = rev.kind;
+      if (rev.updated) savedAt = new Date(rev.updated.replace(' ', 'T')).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
       data = rev.data && typeof rev.data === 'object' ? rev.data : {};
       // карточки до 27.10: имя одним полем — в «Имя», фамилию человек допишет
       if (kind === 'specialist' && data.firstName == null && data.name) data.firstName = data.name;
