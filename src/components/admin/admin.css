@@ -159,7 +159,8 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
 /* ---------- задача строкой (AdminTask): обложка, имя крупно, задача
    плашкой, заполненность цветом, срок справа с песочными часами ---------- */
 .a-tasks { display: grid; }
-.a-task { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; align-items: center; gap: var(--s-3); padding: 12px var(--adm-pad); border-top: 1px solid var(--adm-line); text-decoration: none; color: inherit; }
+/* телефон: обложка | имя, задача, срок — столбиком; с 640px срок колонкой справа */
+.a-task { display: grid; grid-template-columns: 48px minmax(0, 1fr); align-items: center; gap: var(--s-1) var(--s-3); padding: 12px var(--adm-pad); border-top: 1px solid var(--adm-line); text-decoration: none; color: inherit; }
 @media (hover: hover) {
   .a-task:hover { background: var(--adm-hover); }
   /* на подсвеченной строке серая плашка задачи растворялась — белой */
@@ -173,6 +174,13 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
 .a-task__meta { display: flex; flex-wrap: nowrap; align-items: center; gap: var(--s-2); min-width: 0; }
 .a-task__meta .a-pill { flex: none; }
 .a-task__fill { font-size: var(--adm-fs-sm); color: var(--adm-text-2); white-space: nowrap; }
+.a-task__cover { grid-row: span 2; }
+.a-task__when { grid-column: 2; justify-self: start; }
+@media (min-width: 640px) {
+  .a-task { grid-template-columns: 48px minmax(0, 1fr) auto; }
+  .a-task__cover { grid-row: auto; }
+  .a-task__when { grid-column: 3; justify-self: end; }
+}
 .a-task__when { display: inline-flex; align-items: center; gap: 6px; font-size: var(--adm-fs-sm); color: var(--adm-text-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .a-task__when svg { width: 16px !important; height: 16px !important; flex: none; }
 /* у задачи в таблице (заявки, модерация) ячейка без своих полей */
