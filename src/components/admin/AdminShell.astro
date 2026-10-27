@@ -21,9 +21,11 @@ export type AdminSection = 'overview' | 'partners' | 'moderation' | 'catalog' | 
 
 interface Props {
   title: string;
-  section: AdminSection;
+  section?: AdminSection;
+  /** экран входа: только знак, без меню и учётки — до входа им нечего показывать */
+  bare?: boolean;
 }
-const { title, section } = Astro.props;
+const { title, section, bare = false } = Astro.props;
 
 const items: { key: AdminSection; href: string; label: string; n?: number; tone?: 'info' | 'ok' | 'bad'; gap?: boolean }[] = [
   { key: 'overview', href: '/profi/admin/', label: 'Сводка' },
@@ -48,14 +50,21 @@ const items: { key: AdminSection; href: string; label: string; n?: number; tone?
         <span class="adm-logo__name">WED Secrets</span>
         <span class="adm-logo__tag">админка</span>
       </a>
-      <div class="adm-head__right">
-        <a class="adm-head__link" href="/" target="_blank" rel="noopener">Сайт</a>
-        <a class="adm-head__link" href="/profi/" target="_blank" rel="noopener">Кабинет подрядчика</a>
-        <span class="adm-user"><span class="adm-user__ava" aria-hidden="true">Н</span><span class="adm-user__name">Никита</span></span>
-      </div>
+      {!bare && (
+        <div class="adm-head__right">
+          <a class="adm-head__link" href="/" target="_blank" rel="noopener">Сайт</a>
+          <a class="adm-head__link" href="/profi/" target="_blank" rel="noopener">Кабинет подрядчика</a>
+          {/* учётка — из входа модератора (lib/cabinet-api.ts); без входа — ссылка «Войти» */}
+          <a class="adm-user" href="/profi/admin/vhod/" data-adm-user data-astro-reload>
+            <span class="adm-user__ava" aria-hidden="true" data-adm-ava hidden></span>
+            <span class="adm-user__name" data-adm-name>Войти</span>
+          </a>
+          <a class="adm-head__link adm-head__out" href="#" data-adm-logout hidden>Выйти</a>
+        </div>
+      )}
     </header>
 
-    <div class="adm-body">
+    {bare ? <main class="adm-bare"><slot /></main> : <div class="adm-body">
       <nav class="adm-nav" aria-label="Разделы админки">
         {items.map((it) => (
           <a class:list={['adm-nav__item', { 'is-active': it.key === section, 'adm-nav__item--gap': it.gap }]} href={it.href} aria-current={it.key === section ? 'page' : undefined}>
@@ -69,14 +78,31 @@ const items: { key: AdminSection; href: string; label: string; n?: number; tone?
       <main class="adm-main">
         <slot />
       </main>
-    </div>
+    </div>}
   </div>
 </Layout>
 
 <script>
   import { bindAdminTables } from '../../lib/admin-table';
   // ClientRouter меняет страницу без перезагрузки — привязки заново на каждой
+  import { session, saveSession } from '../../lib/cabinet-api';
   document.addEventListener('astro:page-load', () => {
     if (document.querySelector('.adm')) bindAdminTables();
+    const s = session('moderator');
+    const user = document.querySelector<HTMLAnchorElement>('[data-adm-user]');
+    if (!user || !s) return;
+    const name = s.record.name || s.record.email || 'Модератор';
+    user.querySelector('[data-adm-name]')!.textContent = name;
+    const ava = user.querySelector<HTMLElement>('[data-adm-ava]')!;
+    ava.textContent = name.slice(0, 1).toUpperCase();
+    ava.hidden = false;
+    user.removeAttribute('href');
+    const out = document.querySelector<HTMLAnchorElement>('[data-adm-logout]')!;
+    out.hidden = false;
+    out.onclick = (e) => {
+      e.preventDefault();
+      saveSession('moderator', null);
+      location.href = '/profi/admin/vhod/';
+    };
   });
 </script>

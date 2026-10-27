@@ -63,6 +63,37 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
 }
 .adm-user__name { display: none; }
 @media (min-width: 768px) { .adm-user__name { display: inline; } }
+/* без входа — «Войти» видна и на телефоне; аватар только у вошедшего */
+.adm-user { color: inherit; text-decoration: none; }
+.adm-user[href] .adm-user__name { display: inline; color: var(--adm-link); }
+.adm-user__ava[hidden], .adm-head__out[hidden] { display: none; }
+.adm-head__out { display: inline; }
+
+/* ---------- экран входа (AdminShell bare) ---------- */
+.adm-bare { display: grid; justify-items: center; padding: clamp(24px, 8vh, 96px) var(--s-4) var(--s-7); }
+.a-login { width: 100%; max-width: 400px; display: grid; gap: var(--s-5); }
+.a-login__head { display: grid; gap: var(--s-1); }
+.a-login__form { display: grid; gap: var(--s-4); }
+.a-field { display: grid; gap: 6px; }
+.a-field__label { font-size: var(--adm-fs); line-height: var(--adm-lh); font-weight: 500; color: var(--adm-text); }
+/* 16px — меньше айфон увеличивает страницу при нажатии на поле */
+.a-field__input {
+  width: 100%;
+  height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--adm-line);
+  border-radius: var(--adm-radius-btn);
+  background: var(--adm-card);
+  color: var(--adm-text);
+  font: inherit;
+  font-size: 16px;
+}
+.a-field__input:focus-visible { outline: 2px solid var(--adm-primary); outline-offset: -1px; border-color: transparent; }
+.a-field__input[aria-invalid="true"] { border-color: var(--st-bad-text); }
+.a-login__error { color: var(--st-bad-text); font-size: var(--adm-fs); line-height: var(--adm-lh); }
+.a-login__error[hidden] { display: none; }
+.a-login__note { font-size: var(--adm-fs-sm); line-height: 16px; color: var(--adm-text-2); }
+
 
 /* ---------- раскладка: меню слева + рабочая область ---------- */
 /* minmax(0, 1fr): без него колонка на телефоне растягивается по самому
