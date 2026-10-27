@@ -146,13 +146,11 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
    24 ч». Число внутри фразы: строки одной высоты, ничего не прыгает. ---------- */
 .a-acts { display: grid; gap: var(--s-2); }
 @media (min-width: 768px) { .a-acts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-.a-act { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 4px var(--s-3); min-height: 76px; padding: 14px 18px; border-radius: var(--adm-radius); background: var(--adm-card); text-decoration: none; color: inherit; }
-.a-act__ic { grid-row: 1 / span 2; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--adm-bg); color: var(--adm-text); }
-.a-act__ic svg { width: 20px !important; height: 20px !important; }
-.a-act--info .a-act__ic { background: var(--st-info); }
-.a-act--warn .a-act__ic { background: var(--st-warn); }
-.a-act--bad .a-act__ic { background: var(--st-bad); color: var(--st-bad-fg); }
-.a-act__text { font-size: 17px; line-height: 24px; font-weight: 600; }
+.a-act { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; gap: 4px var(--s-3); min-height: 76px; padding: 14px 18px; border-radius: var(--adm-radius); background: var(--adm-card); text-decoration: none; color: inherit; }
+/* значок без подложки — просто знак (27.10) */
+.a-act__ic { grid-row: 1 / span 2; display: grid; place-items: center; color: var(--adm-text); }
+.a-act__ic svg { width: 24px !important; height: 24px !important; }
+.a-act__text { font-size: 17px; line-height: 1.2; font-weight: 600; }
 .a-act__note { grid-column: 2; font-size: var(--adm-fs); color: var(--adm-text-2); justify-self: start; }
 .a-act__note.a-pill { color: var(--st-bad-fg); }
 .a-act__go { grid-row: 1 / span 2; grid-column: 3; width: 18px !important; height: 18px !important; color: var(--adm-text-2); }
@@ -167,11 +165,11 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
 .a-task__cover--empty { display: grid; place-items: center; font-size: 18px; font-weight: 600; color: var(--adm-text-2); }
 .a-task__body { display: grid; gap: 6px; min-width: 0; }
 .a-task__name { font-size: 16px; line-height: 22px; font-weight: 600; overflow-wrap: anywhere; }
-.a-task__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px var(--s-2); }
-.a-task__fill { font-size: var(--adm-fs-sm); font-weight: 600; }
-.a-task__fill.is-full { color: var(--st-ok-text); }
-.a-task__fill.is-part { color: #a87a00; }
-.a-task__when { display: inline-flex; align-items: center; gap: 6px; font-size: var(--adm-fs); font-weight: 500; white-space: nowrap; font-variant-numeric: tabular-nums; }
+/* задача и процент — всегда одной строкой, не третьим слоем */
+.a-task__meta { display: flex; flex-wrap: nowrap; align-items: center; gap: var(--s-2); min-width: 0; }
+.a-task__meta .a-pill { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.a-task__fill { font-size: var(--adm-fs-sm); color: var(--adm-text-2); white-space: nowrap; }
+.a-task__when { display: inline-flex; align-items: center; gap: 6px; font-size: var(--adm-fs-sm); color: var(--adm-text-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .a-task__when svg { width: 16px !important; height: 16px !important; flex: none; }
 /* у задачи в таблице (заявки, модерация) ячейка без своих полей */
 .a-table td.a-task-cell { padding: 0; }
@@ -183,14 +181,14 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
 .a-pill--warn { background: var(--st-warn); color: var(--st-warn-ink); }
 .a-pill--bad { background: var(--st-bad); color: var(--st-bad-fg); }
 .a-pill--ok { background: var(--st-ok); color: var(--st-ok-ink); }
-.a-task__when.a-pill { height: 28px; font-size: var(--adm-fs-sm); }
+.a-task__when.a-pill { height: 28px; color: var(--st-bad-fg); }
 
 /* общая строка без плашки: сколько всего на сайте */
 .a-total { color: var(--adm-text-2); padding-inline: 4px; }
 
 /* ---------- заголовок экрана ---------- */
 .a-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px var(--s-4); }
-.a-h1 { font-size: var(--adm-fs-h1); line-height: 32px; font-weight: 500; letter-spacing: -0.015em; }
+.a-h1 { font-size: var(--adm-fs-h1); line-height: 1.15; font-weight: 500; letter-spacing: -0.015em; }
 .a-title__actions { margin-left: auto; display: flex; flex-wrap: wrap; gap: var(--s-2); align-self: center; }
 .a-lead { color: var(--adm-text-2); }
 

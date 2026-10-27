@@ -13,6 +13,7 @@ import AdminIcon from '../../../../components/admin/AdminIcon.astro';
 import { resolveImage, IMG_WIDTHS } from '../../../../lib/images';
 import { buildReview, plural } from '../../../../lib/moderation';
 import { QUEUE, STATE } from '../../../../data/moderation-demo';
+import { waitedMin, leftLabel, DEADLINE_MIN } from '../../../../lib/admin-tasks';
 
 export function getStaticPaths() {
   return QUEUE.map((rev, i) => ({
@@ -26,6 +27,7 @@ const r = buildReview(rev);
 const waits = rev.state === 'review';
 const st = STATE[rev.state];
 const flagged = new Set(rev.flags.map((f) => f.photo).filter(Boolean));
+const left = DEADLINE_MIN - waitedMin(rev.waiting);
 const pct = r.share.total ? Math.round((r.share.changed / r.share.total) * 100) : 0;
 const rub = (n?: number) => (n ? `${n.toLocaleString('ru-RU')} ₽` : 'пусто');
 const href = (id?: string) => (id ? `/profi/admin/moderaciya/${id}/` : '/profi/admin/moderaciya/');
@@ -59,20 +61,14 @@ const reasons = [
   <div class="mr" data-next={href(next)}>
     <div class="mr__top">
       <a class="a-btn a-btn--soft" href="/profi/admin/moderaciya/"><AdminIcon name="back" /> Модерация</a>
-      <span class="mr__pos">
-        {pos} из {QUEUE.length}
-        <a class:list={['a-btn a-btn--soft mr__step', { 'is-off': !prev }]} href={href(prev)} aria-label="Предыдущая" data-key-prev><AdminIcon name="back" /></a>
-        <a class:list={['a-btn a-btn--soft mr__step', { 'is-off': !next }]} href={href(next)} aria-label="Следующая" data-key-next><AdminIcon name="next" /></a>
-      </span>
+
     </div>
 
     <header class="mr__head">
       <h1 class="a-h1">{r.card.name}</h1>
       <p class="mr__line">
-        <span>{rev.first ? 'Новая карточка' : 'Правка'}</span>
-        {waits && rev.waiting
-          ? <span class:list={['mr__when', { 'mr__when--late': parseInt(rev.waiting, 10) >= 20 }]}>ждёт {rev.waiting} из 24 ч</span>
-          : <span class={`a-dot a-dot--${st.dot}`}>{st.label}</span>}
+        <span>{waits ? (rev.first ? 'Проверить новую карточку' : 'Проверить правку') : rev.decided ?? st.label}</span>
+        {waits && <span class:list={['mr__when', { 'a-pill a-pill--bad': left < 4 * 60 }]}>осталось {leftLabel(left)}</span>}
         <a class="a-more" href={r.url} target="_blank" rel="noopener">{rev.first ? 'Как на сайте' : 'На сайте'}</a>
       </p>
     </header>
@@ -212,7 +208,6 @@ const reasons = [
           )}
         </div>
         {!rev.first && waits && <button class="a-btn a-btn--soft a-btn--block a-btn--danger" type="button" data-act="hide">Скрыть карточку с сайта</button>}
-        <p class="a-sub mr__keys">J / K — следующая и предыдущая правка</p>
       </aside>
     </div>
   </div>
@@ -310,8 +305,8 @@ const reasons = [
   /* шапка: имя и одна строка — что это, срок, ссылка (Никита, 27.10: «слишком много») */
   .mr__head { display: grid; gap: 4px; }
   .mr__line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px var(--s-3); color: var(--adm-text-2); }
-  .mr__when { font-weight: 500; color: var(--adm-text); }
-  .mr__when--late { color: var(--st-bad-text); }
+  .mr__when { color: var(--adm-text-2); }
+  .mr__when.a-pill { color: var(--st-bad-fg); }
 
   .mr__side { display: grid; gap: var(--s-3); }
   @media (min-width: 1024px) { .mr__side { position: sticky; top: calc(var(--adm-head-h) + var(--s-2)); } }

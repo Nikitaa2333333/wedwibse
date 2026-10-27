@@ -96,7 +96,7 @@ export const DEMO_REVISIONS: DemoRevision[] = [
     slug: 'galkin',
     state: 'approved',
     submitted: 'Сегодня, 11:20',
-    decided: 'Одобрено сегодня в 11:25 · Никита',
+    decided: 'Одобрил Никита, сегодня 11:25',
     flags: [],
     patch: {
       text: {
@@ -119,7 +119,7 @@ export const DEMO_REVISIONS: DemoRevision[] = [
     slug: 'nirvani',
     state: 'returned',
     submitted: 'Сегодня, 10:05',
-    decided: 'Вернули сегодня в 10:40 · Никита',
+    decided: 'Вернул Никита, сегодня 10:40',
     reason: 'Задаток в тексте (15 000 ₽) не совпадает с прайсом — поправьте одно из двух.',
     flags: [],
     patch: {

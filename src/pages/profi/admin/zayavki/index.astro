@@ -45,7 +45,7 @@ const count = (s: AppStatus) => PARTNER_APPS.filter((a) => a.status === s).lengt
             return (
               <tr data-href={`/profi/admin/zayavki/${a.id}/`} data-tab={a.status} data-text={`${a.name} ${a.category}`.toLowerCase()}>
                 <td class="a-task-cell" data-v={a.name}>
-                  <AdminTask href={`/profi/admin/zayavki/${a.id}/`} name={a.name} cover={appCover(a)} task={a.status === 'draft' ? 'Связаться' : st.label} tone={tone} fill={appFill(a)} left={appLeft(a)} when={a.lastEdit} />
+                  <AdminTask href={`/profi/admin/zayavki/${a.id}/`} name={a.name} cover={appCover(a)} task={st.label} tone={tone} fill={appFill(a)} left={appLeft(a)} when={a.lastEdit} />
                 </td>
               </tr>
             );

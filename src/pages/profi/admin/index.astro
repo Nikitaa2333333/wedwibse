@@ -31,7 +31,7 @@ const actions: { n: number; text: string; note: string; urgent?: boolean; href: 
   { n: review.length, text: `Проверить ${review.length} ${plural(review.length, 'анкету', 'анкеты', 'анкет')}`, note: due(nextApp), urgent: (nextApp ?? DEADLINE_MIN) < URGENT, href: '/profi/admin/zayavki/#review', icon: 'partners', tone: 'info' },
   { n: drafts.length, text: `Связаться: ${drafts.length} не ${plural(drafts.length, 'закончил', 'закончили', 'закончили')} анкету`, note: 'перезвонить или написать', href: '/profi/admin/zayavki/#draft', icon: 'phone', tone: 'warn' },
   { n: edits, text: `Проверить ${edits} ${plural(edits, 'правку', 'правки', 'правок')}`, note: due(nextEdit), urgent: (nextEdit ?? DEADLINE_MIN) < URGENT, href: '/profi/admin/moderaciya/', icon: 'moderation', tone: 'info' },
-  { n: complaints, text: `Разобрать ${complaints} ${plural(complaints, 'жалобу', 'жалобы', 'жалоб')}`, note: 'на карточки', href: '/profi/admin/zhaloby/', icon: 'complaints', tone: 'bad' },
+  { n: complaints, text: `Разобрать ${complaints} ${plural(complaints, 'жалобу', 'жалобы', 'жалоб')}`, note: '', href: '/profi/admin/zhaloby/', icon: 'complaints', tone: 'bad' },
 ].filter((a) => a.n > 0);
 const venues = CATALOG.filter((c) => c.kind === 'venue').length;
 ---
@@ -44,7 +44,7 @@ const venues = CATALOG.filter((c) => c.kind === 'venue').length;
       <a class={`a-act a-act--${a.tone}`} href={a.href}>
         <span class="a-act__ic"><AdminIcon name={a.icon} /></span>
         <span class="a-act__text">{a.text}</span>
-        <span class:list={['a-act__note', { 'a-pill a-pill--bad': a.urgent }]}>{a.note}</span>
+        {a.note && <span class:list={['a-act__note', { 'a-pill a-pill--bad': a.urgent }]}>{a.note}</span>}
         <AdminIcon name="next" class="a-act__go" />
       </a>
     ))}
@@ -61,7 +61,7 @@ const venues = CATALOG.filter((c) => c.kind === 'venue').length;
           href={`/profi/admin/zayavki/${a.id}/`}
           name={a.name}
           cover={appCover(a)}
-          task={a.status === 'review' ? 'Проверить анкету' : 'Связаться'}
+          task={a.status === 'review' ? 'Проверить анкету' : 'Не закончил анкету'}
           tone={a.status === 'review' ? 'info' : 'warn'}
           fill={appFill(a)}
           left={appLeft(a)}

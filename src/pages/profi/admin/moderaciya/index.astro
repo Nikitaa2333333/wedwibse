@@ -46,8 +46,7 @@ const onReview = reviews.filter((r) => r.rev.state === 'review').length;
                     href={href}
                     name={r.card.name}
                     cover={r.photos.after[0]}
-                    task={done ? STATE[r.rev.state].label : r.rev.first ? 'Новая карточка' : 'Правка'}
-                    tone={done ? (STATE[r.rev.state].dot === 'ok' ? 'ok' : 'bad') : 'info'}
+                    task={done ? (r.rev.decided ?? STATE[r.rev.state].label) : r.rev.first ? 'Проверить новую карточку' : 'Проверить правку'}
                     left={done ? undefined : DEADLINE_MIN - waitedMin(r.rev.waiting)}
                   />
                 </td>
@@ -81,13 +80,13 @@ const onReview = reviews.filter((r) => r.rev.state === 'review').length;
       const html = res.items.map((r: any) => {
         const href = `/profi/admin/moderaciya/pravka/?id=${r.id}`;
         const name = r.data?.name || 'Без названия';
-        const task = r.venue || r.specialist ? 'Правка' : 'Новая карточка';
+        const task = r.venue || r.specialist ? 'Проверить правку' : 'Проверить новую карточку';
         const left = 24 * 60 - Math.round((Date.now() - new Date(String(r.submittedAt).replace(' ', 'T')).getTime()) / 60000);
         const leftText = left <= 0 ? 'срок вышел' : left < 60 ? `осталось ${left} мин` : `осталось ${Math.floor(left / 60)} ч`;
         // data-astro-reload: переходом ClientRouter разбор не запускался (26.10)
         return `<tr data-href="${href}" data-tab="review" data-text="${esc(name.toLowerCase())}"><td class="a-task-cell"><a class="a-task" href="${href}" data-astro-reload>`
           + `<span class="a-task__cover a-task__cover--empty" aria-hidden="true">${esc(name.slice(0, 1))}</span>`
-          + `<span class="a-task__body"><span class="a-task__name">${esc(name)}</span><span class="a-task__meta"><span class="a-pill a-pill--info">${task}</span></span></span>`
+          + `<span class="a-task__body"><span class="a-task__name">${esc(name)}</span><span class="a-task__meta"><span class="a-pill">${task}</span></span></span>`
           + `<span class="a-task__when${left < 4 * 60 ? ' a-pill a-pill--bad' : ''}">${hourglass}${leftText}</span></a></td></tr>`;
       }).join('');
       rows.insertAdjacentHTML('afterbegin', html);

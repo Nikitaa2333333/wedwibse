@@ -16,7 +16,7 @@ export type AppStatus = 'draft' | 'review' | 'returned' | 'approved' | 'rejected
 export const APP_STATUS: Record<AppStatus, { label: string; dot: string; tab: string }> = {
   review: { label: 'Проверить анкету', dot: 'info', tab: 'Проверить' },
   draft: { label: 'Не закончил анкету', dot: 'warn', tab: 'Не закончили' },
-  returned: { label: 'Вернули на доработку', dot: 'bad', tab: 'Вернули' },
+  returned: { label: 'Ждём исправлений', dot: 'bad', tab: 'Вернули' },
   approved: { label: 'Опубликована', dot: 'ok', tab: 'Опубликованы' },
   rejected: { label: 'Отклонена', dot: '', tab: 'Отклонены' },
 };
