@@ -517,7 +517,7 @@ function moderateRevision(e) {
     const kind = r.getString('kind');
     const url = cardUrl(kind, r.getString('categorySlug'), r.getString('slug'));
     mailVendor(app, r.getString('owner'), 'Карточка опубликована — WED Secrets',
-      `<p>Карточку «${str(data.name, 120)}» одобрили — она появится на сайте с ближайшей выкладкой: <a href="${url}">${url}</a>.</p>` +
+      `<p>Карточку «${str(data.name, 120)}» одобрили — через несколько минут она появится на сайте:<a href="${url}">${url}</a>.</p>` +
       `<p>Теперь в кабинете можно добавить видео — пришлите ссылку на Яндекс.Диск, ролики мы обработаем сами.</p>`);
     return;
   }
