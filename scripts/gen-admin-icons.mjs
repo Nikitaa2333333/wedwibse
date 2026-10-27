@@ -1,5 +1,5 @@
-// Генератор значков админки: вытаскивает контуры Solar (стиль Bold Duotone —
-// двухтоновый, тон второго слоя — полупрозрачный currentColor) из данных
+// Генератор значков админки: вытаскивает контуры Solar (стиль Linear — тонкая
+// линия, «стандартные» значки, Никита 27.10; раньше был Bold Duotone) из данных
 // Iconify в статический src/lib/admin-icons.ts. Запуск:
 //   node scripts/gen-admin-icons.mjs
 // Как и gen-icons.mjs: пакет @iconify-json/solar — devDependency, сборка
@@ -17,35 +17,35 @@ const data = require('@iconify-json/solar/icons.json');
 // ключ в админке -> имя в наборе Solar
 const MAP = {
   // меню
-  overview: 'widget-2-bold-duotone',
-  partners: 'user-plus-rounded-bold-duotone',
-  moderation: 'shield-check-bold-duotone',
-  catalog: 'folder-with-files-bold-duotone',
-  complaints: 'danger-triangle-bold-duotone',
+  overview: 'widget-2-linear',
+  partners: 'user-plus-rounded-linear',
+  moderation: 'shield-check-linear',
+  catalog: 'folder-with-files-linear',
+  complaints: 'danger-triangle-linear',
   // показатели и разделы экранов
-  cards: 'layers-bold-duotone',
-  noContacts: 'phone-bold-duotone',
-  photo: 'gallery-bold-duotone',
-  clock: 'clock-circle-bold-duotone',
-  text: 'document-text-bold-duotone',
-  notes: 'chat-round-dots-bold-duotone',
-  history: 'history-bold-duotone',
-  disk: 'cloud-download-bold-duotone',
-  check: 'check-circle-bold-duotone',
-  bell: 'bell-bold-duotone',
+  cards: 'layers-linear',
+  noContacts: 'phone-linear',
+  photo: 'gallery-linear',
+  clock: 'clock-circle-linear',
+  text: 'document-text-linear',
+  notes: 'chat-round-dots-linear',
+  history: 'history-linear',
+  disk: 'cloud-download-linear',
+  check: 'check-circle-linear',
+  bell: 'bell-linear',
   // связь
-  phone: 'phone-bold-duotone',
-  telegram: 'plain-bold-duotone',
-  mail: 'letter-bold-duotone',
-  copy: 'copy-bold-duotone',
-  link: 'link-round-bold-duotone',
+  phone: 'phone-linear',
+  telegram: 'plain-linear',
+  mail: 'letter-linear',
+  copy: 'copy-linear',
+  link: 'link-round-linear',
   // служебные стрелки и поиск — тонкие
-  search: 'magnifer-bold-duotone',
+  search: 'magnifier-linear',
   down: 'alt-arrow-down-linear',
   back: 'alt-arrow-left-linear',
   next: 'alt-arrow-right-linear',
   external: 'arrow-right-up-linear',
-  plus: 'add-circle-bold-duotone',
+  plus: 'add-circle-linear',
 };
 
 const entries = Object.entries(MAP).map(([key, name]) => {
@@ -55,7 +55,7 @@ const entries = Object.entries(MAP).map(([key, name]) => {
 });
 
 const out = `// СГЕНЕРИРОВАНО scripts/gen-admin-icons.mjs — руками не править.
-// Значки админки: Solar Bold Duotone (меню, разделы) и Linear (стрелки).
+// Значки админки: Solar Linear (тонкая линия).
 export const ADMIN_ICONS = {
 ${entries.map((e) => `  /** solar:${e.name} */\n  ${e.key}: ${JSON.stringify(e.body)},`).join('\n')}
 } as const;
