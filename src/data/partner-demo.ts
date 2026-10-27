@@ -130,10 +130,10 @@ export const PARTNER_APPS: PartnerApp[] = [
     contacts: { phone: '+7 900 000-00-02' },
     sections: [
       { label: 'Основное', state: 'имя, категория', done: true },
-      { label: 'Фото', state: 'нет ни одного', done: false },
+      { label: 'Фото', state: '41 из 50', done: true },
       { label: 'Текст', state: '1 раздел', done: true },
       { label: 'Прайс', state: '4 тарифа', done: true },
-      { label: 'Фильтры', state: '6 из 9', done: false },
+      { label: 'Фильтры', state: '9 из 9', done: true },
       { label: 'Контакты', state: 'телефон', done: true },
     ],
     story: [

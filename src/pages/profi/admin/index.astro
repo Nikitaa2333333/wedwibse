@@ -64,7 +64,7 @@ const venues = CATALOG.filter((c) => c.kind === 'venue').length;
           cover={appCover(a)}
           task={a.status === 'review' ? 'Проверить анкету' : 'Не закончил анкету'}
           tone={a.status === 'review' ? 'check' : 'wait'}
-          fill={appFill(a)}
+          fill={a.status === 'draft' ? appFill(a) : undefined}
           left={appLeft(a)}
           when={a.lastEdit}
         />
