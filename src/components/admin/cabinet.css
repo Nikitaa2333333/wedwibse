@@ -256,3 +256,11 @@ select.a-field__input { appearance: none; background-image: linear-gradient(45de
 .c-sheet::backdrop { background: rgba(15, 20, 30, 0.45); }
 .c-sheet__body { display: grid; gap: var(--s-4); padding: var(--s-5) var(--s-4) calc(var(--s-4) + env(safe-area-inset-bottom)); }
 .c-sheet__close { border-radius: 999px; border: 0; background: var(--cab-ink); color: #fff; }
+
+/* кадрирование портрета: квадрат, круг поверх, фото двигается под ним */
+.c-crop { position: relative; width: min(320px, 100%); aspect-ratio: 1; justify-self: center; overflow: hidden; border-radius: var(--adm-radius-md); background: var(--adm-dark); touch-action: none; cursor: grab; user-select: none; }
+.c-crop img { position: absolute; left: 0; top: 0; max-width: none; transform-origin: 0 0; pointer-events: none; }
+/* затемнение вне круга — огромной тенью от самого круга */
+.c-crop__ring { position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 0 0 999px rgba(15, 20, 30, 0.55); pointer-events: none; }
+.c-crop__zoom { display: grid; gap: 6px; font-size: var(--adm-fs-sm); color: var(--adm-text-2); }
+.c-crop__zoom input { width: 100%; accent-color: var(--cab-ink); }

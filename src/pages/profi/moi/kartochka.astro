@@ -259,9 +259,73 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
   }
 
   // ---------- портрет ----------
-  async function uploadAvatar(file: File) {
+  /**
+   * Кадрирование портрета: круглая рамка, фото двигают пальцем или мышью,
+   * масштаб — ползунком. На выходе квадрат 800×800 (Avatar сайта — кружок).
+   * Без библиотек: <img> с transform и canvas при сохранении.
+   */
+  function cropAvatar(file: File): Promise<File | null> {
+    const SIDE = 800;
+    return new Promise((done) => {
+      const src = URL.createObjectURL(file);
+      const dlg = document.createElement('dialog');
+      dlg.className = 'c-sheet';
+      dlg.innerHTML = `<div class="c-sheet__body">
+        <p class="c-pv__cap">Двигайте фото, чтобы лицо было в круге</p>
+        <div class="c-crop"><img src="${src}" alt="" draggable="false" /><span class="c-crop__ring"></span></div>
+        <label class="c-crop__zoom"><span>Масштаб</span><input type="range" min="1" max="4" step="0.01" value="1" /></label>
+        <div class="c-actions"><button class="a-btn a-btn--lg c-sheet__close" type="button" data-ok>Готово</button><button class="a-btn a-btn--lg c-add-btn" type="button" data-cancel>Отмена</button></div>
+      </div>`;
+      document.body.append(dlg);
+      const box = dlg.querySelector<HTMLElement>('.c-crop')!;
+      const img = box.querySelector('img')!;
+      const zoom = dlg.querySelector<HTMLInputElement>('input[type=range]')!;
+      let x = 0, y = 0, k = 1, base = 1;
+      const view = () => box.clientWidth;
+      // не даём увести фото так, чтобы в круге осталась пустота
+      const clamp = () => {
+        const w = img.naturalWidth * base * k, h = img.naturalHeight * base * k, v = view();
+        x = Math.min(0, Math.max(v - w, x));
+        y = Math.min(0, Math.max(v - h, y));
+      };
+      const draw = () => { clamp(); img.style.transform = `translate(${x}px, ${y}px) scale(${base * k})`; };
+      img.onload = () => {
+        base = view() / Math.min(img.naturalWidth, img.naturalHeight);
+        x = (view() - img.naturalWidth * base) / 2;
+        y = (view() - img.naturalHeight * base) / 2;
+        draw();
+      };
+      let drag: { px: number; py: number; x: number; y: number } | null = null;
+      box.addEventListener('pointerdown', (e) => { drag = { px: e.clientX, py: e.clientY, x, y }; box.setPointerCapture(e.pointerId); });
+      box.addEventListener('pointermove', (e) => { if (!drag) return; x = drag.x + e.clientX - drag.px; y = drag.y + e.clientY - drag.py; draw(); });
+      box.addEventListener('pointerup', () => { drag = null; });
+      zoom.addEventListener('input', () => {
+        // масштаб от центра круга, а не от угла
+        const c = view() / 2, next = Number(zoom.value);
+        x = c - ((c - x) * next) / k;
+        y = c - ((c - y) * next) / k;
+        k = next;
+        draw();
+      });
+      const finish = (out: File | null) => { URL.revokeObjectURL(src); dlg.close(); dlg.remove(); done(out); };
+      dlg.querySelector('[data-cancel]')!.addEventListener('click', () => finish(null));
+      dlg.addEventListener('cancel', () => finish(null));
+      dlg.querySelector('[data-ok]')!.addEventListener('click', () => {
+        const scale = base * k, v = view();
+        const canvas = document.createElement('canvas');
+        canvas.width = canvas.height = SIDE;
+        canvas.getContext('2d')!.drawImage(img, -x / scale, -y / scale, v / scale, v / scale, 0, 0, SIDE, SIDE);
+        canvas.toBlob((b) => finish(b ? new File([b], 'avatar.jpg', { type: 'image/jpeg' }) : null), 'image/jpeg', 0.9);
+      });
+      dlg.showModal();
+    });
+  }
+
+  async function uploadAvatar(picked: File) {
+    const file = await cropAvatar(picked);
+    if (!file) return;
     const fd = new FormData();
-    fd.append('avatar', await shrinkPhoto(file));
+    fd.append('avatar', file);
     try {
       rev = await api('vendor', 'PATCH', `/api/collections/revisions/records/${rev.id}`, fd);
       if (!token) token = await fileToken('vendor');
