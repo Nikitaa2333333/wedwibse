@@ -1,0 +1,45 @@
+---
+// Строка задачи админки — одна на сводку, «Заявки» и «Модерацию» (Никита,
+// 27.10: «всё сливается»). Слева обложка карточки (нет — первая буква),
+// задача плашкой цвета смысла, имя крупно, заполненность цветом (100 % —
+// зелёный, меньше — жёлтый), справа срок с часами: «осталось N ч»;
+// когда осталось мало — красной плашкой.
+import { Image } from 'astro:assets';
+import AdminIcon from './AdminIcon.astro';
+import { resolveImage, IMG_WIDTHS } from '../../lib/images';
+
+interface Props {
+  href: string;
+  name: string;
+  cover?: string;
+  task: string;
+  /** info — проверить, warn — связаться, bad — вернули */
+  tone?: 'info' | 'warn' | 'bad' | 'ok' | 'none';
+  /** заполненность анкеты, % */
+  fill?: number;
+  /** минут до конца срока проверки (24 ч); нет — показываем `when` как есть */
+  left?: number;
+  when?: string;
+  reload?: boolean;
+}
+const { href, name, cover, task, tone = 'info', fill, left, when, reload } = Astro.props;
+// мало времени — меньше 4 часов из 24
+const URGENT = 4 * 60;
+const leftText = left === undefined ? '' : left <= 0 ? 'срок вышел' : left < 60 ? `осталось ${left} мин` : `осталось ${Math.floor(left / 60)} ч`;
+---
+
+<a class="a-task" href={href} data-astro-reload={reload ? '' : undefined}>
+  {cover
+    ? <Image src={resolveImage(cover)} alt="" widths={[...IMG_WIDTHS.thumb]} sizes="48px" class="a-task__cover" />
+    : <span class="a-task__cover a-task__cover--empty" aria-hidden="true">{name.slice(0, 1)}</span>}
+  <span class="a-task__body">
+    <span class="a-task__name">{name}</span>
+    <span class="a-task__meta">
+      <span class={`a-pill a-pill--${tone}`}>{task}</span>
+      {fill !== undefined && <span class:list={['a-task__fill', fill >= 100 ? 'is-full' : 'is-part']}>заполнено {fill} %</span>}
+    </span>
+  </span>
+  {left !== undefined
+    ? <span class:list={['a-task__when', { 'a-pill a-pill--bad': left < URGENT }]}><AdminIcon name="hourglass" />{leftText}</span>
+    : when && <span class="a-task__when">{when}</span>}
+</a>

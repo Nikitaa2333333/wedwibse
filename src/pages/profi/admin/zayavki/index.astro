@@ -8,6 +8,8 @@
 import AdminShell from '../../../../components/admin/AdminShell.astro';
 import AdminIcon from '../../../../components/admin/AdminIcon.astro';
 import { APP_STATUS, PARTNER_APPS, type AppStatus } from '../../../../data/partner-demo';
+import AdminTask from '../../../../components/admin/AdminTask.astro';
+import { appCover, appFill, appLeft } from '../../../../lib/admin-tasks';
 
 const tabs: AppStatus[] = ['review', 'draft', 'returned', 'approved', 'rejected'];
 const count = (s: AppStatus) => PARTNER_APPS.filter((a) => a.status === s).length;
@@ -38,20 +40,12 @@ const count = (s: AppStatus) => PARTNER_APPS.filter((a) => a.status === s).lengt
       <table class="a-table a-table--cards" id="ap" data-atable data-tab-default="review">
         <tbody>
           {PARTNER_APPS.map((a) => {
-            const href = `/profi/admin/zayavki/${a.id}/`;
             const st = APP_STATUS[a.status];
-            const pct = Math.round((a.sections.filter((x) => x.done).length / a.sections.length) * 100);
-            const late = a.status === 'review' && (a.waitingHours ?? 0) >= 20;
+            const tone = a.status === 'review' ? 'info' : a.status === 'draft' ? 'warn' : a.status === 'returned' ? 'bad' : a.status === 'approved' ? 'ok' : 'none';
             return (
-              <tr data-href={href} data-tab={a.status} data-text={`${a.name} ${a.category}`.toLowerCase()}>
-                <td data-v={a.name}>
-                  <a class="a-name a-task__title" href={href}>{a.name}</a>
-                  <span class="a-sub"><span class={`a-dot ${st.dot ? `a-dot--${st.dot}` : ''}`}>{st.label}</span> · {a.category} · заполнено {pct} %</span>
-                </td>
-                <td class="a-num">
-                  <span class:list={['ap__when', { 'ap__when--late': late }]}>
-                    {a.status === 'review' && a.waitingHours !== undefined ? `${a.waitingHours} ч из 24` : a.lastEdit}
-                  </span>
+              <tr data-href={`/profi/admin/zayavki/${a.id}/`} data-tab={a.status} data-text={`${a.name} ${a.category}`.toLowerCase()}>
+                <td class="a-task-cell" data-v={a.name}>
+                  <AdminTask href={`/profi/admin/zayavki/${a.id}/`} name={a.name} cover={appCover(a)} task={a.status === 'draft' ? 'Связаться' : st.label} tone={tone} fill={appFill(a)} left={appLeft(a)} when={a.lastEdit} />
                 </td>
               </tr>
             );
@@ -63,8 +57,3 @@ const count = (s: AppStatus) => PARTNER_APPS.filter((a) => a.status === s).lengt
   </section>
 </AdminShell>
 
-<style>
-  #ap :global(td) { padding-block: 14px; vertical-align: middle; }
-  .ap__when { font-weight: 500; white-space: nowrap; }
-  .ap__when--late { color: var(--st-bad-text); }
-</style>

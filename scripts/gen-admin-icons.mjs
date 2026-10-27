@@ -28,6 +28,7 @@ const MAP = {
   noContacts: 'phone-linear',
   photo: 'gallery-linear',
   clock: 'clock-circle-linear',
+  hourglass: 'hourglass-line-linear',
   text: 'document-text-linear',
   notes: 'chat-round-dots-linear',
   history: 'history-linear',

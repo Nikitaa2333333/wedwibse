@@ -9,25 +9,31 @@ import { CATALOG } from '../../../lib/admin-catalog';
 import { plural } from '../../../lib/moderation';
 import { DEMO_REVISIONS } from '../../../data/moderation-demo';
 import { COMPLAINTS } from '../../../data/admin-demo';
-import { APP_STATUS, PARTNER_APPS } from '../../../data/partner-demo';
+import { PARTNER_APPS } from '../../../data/partner-demo';
+import AdminTask from '../../../components/admin/AdminTask.astro';
+import type { AdminIconName } from '../../../lib/admin-icons';
+import { appCover, appFill, appLeft, waitedMin, soonest, leftLabel, DEADLINE_MIN } from '../../../lib/admin-tasks';
 
 const review = PARTNER_APPS.filter((a) => a.status === 'review');
 const drafts = PARTNER_APPS.filter((a) => a.status === 'draft');
 const fresh = [...review, ...drafts];
-const edits = DEMO_REVISIONS.filter((r) => r.state === 'review').length;
+const editsList = DEMO_REVISIONS.filter((r) => r.state === 'review');
+const edits = editsList.length;
 const complaints = COMPLAINTS.filter((c) => c.status === 'new').length;
 
-// Сводка — список ДЕЙСТВИЙ (Никита, 27.10): что сделать и сколько, срок
-// рядом. Число внутри фразы, а не отдельной цифрой над подписью — строки
-// одной высоты и не прыгают. Пустое действие не показываем.
-const actions = [
-  { n: review.length, text: `Проверить ${review.length} ${plural(review.length, 'анкету', 'анкеты', 'анкет')}`, note: 'срок 24 ч', href: '/profi/admin/zayavki/#review', bad: true },
-  { n: drafts.length, text: `Связаться: ${drafts.length} не ${plural(drafts.length, 'закончил', 'закончили', 'закончили')} анкету`, note: 'перезвонить или написать', href: '/profi/admin/zayavki/#draft' },
-  { n: edits, text: `Проверить ${edits} ${plural(edits, 'правку', 'правки', 'правок')} карточек`, note: 'срок 24 ч', href: '/profi/admin/moderaciya/' },
-  { n: complaints, text: `Разобрать ${complaints} ${plural(complaints, 'жалобу', 'жалобы', 'жалоб')}`, note: 'на карточки', href: '/profi/admin/zhaloby/' },
+// Сводка — список ДЕЙСТВИЙ (Никита, 27.10): что сделать и сколько. Срок —
+// не общее «24 ч», а ближайший по этому действию; мало времени — красным.
+const URGENT = 4 * 60;
+const nextApp = soonest(review.map(appLeft));
+const nextEdit = soonest(editsList.map((r) => DEADLINE_MIN - waitedMin(r.waiting)));
+const due = (m?: number) => (m === undefined ? '' : m <= 0 ? 'срок вышел' : `ближайший срок через ${leftLabel(m)}`);
+const actions: { n: number; text: string; note: string; urgent?: boolean; href: string; icon: AdminIconName; tone: string }[] = [
+  { n: review.length, text: `Проверить ${review.length} ${plural(review.length, 'анкету', 'анкеты', 'анкет')}`, note: due(nextApp), urgent: (nextApp ?? DEADLINE_MIN) < URGENT, href: '/profi/admin/zayavki/#review', icon: 'partners', tone: 'info' },
+  { n: drafts.length, text: `Связаться: ${drafts.length} не ${plural(drafts.length, 'закончил', 'закончили', 'закончили')} анкету`, note: 'перезвонить или написать', href: '/profi/admin/zayavki/#draft', icon: 'phone', tone: 'warn' },
+  { n: edits, text: `Проверить ${edits} ${plural(edits, 'правку', 'правки', 'правок')}`, note: due(nextEdit), urgent: (nextEdit ?? DEADLINE_MIN) < URGENT, href: '/profi/admin/moderaciya/', icon: 'moderation', tone: 'info' },
+  { n: complaints, text: `Разобрать ${complaints} ${plural(complaints, 'жалобу', 'жалобы', 'жалоб')}`, note: 'на карточки', href: '/profi/admin/zhaloby/', icon: 'complaints', tone: 'bad' },
 ].filter((a) => a.n > 0);
 const venues = CATALOG.filter((c) => c.kind === 'venue').length;
-const percent = (a: (typeof fresh)[number]) => Math.round((a.sections.filter((x) => x.done).length / a.sections.length) * 100);
 ---
 
 <AdminShell title="Сводка" section="overview">
@@ -35,9 +41,10 @@ const percent = (a: (typeof fresh)[number]) => Math.round((a.sections.filter((x)
 
   <section class="a-acts" aria-label="Что сделать">
     {actions.map((a) => (
-      <a class:list={['a-act', { 'a-act--bad': a.bad }]} href={a.href}>
+      <a class={`a-act a-act--${a.tone}`} href={a.href}>
+        <span class="a-act__ic"><AdminIcon name={a.icon} /></span>
         <span class="a-act__text">{a.text}</span>
-        <span class="a-act__note">{a.note}</span>
+        <span class:list={['a-act__note', { 'a-pill a-pill--bad': a.urgent }]}>{a.note}</span>
         <AdminIcon name="next" class="a-act__go" />
       </a>
     ))}
@@ -49,21 +56,18 @@ const percent = (a: (typeof fresh)[number]) => Math.round((a.sections.filter((x)
       <a class="a-more" href="/profi/admin/zayavki/">Все</a>
     </div>
     <div class="a-tasks">
-      {fresh.map((a) => {
-        const href = `/profi/admin/zayavki/${a.id}/`;
-        const late = a.status === 'review' && (a.waitingHours ?? 0) >= 20;
-        return (
-          <a class="a-task" href={href}>
-            <span class="a-task__body">
-              <span class="a-task__title">{a.status === 'review' ? 'Проверить анкету' : 'Связаться'}</span>
-              <span class="a-task__sub">{a.name} · {a.category} · заполнено {percent(a)} %</span>
-            </span>
-            <span class:list={['a-task__when', { 'a-task__when--late': late }]}>
-              {a.status === 'review' ? `${a.waitingHours} ч из 24` : a.lastEdit}
-            </span>
-          </a>
-        );
-      })}
+      {fresh.map((a) => (
+        <AdminTask
+          href={`/profi/admin/zayavki/${a.id}/`}
+          name={a.name}
+          cover={appCover(a)}
+          task={a.status === 'review' ? 'Проверить анкету' : 'Связаться'}
+          tone={a.status === 'review' ? 'info' : 'warn'}
+          fill={appFill(a)}
+          left={appLeft(a)}
+          when={a.lastEdit}
+        />
+      ))}
     </div>
   </section>
 

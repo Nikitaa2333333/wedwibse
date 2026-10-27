@@ -4,19 +4,15 @@
 // не одобрим; «Проверено» — история решений. Порядок — по сроку (ответ до
 // 24 ч, дольше ждущий выше). Вживую — коллекция `revisions` в PocketBase;
 // сейчас — примеры поверх настоящих карточек (moderation-demo.ts).
-import { Image } from 'astro:assets';
 import AdminShell from '../../../../components/admin/AdminShell.astro';
 import AdminIcon from '../../../../components/admin/AdminIcon.astro';
-import { resolveImage, IMG_WIDTHS } from '../../../../lib/images';
-import { buildReview, plural } from '../../../../lib/moderation';
+import { buildReview } from '../../../../lib/moderation';
+import AdminTask from '../../../../components/admin/AdminTask.astro';
+import { waitedMin, DEADLINE_MIN } from '../../../../lib/admin-tasks';
 import { QUEUE, STATE } from '../../../../data/moderation-demo';
 
 const reviews = QUEUE.map(buildReview);
 const onReview = reviews.filter((r) => r.rev.state === 'review').length;
-const minutes = (s?: string) => {
-  const m = s?.match(/(\d+)\s*ч\s*(\d+)/);
-  return m ? Number(m[1]) * 60 + Number(m[2]) : 0;
-};
 ---
 
 <AdminShell title="Модерация" section="moderation">
@@ -43,22 +39,17 @@ const minutes = (s?: string) => {
           {reviews.map((r) => {
             const href = `/profi/admin/moderaciya/${r.rev.id}/`;
             const done = r.rev.state !== 'review';
-            const late = minutes(r.rev.waiting) >= 20 * 60;
             return (
               <tr data-href={href} data-tab={done ? 'done' : 'review'} data-text={r.card.name.toLowerCase()}>
-                <td data-v={r.card.name}>
-                  <div class="a-who">
-                    {r.photos.after[0] && <Image src={resolveImage(r.photos.after[0])} alt="" widths={[...IMG_WIDTHS.thumb]} sizes="40px" class="a-thumb mq__thumb" />}
-                    <div>
-                      <a class="a-name a-task__title" href={href}>{r.rev.first ? 'Проверить новую карточку' : 'Проверить правку'}</a>
-                      <span class="a-sub">{r.card.name} · {r.role}</span>
-                    </div>
-                  </div>
-                </td>
-                <td class="a-num" data-v={minutes(r.rev.waiting)}>
-                  {done
-                    ? <span class={`a-dot a-dot--${STATE[r.rev.state].dot}`}>{STATE[r.rev.state].label}</span>
-                    : <span class:list={['mq__when', { 'mq__when--late': late }]}>{r.rev.waiting}</span>}
+                <td class="a-task-cell" data-v={waitedMin(r.rev.waiting)}>
+                  <AdminTask
+                    href={href}
+                    name={r.card.name}
+                    cover={r.photos.after[0]}
+                    task={done ? STATE[r.rev.state].label : r.rev.first ? 'Новая карточка' : 'Правка'}
+                    tone={done ? (STATE[r.rev.state].dot === 'ok' ? 'ok' : 'bad') : 'info'}
+                    left={done ? undefined : DEADLINE_MIN - waitedMin(r.rev.waiting)}
+                  />
                 </td>
               </tr>
             );
@@ -70,18 +61,11 @@ const minutes = (s?: string) => {
   </section>
 </AdminShell>
 
-<style>
-  .mq__thumb { width: 40px; height: 40px; }
-  #mq :global(td) { padding-block: 14px; vertical-align: middle; }
-  .mq__when, :global(.mq__when) { font-weight: 500; white-space: nowrap; }
-  .mq__when--late { color: var(--st-bad-text); }
-</style>
 
 <script>
   import { api, esc, session } from '../../../../lib/cabinet-api';
+  import { ADMIN_ICONS } from '../../../../lib/admin-icons';
 
-  const KIND: Record<string, string> = { venue: 'площадка' };
-  const fmt = (d: string) => (d ? new Date(d.replace(' ', 'T')).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '');
 
   // Живые правки из базы (revisions, status = review) встают в общий список
   // первыми, той же строкой, что примеры; блока «Из базы» нет (Никита, 27.10).
@@ -93,13 +77,18 @@ const minutes = (s?: string) => {
     rows.dataset.live = '1';
     try {
       const res = await api('moderator', 'GET', `/api/collections/revisions/records?perPage=100&sort=submittedAt&expand=owner&filter=${encodeURIComponent('status = "review"')}`);
+      const hourglass = '<svg viewBox="0 0 24 24" aria-hidden="true">' + ADMIN_ICONS.hourglass + '</svg>';
       const html = res.items.map((r: any) => {
         const href = `/profi/admin/moderaciya/pravka/?id=${r.id}`;
-        const role = KIND[r.kind] ?? r.categorySlug;
         const name = r.data?.name || 'Без названия';
-        const task = r.venue || r.specialist ? 'Проверить правку' : 'Проверить новую карточку';
+        const task = r.venue || r.specialist ? 'Правка' : 'Новая карточка';
+        const left = 24 * 60 - Math.round((Date.now() - new Date(String(r.submittedAt).replace(' ', 'T')).getTime()) / 60000);
+        const leftText = left <= 0 ? 'срок вышел' : left < 60 ? `осталось ${left} мин` : `осталось ${Math.floor(left / 60)} ч`;
         // data-astro-reload: переходом ClientRouter разбор не запускался (26.10)
-        return `<tr data-href="${href}" data-tab="review" data-text="${esc(name.toLowerCase())}"><td><div class="a-who"><div><a class="a-name a-task__title" href="${href}" data-astro-reload>${task}</a><span class="a-sub">${esc(name)} · ${esc(role)}</span></div></div></td><td class="a-num"><span class="mq__when">${esc(fmt(r.submittedAt))}</span></td></tr>`;
+        return `<tr data-href="${href}" data-tab="review" data-text="${esc(name.toLowerCase())}"><td class="a-task-cell"><a class="a-task" href="${href}" data-astro-reload>`
+          + `<span class="a-task__cover a-task__cover--empty" aria-hidden="true">${esc(name.slice(0, 1))}</span>`
+          + `<span class="a-task__body"><span class="a-task__name">${esc(name)}</span><span class="a-task__meta"><span class="a-pill a-pill--info">${task}</span></span></span>`
+          + `<span class="a-task__when${left < 4 * 60 ? ' a-pill a-pill--bad' : ''}">${hourglass}${leftText}</span></a></td></tr>`;
       }).join('');
       rows.insertAdjacentHTML('afterbegin', html);
       const n = document.querySelector<HTMLElement>('[data-mq-n]');
