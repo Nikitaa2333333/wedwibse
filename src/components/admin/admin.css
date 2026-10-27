@@ -164,7 +164,7 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
 @media (hover: hover) {
   .a-task:hover { background: var(--adm-hover); }
   /* на подсвеченной строке серая плашка задачи растворялась — белой */
-  .a-task:hover .a-pill:not(.a-pill--bad) { background: var(--adm-card); }
+  .a-task:hover .a-pill--none { background: var(--adm-card); }
 }
 .a-task__cover { width: 48px; height: 60px; border-radius: 10px; object-fit: cover; display: block; background: var(--adm-bg); }
 .a-task__cover--empty { display: grid; place-items: center; font-size: 18px; font-weight: 600; color: var(--adm-text-2); }
@@ -193,6 +193,10 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
 .a-pill--warn { background: var(--st-warn); color: var(--st-warn-ink); }
 .a-pill--bad { background: var(--st-bad); color: var(--st-bad-fg); }
 .a-pill--ok { background: var(--st-ok); color: var(--st-ok-ink); }
+/* задачи: светлые тона, чтобы не кричали — проверить / не закончил */
+.a-pill--check { background: color-mix(in srgb, var(--st-ok) 32%, var(--adm-card)); }
+.a-pill--wait { background: color-mix(in srgb, var(--st-warn) 45%, var(--adm-card)); }
+.a-pill__n { margin-left: 4px; font-weight: 500; }
 .a-task__when.a-pill { height: 28px; color: var(--st-bad-fg); }
 
 /* общая строка без плашки: сколько всего на сайте */

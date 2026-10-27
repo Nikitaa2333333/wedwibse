@@ -121,7 +121,9 @@ export const PARTNER_APPS: PartnerApp[] = [
     id: 'pustovoy',
     name: 'Максим Пустовой',
     category: 'Фотограф',
-    status: 'draft',
+    status: 'review',
+    // ПРИМЕР срока, который горит: ждёт 21 ч из 24 — в админке красным
+    waitingHours: 21,
     started: '20.10',
     lastEdit: '4 дня назад',
     via: 'MAX',

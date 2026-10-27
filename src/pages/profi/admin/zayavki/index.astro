@@ -39,9 +39,9 @@ const count = (s: AppStatus) => PARTNER_APPS.filter((a) => a.status === s).lengt
     <div class="a-table-wrap">
       <table class="a-table a-table--cards" id="ap" data-atable data-tab-default="review">
         <tbody>
-          {PARTNER_APPS.map((a) => {
+          {[...PARTNER_APPS].sort((a, b) => (appLeft(a) ?? Infinity) - (appLeft(b) ?? Infinity)).map((a) => {
             const st = APP_STATUS[a.status];
-            const tone = a.status === 'review' ? 'info' : a.status === 'draft' ? 'warn' : a.status === 'returned' ? 'bad' : a.status === 'approved' ? 'ok' : 'none';
+            const tone = a.status === 'review' ? 'check' : a.status === 'draft' ? 'wait' : 'none';
             return (
               <tr data-href={`/profi/admin/zayavki/${a.id}/`} data-tab={a.status} data-text={`${a.name} ${a.category}`.toLowerCase()}>
                 <td class="a-task-cell" data-v={a.name}>

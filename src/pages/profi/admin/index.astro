@@ -14,7 +14,8 @@ import AdminTask from '../../../components/admin/AdminTask.astro';
 import type { AdminIconName } from '../../../lib/admin-icons';
 import { appCover, appFill, appLeft, waitedMin, soonest, leftLabel, DEADLINE_MIN } from '../../../lib/admin-tasks';
 
-const review = PARTNER_APPS.filter((a) => a.status === 'review');
+// горящий срок — первым
+const review = PARTNER_APPS.filter((a) => a.status === 'review').sort((a, b) => (appLeft(a) ?? 0) - (appLeft(b) ?? 0));
 const drafts = PARTNER_APPS.filter((a) => a.status === 'draft');
 const fresh = [...review, ...drafts];
 const editsList = DEMO_REVISIONS.filter((r) => r.state === 'review');
@@ -62,7 +63,7 @@ const venues = CATALOG.filter((c) => c.kind === 'venue').length;
           name={a.name}
           cover={appCover(a)}
           task={a.status === 'review' ? 'Проверить анкету' : 'Не закончил анкету'}
-          tone={a.status === 'review' ? 'info' : 'warn'}
+          tone={a.status === 'review' ? 'check' : 'wait'}
           fill={appFill(a)}
           left={appLeft(a)}
           when={a.lastEdit}

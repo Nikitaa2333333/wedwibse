@@ -1,9 +1,9 @@
 ---
 // Строка задачи админки — одна на сводку, «Заявки» и «Модерацию» (Никита,
 // 27.10). Слева обложка карточки (нет — первая буква), имя крупно, под ним
-// задача серой плашкой и «50 %». Цвет — только там, где горит: срок меньше
-// 4 ч — красной плашкой. Остальное серым (Никита: «беспредел в цветах»).
-// tone остаётся в данных на будущее, но на вид не влияет.
+// задача плашкой вместе с процентом: «Проверить анкету · 100 %».
+// Цвет (Никита, 27.10): проверить — светло-зелёный, не закончил —
+// светло-жёлтый, остальное серым; срок меньше 4 ч — красной плашкой.
 import { Image } from 'astro:assets';
 import AdminIcon from './AdminIcon.astro';
 import { resolveImage, IMG_WIDTHS } from '../../lib/images';
@@ -13,8 +13,8 @@ interface Props {
   name: string;
   cover?: string;
   task: string;
-  /** смысл задачи — пока не красим, см. шапку */
-  tone?: 'info' | 'warn' | 'bad' | 'ok' | 'none';
+  /** check — проверить (светло-зелёный), wait — не закончил (светло-жёлтый), остальное серым */
+  tone?: 'check' | 'wait' | 'none';
   /** заполненность анкеты, % */
   fill?: number;
   /** минут до конца срока проверки (24 ч); нет — показываем `when` как есть */
@@ -22,7 +22,7 @@ interface Props {
   when?: string;
   reload?: boolean;
 }
-const { href, name, cover, task, fill, left, when, reload } = Astro.props;
+const { href, name, cover, task, tone = 'none', fill, left, when, reload } = Astro.props;
 // мало времени — меньше 4 часов из 24
 const URGENT = 4 * 60;
 const leftText = left === undefined ? '' : left <= 0 ? 'срок вышел' : left < 60 ? `осталось ${left} мин` : `осталось ${Math.floor(left / 60)} ч`;
@@ -35,11 +35,10 @@ const leftText = left === undefined ? '' : left <= 0 ? 'срок вышел' : l
   <span class="a-task__body">
     <span class="a-task__name">{name}</span>
     <span class="a-task__meta">
-      <span class="a-pill">{task}</span>
-      {fill !== undefined && <span class="a-task__fill">{fill} %</span>}
+      <span class={`a-pill a-pill--${tone}`}>{task}{fill !== undefined && <span class="a-pill__n">· {fill} %</span>}</span>
     </span>
   </span>
   {left !== undefined
-    ? <span class:list={['a-task__when', { 'a-pill a-pill--bad': left < URGENT }]}><AdminIcon name="hourglass" />{leftText}</span>
+    ? <span class:list={['a-task__when', { 'a-pill a-pill--bad': left < URGENT }]}><AdminIcon name="clock" />{leftText}</span>
     : when && <span class="a-task__when">{when}</span>}
 </a>
