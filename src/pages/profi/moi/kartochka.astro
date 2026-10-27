@@ -271,15 +271,13 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       const dlg = document.createElement('dialog');
       dlg.className = 'c-sheet';
       dlg.innerHTML = `<div class="c-sheet__body">
-        <p class="c-pv__cap">Двигайте фото, чтобы лицо было в круге</p>
+        <p class="c-pv__cap">Двигайте фото, приближайте двумя пальцами</p>
         <div class="c-crop"><img src="${src}" alt="" draggable="false" /><span class="c-crop__ring"></span></div>
-        <label class="c-crop__zoom"><span>Масштаб</span><input type="range" min="1" max="4" step="0.01" value="1" /></label>
         <div class="c-actions"><button class="a-btn a-btn--lg c-sheet__close" type="button" data-ok>Готово</button><button class="a-btn a-btn--lg c-add-btn" type="button" data-cancel>Отмена</button></div>
       </div>`;
       document.body.append(dlg);
       const box = dlg.querySelector<HTMLElement>('.c-crop')!;
       const img = box.querySelector('img')!;
-      const zoom = dlg.querySelector<HTMLInputElement>('input[type=range]')!;
       let x = 0, y = 0, k = 1, base = 1;
       const view = () => box.clientWidth;
       // не даём увести фото так, чтобы в круге осталась пустота
@@ -295,18 +293,37 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         y = (view() - img.naturalHeight * base) / 2;
         draw();
       };
-      let drag: { px: number; py: number; x: number; y: number } | null = null;
-      box.addEventListener('pointerdown', (e) => { drag = { px: e.clientX, py: e.clientY, x, y }; box.setPointerCapture(e.pointerId); });
-      box.addEventListener('pointermove', (e) => { if (!drag) return; x = drag.x + e.clientX - drag.px; y = drag.y + e.clientY - drag.py; draw(); });
-      box.addEventListener('pointerup', () => { drag = null; });
-      zoom.addEventListener('input', () => {
-        // масштаб от центра круга, а не от угла
-        const c = view() / 2, next = Number(zoom.value);
-        x = c - ((c - x) * next) / k;
-        y = c - ((c - y) * next) / k;
+      // масштаб вокруг точки (между пальцами / под курсором), от 1 до 4
+      const zoomAt = (next: number, cx: number, cy: number) => {
+        next = Math.min(4, Math.max(1, next));
+        x = cx - ((cx - x) * next) / k;
+        y = cy - ((cy - y) * next) / k;
         k = next;
         draw();
+      };
+      // один палец — двигаем, два — приближаем (как в Telegram и на айфоне)
+      const pts = new Map<number, { x: number; y: number }>();
+      let last: { x: number; y: number; dist: number } | null = null;
+      const local = (p: { x: number; y: number }) => { const r = box.getBoundingClientRect(); return { x: p.x - r.left, y: p.y - r.top }; };
+      const gesture = () => {
+        const [a, b] = [...pts.values()];
+        if (!b) return { x: a.x, y: a.y, dist: 0 };
+        return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, dist: Math.hypot(a.x - b.x, a.y - b.y) };
+      };
+      box.addEventListener('pointerdown', (e) => { box.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); last = gesture(); });
+      box.addEventListener('pointermove', (e) => {
+        if (!pts.has(e.pointerId) || !last) return;
+        pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        const g = gesture();
+        x += g.x - last.x;
+        y += g.y - last.y;
+        if (g.dist && last.dist) { const c = local(g); zoomAt((k * g.dist) / last.dist, c.x, c.y); } else draw();
+        last = g;
       });
+      const up = (e: PointerEvent) => { pts.delete(e.pointerId); last = pts.size ? gesture() : null; };
+      box.addEventListener('pointerup', up);
+      box.addEventListener('pointercancel', up);
+      box.addEventListener('wheel', (e) => { e.preventDefault(); const c = local({ x: e.clientX, y: e.clientY }); zoomAt(k * Math.exp(-e.deltaY / 400), c.x, c.y); }, { passive: false });
       const finish = (out: File | null) => { URL.revokeObjectURL(src); dlg.close(); dlg.remove(); done(out); };
       dlg.querySelector('[data-cancel]')!.addEventListener('click', () => finish(null));
       dlg.addEventListener('cancel', () => finish(null));
