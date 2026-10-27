@@ -22,7 +22,7 @@ const { title, bare = false, section } = Astro.props;
 const items = [{ key: 'cards', href: '/profi/moi/', label: 'Карточки', icon: 'cards' }] as const;
 ---
 
-<Layout title={`${title} — Кабинет WED Secrets`} description="Кабинет подрядчика и площадки WED Secrets.">
+<Layout title={`${title} — Кабинет Wed Secrets`} description="Кабинет подрядчика и площадки Wed Secrets.">
   <Fragment slot="head">
     <meta name="robots" content="noindex, nofollow" />
     <link rel="preload" href="/fonts/inter-cyrillic.woff2" as="font" type="font/woff2" crossorigin />
@@ -31,7 +31,7 @@ const items = [{ key: 'cards', href: '/profi/moi/', label: 'Карточки', i
   <div class="adm cab">
     <header class="adm-head">
       <a class="adm-logo" href="/profi/moi/">
-        <span class="adm-logo__name">WED Secrets</span>
+        <span class="adm-logo__name">Wed Secrets</span>
         <span class="adm-logo__tag">кабинет</span>
       </a>
       {!bare && (

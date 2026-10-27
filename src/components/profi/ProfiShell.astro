@@ -37,7 +37,7 @@ interface Props {
 
 const {
   title,
-  description = 'WED Secrets для подрядчиков и площадок: карточка в свадебном каталоге Москвы.',
+  description = 'Wed Secrets для подрядчиков и площадок: карточка в свадебном каталоге Москвы.',
   action,
   prototype = true,
   look = 'tech',
@@ -55,7 +55,7 @@ const menu = [
 ] as const;
 ---
 
-<Layout title={`${title} — WED Secrets для профи`} description={description}>
+<Layout title={`${title} — Wed Secrets для профи`} description={description}>
   <Fragment slot="head">
     {prototype && <meta name="robots" content="noindex, nofollow" />}
   </Fragment>
@@ -64,7 +64,7 @@ const menu = [
     <header class="pbar">
       <div class:list={['pbar__in container', { 'pbar__in--center': brand }]}>
         <a class="pbar__brand" href="/profi/">
-          <span class="pbar__name">{brand ?? 'WED Secrets'}</span>
+          <span class="pbar__name">{brand ?? 'Wed Secrets'}</span>
           {!brand && <span class="pbar__for">для профи</span>}
         </a>
         {action && <a class="pill pill--sm pbar__btn" href={action.href}>{action.label}</a>}
@@ -76,7 +76,7 @@ const menu = [
     {look === 'promo' && (
       <footer class="pfoot theme-dark">
         <div class="pfoot__in container">
-          <p class="t-caption">WED Secrets — свадебный каталог площадок и подрядчиков Москвы и области.</p>
+          <p class="t-caption">Wed Secrets — свадебный каталог площадок и подрядчиков Москвы и области.</p>
           <p class="t-caption"><a href="/">Каталог для пар</a></p>
         </div>
       </footer>
