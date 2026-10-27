@@ -81,9 +81,10 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
   width: 100%;
   height: 48px;
   padding: 0 14px;
-  border: 1px solid var(--adm-line);
+  /* без обводки, серой подложкой на белой карточке (27.10, как в кабинете) */
+  border: 1px solid transparent;
   border-radius: var(--adm-radius-btn);
-  background: var(--adm-card);
+  background: var(--adm-bg);
   color: var(--adm-text);
   font: inherit;
   font-size: 16px;
@@ -209,7 +210,7 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
   white-space: nowrap;
 }
 @media (hover: hover) { .a-btn:hover { background: var(--adm-hover); } }
-.a-btn--primary { background: var(--adm-primary); border-color: var(--adm-primary); color: #fff; }
+.a-btn--primary { background: var(--adm-primary); border-color: var(--adm-primary); color: #fff; border-radius: 999px; }
 @media (hover: hover) { .a-btn--primary:hover { background: var(--adm-primary-hover); } }
 .a-btn--soft { background: var(--adm-bg); border-color: transparent; }
 .a-btn--sm { height: 30px; padding: 0 10px; font-size: 13px; }
