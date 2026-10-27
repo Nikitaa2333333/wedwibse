@@ -94,6 +94,13 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
 .a-login__error { color: var(--st-bad-text); font-size: var(--adm-fs); line-height: var(--adm-lh); }
 .a-login__error[hidden] { display: none; }
 .a-login__note { font-size: var(--adm-fs-sm); line-height: 16px; color: var(--adm-text-2); }
+/* Главная кнопка экрана прибита к низу телефона (Никита, 27.10) — приём
+   сайта (StickyCta) и кабинета (.c-bar): капсула на растворении в цвет поля,
+   без плашки. На ПК — на своём месте под полями. */
+.a-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; padding: var(--cab-bar-fade) var(--s-4) calc(16px + env(safe-area-inset-bottom)); background: linear-gradient(to bottom, transparent 0, color-mix(in srgb, var(--adm-bg) 55%, transparent) 40%, var(--adm-bg) calc(var(--cab-bar-fade) - 8px)); pointer-events: none; }
+.a-bar > * { pointer-events: auto; }
+.a-bar .a-btn--lg { height: 52px; font-size: 16px; }
+@media (min-width: 1024px) { .a-bar { position: static; padding: 0; background: none; } }
 
 
 /* ---------- раскладка: меню слева + рабочая область ---------- */
