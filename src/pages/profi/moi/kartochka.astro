@@ -85,8 +85,21 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       data.capacityBanquet = max('banquet');
       data.capacityBuffet = max('buffet');
     } else {
-      const p = priceFrom({ tariffs: data.tariffs });
-      data.priceFrom = p ?? '';
+      // цена по способу. Тарифы, ушедшие при смене способа, лежат в
+      // tariffsDraft — вернулся к тарифам, они на месте. В базу и на сайт
+      // идут только priceFrom / priceNote / tariffs (хук, pb-pull-cabinet).
+      const mode = priceMode();
+      if (mode !== 'tariffs' && data.tariffs?.length) { data.tariffsDraft = data.tariffs; data.tariffs = []; }
+      if (mode === 'tariffs' && !data.tariffs?.length && data.tariffsDraft?.length) { data.tariffs = data.tariffsDraft; delete data.tariffsDraft; }
+      if (mode === 'tariffs') {
+        const ts = (data.tariffs ?? []).filter((t: any) => Number(String(t?.price ?? '').replace(/\s/g, '')) > 0);
+        const cheapest = ts.sort((a: any, b: any) => Number(a.price) - Number(b.price))[0];
+        data.priceFrom = cheapest ? Number(String(cheapest.price).replace(/\s/g, '')) : '';
+        // «за что» у цены «от» — единица самого дешёвого тарифа, иначе
+        // визитка подставит общее «за 6 часов работы»
+        data.priceNote = cheapest?.unit ?? '';
+      }
+      if (mode === 'request') data.priceFrom = '';
       if (data.contacts?.maxSame) data.contacts.max = data.contacts.phone ?? '';
       // имя в каталоге — «Имя Фамилия»; у студии фамилии нет
       data.name = [data.firstName, data.lastName].map((x) => String(x ?? '').trim()).filter(Boolean).join(' ');
@@ -211,50 +224,67 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         (items.length ? `<ul>${items.map((l) => `<li>${esc(l.replace(/^[—–-]\s*/, ''))}</li>`).join('')}</ul>` : '');
     }).join('');
   }
-  function pricePreview(): string {
-    const ts = (data.tariffs ?? []).filter((t: any) => String(t?.name ?? '').trim() || Number(t?.price) > 0);
-    const p = priceFrom({ tariffs: ts });
-    const cards = ts.map((t: any) => {
-      const inc = lines(t.includes).filter(Boolean).map((l) => l.replace(/^[—–-]\s*/, ''));
-      return `<article class="c-pv-tariff">
-        <header><h4>${esc(t.name || 'Пакет')}</h4><b>${Number(t.price) > 0 ? rub(Number(String(t.price).replace(/\s/g, ''))) : '—'}</b></header>
-        ${inc.length ? `<ul>${inc.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
-      </article>`;
-    }).join('');
-    return `<div class="c-pv">
-      <p class="c-pv__cap">В каталоге, рядом с именем</p>
-      <p class="c-pv-from">${p ? `от ${rub(p)}` : 'добавьте пакет с ценой'}</p>
-      ${cards ? `<p class="c-pv__cap">На вашей странице</p><div class="c-pv-tariffs">${cards}</div>` : ''}
-    </div>`;
+  /** способ цены; у старых черновиков без него — по тому, что заполнено */
+  const PRICE_UNITS = ['за час', 'за 6 часов', 'за день', 'за кг', 'за гостя', 'за проект'];
+  function priceMode(): 'one' | 'tariffs' | 'request' {
+    if (data.priceMode) return data.priceMode;
+    return data.tariffs?.length ? 'tariffs' : 'one';
   }
-  function previewHtml(kindOf: string): string {
-    if (kindOf === 'tagline') {
-      const cover = rev.photos?.[0] ? `<img src="${fileUrl(rev, rev.photos[0], { thumb: '400x0', token })}" alt="" />` : '';
-      const p = priceFrom({ tariffs: data.tariffs });
-      return `<p class="c-pv__cap">Так карточка выглядит в каталоге</p>
-        <div class="c-pv c-pv-card">
-          <div class="c-pv-card__img">${cover}</div>
-          <p class="c-pv-card__name">${esc(data.name || 'Имя Фамилия')}</p>
-          <p class="c-pv-card__tag">${esc(data.tagline || 'Строка под именем')}</p>
-          ${p ? `<p class="c-pv-card__price">от ${rub(p)}</p>` : ''}
-        </div>`;
-    }
-    if (kindOf === 'text') {
+
+  /** цена так, как её пишет визитка: «от N ₽» и под ней «за что» */
+  function priceLine(): { label: string; note: string } {
+    const p = priceFrom(data);
+    const mode = priceMode();
+    if (mode === 'request' || !p) return { label: 'Цена по запросу', note: mode === 'request' ? String(data.priceNote ?? '') : '' };
+    const note = mode === 'tariffs' ? '' : String(data.priceNote ?? '');
+    return { label: `от ${rub(p)}`, note };
+  }
+  // Превью — кусок самой визитки, без подписей «так будет»: имя и цена
+  // первого экрана, разделы текста, тарифы. Открывается одинаково для всех
+  // разделов — значком «?» у заголовка раздела.
+  function previewHtml(key: SectionKey): string {
+    const price = priceLine();
+    const head = `<div class="c-pv-head">
+        <h2>${esc(data.name || 'Имя Фамилия')}</h2>
+        ${data.tagline ? `<p class="c-pv-head__tag">${esc(data.tagline)}</p>` : ''}
+        <p class="c-pv-head__price">${price.label}</p>
+        ${price.note ? `<p class="c-pv-head__note">${esc(price.note)}</p>` : ''}
+      </div>`;
+    if (key === 'tekst') {
       const secs = (data.sections ?? []).filter((x: any) => String(x?.title ?? '').trim() || String(x?.body ?? '').trim());
-      return `<p class="c-pv__cap">Так текст ляжет на вашей странице</p>
-        <div class="c-pv c-pv-story">${secs.map((x: any) => `<section>${x.title ? `<h3>${esc(x.title)}</h3>` : ''}${storyHtml(x.body)}</section>`).join('') || '<p>Текста пока нет.</p>'}</div>`;
+      return `<div class="c-pv c-pv-story">${secs.map((x: any) => `<section>${x.title ? `<h3>${esc(x.title)}</h3>` : ''}${storyHtml(x.body)}</section>`).join('') || '<p>Текста пока нет.</p>'}</div>`;
     }
-    return pricePreview();
+    if (key === 'prays') {
+      const ts = priceMode() === 'tariffs' ? (data.tariffs ?? []).filter((t: any) => String(t?.name ?? '').trim() && Number(t?.price) > 0) : [];
+      const cards = ts.map((t: any) => {
+        const inc = lines(t.includes).filter(Boolean).map((l) => l.replace(/^[—–-]\s*/, ''));
+        return `<article class="c-pv-tariff">
+          <header><h4>${esc(t.name)}</h4><b>${rub(Number(String(t.price).replace(/\s/g, '')))}${t.unit ? `<small>${esc(t.unit)}</small>` : ''}</b></header>
+          ${inc.length ? `<ul>${inc.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
+        </article>`;
+      }).join('');
+      return `<div class="c-pv">${head}${cards ? `<section class="c-pv-story"><h3>Тарифы</h3><div class="c-pv-tariffs">${cards}</div></section>` : ''}</div>`;
+    }
+    // основное: карточка в каталоге — обложка, имя, строка под именем, цена
+    const cover = rev.photos?.[0] ? `<img src="${fileUrl(rev, rev.photos[0], { thumb: '400x0', token })}" alt="" />` : '';
+    return `<div class="c-pv c-pv-card">
+        <div class="c-pv-card__img">${cover}</div>
+        <p class="c-pv-card__name">${esc(data.name || 'Имя Фамилия')}</p>
+        ${data.tagline ? `<p class="c-pv-card__tag">${esc(data.tagline)}</p>` : ''}
+        <p class="c-pv-card__price">${price.label}${price.note ? ` · ${esc(price.note)}` : ''}</p>
+      </div>`;
   }
-  function openPreview(kindOf: string) {
-    let dlg = document.querySelector<HTMLDialogElement>('dialog.c-sheet');
+  /** разделы, у которых есть «как это выглядит на сайте» — значок «?» у заголовка */
+  const PREVIEWABLE: SectionKey[] = ['osnovnoe', 'tekst', 'prays'];
+  function openPreview(key: SectionKey) {
+    let dlg = document.querySelector<HTMLDialogElement>('dialog.c-sheet--pv');
     if (!dlg) {
       dlg = document.createElement('dialog');
-      dlg.className = 'c-sheet';
+      dlg.className = 'c-sheet c-sheet--pv';
       dlg.addEventListener('click', (e) => { if (e.target === dlg || (e.target as HTMLElement).closest('[data-close]')) dlg!.close(); });
       document.body.append(dlg);
     }
-    dlg.innerHTML = `<div class="c-sheet__body">${previewHtml(kindOf)}<button class="a-btn a-btn--lg c-sheet__close" type="button" data-close>Понятно</button></div>`;
+    dlg.innerHTML = `<div class="c-sheet__body"><button class="c-sheet__x" type="button" data-close aria-label="Закрыть"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.6" d="M6 6l12 12M18 6L6 18"/></svg></button>${previewHtml(key)}</div>`;
     dlg.showModal();
   }
 
@@ -424,9 +454,9 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       err.hidden = !err.textContent;
     });
   }
-  const field = (label: string, bind: string, value: unknown, opts: { type?: string; note?: string; area?: boolean; placeholder?: string; mode?: string; max?: number; help?: string } = {}) => `
+  const field = (label: string, bind: string, value: unknown, opts: { type?: string; note?: string; area?: boolean; placeholder?: string; mode?: string; max?: number } = {}) => `
     <label class="a-field">
-      <span class="a-field__label">${label}${opts.help ? ` <button class="c-help" type="button" data-preview="${opts.help}" aria-label="Как это выглядит на сайте">?</button>` : ''}</span>
+      <span class="a-field__label">${label}</span>
       ${opts.area
         ? `<textarea class="a-field__input" data-bind="${bind}" placeholder="${esc(opts.placeholder ?? '')}">${esc(value)}</textarea>`
         : `<input class="a-field__input" data-bind="${bind}" type="${opts.type ?? 'text'}" ${opts.mode ? `inputmode="${opts.mode}"` : ''} ${opts.max ? `maxlength="${opts.max}"` : ''} value="${esc(value)}" placeholder="${esc(opts.placeholder ?? '')}" />`}
@@ -467,7 +497,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
                 ${field('Фамилия', 'lastName', data.lastName, { placeholder: 'Каморина' })}
               </div>
               <p class="a-field__note">Студия или команда — название в поле «Имя», фамилию оставьте пустой.</p>
-              ${field('Строка под именем', 'tagline', data.tagline, { placeholder: 'Репортаж без постановки, плёнка по желанию', note: 'Одна фраза, до 80 знаков.', max: 80, help: 'tagline' })}
+              ${field('Строка под именем', 'tagline', data.tagline, { placeholder: 'Репортаж без постановки, плёнка по желанию', note: 'Одна фраза, до 80 знаков.', max: 80 })}
               <div class="a-field">
                 <span class="a-field__label">Портрет</span>
                 <label class="c-ava">
@@ -492,29 +522,40 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
             </div>`).join('')}</div>
           <div class="c-actions">
             <button class="a-btn a-btn--lg c-add-btn" type="button" data-add="sections">${icon('plus')} Добавить раздел</button>
-            ${secs.length ? '<button class="a-btn a-btn--lg c-add-btn" type="button" data-preview="text">Как это будет на странице</button>' : ''}
           </div>
           <p class="a-field__note" data-count>${textLength(data)} знаков</p>` };
       }
       case 'voprosy':
         return { title: 'Вопросы', lead: questions.length ? 'По этим ответам вас найдут в фильтрах каталога.' : 'Для этой категории фильтров в каталоге пока нет — раздел можно пропустить.', html: choices(questions, 'filters') };
       case 'prays': {
+        // Три способа — как реально считают наши подрядчики (разбор 27.10):
+        // одна цена «от … за что» (ведущий за 6 часов, кондитер за кг, фотограф
+        // за час), несколько тарифов (фото, видео, декор, шоу), по запросу
+        // (кейтеринг, кавер-группа). На визитке — «от N ₽» и под ней «за что».
+        const mode = priceMode();
         const ts = data.tariffs ?? [];
-        return { title: 'Прайс', lead: '', html: `
-          <div class="c-items">${ts.map((t: any, i: number) => `
-            <div class="c-item">
-              <div class="c-grid2">
-                ${field('Название пакета', `tariffs.${i}.name`, t.name, { placeholder: 'Полный день' })}
-                ${field('Цена, ₽', `tariffs.${i}.price`, t.price, { mode: 'numeric', placeholder: '40000' })}
-              </div>
-              ${field('Что входит', `tariffs.${i}.includes`, t.includes, { area: true, placeholder: '— 10 часов съёмки\n— 500 кадров в обработке\n— онлайн-галерея' })}
-              ${tools('tariffs', i, ts.length)}
-            </div>`).join('')}</div>
-          <button class="a-btn a-btn--lg c-add-btn" type="button" data-add="tariffs">${icon('plus')} Добавить пакет</button>
-          <div class="c-pv-inline">
-            <p class="c-pv-inline__label">Так увидит пара</p>
-            <div data-price-preview>${pricePreview()}</div>
-          </div>` };
+        const modes = [['one', 'Одна цена'], ['tariffs', 'Несколько тарифов'], ['request', 'По запросу']];
+        const unitChips = (bind: string, cur: unknown) => `<div class="c-opts">${PRICE_UNITS.map((u) => `<button class="c-opt" type="button" aria-pressed="${cur === u}" data-unit="${bind}" data-v="${u}">${u}</button>`).join('')}</div>`;
+        return { title: 'Цена', lead: '', html: `
+          <div class="c-opts">${modes.map(([v, l]) => `<button class="c-opt" type="button" aria-pressed="${mode === v}" data-pmode="${v}">${l}</button>`).join('')}</div>
+          ${mode === 'one' ? `
+            ${field('Цена от, ₽', 'priceFrom', data.priceFrom, { mode: 'numeric', placeholder: '40000' })}
+            ${field('За что', 'priceNote', data.priceNote, { placeholder: 'за 6 часов работы' })}
+            ${unitChips('priceNote', data.priceNote)}` : ''}
+          ${mode === 'tariffs' ? `
+            <div class="c-items">${ts.map((t: any, i: number) => `
+              <div class="c-item">
+                ${field('Название тарифа', `tariffs.${i}.name`, t.name, { placeholder: 'Полный день' })}
+                <div class="c-grid2">
+                  ${field('Цена, ₽', `tariffs.${i}.price`, t.price, { mode: 'numeric', placeholder: '40000' })}
+                  ${field('За что', `tariffs.${i}.unit`, t.unit, { placeholder: 'за 8 часов' })}
+                </div>
+                ${field('Что входит', `tariffs.${i}.includes`, t.includes, { area: true, placeholder: '— 10 часов съёмки\n— 500 кадров в обработке\n— онлайн-галерея' })}
+                ${tools('tariffs', i, ts.length)}
+              </div>`).join('')}</div>
+            <button class="a-btn a-btn--lg c-add-btn" type="button" data-add="tariffs">${icon('plus')} Добавить тариф</button>` : ''}
+          ${mode === 'request' ? `
+            ${field('Как считаете', 'priceNote', data.priceNote, { placeholder: 'По смете после встречи: меню, формат и число гостей' })}` : ''}` };
       }
       case 'zaly': {
         const hs = data.halls ?? [];
@@ -558,7 +599,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     view.innerHTML = `
       <div class="c-head">
         <div class="c-head__top"><a class="c-back" href="${url()}">${icon('back')} ${esc(data.name || 'Анкета')}</a><span data-saved></span></div>
-        <h1 class="a-h1">${b.title}</h1>
+        <h1 class="a-h1 c-title">${b.title}${PREVIEWABLE.includes(key) && kind === 'specialist' ? ` <button class="c-help" type="button" data-preview="${key}" aria-label="Как это выглядит на сайте">?</button>` : ''}</h1>
         ${b.lead ? `<p class="a-lead">${b.lead}</p>` : ''}
         ${locked() ? '<p class="c-reason c-reason--info">Карточка на проверке — менять её сейчас нельзя.</p>' : ''}
       </div>
@@ -657,8 +698,8 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     setPath(t.dataset.bind, t.value);
     const count = view.querySelector('[data-count]');
     if (count) count.textContent = `${textLength(data)} знаков`;
-    const pp = view.querySelector('[data-price-preview]');
-    if (pp) pp.innerHTML = pricePreview();
+    // «за что» набрали руками — подсветка готовых вариантов следует за текстом
+    view.querySelectorAll<HTMLElement>(`[data-unit="${t.dataset.bind}"]`).forEach((o) => o.setAttribute('aria-pressed', String(o.dataset.v === t.value)));
     later();
   });
 
@@ -682,7 +723,24 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
   view.addEventListener('click', async (e) => {
     const b = (e.target as HTMLElement).closest<HTMLElement>('button, a[data-done]');
     if (!b || (b as HTMLButtonElement).disabled) return;
-    if (b.dataset.preview) { e.preventDefault(); openPreview(b.dataset.preview); return; }
+    if (b.dataset.preview) { e.preventDefault(); openPreview(b.dataset.preview as SectionKey); return; }
+    // цена: способ и готовые «за что»
+    if (b.dataset.pmode) {
+      data.priceMode = b.dataset.pmode;
+      if (data.priceMode === 'tariffs' && !data.tariffs?.length && !data.tariffsDraft?.length) data.tariffs = [{}];
+      derive();
+      renderSection('prays');
+      later();
+      return;
+    }
+    if (b.dataset.unit) {
+      setPath(b.dataset.unit, b.dataset.v);
+      const inp = view.querySelector<HTMLInputElement>(`[data-bind="${b.dataset.unit}"]`);
+      if (inp) inp.value = b.dataset.v!;
+      view.querySelectorAll<HTMLElement>(`[data-unit="${b.dataset.unit}"]`).forEach((o) => o.setAttribute('aria-pressed', String(o === b)));
+      later();
+      return;
+    }
     if (b.hasAttribute('data-maxsame')) {
       data.contacts ??= {};
       data.contacts.maxSame = !data.contacts.maxSame;

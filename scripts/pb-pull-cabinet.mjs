@@ -55,7 +55,7 @@ async function download(url, dest) {
 
 const rub = (n) => `${Number(n).toLocaleString('ru-RU').replace(/\u00a0/g, ' ')} ₽`;
 
-/** текст визитки: разделы анкеты (уже StorySection) + пакеты прайса отдельным
+/** текст визитки: разделы анкеты (уже StorySection) + тарифы отдельным
  *  разделом; у старых правок без разделов — «О себе» абзацами */
 function storyOf(p) {
   const story = Array.isArray(p.story) && p.story.length
@@ -64,9 +64,8 @@ function storyOf(p) {
   const tariffs = (p.tariffs ?? []).filter((t) => t.name && t.price);
   if (tariffs.length) {
     story.push({
-      title: 'Пакеты',
-      tariffs: tariffs.map((t) => ({ name: t.name, price: rub(t.price), ...(t.includes?.length ? { includes: t.includes } : {}) })),
-      ...(p.priceNote ? { after: [p.priceNote] } : {}),
+      title: 'Тарифы',
+      tariffs: tariffs.map((t) => ({ name: t.name, price: rub(t.price), ...(t.unit ? { unit: t.unit } : {}), ...(t.includes?.length ? { includes: t.includes } : {}) })),
     });
   }
   return story;

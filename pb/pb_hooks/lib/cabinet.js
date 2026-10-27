@@ -119,12 +119,13 @@ function parseSection(sec) {
   return out;
 }
 
-/** пакеты прайса: { name, price, includes } — includes строками */
+/** тарифы: { name, price, unit, includes } — unit «за что» («за 8 часов»), includes строками */
 function tariffsOf(data) {
   return (Array.isArray(data.tariffs) ? data.tariffs : [])
     .map((t) => ({
       name: str(t && t.name, 120),
       price: int(t && t.price),
+      unit: str(t && t.unit, 60),
       includes: str(t && t.includes, 4000).split('\n').map((l) => l.replace(BULLET, '').trim()).filter((l) => !!l),
     }))
     .filter((t) => t.name || t.price);

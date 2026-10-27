@@ -9,8 +9,9 @@
 //   address, rentFrom, checkFrom           — основное (площадка)
 //   sections: [{ title, body }]            — текст разделами, как написан
 //   filters: { ключ группы: значение | [значения] } — ответы на вопросы
-//   tariffs: [{ name, price, includes }]   — пакеты прайса (подрядчик)
-//   priceNote                              — от чего зависит цена
+//   priceMode: one | tariffs | request   — как считают цену (подрядчик)
+//   priceFrom, priceNote                   — «от N ₽» и «за что» (одна цена; у тарифов — от самого дешёвого)
+//   tariffs: [{ name, price, unit, includes }] — тарифы
 //   halls: [{ name, area, banquet, buffet, priceFrom, note }] — залы (площадка)
 //   terms: { kitchen, alcohol, until, parking } — условия (площадка)
 //   contacts: { phone (E.164), phoneCountry, telegram, max, site, email } — за кнопкой «Показать контакты»
@@ -36,7 +37,7 @@ export const SECTIONS: Record<Kind, { key: SectionKey; title: string; icon: stri
     { key: 'foto', title: 'Фото', icon: 'photo' },
     { key: 'tekst', title: 'Текст', icon: 'text' },
     { key: 'voprosy', title: 'Вопросы', icon: 'check' },
-    { key: 'prays', title: 'Прайс', icon: 'notes' },
+    { key: 'prays', title: 'Цена', icon: 'notes' },
     { key: 'kontakty', title: 'Контакты', icon: 'phone' },
   ],
   venue: [
@@ -141,10 +142,15 @@ export function sectionState(key: SectionKey, rev: any, questions: Question[]): 
       return { done: answered === questions.length, sub: `${answered} из ${questions.length}`, empty: answered === 0 };
     }
     case 'prays': {
-      const n = (d.tariffs ?? []).filter((t: any) => str(t?.name) && Number(t?.price) > 0).length;
+      // три способа (разбор цен 27.10): одна цена «от … за что», тарифы, по запросу
       const p = priceFrom(d);
-      // нужен хотя бы один пакет с ценой: одна приписка «ни от чего» проходила (прогон 27.10)
-      return { done: n > 0, sub: n ? `${n} ${n === 1 ? 'пакет' : n < 5 ? 'пакета' : 'пакетов'} · от ${rub(p!)}` : 'нет пакета с ценой', empty: !n };
+      const mode = d.priceMode ?? ((d.tariffs ?? []).length ? 'tariffs' : 'one');
+      if (mode === 'request') return { done: true, sub: 'по запросу' };
+      if (mode === 'tariffs') {
+        const n = (d.tariffs ?? []).filter((t: any) => str(t?.name) && Number(t?.price) > 0).length;
+        return { done: n > 0, sub: n ? `${n} ${n === 1 ? 'тариф' : n < 5 ? 'тарифа' : 'тарифов'} · от ${rub(p!)}` : 'нет тарифа с ценой', empty: !n };
+      }
+      return { done: !!p, sub: p ? `от ${rub(p)}${str(d.priceNote) ? ` ${str(d.priceNote)}` : ''}` : 'пусто', empty: !p };
     }
     case 'zaly': {
       const halls = (d.halls ?? []).filter((h: any) => str(h?.name));
