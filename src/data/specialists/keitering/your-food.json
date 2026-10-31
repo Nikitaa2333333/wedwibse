@@ -165,7 +165,7 @@
   "filters": {
     "city": ["цао", "сао", "свао", "вао", "юво", "юао", "юзао", "зао", "сзао", "mo"],
     "format": ["buffet", "banquet", "cocktail", "brunch", "station"],
-    "cuisine": ["european", "vegetarian", "gluten-free"],
+    "cuisine": ["european"],
     "minGuests": "30-50",
     "staff": ["cooks", "grill", "waiters", "bartender", "chef"],
     "options": ["tasting", "author-menu", "seasonal"],
