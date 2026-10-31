@@ -20,14 +20,11 @@ import maxMark from '../../assets/profi/max-mark.webp';
       <AdminIcon name="telegram" />
       Войти через Telegram
     </button>
-    <button class="a-btn a-btn--lg a-btn--block c-max" type="button" data-max-login>
+    <a class="a-btn a-btn--lg a-btn--block c-max" href="#" data-max-login>
       <Image class="c-max__mark" src={maxMark} alt="" width={22} height={22} widths={[22, 44, 66]} sizes="22px" />
       Войти через MAX
-    </button>
-    <p class="a-login__note" data-max-note hidden>
-      Нажмите «Начать» в MAX — кабинет откроется здесь сам.
-      <a class="c-link" data-max-link href="#" target="_blank" rel="noopener">Открыть MAX</a>
-    </p>
+    </a>
+    <p class="a-login__note" data-max-note hidden>Нажмите «Начать» в MAX — кабинет откроется здесь сам.</p>
     <p class="a-login__error" role="alert" data-tg-error hidden></p>
     <p class="a-login__note">Первый вход — это и регистрация: учётка появится после того, как вы примете условия.</p>
   </section>
@@ -44,7 +41,7 @@ import maxMark from '../../assets/profi/max-mark.webp';
 <script>
   import { session } from '../../lib/cabinet-api';
   import { TG_BOT_ID, telegramPopup, signIn, afterLogin } from '../../lib/tg-login';
-  import { MAX_BOT, maxSignIn } from '../../lib/max-login';
+  import { MAX_BOT, prepareMaxLink, waitMaxSignIn } from '../../lib/max-login';
 
   const q = new URLSearchParams(location.search);
   const btn = document.querySelector<HTMLButtonElement>('[data-tg-login]')!;
@@ -72,23 +69,30 @@ import maxMark from '../../assets/profi/max-mark.webp';
   });
 
   // MAX: код → бот → страница ждёт подтверждения (lib/max-login.ts)
-  const maxBtn = document.querySelector<HTMLButtonElement>('[data-max-login]')!;
+  // ссылка в бота готовится заранее: айфон открывает MAX только прямо по нажатию
+  const maxBtn = document.querySelector<HTMLAnchorElement>('[data-max-login]')!;
   const maxNote = document.querySelector<HTMLElement>('[data-max-note]')!;
-  const maxLink = document.querySelector<HTMLAnchorElement>('[data-max-link]')!;
-  maxBtn.addEventListener('click', async () => {
+  const maxCode = MAX_BOT ? prepareMaxLink(maxBtn, fail) : () => null;
+  let maxWaiting = '';
+  maxBtn.addEventListener('click', async (ev) => {
+    const c = maxCode();
+    if (!c) {
+      ev.preventDefault();
+      return fail(MAX_BOT ? 'Секунду — готовим вход, нажмите ещё раз.' : 'Вход через MAX ещё не настроен.');
+    }
+    if (maxWaiting === c.code) return;
+    maxWaiting = c.code;
     error.hidden = true;
-    if (!MAX_BOT) return fail('Вход через MAX ещё не настроен.');
-    maxBtn.disabled = true;
+    maxNote.hidden = false;
     try {
       const p = { invite: q.get('invite') || undefined, next: q.get('next') || undefined };
-      const out = await maxSignIn(p, (href) => { maxLink.href = href; maxNote.hidden = false; });
-      if (out === 'needs-accept') location.href = '/profi/usloviya/';
+      if ((await waitMaxSignIn(c.code, p)) === 'needs-accept') location.href = '/profi/usloviya/';
       else afterLogin(p.next);
     } catch (err) {
       maxNote.hidden = true;
       fail((err as Error).message);
     } finally {
-      maxBtn.disabled = false;
+      maxWaiting = '';
     }
   });
 </script>

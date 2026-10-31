@@ -22,40 +22,39 @@ const { href = '/profi/kabinet/', label = 'Войти через' } = Astro.prop
   <span>{label} <b class="mx__word">MAX</b></span>
 </a>
 
-<p class="mx__note" data-max-note hidden>
-  Нажмите «Начать» в MAX — кабинет откроется здесь сам.
-  <a data-max-link href="#" target="_blank" rel="noopener">Открыть MAX</a>
-</p>
+<p class="mx__note" data-max-note hidden>Нажмите «Начать» в MAX — кабинет откроется здесь сам.</p>
 <p class="mx__error" role="alert" data-max-error hidden></p>
 
 <script>
-  import { MAX_BOT, maxSignIn } from '../../lib/max-login';
+  import { MAX_BOT, prepareMaxLink, waitMaxSignIn } from '../../lib/max-login';
   import { afterLogin } from '../../lib/tg-login';
 
   if (MAX_BOT) {
     document.querySelectorAll<HTMLAnchorElement>('[data-max-login]').forEach((btn) => {
       const note = btn.parentElement!.querySelector<HTMLElement>('[data-max-note]')!;
-      const link = note.querySelector<HTMLAnchorElement>('[data-max-link]')!;
       const error = btn.parentElement!.querySelector<HTMLElement>('[data-max-error]')!;
-      let busy = false;
+      const fail = (m: string) => { note.hidden = true; error.textContent = m; error.hidden = false; };
+      const current = prepareMaxLink(btn, fail);
+      let waiting = '';
       btn.addEventListener('click', async (ev) => {
-        ev.preventDefault();
-        // кнопка за галочками согласия (регистрация) не живёт, пока они не стоят
-        if (busy || btn.closest('[aria-disabled="true"]')) return;
-        busy = true;
+        const c = current();
+        // кнопка за галочками согласия (регистрация) не живёт, пока они не стоят;
+        // код ещё не пришёл — ссылка пока ведёт на заглушку, не пускаем
+        if (btn.closest('[aria-disabled="true"]') || !c) { ev.preventDefault(); return; }
+        // переход по ссылке (новая вкладка / приложение MAX) — браузер делает сам
+        if (waiting === c.code) return;
+        waiting = c.code;
         error.hidden = true;
+        note.hidden = false;
         try {
           const q = new URLSearchParams(location.search);
           const p = { invite: q.get('invite') || undefined, next: q.get('next') || undefined };
-          const out = await maxSignIn(p, (href) => { link.href = href; note.hidden = false; });
-          if (out === 'needs-accept') location.href = '/profi/usloviya/';
+          if ((await waitMaxSignIn(c.code, p)) === 'needs-accept') location.href = '/profi/usloviya/';
           else afterLogin(p.next);
         } catch (err) {
-          note.hidden = true;
-          error.textContent = (err as Error).message;
-          error.hidden = false;
+          fail((err as Error).message);
         } finally {
-          busy = false;
+          waiting = '';
         }
       });
     });
