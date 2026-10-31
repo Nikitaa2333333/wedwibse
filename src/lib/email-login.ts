@@ -62,14 +62,22 @@ export async function renderTerms(el: HTMLElement): Promise<boolean> {
   const latest = ['vendor-offer', 'vendor-pdn'].map((k) => res.items.find((d: any) => d.kind === k)).filter(Boolean);
   if (latest.length < 2) return false;
   // текст документа пишем мы сами в базе (редактор), поэтому как HTML
-  el.innerHTML = latest.map((d: any) => `
-    <div>
+  el.innerHTML = latest.map((d: any, i: number) => `
+    <div class="auth__doc">
       <label class="check">
         <input class="check__input" type="checkbox" data-consent-box />
         <span class="check__box"></span>
-        <span>${esc(d.checkbox)}</span>
+        <span>${esc(d.checkbox)} <button class="auth__doc-link" type="button" aria-expanded="false" aria-controls="doc-${i}" data-doc-toggle>читать</button></span>
       </label>
-      <details class="auth__doc"><summary>${esc(d.title)}</summary><div class="auth__doc-text">${d.text}</div></details>
+      <div class="auth__doc-text" id="doc-${i}" hidden>${d.text}</div>
     </div>`).join('');
+  // «читать» раскрывает текст и не трогает галочку (кнопка внутри label)
+  el.querySelectorAll<HTMLButtonElement>('[data-doc-toggle]').forEach((b) => b.addEventListener('click', (ev) => {
+    ev.preventDefault();
+    const text = document.getElementById(b.getAttribute('aria-controls')!)!;
+    text.hidden = !text.hidden;
+    b.setAttribute('aria-expanded', String(!text.hidden));
+    b.textContent = text.hidden ? 'читать' : 'скрыть';
+  }));
   return true;
 }
