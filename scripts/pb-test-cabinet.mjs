@@ -52,7 +52,7 @@ const su = await call(null, 'POST', '/api/collections/_superusers/auth-with-pass
 if (su.status !== 200) throw new Error('нет доступа суперпользователя: ' + su.text);
 const SU = su.json.token;
 
-const cleanup = { invites: [], signatures: [], revisions: [], specialists: [], vendors: [], video_requests: [], moderators: [], legal_docs: [] };
+const cleanup = { invites: [], signatures: [], revisions: [], specialists: [], vendors: [], video_requests: [], moderators: [], legal_docs: [], max_logins: [] };
 
 async function makeVendor(tag) {
   const pass = crypto.randomUUID();
@@ -368,6 +368,56 @@ if (!BOT) {
   check('чужое приглашение второй раз не гасится', refused(res), res.text);
   res = await call(null, 'POST', '/api/collections/vendors/records', { email: `x-${stamp}@example.com`, password: 'x1234567890', passwordConfirm: 'x1234567890' });
   check('учётку в обход условий не создать', refused(res), res.text);
+}
+
+// ---------- вход через MAX ----------
+// Нужен тот же MAX_WEBHOOK_SECRET, с которым запущена база. Ключ бота базе
+// здесь давать ТЕСТОВЫЙ (MAX_BOT_TOKEN=test): вебхук отвечает в MAX
+// сообщением, а номера пользователей в тесте выдуманные.
+const MAX_SECRET = process.env.MAX_WEBHOOK_SECRET;
+if (!MAX_SECRET) {
+  console.log('\nMAX — пропуск: нет MAX_WEBHOOK_SECRET в окружении скрипта');
+} else {
+  console.log('\nвход через MAX');
+  const hook = (body, secret = MAX_SECRET) => fetch(URL_ + '/api/wed/max/webhook', {
+    method: 'POST', headers: { 'content-type': 'application/json', 'X-Max-Bot-Api-Secret': secret }, body: JSON.stringify(body),
+  });
+  const maxId = String(8000000000 + Math.floor(Math.random() * 99999999));
+  const started = (code, id = maxId) => ({ update_type: 'bot_started', timestamp: Date.now(), chat_id: Number(id), user: { user_id: Number(id), name: 'Мария Тест' }, payload: code });
+
+  res = await call(null, 'POST', '/api/wed/max/start');
+  const code = res.json?.code;
+  check('код и ссылка в бота', res.status === 200 && /^[a-z0-9]{32}$/.test(code) && res.json.link.endsWith(`?start=${code}`), res.text);
+  check('вебхук с чужим секретом не принимается', (await hook(started(code), 'wrong-secret')).status === 401);
+  res = await call(null, 'POST', '/api/wed/max', { code });
+  check('до «Начать» в боте — ждём', res.status === 200 && res.json.status === 'waiting', res.text);
+  res = await call(null, 'POST', '/api/wed/max', { code: 'a'.repeat(32) });
+  check('выдуманный код не входит', res.status === 400, res.text);
+
+  check('бот подтвердил код', (await hook(started(code))).status === 200);
+  check('чужой аккаунт тот же код не перехватит', (await hook(started(code, '7000000001'))).status === 200);
+  res = await call(null, 'POST', '/api/wed/max', { code });
+  check('новичку сначала условия, имя из MAX', res.status === 200 && res.json.status === 'needs-accept' && res.json.name === 'Мария Тест', res.text);
+  for (const kind of ['vendor-offer', 'vendor-pdn']) {
+    const have = await call(SU, 'GET', `/api/collections/legal_docs/records?filter=${encodeURIComponent(`kind = "${kind}"`)}`);
+    if (have.json?.items?.length) continue;
+    const d = await call(SU, 'POST', '/api/collections/legal_docs/records', { kind, version: 'test', title: 'Тест', text: '<p>Тест</p>', checkbox: 'Согласен' });
+    cleanup.legal_docs.push(d.json?.id);
+  }
+  res = await call(null, 'POST', '/api/wed/max', { code, accept: true });
+  check('регистрация через MAX с условиями', res.status === 200 && !!res.json.token && res.json.record?.maxId === maxId, res.text);
+  const X = { id: res.json?.record?.id };
+  cleanup.vendors.unshift(X.id);
+  const sigs = await call(SU, 'GET', `/api/collections/signatures/records?filter=${encodeURIComponent(`vendor = "${X.id}"`)}`);
+  check('подписи с отметкой max', sigs.json?.items?.length >= 2 && sigs.json.items.every((x) => x.method === 'max'), sigs.text);
+  for (const x of sigs.json?.items ?? []) cleanup.signatures.unshift(x.id);
+  res = await call(null, 'POST', '/api/wed/max', { code });
+  check('код одноразовый', res.status === 400, res.text);
+
+  res = await call(null, 'POST', '/api/wed/max/start');
+  await hook(started(res.json?.code));
+  res = await call(null, 'POST', '/api/wed/max', { code: res.json?.code });
+  check('повторный вход без условий', res.status === 200 && res.json.record?.id === X.id, res.text);
 }
 
 // ---------- уборка ----------

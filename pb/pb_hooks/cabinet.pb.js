@@ -46,6 +46,11 @@ routerAdd('GET', '/api/wed/slug', (e) => require(`${__hooks}/lib/cabinet.js`).ch
 // вход и регистрация через Telegram (виджет входа), погашение приглашения
 routerAdd('POST', '/api/wed/telegram', (e) => require(`${__hooks}/lib/cabinet.js`).telegramAuth(e));
 
+// вход через MAX: код → бот (вебхук подтверждает аккаунт) → вход (lib/max.js)
+routerAdd('POST', '/api/wed/max/start', (e) => require(`${__hooks}/lib/max.js`).start(e));
+routerAdd('POST', '/api/wed/max/webhook', (e) => require(`${__hooks}/lib/max.js`).webhook(e));
+routerAdd('POST', '/api/wed/max', (e) => require(`${__hooks}/lib/cabinet.js`).maxAuth(e));
+
 routerAdd('POST', '/api/wed/invite', (e) => require(`${__hooks}/lib/cabinet.js`).claimInviteRoute(e), $apis.requireAuth('vendors'));
 
 // мои карточки: опубликованные (с владельцем) — у подрядчика нет доступа

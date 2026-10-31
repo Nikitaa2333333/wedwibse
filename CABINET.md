@@ -1051,3 +1051,14 @@ Astro умеет **гибрид**: часть страниц статика, ч�
   ссылке две кнопки одна под другой (`components/profi/MessengerLogin.astro`),
   почта и пароль — запасной путь. Уведомления — в тот мессенджер, через который
   человек вошёл; в профиле можно подключить второй.
+- **Сделано 30.10 (вход):** бот `@id503613656680_bot` «Wed-secrets.ru» (заведён
+  в «MAX для бизнеса»). Схема: `POST /api/wed/max/start` → код (в базе
+  `max_logins` только SHA-256, живёт 15 минут) и ссылка `max.ru/<бот>?start=<код>`
+  → вебхук `POST /api/wed/max/webhook` (`bot_started`, секрет в
+  `X-Max-Bot-Api-Secret`) записывает `user_id` → страница раз в 2 с спрашивает
+  `POST /api/wed/max { code }` → дальше общий `messengerAuth`, как у Telegram
+  (`vendors.maxId`, подписи с `method = max`). Код — `pb_hooks/lib/max.js`,
+  `src/lib/max-login.ts`. Окружение базы: `MAX_BOT_TOKEN`, `MAX_BOT_NAME`,
+  `MAX_WEBHOOK_SECRET`; адрес Bot API — `platform-api.max.ru` (`platform-api2`
+  с нашего VPS не резолвится). Тексты бота — в начале `lib/max.js`, менять
+  только с согласия Никиты.

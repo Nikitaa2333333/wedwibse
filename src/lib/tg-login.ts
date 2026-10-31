@@ -38,8 +38,11 @@ export async function telegramPopup(): Promise<Record<string, unknown> | null> {
   );
 }
 
+/** вход ждёт условий: данные Telegram или код MAX (lib/max-login.ts) */
 export interface Pending {
-  tg: Record<string, unknown>;
+  tg?: Record<string, unknown>;
+  max?: string;
+  name?: string;
   invite?: string;
   next?: string;
 }
@@ -57,10 +60,15 @@ export function pending(): Pending | null {
  * Данные Telegram → база. Учётка есть — вход. Нет — запоминаем данные
  * и ведём на экран условий: учётка появится только с их подписью.
  */
-export async function signIn(p: Pending & { accept?: boolean }): Promise<'in' | 'needs-accept'> {
-  const res = await api(null, 'POST', '/api/wed/telegram', { tg: p.tg, accept: p.accept === true, invite: p.invite || undefined });
+export async function signIn(p: Pending & { accept?: boolean }): Promise<'in' | 'needs-accept' | 'waiting'> {
+  const common = { accept: p.accept === true, invite: p.invite || undefined };
+  const res = p.max
+    ? await api(null, 'POST', '/api/wed/max', { code: p.max, ...common })
+    : await api(null, 'POST', '/api/wed/telegram', { tg: p.tg, ...common });
+  if (res?.status === 'waiting') return 'waiting';
   if (res?.status === 'needs-accept') {
-    try { sessionStorage.setItem(PENDING, JSON.stringify(p)); } catch {}
+    const { accept: _, ...keep } = p;
+    try { sessionStorage.setItem(PENDING, JSON.stringify({ ...keep, name: res.name || p.name })); } catch {}
     return 'needs-accept';
   }
   saveSession('vendor', { token: res.token, record: res.record });

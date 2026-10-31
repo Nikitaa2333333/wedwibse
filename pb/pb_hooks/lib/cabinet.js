@@ -774,7 +774,7 @@ function vendorCreateVideoRequest(e) {
 // ---------- вход через Telegram ----------
 // Учётку подрядчика создаёт только этот маршрут: вместе с подписью
 // условий (оферта + согласие на ПДн), без них учётки нет (CABINET.md §21).
-// Почта и MAX подключатся рядом, этот путь от них не зависит.
+// MAX — тем же путём (messengerAuth), почта подключится рядом.
 const VENDOR_DOCS = ['vendor-offer', 'vendor-pdn'];
 
 /** действующая редакция каждого документа подрядчика; нет хоть одной — регистрация закрыта */
@@ -838,25 +838,50 @@ function telegramAuth(e) {
   const botToken = $os.getenv('TG_BOT_TOKEN');
   if (!botToken) throw new BadRequestError('Вход через Telegram ещё не настроен.');
   const tg = require(`${__hooks}/lib/telegram.js`).verifyTelegram(body.tg, botToken);
+  return messengerAuth(e, body, 'telegramId', tg, 'telegram');
+}
 
-  let vendor = findOne(e.app, 'vendors', 'telegramId = {:id}', { id: tg.id });
+/**
+ * POST /api/wed/max { code, accept?: true, invite?: ключ } — то же, что
+ * у Telegram, только аккаунт подтверждает бот (lib/max.js):
+ *   человек ещё не нажал «Начать» → { status: 'waiting' }, сайт спросит снова
+ */
+function maxAuth(e) {
+  const body = e.requestInfo().body || {};
+  const max = require(`${__hooks}/lib/max.js`);
+  const who = max.confirmed(e.app, body.code);
+  if (!who) return e.json(200, { status: 'waiting' });
+  const res = messengerAuth(e, body, 'maxId', { id: who.id, name: who.name }, 'max');
+  // вошли — код больше не нужен; ждём условий — код ещё понадобится
+  if (findOne(e.app, 'vendors', 'maxId = {:id}', { id: who.id })) e.app.delete(who.login);
+  return res;
+}
+
+/**
+ * общий вход через мессенджер: field — telegramId | maxId
+ *   учётка есть           → вход (токен как у обычного входа)
+ *   нет и accept не стоит → { status: 'needs-accept' }: кабинет показывает условия
+ *   нет и accept          → учётка + подписи + вход
+ */
+function messengerAuth(e, body, field, who, method) {
+  let vendor = findOne(e.app, 'vendors', `${field} = {:id}`, { id: who.id });
   if (!vendor) {
-    if (body.accept !== true) return e.json(200, { status: 'needs-accept' });
+    if (body.accept !== true) return e.json(200, { status: 'needs-accept', name: who.name });
     const docs = currentDocs(e.app);
     if (docs.some((d) => !d)) throw new BadRequestError('Условия работы ещё не опубликованы — регистрация пока закрыта.');
     e.app.runInTransaction((tx) => {
       vendor = new Record(tx.findCollectionByNameOrId('vendors'));
-      vendor.set('telegramId', tg.id);
-      vendor.set('name', tg.name);
+      vendor.set(field, who.id);
+      vendor.set('name', who.name);
       vendor.setPassword($security.randomString(40));
       tx.save(vendor);
-      for (const d of docs) sign(tx, e, vendor, d, 'telegram');
+      for (const d of docs) sign(tx, e, vendor, d, method);
       if (body.invite) claimInvite(tx, vendor, body.invite);
     });
   } else if (body.invite) {
     e.app.runInTransaction((tx) => claimInvite(tx, vendor, body.invite));
   }
-  return $apis.recordAuthResponse(e, vendor, 'telegram');
+  return $apis.recordAuthResponse(e, vendor, method);
 }
 
 /** POST /api/wed/invite { invite } — уже вошедший подрядчик открыл ссылку-приглашение */
@@ -907,6 +932,7 @@ module.exports = {
   MAX_PHOTOS,
   isModerator,
   telegramAuth,
+  maxAuth,
   claimInviteRoute,
   myCards,
   findContact,

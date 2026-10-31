@@ -44,7 +44,7 @@ import CabinetShell from '../../components/admin/CabinetShell.astro';
   if (!p) {
     location.replace('/profi/vhod/');
   } else {
-    const name = [p.tg.first_name, p.tg.last_name].filter(Boolean).join(' ');
+    const name = p.name || [p.tg?.first_name, p.tg?.last_name].filter(Boolean).join(' ');
     if (name) root.querySelector('[data-who]')!.textContent = `${name}, прочитайте и отметьте оба пункта — после этого откроется кабинет.`;
     try {
       const res = await api(null, 'GET', `/api/collections/legal_docs/records?sort=-created&perPage=50&filter=${encodeURIComponent('kind = "vendor-offer" || kind = "vendor-pdn"')}`);
@@ -74,7 +74,7 @@ import CabinetShell from '../../components/admin/CabinetShell.astro';
         await signIn({ ...p, accept: true });
         afterLogin(p.next);
       } catch (err) {
-        fail((err as Error).message + '\nЕсли вход устарел — вернитесь ко входу и нажмите Telegram ещё раз.');
+        fail((err as Error).message + '\nЕсли вход устарел — вернитесь ко входу и войдите ещё раз.');
         btn.disabled = false;
       }
     });

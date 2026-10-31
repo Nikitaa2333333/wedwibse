@@ -32,10 +32,14 @@ manually») — после правки `pb_hooks` её перезапускат
 уведомления), `TG_CHAT_ID` (чат модераторов), `SITE_URL`,
 `GH_DEPLOY_TOKEN` — выкладка сайта сразу после решения по карточке из
 кабинета (fine-grained токен GitHub только на репозиторий `wedwibse`,
-право Actions: read and write; без него карточка ждёт следующего пуша). Модераторы
+право Actions: read and write; без него карточка ждёт следующего пуша),
+`MAX_BOT_TOKEN` + `MAX_BOT_NAME` + `MAX_WEBHOOK_SECRET` — вход через MAX
+(`lib/max.js`, `CABINET.md` §23). Модераторы
 и тестовая редакция условий — `node scripts/pb-cabinet-setup.mjs`.
 Проверка: `node scripts/pb-test-cabinet.mjs` (с тем же `TG_BOT_TOKEN`
-в окружении — и раздел входа через Telegram). Сквозной путь и выкладка
+в окружении — и раздел входа через Telegram; с `MAX_WEBHOOK_SECRET` — раздел
+MAX, базе при этом `MAX_BOT_TOKEN=test` и `MAX_API=http://127.0.0.1:9`, чтобы
+бот не писал выдуманным номерам). Сквозной путь и выкладка
 на сервер — `STAGE2.md`, «Сквозная проверка».
 
 Первый суперпользователь: `./pb/pocketbase.exe superuser upsert <email> <pass> --dir pb/pb_data`.
