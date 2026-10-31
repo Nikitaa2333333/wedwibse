@@ -884,6 +884,91 @@ function messengerAuth(e, body, field, who, method) {
   return $apis.recordAuthResponse(e, vendor, method);
 }
 
+// ---------- вход по почте ----------
+// Регистрация почтой — тем же правилом, что у мессенджеров: учётка только
+// вместе с подписью условий. Почту подтверждает код из письма: сайт сам
+// запрашивает его (request-otp), вход кодом делает учётку verified, а без
+// verified пароль не пускает (authRule). Сброс пароля — тоже кодом.
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const MIN_PASSWORD = 8;
+
+function checkPassword(p) {
+  const s = typeof p === 'string' ? p : '';
+  if (s.length < MIN_PASSWORD) throw new BadRequestError(`Пароль — не короче ${MIN_PASSWORD} знаков.`);
+  if (s.length > 72) throw new BadRequestError('Пароль слишком длинный — не больше 72 знаков.');
+  return s;
+}
+
+/**
+ * POST /api/wed/register { email, password, accept: true, invite? }
+ * Учётка без подтверждённой почты — дальше сайт присылает код. Почта уже
+ * есть, но не подтверждена (бросили на полпути) — новый пароль и подпись:
+ * войти этим паролем всё равно нельзя, пока не введён код из письма.
+ */
+function emailRegister(e) {
+  const body = e.requestInfo().body || {};
+  const email = str(body.email, 200).toLowerCase();
+  if (!EMAIL_RE.test(email)) throw new BadRequestError('Проверьте адрес почты.');
+  const password = checkPassword(body.password);
+  if (body.accept !== true) throw new BadRequestError('Отметьте оба пункта условий.');
+  const docs = currentDocs(e.app);
+  if (docs.some((d) => !d)) throw new BadRequestError('Условия работы ещё не опубликованы — регистрация пока закрыта.');
+
+  let vendor = findOne(e.app, 'vendors', 'email = {:email}', { email });
+  if (vendor && vendor.verified()) {
+    throw new BadRequestError('Учётка с этой почтой уже есть — войдите или восстановите пароль.');
+  }
+  e.app.runInTransaction((tx) => {
+    if (!vendor) {
+      vendor = new Record(tx.findCollectionByNameOrId('vendors'));
+      vendor.set('email', email);
+      vendor.set('emailVisibility', false);
+      vendor.setVerified(false);
+    }
+    vendor.setPassword(password);
+    tx.save(vendor);
+    for (const d of docs) sign(tx, e, vendor, d, 'email');
+    if (body.invite) claimInvite(tx, vendor, body.invite);
+  });
+  return e.json(200, { ok: true });
+}
+
+/**
+ * Код из письма (сайт запрашивает его штатным request-otp) → вход.
+ *   POST /api/wed/confirm        { otpId, code }           — подтвердить почту после регистрации
+ *   POST /api/wed/password-reset { otpId, code, password } — новый пароль
+ * Штатный auth-with-otp здесь не годится: подтверждая почту, PocketBase
+ * заменяет пароль случайным (защита от чужой регистрации на эту почту),
+ * и новичок не вошёл бы своим паролем. Та же защита у нас: пароль,
+ * заданный до кода, живёт, только если регистрацию повторили (её пароль
+ * затирает чужой), а войти паролем без кода нельзя вовсе.
+ */
+function confirmCode(e) {
+  return codeLogin(e, null);
+}
+
+function passwordReset(e) {
+  return codeLogin(e, checkPassword((e.requestInfo().body || {}).password));
+}
+
+function codeLogin(e, password) {
+  const body = e.requestInfo().body || {};
+  const vendors = e.app.findCollectionByNameOrId('vendors');
+  let otp = null;
+  try { otp = e.app.findOTPById(str(body.otpId, 40)); } catch (_) {}
+  const bad = () => new BadRequestError('Код не подошёл или устарел — запросите новый.');
+  if (!otp || otp.collectionRef() !== vendors.id) throw bad();
+  if (otp.hasExpired(vendors.otp.duration * 1e9)) { e.app.delete(otp); throw bad(); }
+  if (!otp.proxyRecord().validatePassword(str(body.code, 20))) throw bad();
+
+  const vendor = e.app.findRecordById('vendors', otp.recordRef());
+  if (password) vendor.setPassword(password);
+  if (vendor.email() && otp.sentTo() === vendor.email()) vendor.setVerified(true);
+  e.app.save(vendor);
+  e.app.delete(otp);
+  return $apis.recordAuthResponse(e, vendor, 'otp');
+}
+
 /** POST /api/wed/invite { invite } — уже вошедший подрядчик открыл ссылку-приглашение */
 function claimInviteRoute(e) {
   const body = e.requestInfo().body || {};
@@ -933,6 +1018,9 @@ module.exports = {
   isModerator,
   telegramAuth,
   maxAuth,
+  emailRegister,
+  confirmCode,
+  passwordReset,
   claimInviteRoute,
   myCards,
   findContact,

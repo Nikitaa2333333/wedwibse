@@ -53,6 +53,12 @@
 
 .auth__checks { display: grid; gap: var(--s-3); }
 
+/* Ошибка формы — тем же цветом, что у плашек мессенджеров */
+.auth__error { color: var(--st-bad-text); font-size: var(--fs-small); line-height: var(--lh-snug); }
+/* Текст документа под галочкой — раскрывается по нажатию */
+.auth__doc summary { font-size: var(--fs-small); cursor: pointer; text-decoration: underline; }
+.auth__doc-text { margin-top: var(--s-2); max-height: 32vh; overflow-y: auto; overflow-x: clip; font-size: var(--fs-small); line-height: var(--lh-body); }
+
 .auth__alt { text-align: center; font-size: var(--fs-small); }
 .auth__alt a { color: inherit; font-weight: var(--w-medium); }
 

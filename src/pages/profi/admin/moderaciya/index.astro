@@ -93,6 +93,9 @@ const onReview = reviews.filter((r) => r.rev.state === 'review').length;
       rows.insertAdjacentHTML('afterbegin', html);
       const n = document.querySelector<HTMLElement>('[data-mq-n]');
       if (n) n.textContent = String(Number(n.textContent) + res.items.length);
-    } catch {}
+    } catch (err) {
+      // раньше ошибка глушилась молча, и живые анкеты просто не появлялись (31.10)
+      rows.insertAdjacentHTML('afterbegin', `<tr><td class="a-task-cell"><p class="a-login__error">Анкеты из базы не загрузились: ${esc((err as Error).message)}. Обновите страницу или войдите заново.</p></td></tr>`);
+    }
   });
 </script>

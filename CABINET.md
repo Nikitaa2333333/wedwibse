@@ -418,7 +418,18 @@ PocketBase сам письма не отправляет, ему нужен **SM
   доставки. Нужны, когда пойдут клиенты и уведомления о заявках.
 
 Старт: ящик Яндекс 360, позже — переезд на Unisender Go сменой
-настроек SMTP в PocketBase, без кода. В DNS у reg.ru обязательно
+настроек SMTP в PocketBase, без кода.
+
+**Сделано 31.10:** ящик `kabinet@wed-secrets.ru` (вместо `noreply` — на
+письмо с кодом отвечают, ответ должен кто-то читать), SMTP `smtp.yandex.ru:465`
+с паролем приложения (`SMTP_PASSWORD` в `.env` проекта), отправитель «WED
+Secrets»; в DNS reg.ru MX, SPF, DKIM. Вход по почте — на экранах макета
+(ProfiShell, `auth.css`): `/profi/vhod/` (пароль), `/profi/registraciya/` →
+`/profi/registraciya/kod/` (подтверждение), `/profi/parol/` → `/profi/parol/kod/`
+(новый пароль кодом). Маршруты `/api/wed/register`, `/api/wed/confirm`,
+`/api/wed/password-reset` (`lib/cabinet.js`). Штатный `auth-with-otp` для
+подтверждения не берём: подтверждая почту, PocketBase меняет пароль на
+случайный. Письмо с кодом одно на все случаи — миграция `1762000000_cabinet_email.js`. В DNS у reg.ru обязательно
 прописать SPF, DKIM и DMARC, иначе коды будут падать в спам.
 
 ## 10. Где можем провалиться (разбор рисков второго этапа)

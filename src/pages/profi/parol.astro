@@ -1,7 +1,7 @@
 ---
-// СБРОС ПАРОЛЯ, шаг 1 — прототип (решение 16.10.2026: сброс кодом из письма,
-// CABINET.md §21). Шаг 2 — /profi/parol/kod/. Письма нет, пока не заведём
-// Яндекс 360 — ЗАГЛУШКА, форма никуда не отправляет.
+// СБРОС ПАРОЛЯ, шаг 1 — по макету (решение 16.10.2026: сброс кодом из
+// письма, CABINET.md §21). База шлёт код (request-otp) и не говорит, есть ли
+// такая учётка — почту так не подобрать. Шаг 2 — /profi/parol/kod/.
 import ProfiShell from '../../components/profi/ProfiShell.astro';
 import MessengerLogin from '../../components/profi/MessengerLogin.astro';
 import '../../components/profi/auth.css';
@@ -14,11 +14,12 @@ import '../../components/profi/auth.css';
       <p class="auth__sub">Пришлём код на почту учётки</p>
     </div>
 
-    <form class="auth__form" action="/profi/parol/kod/" method="get">
+    <form class="auth__form" data-reset-form>
       <label class="field">
         <span class="field__label">Почта</span>
-        <input class="input" type="email" name="email" autocomplete="email" />
+        <input class="input" type="email" name="email" autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false" required />
       </label>
+      <p class="auth__error" role="alert" data-error hidden></p>
       <button class="pill pill--lg pill--solid pill--block" type="submit">Прислать код</button>
     </form>
 
@@ -27,9 +28,33 @@ import '../../components/profi/auth.css';
       <MessengerLogin />
     </div>
 
-    <!-- ЗАГЛУШКА: сюда контакт поддержки (Telegram или почта), пока нет — ссылка пустая -->
-    <p class="auth__alt">Не пришло письмо или нет доступа к почте? <a href="#">Напишите нам</a></p>
+    <p class="auth__alt">Нет доступа к почте? Напишите на <a href="mailto:kabinet@wed-secrets.ru">kabinet@wed-secrets.ru</a></p>
 
-    <p class="auth__alt"><a href="/profi/vhod/">Вернуться ко входу</a></p>
+    <p class="auth__alt"><a href="/profi/vhod/" data-keep-query>Вернуться ко входу</a></p>
   </main>
 </ProfiShell>
+
+<script>
+  import { sendCode, saveCodeStep } from '../../lib/email-login';
+
+  const q = new URLSearchParams(location.search);
+  const form = document.querySelector<HTMLFormElement>('[data-reset-form]')!;
+  const error = form.querySelector<HTMLElement>('[data-error]')!;
+  document.querySelectorAll<HTMLAnchorElement>('[data-keep-query]').forEach((a) => { a.search = location.search; });
+
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    error.hidden = true;
+    const btn = form.querySelector('button')!;
+    btn.disabled = true;
+    try {
+      const email = String(new FormData(form).get('email')).trim().toLowerCase();
+      saveCodeStep({ email, otpId: await sendCode(email), next: q.get('next') || undefined });
+      location.href = '/profi/parol/kod/';
+    } catch (err) {
+      error.textContent = (err as Error).message;
+      error.hidden = false;
+      btn.disabled = false;
+    }
+  });
+</script>

@@ -1,8 +1,10 @@
 ---
-// РЕГИСТРАЦИЯ ПОДРЯДЧИКА — прототип. Оферта и согласие на ПДн подписываются
+// РЕГИСТРАЦИЯ ПОДРЯДЧИКА — по макету. Оферта и согласие на ПДн подписываются
 // ЗДЕСЬ, до входа в кабинет (решение 16.10.2026, CABINET.md §16, §21): две
-// отдельные галочки со ссылками на тексты, без обеих кнопки неактивны.
-// Тексты пишет юрист — ссылки пока ведут на заглушку. Отправки нет.
+// отдельные галочки, без обеих кнопки неактивны. Тексты галочек и документов —
+// из базы (legal_docs): подпись сохраняет дословно то, что человек отметил.
+// Почта → письмо с кодом → /profi/registraciya/kod/; пока код не введён,
+// пароль не пускает. Telegram и MAX ведут на экран условий, как со входа.
 import ProfiShell from '../../components/profi/ProfiShell.astro';
 import AuthMethods from '../../components/profi/AuthMethods.astro';
 import '../../components/profi/auth.css';
@@ -15,22 +17,12 @@ import '../../components/profi/auth.css';
       <p class="auth__sub">Бесплатно, займёт минуту</p>
     </div>
 
-    <div class="auth__checks">
-      <label class="check">
-        <input class="check__input" type="checkbox" data-consent-box />
-        <span class="check__box"></span>
-        <span>Принимаю <a href="/profi/#voprosy">условия размещения</a></span>
-      </label>
-      <label class="check">
-        <input class="check__input" type="checkbox" data-consent-box />
-        <span class="check__box"></span>
-        <span>Даю согласие на <a href="/profi/#voprosy">обработку персональных данных</a></span>
-      </label>
-    </div>
+    <div class="auth__checks" data-docs><p class="auth__sub">Загружаем условия…</p></div>
 
-    <form class="auth__form auth__form--lg auth__gate" action="/profi/kabinet/" method="get" data-consent-gate aria-disabled="true">
-      <input class="input" type="email" name="email" placeholder="Почта" aria-label="Почта" autocomplete="email" />
-      <input class="input" type="password" name="password" placeholder="Пароль, не короче 8 знаков" aria-label="Пароль" autocomplete="new-password" />
+    <form class="auth__form auth__form--lg auth__gate" data-reg-form data-consent-gate aria-disabled="true">
+      <input class="input" type="email" name="email" placeholder="Почта" aria-label="Почта" autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false" required />
+      <input class="input" type="password" name="password" placeholder="Пароль, не короче 8 знаков" aria-label="Пароль" autocomplete="new-password" minlength="8" required />
+      <p class="auth__error" role="alert" data-error hidden></p>
       <button class="pill pill--lg pill--solid pill--block" type="submit">Создать учётку</button>
     </form>
 
@@ -40,22 +32,56 @@ import '../../components/profi/auth.css';
       <AuthMethods prefix="Через" />
     </div>
 
-    <p class="auth__alt">Уже есть учётка? <a href="/profi/vhod/">Войти</a></p>
+    <p class="auth__alt">Уже есть учётка? <a href="/profi/vhod/" data-keep-query>Войти</a></p>
   </main>
 </ProfiShell>
 
 <script>
-  // Оба способа живут, только когда отмечены обе галочки. Без JS всё
-  // остаётся заблокированным — это прототип, отправки всё равно нет.
-  const root = document.querySelector('[data-consent]');
-  if (root) {
-    const boxes = [...root.querySelectorAll<HTMLInputElement>('[data-consent-box]')];
-    const gates = [...root.querySelectorAll<HTMLElement>('[data-consent-gate]')];
-    const sync = () => {
-      const ok = boxes.every((b) => b.checked);
-      gates.forEach((g) => g.setAttribute('aria-disabled', String(!ok)));
-    };
-    boxes.forEach((b) => b.addEventListener('change', sync));
-    sync();
+  import { api } from '../../lib/cabinet-api';
+  import { renderTerms, sendCode, saveCodeStep } from '../../lib/email-login';
+
+  const q = new URLSearchParams(location.search);
+  const root = document.querySelector<HTMLElement>('[data-consent]')!;
+  const docs = root.querySelector<HTMLElement>('[data-docs]')!;
+  const form = root.querySelector<HTMLFormElement>('[data-reg-form]')!;
+  const error = form.querySelector<HTMLElement>('[data-error]')!;
+  const gates = [...root.querySelectorAll<HTMLElement>('[data-consent-gate]')];
+  const fail = (m: string) => { error.textContent = m; error.hidden = false; };
+  document.querySelectorAll<HTMLAnchorElement>('[data-keep-query]').forEach((a) => { a.search = location.search; });
+
+  // оба способа живут, только когда отмечены обе галочки
+  let accepted = false;
+  try {
+    if (await renderTerms(docs)) {
+      const boxes = [...docs.querySelectorAll<HTMLInputElement>('[data-consent-box]')];
+      boxes.forEach((b) => b.addEventListener('change', () => {
+        accepted = boxes.every((x) => x.checked);
+        gates.forEach((g) => g.setAttribute('aria-disabled', String(!accepted)));
+      }));
+    } else {
+      docs.innerHTML = '<p class="auth__error">Условия ещё не опубликованы — регистрация пока закрыта. Напишите нам.</p>';
+    }
+  } catch (err) {
+    docs.innerHTML = '';
+    fail((err as Error).message);
   }
+
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    if (!accepted) return;
+    error.hidden = true;
+    const btn = form.querySelector('button')!;
+    btn.disabled = true;
+    try {
+      const f = new FormData(form);
+      const email = String(f.get('email')).trim().toLowerCase();
+      const invite = q.get('invite') || undefined;
+      await api(null, 'POST', '/api/wed/register', { email, password: String(f.get('password')), accept: true, invite });
+      saveCodeStep({ email, otpId: await sendCode(email), invite, next: q.get('next') || undefined });
+      location.href = '/profi/registraciya/kod/';
+    } catch (err) {
+      fail((err as Error).message);
+      btn.disabled = false;
+    }
+  });
 </script>

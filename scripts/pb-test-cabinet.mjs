@@ -420,6 +420,80 @@ if (!MAX_SECRET) {
   check('повторный вход без условий', res.status === 200 && res.json.record?.id === X.id, res.text);
 }
 
+// ---------- вход по почте ----------
+// Код из письма тест прочитать не может (в базе он хэширован) — заводит
+// свой код суперпользователем в _otps, тем же путём, каким база шлёт письмо.
+console.log('\nвход по почте');
+{
+  for (const kind of ['vendor-offer', 'vendor-pdn']) {
+    const have = await call(SU, 'GET', `/api/collections/legal_docs/records?filter=${encodeURIComponent(`kind = "${kind}"`)}`);
+    if (have.json?.items?.length) continue;
+    const d = await call(SU, 'POST', '/api/collections/legal_docs/records', { kind, version: 'test', title: 'Тест', text: '<p>Тест</p>', checkbox: 'Согласен' });
+    cleanup.legal_docs.push(d.json?.id);
+  }
+  const email = `cabinet-mail-${stamp}@example.com`;
+  const pass1 = 'first-pass-123';
+  const pass2 = 'second-pass-456';
+  const vendorsCol = (await call(SU, 'GET', '/api/collections/vendors')).json;
+  const code = async (vendorId) => {
+    const c = String(Math.floor(100000 + Math.random() * 899999));
+    const o = await call(SU, 'POST', '/api/collections/_otps/records', { collectionRef: vendorsCol.id, recordRef: vendorId, password: c, sentTo: email });
+    return { otpId: o.json?.id, code: c, raw: o };
+  };
+  const login = (password) => call(null, 'POST', '/api/collections/vendors/auth-with-password', { identity: email, password });
+
+  res = await call(null, 'POST', '/api/wed/register', { email: 'не-почта', password: pass1, accept: true });
+  check('кривая почта не регистрируется', res.status === 400, res.text);
+  res = await call(null, 'POST', '/api/wed/register', { email, password: '1234567', accept: true });
+  check('короткий пароль не принимается', res.status === 400, res.text);
+  res = await call(null, 'POST', '/api/wed/register', { email, password: pass1 });
+  check('без условий не регистрируется', res.status === 400, res.text);
+
+  res = await call(null, 'POST', '/api/wed/register', { email: email.toUpperCase(), password: pass1, accept: true });
+  check('регистрация по почте с условиями', res.status === 200, res.text);
+  const v = (await call(SU, 'GET', `/api/collections/vendors/records?filter=${encodeURIComponent(`email = "${email}"`)}`)).json?.items?.[0];
+  cleanup.vendors.unshift(v?.id);
+  check('учётка без подтверждённой почты', !!v && v.verified === false, JSON.stringify(v));
+  const sigs = await call(SU, 'GET', `/api/collections/signatures/records?filter=${encodeURIComponent(`vendor = "${v?.id}"`)}`);
+  check('подписи с отметкой email', sigs.json?.items?.length >= 2 && sigs.json.items.every((x) => x.method === 'email'), sigs.text);
+  for (const x of sigs.json?.items ?? []) cleanup.signatures.unshift(x.id);
+
+  res = await login(pass1);
+  check('без кода из письма пароль не пускает', refused(res), res.text);
+  res = await call(null, 'POST', '/api/collections/vendors/request-otp', { email });
+  check('код на почту запрашивается', res.status === 200 && !!res.json?.otpId, res.text);
+
+  // бросил регистрацию и начал заново — пароль новый, подтверждения всё ещё нет
+  res = await call(null, 'POST', '/api/wed/register', { email, password: pass2, accept: true });
+  check('незаконченная регистрация повторяется', res.status === 200, res.text);
+  for (const x of (await call(SU, 'GET', `/api/collections/signatures/records?filter=${encodeURIComponent(`vendor = "${v?.id}"`)}`)).json?.items ?? []) {
+    if (!cleanup.signatures.includes(x.id)) cleanup.signatures.unshift(x.id);
+  }
+
+  let o = await code(v?.id);
+  check('тестовый код заведён', !!o.otpId, o.raw.text);
+  res = await call(null, 'POST', '/api/wed/confirm', { otpId: o.otpId, code: '000000' });
+  check('неверный код почту не подтверждает', res.status === 400, res.text);
+  res = await call(null, 'POST', '/api/wed/confirm', { otpId: o.otpId, code: o.code });
+  check('код подтверждает почту и пускает', res.status === 200 && !!res.json?.token && res.json.record?.verified === true, res.text);
+  res = await login(pass2);
+  check('после подтверждения — вход паролем', res.status === 200 && res.json.record?.id === v?.id, res.text);
+  res = await call(null, 'POST', '/api/wed/register', { email, password: pass1, accept: true });
+  check('вторую учётку на ту же почту не завести', res.status === 400, res.text);
+
+  o = await code(v?.id);
+  res = await call(null, 'POST', '/api/wed/password-reset', { otpId: o.otpId, code: '000000', password: pass1 });
+  check('чужой код пароль не меняет', res.status === 400, res.text);
+  res = await call(null, 'POST', '/api/wed/password-reset', { otpId: o.otpId, code: o.code, password: '123' });
+  check('короткий новый пароль не принимается', res.status === 400, res.text);
+  res = await call(null, 'POST', '/api/wed/password-reset', { otpId: o.otpId, code: o.code, password: pass1 });
+  check('новый пароль по коду и сразу вход', res.status === 200 && !!res.json?.token, res.text);
+  res = await call(null, 'POST', '/api/wed/password-reset', { otpId: o.otpId, code: o.code, password: pass2 });
+  check('код сброса одноразовый', res.status === 400, res.text);
+  check('старый пароль больше не подходит', refused(await login(pass2)));
+  check('новый пароль подходит', (await login(pass1)).status === 200);
+}
+
 // ---------- уборка ----------
 for (const [col, ids] of Object.entries(cleanup)) {
   for (const id of ids.filter(Boolean)) await call(SU, 'DELETE', `/api/collections/${col}/records/${id}`);

@@ -34,7 +34,9 @@ manually») — после правки `pb_hooks` её перезапускат
 кабинета (fine-grained токен GitHub только на репозиторий `wedwibse`,
 право Actions: read and write; без него карточка ждёт следующего пуша),
 `MAX_BOT_TOKEN` + `MAX_BOT_NAME` + `MAX_WEBHOOK_SECRET` — вход через MAX
-(`lib/max.js`, `CABINET.md` §23). Модераторы
+(`lib/max.js`, `CABINET.md` §23). Почта для кодов — не переменная, а
+настройки базы (Settings → Mail: `smtp.yandex.ru:465`, ящик `kabinet@wed-secrets.ru`,
+пароль приложения из `SMTP_PASSWORD` в `.env` проекта; `CABINET.md` §9). Модераторы
 и тестовая редакция условий — `node scripts/pb-cabinet-setup.mjs`.
 Проверка: `node scripts/pb-test-cabinet.mjs` (с тем же `TG_BOT_TOKEN`
 в окружении — и раздел входа через Telegram; с `MAX_WEBHOOK_SECRET` — раздел

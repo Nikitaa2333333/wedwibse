@@ -1,5 +1,6 @@
 ---
-// СБРОС ПАРОЛЯ, шаг 2 — код из письма и новый пароль. ЗАГЛУШКА, см. parol.astro.
+// СБРОС ПАРОЛЯ, шаг 2 — код из письма и новый пароль (/api/wed/password-reset).
+// Верный код сразу открывает кабинет и заодно подтверждает почту.
 import ProfiShell from '../../../components/profi/ProfiShell.astro';
 import '../../../components/profi/auth.css';
 ---
@@ -8,21 +9,69 @@ import '../../../components/profi/auth.css';
   <main class="container auth">
     <div class="auth__head">
       <h1 class="t-h1">Код из письма</h1>
-      <p class="auth__sub">Отправили на alexey@suhorada.ru</p>
+      <p class="auth__sub" data-sent>Если учётка с этой почтой есть, код уже в пути</p>
     </div>
 
-    <form class="auth__form" action="/profi/kabinet/" method="get">
+    <form class="auth__form" data-code-form>
       <label class="field">
         <span class="field__label">Код</span>
-        <input class="input" inputmode="numeric" autocomplete="one-time-code" />
+        <input class="input" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required />
       </label>
       <label class="field">
         <span class="field__label">Новый пароль</span>
-        <input class="input" type="password" autocomplete="new-password" placeholder="Не короче 8 знаков" />
+        <input class="input" type="password" name="password" autocomplete="new-password" minlength="8" placeholder="Не короче 8 знаков" required />
       </label>
+      <p class="auth__error" role="alert" data-error hidden></p>
       <button class="pill pill--lg pill--solid pill--block" type="submit">Сохранить и войти</button>
     </form>
 
-    <p class="auth__alt">Письма нет? <a href="/profi/parol/kod/">Прислать ещё раз</a></p>
+    <p class="auth__alt">Письма нет? Загляните в спам или <a href="#" data-resend>пришлите ещё раз</a></p>
   </main>
 </ProfiShell>
+
+<script>
+  import { api } from '../../../lib/cabinet-api';
+  import { codeStep, saveCodeStep, sendCode, keep } from '../../../lib/email-login';
+  import { afterLogin } from '../../../lib/tg-login';
+
+  const step = codeStep();
+  const form = document.querySelector<HTMLFormElement>('[data-code-form]')!;
+  const error = form.querySelector<HTMLElement>('[data-error]')!;
+  const resend = document.querySelector<HTMLAnchorElement>('[data-resend]')!;
+  const fail = (m: string) => { error.textContent = m; error.hidden = false; };
+
+  if (!step) {
+    location.replace('/profi/parol/');
+  } else {
+    document.querySelector('[data-sent]')!.textContent = `Если учётка с почтой ${step.email} есть, код уже в пути`;
+
+    form.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      error.hidden = true;
+      const btn = form.querySelector('button')!;
+      btn.disabled = true;
+      try {
+        const f = new FormData(form);
+        keep(await api(null, 'POST', '/api/wed/password-reset', {
+          otpId: step.otpId, code: String(f.get('code')).replace(/\D/g, ''), password: String(f.get('password')),
+        }));
+        afterLogin(step.next);
+      } catch (err) {
+        fail((err as Error).message);
+        btn.disabled = false;
+      }
+    });
+
+    resend.addEventListener('click', async (ev) => {
+      ev.preventDefault();
+      error.hidden = true;
+      try {
+        step.otpId = await sendCode(step.email);
+        saveCodeStep(step);
+        resend.replaceWith(document.createTextNode('отправили ещё раз'));
+      } catch (err) {
+        fail((err as Error).message);
+      }
+    });
+  }
+</script>

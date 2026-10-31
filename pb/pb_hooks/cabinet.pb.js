@@ -51,6 +51,12 @@ routerAdd('POST', '/api/wed/max/start', (e) => require(`${__hooks}/lib/max.js`).
 routerAdd('POST', '/api/wed/max/webhook', (e) => require(`${__hooks}/lib/max.js`).webhook(e));
 routerAdd('POST', '/api/wed/max', (e) => require(`${__hooks}/lib/cabinet.js`).maxAuth(e));
 
+// вход по почте: регистрация с условиями, сброс пароля кодом из письма
+// (сам код — штатный request-otp / auth-with-otp)
+routerAdd('POST', '/api/wed/register', (e) => require(`${__hooks}/lib/cabinet.js`).emailRegister(e));
+routerAdd('POST', '/api/wed/confirm', (e) => require(`${__hooks}/lib/cabinet.js`).confirmCode(e));
+routerAdd('POST', '/api/wed/password-reset', (e) => require(`${__hooks}/lib/cabinet.js`).passwordReset(e));
+
 routerAdd('POST', '/api/wed/invite', (e) => require(`${__hooks}/lib/cabinet.js`).claimInviteRoute(e), $apis.requireAuth('vendors'));
 
 // мои карточки: опубликованные (с владельцем) — у подрядчика нет доступа

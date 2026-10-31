@@ -1,0 +1,73 @@
+---
+// РЕГИСТРАЦИЯ, шаг 2 — код из письма (вид как у шага сброса пароля).
+// Верный код подтверждает почту и сразу открывает кабинет (/api/wed/confirm;
+// пароль остаётся тем, что человек задал на регистрации).
+import ProfiShell from '../../../components/profi/ProfiShell.astro';
+import '../../../components/profi/auth.css';
+---
+
+<ProfiShell title="Код из письма" look="auth">
+  <main class="container auth">
+    <div class="auth__head">
+      <h1 class="t-h1">Код из письма</h1>
+      <p class="auth__sub" data-sent>Отправили код на почту</p>
+    </div>
+
+    <form class="auth__form" data-code-form>
+      <label class="field">
+        <span class="field__label">Код</span>
+        <input class="input" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required />
+      </label>
+      <p class="auth__error" role="alert" data-error hidden></p>
+      <button class="pill pill--lg pill--solid pill--block" type="submit">Подтвердить и войти</button>
+    </form>
+
+    <p class="auth__alt">Письма нет? Загляните в спам или <a href="#" data-resend>пришлите ещё раз</a></p>
+    <p class="auth__alt"><a href="/profi/registraciya/">Другая почта</a></p>
+  </main>
+</ProfiShell>
+
+<script>
+  import { api } from '../../../lib/cabinet-api';
+  import { codeStep, saveCodeStep, sendCode, keep } from '../../../lib/email-login';
+  import { afterLogin } from '../../../lib/tg-login';
+
+  const step = codeStep();
+  const form = document.querySelector<HTMLFormElement>('[data-code-form]')!;
+  const error = form.querySelector<HTMLElement>('[data-error]')!;
+  const resend = document.querySelector<HTMLAnchorElement>('[data-resend]')!;
+  const fail = (m: string) => { error.textContent = m; error.hidden = false; };
+
+  if (!step) {
+    location.replace('/profi/registraciya/');
+  } else {
+    document.querySelector('[data-sent]')!.textContent = `Отправили на ${step.email}`;
+
+    form.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      error.hidden = true;
+      const btn = form.querySelector('button')!;
+      btn.disabled = true;
+      try {
+        const code = String(new FormData(form).get('code')).replace(/\D/g, '');
+        keep(await api(null, 'POST', '/api/wed/confirm', { otpId: step.otpId, code }));
+        afterLogin(step.next);
+      } catch (err) {
+        fail((err as Error).message);
+        btn.disabled = false;
+      }
+    });
+
+    resend.addEventListener('click', async (ev) => {
+      ev.preventDefault();
+      error.hidden = true;
+      try {
+        step.otpId = await sendCode(step.email);
+        saveCodeStep(step);
+        resend.replaceWith(document.createTextNode('отправили ещё раз'));
+      } catch (err) {
+        fail((err as Error).message);
+      }
+    });
+  }
+</script>
