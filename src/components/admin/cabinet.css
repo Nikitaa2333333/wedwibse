@@ -470,3 +470,43 @@ body:has(.c-bar .a-btn) .c-toast { bottom: calc(var(--cab-tabs-h) + env(safe-are
    (Никита, 02.11: зелёные и красные плитки — «светофор», сняты) */
 .c-tile__done { position: absolute; top: var(--s-4); right: var(--s-4); width: 22px; height: 22px; color: var(--st-ok-text); }
 .c-tile__done svg { width: 100%; height: 100%; display: block; }
+
+/* ---------- подсказка «зажмите и перетащите» над кадрами ----------
+   Мини-анимация на своих кадрах: третий зажимают (точка касания), он
+   приподнимается и уезжает на место обложки, остальные сдвигаются.
+   Только transform/opacity; при reduced-motion — стоит на месте (guard). */
+.c-hint { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--s-3); padding: var(--s-3) var(--s-3) var(--s-3) var(--s-4); border-radius: var(--cab-sheet-radius); background: var(--adm-card); }
+.c-hint[hidden] { display: none; }
+.c-hint__demo { position: relative; width: 98px; height: 42px; }
+.c-hint__tile { position: absolute; top: 0; width: 30px; height: 42px; border-radius: 6px; background: var(--adm-bg) center / cover no-repeat; }
+.c-hint__tile--1 { left: 0; animation: c-hint-shift 3.2s var(--ease-out) infinite; }
+.c-hint__tile--2 { left: 34px; animation: c-hint-shift 3.2s var(--ease-out) infinite; }
+.c-hint__tile--3 { left: 68px; z-index: 1; animation: c-hint-lift 3.2s var(--ease-out) infinite; }
+.c-hint__touch { position: absolute; left: 75px; top: 13px; z-index: 2; width: 16px; height: 16px; border-radius: 50%; background: rgba(15, 20, 30, 0.35); box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.85); animation: c-hint-touch 3.2s var(--ease-out) infinite; }
+.c-hint__text { display: grid; gap: 2px; font-size: var(--adm-fs); line-height: 18px; color: var(--adm-text-2); }
+.c-hint__text b { font-size: 15px; font-weight: 600; color: var(--adm-text); }
+.c-hint__close { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; color: var(--adm-text-2); align-self: start; }
+.c-hint__close svg { width: 18px; height: 18px; }
+@keyframes c-hint-lift {
+  0%, 15% { transform: none; box-shadow: none; }
+  25% { transform: scale(1.12); box-shadow: 0 6px 14px rgba(15, 20, 30, 0.25); }
+  60% { transform: translateX(-68px) scale(1.12); box-shadow: 0 6px 14px rgba(15, 20, 30, 0.25); }
+  70%, 88% { transform: translateX(-68px); box-shadow: none; opacity: 1; }
+  96% { transform: translateX(-68px); opacity: 0; }
+  100% { transform: none; opacity: 0; }
+}
+@keyframes c-hint-shift {
+  0%, 30% { transform: none; opacity: 1; }
+  55%, 88% { transform: translateX(34px); opacity: 1; }
+  96% { transform: translateX(34px); opacity: 0; }
+  100% { transform: none; opacity: 0; }
+}
+@keyframes c-hint-touch {
+  0%, 8% { transform: scale(1.4); opacity: 0; }
+  15% { transform: scale(1); opacity: 1; }
+  25% { transform: scale(0.85); opacity: 1; }
+  60% { transform: translateX(-68px) scale(0.85); opacity: 1; }
+  70% { transform: translateX(-68px) scale(1.3); opacity: 0; }
+  100% { transform: translateX(-68px); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .c-hint__tile, .c-hint__touch { animation: none; } }
