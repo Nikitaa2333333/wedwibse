@@ -14,6 +14,69 @@
 
 **Срок: 6 недель** (решение 16.10). Деньги — третий этап.
 
+## Задание для ноутбука — 02.11 (вставить в чат Claude Code на ноутбуке целиком)
+
+> Никита: скопируй этот раздел целиком в чат Claude Code на ноутбуке (Git Bash).
+> Вывод каждого шага — в чат; что-то красное — стоп, дальше не идём.
+
+В облаке за 02.11 сделаны и слиты в `master` кабинет подрядчика (плитки, профиль
+«Вход и уведомления», удаление карточек подрядчиком), админка видом кабинета
+и удаление карточек модератором. **Серверная часть ждёт ноутбука** — она вся
+собрана в ветке `claude/leads-live` (там же заявки пар с сайта, запрос №74:
+форма «Заказать» до сих пор ничего не отправляет, заявки теряются).
+
+На сервер едут хуки `pb/pb_hooks` и три миграции:
+`1762100000_cabinet_delete` (подрядчик удаляет вернувшуюся карточку),
+`1762200000_leads_route` (заявки пар: лимит частоты, чтение модераторами),
+`1762300000_vendor_notify` (`vendors.notify` — «Вход и уведомления» в профиле).
+Новые маршруты хуков: `POST /api/wed/lead` (заявка с сайта → база + группа
+модерации), `POST /api/wed/mod/remove` (модератор удаляет / снимает карточку).
+
+**1. Код**
+```
+git fetch origin && git checkout claude/leads-live && git pull origin claude/leads-live
+```
+
+**2. Тесты хуков на локальной базе** (как в шапке `scripts/pb-test-cabinet.mjs`:
+своя PocketBase с `--hooksDir pb/pb_hooks --migrationsDir pb/pb_migrations`)
+```
+node scripts/pb-test-cabinet.mjs
+```
+Все проверки зелёные — дальше. Красное — вывод в чат, на сервер не выкладывать.
+
+**3. Бэкап и выкладка на сервер** (тот же порядок, что шаг 3 от 26.10)
+```
+ssh -i ~/.ssh/timeweb_wed root@193.124.47.78 '/srv/wedsecrets-pb/backup.sh && ls -t /srv/wedsecrets-pb/backups | head -1'
+scp -i ~/.ssh/timeweb_wed -r pb/pb_migrations/* root@193.124.47.78:/srv/wedsecrets-pb/pb_migrations/
+scp -i ~/.ssh/timeweb_wed -r pb/pb_hooks/* root@193.124.47.78:/srv/wedsecrets-pb/pb_hooks/
+ssh -i ~/.ssh/timeweb_wed root@193.124.47.78 '
+  chown -R deploy:deploy /srv/wedsecrets-pb/pb_migrations /srv/wedsecrets-pb/pb_hooks
+  systemctl restart wedsecrets-pb && sleep 3
+  journalctl -u wedsecrets-pb -n 40 --no-pager'
+```
+В журнале — три новые миграции применились, ошибок нет.
+
+**4. Проверка на боевом**
+- Заявка с сайта (должно вернуть `{"ok":true}` и прийти сообщение «Заявка с сайта» в группу модерации):
+  ```
+  curl -s -X POST https://wed-secrets.ru/api/wed/lead -H 'content-type: application/json' \
+    -d '{"name":"Тест","phone":"+79990000000","message":"Карточка: проверка формы","sourceUrl":"https://wed-secrets.ru/","consent":true}'
+  ```
+- Ключ выкладки: `ssh … 'journalctl -u wedsecrets-pb --since "7 days ago" | grep -i "выкладка"'`.
+  Есть «401» — ключ `GH_DEPLOY_TOKEN` истёк: выпустить новый fine-grained
+  (только `wedwibse`, Actions: read and write), вписать в `/srv/wedsecrets-pb/.env`
+  и в `.env` проекта, `systemctl restart wedsecrets-pb`.
+
+**5. Тестовые карточки удалить** — уже из админки, руками:
+`https://wed-secrets.ru/profi/admin/katalog/` → блок «Из кабинета».
+Новые (черновик / на проверке / вернули) — «Удалить»; опубликованные —
+«Снять с сайта», затем «Удалить совсем». Нажатие дважды: первое спрашивает.
+Тестовую заявку из п. 4 — в админке базы (через `bash scripts/pb-tunnel.sh`),
+коллекция `leads`: удалить или `status` → `spam`.
+
+**6. Написать в облачный чат:** «сервер обновлён, заявка пришла» — там сольют
+№74, и форма «Заказать» на карточках начнёт отправлять заявки.
+
 ## Сквозная проверка — первая цель (решение Никиты, 26.10)
 
 Пока путь не пройден своими руками, подрядчиков не зовём. Цель: Никита
