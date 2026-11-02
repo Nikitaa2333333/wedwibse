@@ -660,6 +660,38 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
   }
 
   /**
+   * Кадр во весь экран (Никита, 02.11): лента кадров со свайпом, в полный
+   * размер файла. Закрыть — крестиком, Esc или жестом «назад» (своя запись
+   * в истории: иначе «назад» уводит из анкеты).
+   */
+  function openViewer(start: number) {
+    const names: string[] = rev.photos ?? [];
+    if (!names.length) return;
+    const dlg = document.createElement('dialog');
+    dlg.className = 'c-viewer';
+    dlg.innerHTML = `
+      <div class="c-viewer__track">${names.map((n, i) => `<figure class="c-viewer__slide"><img src="${fileUrl(rev, n, { token })}" alt="" ${Math.abs(i - start) > 1 ? 'loading="lazy"' : ''} draggable="false" /></figure>`).join('')}</div>
+      <p class="c-viewer__count" aria-live="polite"></p>
+      <button class="c-viewer__close" type="button" aria-label="Закрыть"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.6" d="M6 6l12 12M18 6L6 18"/></svg></button>`;
+    document.body.append(dlg);
+    const track = dlg.querySelector<HTMLElement>('.c-viewer__track')!;
+    const count = dlg.querySelector<HTMLElement>('.c-viewer__count')!;
+    const at = () => Math.round(track.scrollLeft / Math.max(1, track.clientWidth));
+    const label = () => { count.textContent = `${at() + 1} из ${names.length}${at() === 0 ? ' · обложка' : ''}`; };
+    track.addEventListener('scroll', label, { passive: true });
+    let closed = false;
+    const close = () => { if (closed) return; closed = true; dlg.close(); dlg.remove(); removeEventListener('popstate', onPop); };
+    const onPop = () => close();
+    dlg.querySelector('.c-viewer__close')!.addEventListener('click', () => history.back());
+    dlg.addEventListener('cancel', (e) => { e.preventDefault(); history.back(); });
+    dlg.showModal();
+    track.scrollLeft = start * track.clientWidth;
+    label();
+    history.pushState({ viewer: true }, '');
+    addEventListener('popstate', onPop);
+  }
+
+  /**
    * Порядок фото перетаскиванием. Мышь — сразу по сдвигу; палец — после
    * удержания (~0,3 с): обычное движение пальцем остаётся прокруткой
    * страницы. Пока тащим, touchmove гасится, иначе браузер начнёт листать.
@@ -730,7 +762,11 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       d = null;
       clearTimeout(cur.timer);
       cancelAnimationFrame(cur.raf);
-      if (!cur.on) return;
+      // короткое нажатие без сдвига — открыть кадр во весь экран
+      if (!cur.on) {
+        if (e.type === 'pointerup' && Math.hypot(e.clientX - cur.x0, e.clientY - cur.y0) < 8) openViewer(Number(cur.el.dataset.pi));
+        return;
+      }
       cur.el.classList.remove('is-drag');
       cur.el.style.transform = '';
       box.classList.remove('is-sorting');

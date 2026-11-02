@@ -261,6 +261,16 @@ select.a-field__input { appearance: none; background-image: linear-gradient(45de
 .c-sheet { border: 0; padding: 0; margin: auto auto 0; width: 100%; max-width: 560px; max-height: 88vh; border-radius: var(--adm-radius) var(--adm-radius) 0 0; background: var(--bg); color: var(--ink); overflow-x: clip; overflow-y: auto; }
 @media (min-width: 640px) { .c-sheet { margin: auto; border-radius: var(--adm-radius); } }
 .c-sheet::backdrop { background: rgba(15, 20, 30, 0.45); }
+/* кадр во весь экран: лента со свайпом, кадр целиком (contain) на тёмном */
+.c-viewer { border: 0; padding: 0; margin: 0; width: 100vw; height: 100dvh; max-width: none; max-height: none; background: #000; color: #fff; overflow: hidden; }
+.c-viewer::backdrop { background: #000; }
+.c-viewer__track { display: flex; width: 100%; height: 100%; overflow-x: auto; overflow-y: clip; scroll-snap-type: x mandatory; overscroll-behavior: contain; scrollbar-width: none; }
+.c-viewer__track::-webkit-scrollbar { display: none; }
+.c-viewer__slide { flex: 0 0 100%; height: 100%; margin: 0; display: grid; place-items: center; scroll-snap-align: center; scroll-snap-stop: always; }
+.c-viewer__slide img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+.c-viewer__count { position: absolute; left: 0; right: 0; bottom: calc(16px + env(safe-area-inset-bottom)); margin: 0; text-align: center; font-size: var(--adm-fs); font-variant-numeric: tabular-nums; }
+.c-viewer__close { position: absolute; right: 12px; top: calc(12px + env(safe-area-inset-top)); width: 40px; height: 40px; border-radius: 999px; display: grid; place-items: center; background: rgba(255, 255, 255, 0.16); color: #fff; }
+.c-viewer__close svg { width: 20px; height: 20px; }
 .c-sheet__body { display: grid; gap: var(--s-4); padding: var(--s-5) var(--s-4) calc(var(--s-4) + env(safe-area-inset-bottom)); }
 .c-sheet__close { border-radius: 999px; border: 0; background: var(--cab-ink); color: #fff; }
 
