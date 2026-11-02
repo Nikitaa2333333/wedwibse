@@ -93,7 +93,7 @@
 /* группа строк на листе: крупный заголовок, строки от края до края;
    документ или вопрос — <details class="c-row">, раскрывается на месте */
 .c-cat { display: grid; gap: 0; }
-.c-cat__h { margin: var(--s-3) 0 var(--cab-gap); padding-inline: var(--s-4); font-size: var(--adm-fs-h2); line-height: 28px; font-weight: 600; color: var(--adm-text); }
+.c-cat__h { padding: var(--s-4) var(--s-4) var(--s-3); /* отступы — padding: `html[data-look] .adm h2 { margin: 0 }` в admin.css сильнее любого margin здесь */ font-size: var(--adm-fs-h2); line-height: 28px; font-weight: 600; color: var(--adm-text); }
 details.c-row { display: block; }
 details.c-row > summary { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); list-style: none; cursor: pointer; }
 details.c-row > summary::-webkit-details-marker { display: none; }
