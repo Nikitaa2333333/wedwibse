@@ -490,3 +490,48 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
 /* вариант на выбор — серая капсула, выбранный — почти-чёрный */
 .a-pick { height: 36px; padding: 0 14px; border-radius: 10px; background: var(--adm-bg); font: inherit; font-size: var(--adm-fs); color: var(--adm-text); white-space: nowrap; }
 .a-pick[aria-pressed="true"] { background: var(--adm-primary); color: #fff; }
+
+/* ---------- нижнее меню — общее у кабинета подрядчика и админки ----------
+   (Никита, 02.11: админка — тем же видом, что кабинет). У админки пять
+   разделов и счётчики «ждёт действия»; на ПК у неё левое меню (ниже). */
+.c-tabs {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 6;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  height: calc(var(--cab-tabs-h) + env(safe-area-inset-bottom));
+  padding: 0 max(0px, (100% - 560px) / 2) env(safe-area-inset-bottom);
+  background: var(--adm-card);
+  border-top: 1px solid var(--adm-line);
+}
+.c-tab { display: grid; justify-items: center; align-content: center; gap: 4px; min-width: 0; color: var(--adm-text-2); text-decoration: none; font-size: var(--adm-fs-sm); line-height: 16px; font-weight: 500; }
+.c-tab svg { width: 26px; height: 26px; display: block; }
+.c-tab[aria-current="page"] { color: var(--cab-ink); font-weight: 600; }
+@media (hover: hover) { .c-tab:hover { color: var(--cab-ink); } }
+
+.c-tab__ic { position: relative; display: block; }
+.c-tab__ic svg { width: 26px !important; height: 26px !important; }
+.c-tab__n { position: absolute; top: -4px; right: -10px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--st-bad-text); color: #fff; font-size: 11px; line-height: 18px; font-weight: 600; text-align: center; }
+.c-tab__n--info { background: var(--adm-dark); }
+
+/* ---------- админка тем же видом, что кабинет (Никита, 02.11) ----------
+   Телефон: шапки и полосы разделов нет — нижнее меню; плашки через
+   --cab-gap от края и друг от друга, скругление --cab-sheet-radius,
+   заголовок экрана — на фоне, в край текста плашек. ПК: шапка и левое меню. */
+.adm:not(.cab) .a-card { border-radius: var(--cab-sheet-radius); }
+.adm:not(.cab) .adm-main { gap: var(--cab-gap); }
+.adm:not(.cab) .adm-main > .a-title, .adm:not(.cab) .adm-main > .a-h1, .adm:not(.cab) .adm-main > .a-lead { padding: var(--s-3) var(--s-4) var(--s-2); }
+@media (max-width: 1023px) {
+  .adm:not(.cab) .adm-head, .adm:not(.cab) .adm-nav { display: none; }
+  .adm:not(.cab) .adm-body { padding: calc(var(--cab-gap) + env(safe-area-inset-top)) var(--cab-gap) calc(var(--cab-tabs-h) + env(safe-area-inset-bottom) + var(--cab-gap)); }
+}
+@media (min-width: 1024px) {
+  .adm:not(.cab) .c-tabs { display: none; }
+}
+html:has(.adm), html:has(.adm) body { background: var(--adm-bg); }
+.a-logout { justify-self: center; padding: var(--s-3); color: var(--st-bad-text); font-weight: 500; text-decoration: none; }
+.a-total { padding-inline: var(--s-4); }

@@ -73,4 +73,6 @@ const venues = CATALOG.filter((c) => c.kind === 'venue').length;
   </section>
 
   <p class="a-total">На сайте {CATALOG.length} {plural(CATALOG.length, 'карточка', 'карточки', 'карточек')}: {venues} {plural(venues, 'площадка', 'площадки', 'площадок')}, {CATALOG.length - venues} {plural(CATALOG.length - venues, 'подрядчик', 'подрядчика', 'подрядчиков')}. <a class="a-more" href="/profi/admin/katalog/">Все карточки</a></p>
+  {/* на телефоне шапки нет — выход здесь (на ПК он ещё и в шапке) */}
+  <a class="a-logout" href="#" data-adm-logout hidden>Выйти из админки</a>
 </AdminShell>

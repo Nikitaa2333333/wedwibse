@@ -116,25 +116,6 @@ details.c-row > summary .c-row__go { flex: none; transition: transform var(--dur
 details[open].c-row > summary .c-row__go { transform: rotate(90deg); }
 .c-details__text { margin-top: var(--s-3); font-size: var(--adm-fs); line-height: 1.5; overflow-wrap: anywhere; }
 
-/* ---------- нижнее меню ---------- */
-.c-tabs {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 6;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  height: calc(var(--cab-tabs-h) + env(safe-area-inset-bottom));
-  padding: 0 max(0px, (100% - 560px) / 2) env(safe-area-inset-bottom);
-  background: var(--adm-card);
-  border-top: 1px solid var(--adm-line);
-}
-.c-tab { display: grid; justify-items: center; align-content: center; gap: 4px; min-width: 0; color: var(--adm-text-2); text-decoration: none; font-size: var(--adm-fs-sm); line-height: 16px; font-weight: 500; }
-.c-tab svg { width: 26px; height: 26px; display: block; }
-.c-tab[aria-current="page"] { color: var(--cab-ink); font-weight: 600; }
-@media (hover: hover) { .c-tab:hover { color: var(--cab-ink); } }
-
 /* ---------- бейдж статуса ---------- */
 .c-badge {
   display: inline-flex;
