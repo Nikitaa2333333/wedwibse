@@ -5,20 +5,29 @@
 // классы admin.css. Отличия от AdminShell: свой знак («кабинет»), своя
 // учётка (подрядчик, вход через Telegram) и свои разделы. Без ClientRouter:
 // экраны кабинета — живые формы, каждый переход — полная загрузка.
-// Меню разделов нет (Никита, 27.10: раздел один — плашка «Карточки» лишняя);
-// вернётся, когда появится второй раздел.
+// Нижнее меню разделов — на всех экранах кабинета, кроме входа и условий
+// (Никита, 02.11, реф. Яндекс Директ): Карточки · Заявки · Помощь · Профиль.
+// Раньше меню не было, пока раздел был один (27.10).
 // noindex всегда: индексация сайта открыта, кабинет в выдачу не должен.
 import Layout from '../../layouts/Layout.astro';
 import './admin.css';
 import './cabinet.css';
+import { ADMIN_ICONS, type AdminIconName } from '../../lib/admin-icons';
 
 interface Props {
   title: string;
   /** экран входа и условий: только знак, без меню и учётки */
   bare?: boolean;
-  section?: 'cards';
+  section?: Tab;
 }
-const { title, bare = false } = Astro.props;
+type Tab = 'cards' | 'leads' | 'help' | 'profile';
+const { title, bare = false, section = 'cards' } = Astro.props;
+const TABS: { key: Tab; href: string; label: string; icon: AdminIconName }[] = [
+  { key: 'cards', href: '/profi/moi/', label: 'Карточки', icon: 'cards' },
+  { key: 'leads', href: '/profi/moi/zayavki/', label: 'Заявки', icon: 'mail' },
+  { key: 'help', href: '/profi/moi/pomoshch/', label: 'Помощь', icon: 'help' },
+  { key: 'profile', href: '/profi/moi/profil/', label: 'Профиль', icon: 'profile' },
+];
 ---
 
 <Layout title={`${title} — Кабинет Wed Secrets`} description="Кабинет подрядчика и площадки Wed Secrets.">
@@ -45,6 +54,16 @@ const { title, bare = false } = Astro.props;
       <div class="adm-body cab-body">
         <main class="adm-main cab-main"><slot /></main>
       </div>
+    )}
+    {!bare && (
+      <nav class="c-tabs" aria-label="Разделы кабинета">
+        {TABS.map((t) => (
+          <a class="c-tab" href={t.href} aria-current={t.key === section ? 'page' : undefined}>
+            <svg viewBox="0 0 24 24" aria-hidden="true" set:html={ADMIN_ICONS[t.icon]} />
+            <span>{t.label}</span>
+          </a>
+        ))}
+      </nav>
     )}
   </div>
 </Layout>
