@@ -18,7 +18,7 @@ const go = '<svg class="c-row__go" viewBox="0 0 24 24" aria-hidden="true"><path 
   <div class="cab-col" data-new>
     <div class="c-head">
       <a class="c-back" href="/profi/moi/"><AdminIcon name="back" /> Мои карточки</a>
-      <h1 class="a-h1">Кого заводим?</h1>
+      <h1 class="a-h1">Выберите категорию</h1>
     </div>
     <p class="c-error" data-error hidden></p>
     <section class="a-card a-card--flush">
@@ -31,11 +31,13 @@ const go = '<svg class="c-row__go" viewBox="0 0 24 24" aria-hidden="true"><path 
         </button>
       </div>
     </section>
-    <section class="a-card a-card--flush">
-      <div class="c-rows">
-        {groups.map((g) => (
-          <>
-            <p class="c-group">{g.label}</p>
+    {/* Евгений, 31.10: подразделы сливались со строками — каждая группа
+        своей плашкой с заголовком над ней, как разделы в настройках телефона */}
+    {groups.map((g) => (
+      <section class="c-cat">
+        <h2 class="c-cat__h">{g.label}</h2>
+        <div class="a-card a-card--flush">
+          <div class="c-rows">
             {g.categories.map((slug) => (
               <button class="c-row" type="button" data-kind="specialist" data-cat={slug}>
                 <span></span>
@@ -44,16 +46,17 @@ const go = '<svg class="c-row__go" viewBox="0 0 24 24" aria-hidden="true"><path 
                 <Fragment set:html={go} />
               </button>
             ))}
-          </>
-        ))}
-      </div>
-    </section>
+          </div>
+        </div>
+      </section>
+    ))}
   </div>
 </CabinetShell>
 
 <style>
   .c-row { width: 100%; text-align: left; }
-  .c-group + .c-row { border-top: 0; }
+  .c-cat { display: grid; gap: var(--s-2); }
+  .c-cat__h { margin: var(--s-2) 0 0; padding-inline: var(--adm-pad); font-size: var(--adm-fs-h2); line-height: 28px; font-weight: 600; color: var(--adm-text); }
 </style>
 
 <script>

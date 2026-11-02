@@ -35,7 +35,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
   import { ADMIN_ICONS } from '../../../lib/admin-icons';
   import { PHONE_COUNTRIES, DEFAULT_PHONE_COUNTRY, findCountry, flagSrc, nationalDigits, isComplete, fullE164, attachPhoneField } from '../../../lib/phone';
   import {
-    SECTIONS, VENUE_QUESTIONS, VENUE_TERMS, MAX_PHOTOS, MIN_PHOTOS, MIN_TEXT,
+    SECTIONS, VENUE_QUESTIONS, VENUE_TERMS, MAX_PHOTOS, MAX_VIDEOS, MIN_PHOTOS, MIN_TEXT,
     sectionState, cardState, priceFrom, rub, textLength, shrinkPhoto,
     type Kind, type SectionKey, type Question,
   } from '../../../lib/cabinet-form';
@@ -138,9 +138,13 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     const st = cardState(rev.status, !isNew());
     const secs = SECTIONS[kind];
     const states = secs.map((x) => ({ ...x, ...sectionState(x.key, rev, questions) }));
-    const done = states.filter((x) => x.done).length;
-    const canDelete = isNew() && rev.status === 'draft';
-    const title = data.name || (kind === 'venue' ? 'Новая площадка' : 'Новая карточка');
+    const must = states.filter((x) => !x.optional);
+    const done = must.filter((x) => x.done).length;
+    // удалить можно новую карточку в любом состоянии до публикации (Евгений,
+    // 31.10: тестовые не удалялись — кнопка была только у черновика);
+    // с проверки её сперва отзываем, это делает сама кнопка
+    const canDelete = isNew() && rev.status !== 'approved';
+    const title = data.name || role();
     const siteUrl = kind === 'venue' ? `/moskva/ploshchadki/${rev.slug}/` : `/moskva/podryadchiki/${rev.categorySlug}/${rev.slug}/`;
     view.innerHTML = `
       <div class="c-head">
@@ -149,9 +153,9 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         ${rev.slug ? `<p class="c-url" title="wed-secrets.ru${esc(siteUrl)}">Ваша ссылка: wed-secrets.ru/…/${esc(rev.slug)}/</p>` : ''}
       </div>
       ${rev.status === 'rejected' && rev.rejectReason ? `<p class="c-reason"><b>Вернули с причиной:</b> ${esc(rev.rejectReason)}<br>Исправьте и отправьте снова.</p>` : ''}
-      ${rev.status === 'review' ? '<p class="c-reason c-reason--info">Карточка на проверке — ответим в течение суток. Пока она на проверке, менять её нельзя; можно отозвать.</p>' : ''}
-      <div class="c-progress" role="progressbar" aria-label="Заполнено разделов" aria-valuemin="0" aria-valuemax="${secs.length}" aria-valuenow="${done}">
-        <div class="c-progress__bar"><i style="width:${Math.round((done / secs.length) * 100)}%"></i></div>
+      ${rev.status === 'review' ? '<p class="c-reason c-reason--info">Карточка на проверке — ответим в течение 24 часов. Пока она на проверке, менять её нельзя; можно отозвать.</p>' : ''}
+      <div class="c-progress" role="progressbar" aria-label="Заполнено разделов" aria-valuemin="0" aria-valuemax="${must.length}" aria-valuenow="${done}">
+        <div class="c-progress__bar"><i style="width:${Math.round((done / must.length) * 100)}%"></i></div>
       </div>
       <section class="a-card a-card--flush"><div class="c-rows">
         ${states.map((x) => `
@@ -183,7 +187,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         await save();
         rev = await api('vendor', 'PATCH', `/api/collections/revisions/records/${rev.id}`, { status: 'review' });
         renderOverview();
-        view.querySelector<HTMLElement>('[data-ok]')!.textContent = 'Отправили на проверку. Ответим в течение суток.';
+        view.querySelector<HTMLElement>('[data-ok]')!.textContent = 'Отправили на проверку. Ответим в течение 24 часов.';
         view.querySelector<HTMLElement>('[data-ok]')!.hidden = false;
       } catch (x) {
         // хук перечисляет, чего не хватает, через «; » — по строке на пункт
@@ -203,6 +207,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       const b = e.currentTarget as HTMLButtonElement;
       if (!b.dataset.sure) { b.dataset.sure = '1'; b.textContent = 'Удалить насовсем? Нажмите ещё раз'; return; }
       try {
+        if (rev.status === 'review') rev = await api('vendor', 'PATCH', `/api/collections/revisions/records/${rev.id}`, { status: 'draft' });
         await api('vendor', 'DELETE', `/api/collections/revisions/records/${rev.id}`);
         location.href = '/profi/moi/';
       } catch (x) { err.textContent = (x as Error).message; err.hidden = false; }
@@ -484,14 +489,14 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     switch (key) {
       case 'osnovnoe':
         return kind === 'venue'
-          ? { title: 'Основное', lead: '', html: `
+          ? { title: role(), lead: '', html: `
               ${field('Название площадки', 'name', data.name)}
               ${field('Адрес', 'address', data.address, { placeholder: 'Москва, улица, дом — или посёлок и шоссе' })}
               <div class="c-grid2">
                 ${field('Аренда от, ₽', 'rentFrom', data.rentFrom, { mode: 'numeric', note: 'За день; нет аренды — оставьте пустым' })}
                 ${field('Средний чек от, ₽ на гостя', 'checkFrom', data.checkFrom, { mode: 'numeric' })}
               </div>` }
-          : { title: 'Основное', lead: '', html: `
+          : { title: role(), lead: '', html: `
               <div class="c-grid2">
                 ${field('Имя', 'firstName', data.firstName, { placeholder: 'Елена' })}
                 ${field('Фамилия', 'lastName', data.lastName, { placeholder: 'Каморина' })}
@@ -508,22 +513,41 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
                 <span class="a-field__note">Ваше лицо, а не работа: пара видит, с кем будет иметь дело.</span>
               </div>` };
       case 'foto':
-        return { title: 'Фото', lead: `От ${MIN_PHOTOS} до ${MAX_PHOTOS} кадров. Первый — обложка в каталоге. Лучше вертикальные: каталог смотрят с телефона.`, html: '<div class="c-photos" data-photos></div><p class="c-ok" data-upload hidden></p><p class="c-error" data-photo-error hidden></p>' };
+        return { title: 'Фото', lead: `От ${MIN_PHOTOS} до ${MAX_PHOTOS} кадров, лучше вертикальные: каталог смотрят с телефона. Чтобы сменить обложку или порядок, зажмите фото и перетащите — на место обложки или между другими.`, html: '<div class="c-photos" data-photos></div><p class="c-ok" data-upload hidden></p><p class="c-error" data-photo-error hidden></p>' };
+      case 'video': {
+        // Евгений, 31.10: ссылка на ролик — своим разделом. Ролик на карточку
+        // ставим мы (VIDEO.md: пережатие, постер), подрядчик даёт только ссылку
+        const vs = data.videos?.length ? data.videos : [{}];
+        return { title: 'Видео', lead: 'Ссылка на ролик: Яндекс Диск, Google Диск, YouTube, VK Видео или Rutube. Подготовим и поставим его на карточку сами.', html: `
+          <div class="c-items">${vs.map((v: any, i: number) => `
+            <div class="c-vrow">
+              <input class="a-field__input" data-bind="videos.${i}.url" type="url" inputmode="url" value="${esc(v.url)}" placeholder="https://disk.yandex.ru/…" aria-label="Ссылка на видео" />
+              ${vs.length > 1 || v.url ? `<button class="c-tool" type="button" data-remove="videos" data-i="${i}" aria-label="Убрать"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.6" d="M6 6l12 12M18 6L6 18"/></svg></button>` : ''}
+            </div>`).join('')}</div>
+          <span class="a-field__note c-error" data-video-error hidden></span>
+          ${vs.length < MAX_VIDEOS ? '<button class="c-link c-add-link" type="button" data-add="videos">Добавить ещё ссылку</button>' : ''}` };
+      }
       case 'tekst': {
-        const st = kind === 'venue' ? cfg.structures._venue : cfg.structures[rev.categorySlug] ?? cfg.structures._default;
+        // Евгений, 31.10: «зачем создавать раздел, если текст на 90 % вставят
+        // готовым». По умолчанию — одно большое поле под вставку; разделы
+        // с заголовками — по желанию, ссылкой под полем. Заголовки из
+        // вставленного текста хук не угадывает: что не разбито — один раздел.
         const secs = data.sections ?? [];
-        return { title: 'Текст', lead: '', html: `
-          ${secs.length ? '' : `<p class="a-field__note">Не знаете, с чего начать? <button class="c-link" type="button" data-template>Взять за основу: ${esc(st.label.toLowerCase())}</button></p>`}
+        const single = secs.length <= 1 && !String(secs[0]?.title ?? '').trim();
+        const lead = 'Расскажите о себе — можно вставить готовый текст с сайта или из соцсетей. Пустая строка — новый абзац, строка с «—» — пункт списка.';
+        if (single) return { title: 'Описание', lead, html: `
+          <label class="a-field">
+            <textarea class="a-field__input c-text" data-bind="sections.0.body" aria-label="Описание" placeholder="${esc(TEXT_EXAMPLE)}">${esc(secs[0]?.body)}</textarea>
+          </label>
+          <p class="a-field__note c-text-foot"><span data-count>${textLength(data)} знаков</span><button class="c-link" type="button" data-split>Разбить на разделы с заголовками</button></p>` };
+        return { title: 'Описание', lead, html: `
           <div class="c-items">${secs.map((x: any, i: number) => `
             <div class="c-item">
               ${field('Заголовок раздела', `sections.${i}.title`, x.title, { placeholder: 'Как я работаю' })}
               ${field('Текст', `sections.${i}.body`, x.body, { area: true, placeholder: x.hint ? `${x.hint}\n\n${TEXT_EXAMPLE}` : TEXT_EXAMPLE })}
               ${tools('sections', i, secs.length)}
             </div>`).join('')}</div>
-          <div class="c-actions">
-            <button class="a-btn a-btn--lg c-add-btn" type="button" data-add="sections">${icon('plus')} Добавить раздел</button>
-          </div>
-          <p class="a-field__note" data-count>${textLength(data)} знаков</p>` };
+          <p class="a-field__note c-text-foot"><span data-count>${textLength(data)} знаков</span><button class="c-link" type="button" data-add="sections">Добавить раздел</button></p>` };
       }
       case 'voprosy':
         return { title: 'Вопросы', lead: questions.length ? 'По этим ответам вас найдут в фильтрах каталога.' : 'Для этой категории фильтров в каталоге пока нет — раздел можно пропустить.', html: choices(questions, 'filters') };
@@ -617,19 +641,105 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     if (!box) return;
     const names: string[] = rev.photos ?? [];
     const lock = locked();
+    // Евгений, 31.10: стрелки «левее/правее» — как на калькуляторе. Порядок —
+    // перетаскиванием (bindPhotoDrag). Обложка — первый кадр, крупно (2×2):
+    // сменить её — перетащить другой кадр на её место (Никита, 02.11: кнопка
+    // «На обложку» на каждом кадре — шум)
     box.innerHTML = names.map((n, i) => `
-      <div class="c-photo">
-        <img src="${fileUrl(rev, n, { thumb: '400x0', token })}" alt="" loading="lazy" />
+      <div class="c-photo${i === 0 ? ' c-photo--cover' : ''}" data-pi="${i}">
+        <img src="${fileUrl(rev, n, { thumb: '400x0', token })}" alt="" loading="lazy" draggable="false" />
         ${i === 0 ? '<span class="c-badge c-photo__tag">Обложка</span>' : ''}
         ${lock ? '' : `<div class="c-photo__tools">
-          <button type="button" data-pmove="${i}" data-d="-1" aria-label="Левее" ${i === 0 ? 'disabled' : ''}>${icon('back')}</button>
           <button type="button" data-premove="${i}" aria-label="Убрать"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.6" d="M6 6l12 12M18 6L6 18"/></svg></button>
-          <button type="button" data-pmove="${i}" data-d="1" aria-label="Правее" ${i === names.length - 1 ? 'disabled' : ''}>${icon('next')}</button>
         </div>`}
       </div>`).join('') + (lock || names.length >= MAX_PHOTOS ? '' : `
       <label class="c-photo c-photo--add">${icon('plus')}<span>Добавить фото</span>
         <input type="file" accept="image/jpeg,image/png,image/webp" multiple hidden data-pfiles />
       </label>`);
+    if (!lock) bindPhotoDrag(box);
+  }
+
+  /**
+   * Порядок фото перетаскиванием. Мышь — сразу по сдвигу; палец — после
+   * удержания (~0,3 с): обычное движение пальцем остаётся прокруткой
+   * страницы. Пока тащим, touchmove гасится, иначе браузер начнёт листать.
+   * Плитки переставляются в DOM на лету, в базу уходит один запрос на отпускании.
+   */
+  function bindPhotoDrag(box: HTMLElement) {
+    if (box.dataset.drag) return;
+    box.dataset.drag = '1';
+    type Drag = { el: HTMLElement; id: number; x0: number; y0: number; gx: number; gy: number; x: number; y: number; on: boolean; timer: number; raf: number };
+    let d: Drag | null = null;
+    const tiles = () => [...box.querySelectorAll<HTMLElement>('.c-photo[data-pi]')];
+    const place = () => {
+      if (!d) return;
+      d.el.style.transform = '';
+      const r = d.el.getBoundingClientRect();
+      d.el.style.transform = `translate(${d.x - d.gx - r.left}px, ${d.y - d.gy - r.top}px)`;
+    };
+    // у края экрана — подкручиваем страницу, чтобы дотащить до дальнего ряда
+    const edge = () => {
+      if (!d?.on) return;
+      const zone = 72;
+      const v = d.y < zone ? -(zone - d.y) / 6 : d.y > innerHeight - zone ? (d.y - innerHeight + zone) / 6 : 0;
+      if (v) { scrollBy(0, v); place(); }
+      d.raf = requestAnimationFrame(edge);
+    };
+    const start = () => {
+      if (!d) return;
+      d.on = true;
+      const r = d.el.getBoundingClientRect();
+      d.gx = d.x0 - r.left;
+      d.gy = d.y0 - r.top;
+      d.el.classList.add('is-drag');
+      box.classList.add('is-sorting');
+      navigator.vibrate?.(10);
+      d.raf = requestAnimationFrame(edge);
+    };
+    box.addEventListener('pointerdown', (e) => {
+      const t = e.target as HTMLElement;
+      const el = t.closest<HTMLElement>('.c-photo[data-pi]');
+      if (!el || t.closest('button') || locked() || (e.pointerType === 'mouse' && e.button !== 0)) return;
+      d = { el, id: e.pointerId, x0: e.clientX, y0: e.clientY, gx: 0, gy: 0, x: e.clientX, y: e.clientY, on: false, timer: 0, raf: 0 };
+      if (e.pointerType !== 'mouse') d.timer = window.setTimeout(start, 300);
+    });
+    addEventListener('pointermove', (e) => {
+      if (!d || e.pointerId !== d.id) return;
+      d.x = e.clientX;
+      d.y = e.clientY;
+      if (!d.on) {
+        if (Math.hypot(d.x - d.x0, d.y - d.y0) < 8) return;
+        // палец сдвинулся раньше удержания — это прокрутка, не перетаскивание
+        if (e.pointerType !== 'mouse') { clearTimeout(d.timer); d = null; return; }
+        start();
+      }
+      d.el.style.visibility = 'hidden';
+      const over = document.elementFromPoint(d.x, d.y)?.closest<HTMLElement>('.c-photo[data-pi]');
+      d.el.style.visibility = '';
+      if (over && over !== d.el && box.contains(over)) {
+        const all = tiles();
+        over[all.indexOf(d.el) < all.indexOf(over) ? 'after' : 'before'](d.el);
+      }
+      place();
+    });
+    box.addEventListener('touchmove', (e) => { if (d?.on) e.preventDefault(); }, { passive: false });
+    box.addEventListener('contextmenu', (e) => { if ((e.target as HTMLElement).closest('.c-photo')) e.preventDefault(); });
+    const end = async (e: PointerEvent) => {
+      if (!d || e.pointerId !== d.id) return;
+      const cur = d;
+      d = null;
+      clearTimeout(cur.timer);
+      cancelAnimationFrame(cur.raf);
+      if (!cur.on) return;
+      cur.el.classList.remove('is-drag');
+      cur.el.style.transform = '';
+      box.classList.remove('is-sorting');
+      const names: string[] = rev.photos ?? [];
+      const order = tiles().map((el) => names[Number(el.dataset.pi)]);
+      if (order.some((n, i) => n !== names[i])) await photoPatch({ photos: order });
+    };
+    addEventListener('pointerup', end);
+    addEventListener('pointercancel', end);
   }
 
   async function photoPatch(body: any) {
@@ -705,6 +815,12 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
 
   view.addEventListener('focusout', (e) => {
     const t = e.target as HTMLInputElement;
+    if (t.dataset.bind?.startsWith('videos.')) {
+      const err = view.querySelector<HTMLElement>('[data-video-error]');
+      const bad = [...view.querySelectorAll<HTMLInputElement>('[data-bind^="videos."]')].some((x) => x.value.trim() && !/^https?:\/\/\S+\.\S+/.test(x.value.trim()));
+      if (err) { err.textContent = bad ? 'Ссылка начинается с https:// — скопируйте её из адресной строки или кнопкой «Поделиться».' : ''; err.hidden = !bad; }
+      return;
+    }
     if (t.dataset.bind !== 'contacts.telegram') return;
     const { value, ok } = normalizeTelegram(t.value);
     t.value = value;
@@ -773,31 +889,29 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       return;
     }
     // списки: разделы текста, пакеты, залы
-    if (b.dataset.add || b.dataset.move || b.dataset.remove || b.hasAttribute('data-template')) {
-      if (b.hasAttribute('data-template')) {
+    if (b.dataset.add || b.dataset.move || b.dataset.remove || b.hasAttribute('data-split')) {
+      if (b.hasAttribute('data-split')) {
         const st = kind === 'venue' ? cfg.structures._venue : cfg.structures[rev.categorySlug] ?? cfg.structures._default;
-        data.sections = st.sections.map((x: any) => ({ title: x.title, body: '', hint: x.hint }));
+        const hints = st.sections.map((x: any) => ({ title: x.title, body: '', hint: x.hint }));
+        const body = String(data.sections?.[0]?.body ?? '').trim();
+        // текст уже есть — он первый раздел, дальше подсказки структуры категории
+        data.sections = body ? [{ title: '', body }, ...hints.slice(1)] : hints;
       } else if (b.dataset.add) {
+        // видео: первое поле нарисовано без записи в данных
+        if (b.dataset.add === 'videos' && !data.videos?.length) data.videos = [{}];
         (data[b.dataset.add] ??= []).push({});
       } else if (b.dataset.move) {
         const list = data[b.dataset.move];
         const i = Number(b.dataset.i), j = i + Number(b.dataset.d);
         [list[i], list[j]] = [list[j], list[i]];
       } else if (b.dataset.remove) {
-        data[b.dataset.remove].splice(Number(b.dataset.i), 1);
+        data[b.dataset.remove]?.splice(Number(b.dataset.i), 1);
       }
       renderSection(section()!);
       later();
       return;
     }
     // фото
-    if (b.dataset.pmove) {
-      const names = [...rev.photos];
-      const i = Number(b.dataset.pmove), j = i + Number(b.dataset.d);
-      [names[i], names[j]] = [names[j], names[i]];
-      await photoPatch({ photos: names });
-      return;
-    }
     if (b.dataset.premove) {
       await photoPatch({ 'photos-': [rev.photos[Number(b.dataset.premove)]] });
       return;

@@ -94,6 +94,12 @@
 .c-form { display: grid; gap: var(--s-4); }
 .a-field__note { font-size: var(--adm-fs-sm); line-height: 16px; color: var(--adm-text-2); }
 textarea.a-field__input { height: auto; min-height: 160px; padding: 12px 14px; line-height: 1.5; resize: vertical; }
+/* описание одним полем — под вставку готового текста */
+textarea.c-text { min-height: 52vh; }
+.c-text-foot { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s-3); flex-wrap: wrap; }
+/* ссылка на видео: поле и крестик в строку */
+.c-vrow { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px; }
+.c-add-link { justify-self: start; }
 select.a-field__input { appearance: none; background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%); background-position: calc(100% - 20px) 21px, calc(100% - 15px) 21px; background-size: 5px 5px; background-repeat: no-repeat; padding-right: 40px; }
 .c-grid2 { display: grid; gap: var(--s-3); grid-template-columns: minmax(0, 1fr); }
 @media (min-width: 560px) { .c-grid2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
@@ -137,10 +143,18 @@ select.a-field__input { appearance: none; background-image: linear-gradient(45de
 /* ---------- фото ---------- */
 .c-photos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 @media (min-width: 640px) { .c-photos { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-.c-photo { position: relative; aspect-ratio: 4 / 5; border-radius: 10px; overflow: hidden; background: var(--adm-bg); }
+.c-photo { position: relative; aspect-ratio: 4 / 5; border-radius: 10px; overflow: hidden; background: var(--adm-bg); -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+/* перетаскивание (bindPhotoDrag): плитка над остальными, остальные стоят */
+.c-photo.is-drag { z-index: 3; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28); }
+.c-photos.is-sorting { cursor: grabbing; }
+@media (hover: hover) { .c-photos:not(.is-sorting) .c-photo[data-pi] { cursor: grab; } }
 .c-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .c-photo__tag { position: absolute; left: 6px; top: 6px; }
 .c-photo__tools { position: absolute; left: 4px; right: 4px; bottom: 4px; display: flex; justify-content: space-between; gap: 4px; }
+.c-photo__tools { justify-content: flex-end; }
+/* обложка — первый кадр крупно, 2×2 клетки сетки; остальные обтекают */
+.c-photos { grid-auto-flow: dense; }
+.c-photo--cover { grid-column: span 2; grid-row: span 2; aspect-ratio: auto; }
 .c-photo__tools button { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; background: rgba(255, 255, 255, 0.92); color: var(--adm-text); }
 .c-photo__tools svg { width: 16px; height: 16px; }
 .c-photo__tools .c-tool--up svg, .c-photo__tools .c-tool--down svg { transform: none; }
@@ -172,7 +186,6 @@ select.a-field__input { appearance: none; background-image: linear-gradient(45de
 .c-error[hidden], .c-ok[hidden], .cab [hidden] { display: none !important; }
 
 /* ---------- выбор категории ---------- */
-.c-group { padding: 12px var(--adm-pad) 4px; font-size: var(--adm-fs-sm); font-weight: 600; color: var(--adm-text-2); }
 .c-reason--info { background: color-mix(in srgb, var(--st-info) 22%, var(--adm-card)); }
 .c-head__row .a-h1 { overflow-wrap: anywhere; }
 
