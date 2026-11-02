@@ -707,11 +707,11 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     const names: string[] = rev.photos ?? [];
     const lock = locked();
     // Евгений, 31.10: стрелки «левее/правее» — как на калькуляторе. Порядок —
-    // перетаскиванием (bindPhotoDrag). Обложка — первый кадр, крупно (2×2):
-    // сменить её — перетащить другой кадр на её место (Никита, 02.11: кнопка
-    // «На обложку» на каждом кадре — шум)
+    // перетаскиванием (bindPhotoDrag). Обложка — первый кадр, обычного размера
+    // с плашкой «Обложка» (Никита, 02.11: крупная 2×2 — вернули обычную);
+    // сменить её — перетащить другой кадр на первое место
     box.innerHTML = names.map((n, i) => `
-      <div class="c-photo${i === 0 ? ' c-photo--cover' : ''}" data-pi="${i}">
+      <div class="c-photo" data-pi="${i}">
         <img src="${fileUrl(rev, n, { thumb: '400x0', token })}" alt="" loading="lazy" draggable="false" />
         ${i === 0 ? '<span class="c-badge c-photo__tag">Обложка</span>' : ''}
         ${lock ? '' : `<div class="c-photo__tools">
