@@ -20,34 +20,23 @@
 /* колонка формы: на ПК не растягиваем поля на весь экран */
 .cab-col { width: 100%; max-width: 720px; margin-inline: auto; display: flex; flex-direction: column; gap: var(--s-4); }
 
-/* ---------- поле, лист и плашки (реф. Яндекс Директ / настройки Яндекса) ----------
-   Шапка экрана (назад, заголовок, статус) — на голубом поле; под ней
-   светлый лист во всю ширину телефона со скруглёнными верхними углами,
-   до самого нижнего меню. Содержимое листа — отдельными белыми плашками
-   с небольшим отступом (Никита, 02.11: «не всё в единой плашке, а
-   разделение, как у Яндекса»): группа строк, поле, вопрос — своя плашка.
-   Внутри плашки второй подложки нет: поле без серой заливки, подсказка
-   и ошибка — тоже внутри. */
-.cab { background: var(--cab-tint); }
-.cab .cab-body { min-height: 100dvh; grid-template-rows: minmax(0, 1fr); padding-bottom: calc(var(--cab-tabs-h) + env(safe-area-inset-bottom)); }
-.cab .cab-main { align-content: stretch; }
-.c-sheet-area {
-  flex: 1 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-3);
-  margin-inline: calc(-1 * var(--s-4));
-  padding: var(--s-4) var(--s-3) var(--s-4);
-  border-radius: var(--cab-sheet-radius) var(--cab-sheet-radius) 0 0;
-  background: var(--adm-bg);
-  --c-bar-bg: var(--adm-bg);
-}
+/* ---------- фон и плашки (реф. Яндекс Метрика, Никита 02.11) ----------
+   Один серый фон и белые плашки на нём с минимальным отступом — шапка
+   экрана тоже плашка. Никакого листа под плашками: голубое поле и серый
+   лист со скруглением поверх были «плашкой в плашке» (02.11, снимок
+   Метрики — «вот фон и плашки с минимальным расстоянием»). Внутри плашки
+   второй подложки нет: поле без серой заливки, подсказка — внутри. */
+.cab { background: var(--adm-bg); }
+.cab .cab-body { min-height: 100dvh; padding: calc(var(--s-2) + env(safe-area-inset-top)) var(--s-2) calc(var(--cab-tabs-h) + env(safe-area-inset-bottom) + var(--s-2)); }
+.cab .cab-col { gap: var(--s-2); }
+.cab .c-head, .cab .a-title { padding: var(--s-4); border-radius: var(--cab-sheet-radius); background: var(--adm-card); }
+.cab .c-head .c-state:not(.c-badge--ok):not(.c-badge--bad):not(.c-badge--info):not(.c-state--bad) { background: var(--adm-bg); }
+.cab .c-head .c-progress__bar, .cab .c-head .c-help { background: var(--adm-bg); }
+.cab .c-head .a-lead { color: var(--adm-text-2); }
+.c-sheet-area { display: flex; flex-direction: column; gap: var(--s-2); --c-bar-bg: var(--adm-bg); }
 .c-sheet-area .a-card { padding: 0; border-radius: 0; background: none; }
-/* на поле шапки ссылки и подписи — на тон темнее, чтобы читались на голубом */
-.cab .c-head .a-lead { color: var(--adm-text); }
-@media (min-width: 640px) {
-  .c-sheet-area { margin-inline: 0; margin-bottom: var(--s-5); padding-inline: var(--s-4); border-radius: var(--cab-sheet-radius); }
-}
+/* текст прямо на фоне (заголовок группы, счётчик знаков, ошибка) — в край текста плашек */
+.c-sheet-area > .c-error, .c-form > .a-field__note, .c-form > .c-error, .c-text-foot, .c-form > .c-ok { padding-inline: var(--s-4); }
 
 /* плашка: группа строк, поле анкеты, вопрос, раздел текста, тариф, зал */
 .c-card,
@@ -60,7 +49,7 @@
 .c-form > .c-items > .c-item,
 .c-form > .c-items > .c-vrow {
   background: var(--adm-card);
-  border-radius: var(--adm-radius);
+  border-radius: var(--cab-sheet-radius);
 }
 .c-card, .c-form > .a-field, .c-form > .c-grid2 > .a-field, .c-form > .c-q, .c-form > .c-items > .c-item { padding: 14px var(--s-4); }
 .c-form > .c-photos { padding: var(--s-3); }
@@ -81,8 +70,8 @@
 
 /* группа строк на листе: крупный заголовок, строки от края до края;
    документ или вопрос — <details class="c-row">, раскрывается на месте */
-.c-cat { display: grid; gap: var(--s-1); }
-.c-cat__h { margin: var(--s-2) 0 0; padding-inline: var(--s-2); font-size: var(--adm-fs-h2); line-height: 28px; font-weight: 600; color: var(--adm-text); }
+.c-cat { display: grid; gap: 0; }
+.c-cat__h { margin: var(--s-3) 0 var(--s-1); padding-inline: var(--s-4); font-size: var(--adm-fs-h2); line-height: 28px; font-weight: 600; color: var(--adm-text); }
 details.c-row { display: block; }
 details.c-row > summary { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); list-style: none; cursor: pointer; }
 details.c-row > summary::-webkit-details-marker { display: none; }
