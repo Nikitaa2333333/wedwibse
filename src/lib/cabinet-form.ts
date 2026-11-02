@@ -14,10 +14,11 @@
 //   tariffs: [{ name, price, unit, includes }] — тарифы
 //   halls: [{ name, area, banquet, buffet, priceFrom, note }] — залы (площадка)
 //   terms: { kitchen, alcohol, until, parking } — условия (площадка)
+//   videos: [{ url }]                      — ссылки на ролики (диск, YouTube…), ролик готовим мы (VIDEO.md)
 //   contacts: { phone (E.164), phoneCountry, telegram, max, site, email } — за кнопкой «Показать контакты»
 
 export type Kind = 'venue' | 'specialist';
-export type SectionKey = 'osnovnoe' | 'foto' | 'tekst' | 'voprosy' | 'prays' | 'zaly' | 'usloviya' | 'kontakty';
+export type SectionKey = 'osnovnoe' | 'foto' | 'video' | 'tekst' | 'voprosy' | 'prays' | 'zaly' | 'usloviya' | 'kontakty';
 
 export interface Question {
   key: string;
@@ -26,16 +27,21 @@ export interface Question {
   options: { value: string; label: string }[];
 }
 
+/** ссылок на видео в одной карточке */
+export const MAX_VIDEOS = 5;
+
 /** на проверку — от 8 фото, текст от 150 знаков (те же числа, что в хуке) */
 export const MIN_PHOTOS = 8;
 export const MAX_PHOTOS = 50;
 export const MIN_TEXT = 150;
 
-export const SECTIONS: Record<Kind, { key: SectionKey; title: string; icon: string }[]> = {
+/** optional — раздел по желанию: пустым не краснеет и в полосу заполненности не входит */
+export const SECTIONS: Record<Kind, { key: SectionKey; title: string; icon: string; optional?: boolean }[]> = {
   specialist: [
     { key: 'osnovnoe', title: 'Основное', icon: 'profile' },
     { key: 'foto', title: 'Фото', icon: 'photo' },
-    { key: 'tekst', title: 'Текст', icon: 'text' },
+    { key: 'video', title: 'Видео', icon: 'video', optional: true },
+    { key: 'tekst', title: 'Описание', icon: 'text' },
     { key: 'voprosy', title: 'Вопросы', icon: 'check' },
     { key: 'prays', title: 'Цена', icon: 'notes' },
     { key: 'kontakty', title: 'Контакты', icon: 'phone' },
@@ -43,9 +49,10 @@ export const SECTIONS: Record<Kind, { key: SectionKey; title: string; icon: stri
   venue: [
     { key: 'osnovnoe', title: 'Основное', icon: 'profile' },
     { key: 'foto', title: 'Фото', icon: 'photo' },
+    { key: 'video', title: 'Видео', icon: 'video', optional: true },
     { key: 'zaly', title: 'Залы', icon: 'catalog' },
     { key: 'usloviya', title: 'Условия', icon: 'notes' },
-    { key: 'tekst', title: 'Текст', icon: 'text' },
+    { key: 'tekst', title: 'Описание', icon: 'text' },
     { key: 'voprosy', title: 'Вопросы', icon: 'check' },
     { key: 'kontakty', title: 'Контакты', icon: 'phone' },
   ],
@@ -131,6 +138,10 @@ export function sectionState(key: SectionKey, rev: any, questions: Question[]): 
     }
     case 'foto':
       return { done: photos >= MIN_PHOTOS, sub: photos ? `${photos} из ${MAX_PHOTOS}${photos < MIN_PHOTOS ? ` · нужно от ${MIN_PHOTOS}` : ''}` : 'пусто · нужно от 8', empty: photos < MIN_PHOTOS };
+    case 'video': {
+      const n = (d.videos ?? []).filter((v: any) => str(v?.url)).length;
+      return { done: n > 0, sub: n ? `${n} ${n === 1 ? 'ссылка' : n < 5 ? 'ссылки' : 'ссылок'}` : 'по желанию' };
+    }
     case 'tekst': {
       const n = (d.sections ?? []).filter((x: any) => str(x?.body)).length;
       const len = textLength(d);
@@ -173,7 +184,7 @@ export function sectionState(key: SectionKey, rev: any, questions: Question[]): 
 /** статус карточки одним словом и цветом (CLAUDE.md, «Кабинет — это не сайт») */
 export function cardState(revStatus: string | undefined, live: boolean): { label: string; cls: string; note: string } {
   if (revStatus === 'rejected') return { label: 'Вернули', cls: 'c-badge--bad', note: 'нужно исправить' };
-  if (revStatus === 'review') return { label: 'На проверке', cls: 'c-badge--info', note: live ? 'правка на проверке, на сайте прежняя версия' : 'проверим в течение суток' };
+  if (revStatus === 'review') return { label: 'На проверке', cls: 'c-badge--info', note: live ? 'правка на проверке, на сайте прежняя версия' : 'проверим в течение 24 часов' };
   if (revStatus === 'draft') return { label: 'Черновик', cls: '', note: live ? 'есть неотправленная правка' : 'заполняется' };
   if (live) return { label: 'На сайте', cls: 'c-badge--ok', note: 'опубликована' };
   return { label: 'Снята с сайта', cls: '', note: 'сейчас её нет на сайте — напишите нам' };

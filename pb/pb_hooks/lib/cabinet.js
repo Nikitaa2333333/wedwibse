@@ -23,6 +23,8 @@ const MAX_PRICE = 50000000;
 const MAX_PHOTOS = 50;
 /** карточек на одну учётку, включая новые на проверке (решение 16.10) */
 const MAX_CARDS = 3;
+/** ссылок на видео в карточке (cabinet-form.ts, MAX_VIDEOS) */
+const MAX_VIDEOS = 5;
 /** ревизия ещё не закрыта модератором */
 const OPEN_FILTER = '(status = "draft" || status = "review" || status = "rejected")';
 const SITE_URL = ($os.getenv('SITE_URL') || 'https://wed-secrets.ru').replace(/\/$/, '');
@@ -35,14 +37,14 @@ const SITE_URL = ($os.getenv('SITE_URL') || 'https://wed-secrets.ru').replace(/\
 const CONTACT_PATTERNS = [
   // +7 916 123-45-67, 8 (916) 123 45 67; «2018» и «150 000 – 300 000» не ловит:
   // нужна 7 или 8 в начале числа и группы 3-3-2-2
-  { re: /(?:\+7|\b[78])[\s\-()]*\d{3}[\s\-()]*\d{3}[\s\-]*\d{2}[\s\-]*\d{2}(?!\d)/, what: 'телефон' },
-  { re: /\b9\d{2}[\s\-()]*\d{3}[\s\-]*\d{2}[\s\-]*\d{2}(?!\d)/, what: 'телефон' },
-  { re: /[\w.+-]+@[\w-]+\.[a-zа-я]{2,}/i, what: 'почта' },
-  { re: /https?:\/\/|www\./i, what: 'ссылка' },
-  { re: /\b(?:t\.me|wa\.me|vk\.com|vk\.cc|taplink\.cc|instagram\.com|youtu\.be|youtube\.com)\b/i, what: 'ссылка' },
-  { re: /\b[a-z0-9-]{2,}\.(?:ru|com|net|org|su|pro|me|io|art|online|site|studio|photo|moscow|space)\b/i, what: 'адрес сайта' },
-  { re: /[а-яё0-9-]{2,}\.рф/i, what: 'адрес сайта' },
-  { re: /(?:^|[\s(«"])@[a-z0-9_.]{3,}/i, what: 'ник в мессенджере' },
+  { re: /(?:\+7|\b[78])[\s\-()]*\d{3}[\s\-()]*\d{3}[\s\-]*\d{2}[\s\-]*\d{2}(?!\d)/, what: 'указан номер телефона' },
+  { re: /\b9\d{2}[\s\-()]*\d{3}[\s\-]*\d{2}[\s\-]*\d{2}(?!\d)/, what: 'указан номер телефона' },
+  { re: /[\w.+-]+@[\w-]+\.[a-zа-я]{2,}/i, what: 'указана почта' },
+  { re: /https?:\/\/|www\./i, what: 'указана ссылка' },
+  { re: /\b(?:t\.me|wa\.me|vk\.com|vk\.cc|taplink\.cc|instagram\.com|youtu\.be|youtube\.com)\b/i, what: 'указана ссылка' },
+  { re: /\b[a-z0-9-]{2,}\.(?:ru|com|net|org|su|pro|me|io|art|online|site|studio|photo|moscow|space)\b/i, what: 'указан адрес сайта' },
+  { re: /[а-яё0-9-]{2,}\.рф/i, what: 'указан адрес сайта' },
+  { re: /(?:^|[\s(«"])@[a-z0-9_.]{3,}/i, what: 'указан ник в мессенджере' },
 ];
 
 /** первое найденное контактное данное в тексте шаблона (кроме блока contacts) */
@@ -60,7 +62,8 @@ function findContact(value, path) {
   }
   if (value && typeof value === 'object') {
     for (const k of Object.keys(value)) {
-      if (k === 'contacts') continue;
+      // контакты и ссылки на видео — ссылки по назначению
+      if (k === 'contacts' || k === 'videos') continue;
       const hit = findContact(value[k], path ? path + '.' + k : k);
       if (hit) return hit;
     }
@@ -70,8 +73,8 @@ function findContact(value, path) {
 
 /** как поле шаблона называется у подрядчика в форме */
 const FIELD_LABELS = {
-  name: 'Название', tagline: 'Коротко о себе', about: 'О себе', priceNote: 'Про цену',
-  address: 'Адрес', halls: 'Залы', filters: 'Ответы на вопросы', sections: 'Текст',
+  name: 'Название', tagline: 'Строка под именем', about: 'О себе', priceNote: 'Про цену',
+  address: 'Адрес', halls: 'Залы', filters: 'Ответы на вопросы', sections: 'Описание',
   tariffs: 'Прайс', terms: 'Условия',
 };
 
@@ -380,10 +383,55 @@ function submitProblems(rev) {
   const hit = findContact(data, '');
   if (hit) {
     problems.push(
-      `в поле «${fieldLabel(hit.path)}» есть ${hit.what} — контакты пишутся только в блоке «Контакты»`
+      `в разделе «${fieldLabel(hit.path)}» ${hit.what}. Телефон, почту и ссылки на соцсети можно добавлять только в раздел «Контакты»`
     );
   }
   return problems;
+}
+
+// ---------- один телефон — не больше чем в трёх карточках ----------
+// Евгений, 02.11: заводил две карточки на один номер. Учётка и так держит
+// до 3 карточек (MAX_CARDS), но вторая учётка (почта + Telegram) обходит
+// это — номер телефона в контактах обойти сложнее. Считаем карточки сайта
+// (кроме архивных) и новые незакрытые ревизии; своя карточка не в счёт.
+const MAX_CARDS_PER_PHONE = 3;
+
+function phoneKey(v) {
+  return str(v).replace(/[^\d]/g, '').replace(/^8(?=\d{10}$)/, '7');
+}
+
+function phoneProblem(app, rev) {
+  const data = jsonOf(rev, 'data');
+  const phone = phoneKey(data.contacts && data.contacts.phone);
+  if (phone.length < 10) return '';
+  const tail = phone.slice(-10);
+  const own = rev.getString('venue') || rev.getString('specialist') || '';
+  const seen = {};
+  for (const c of ['venues', 'specialists']) {
+    // грубо по подстроке, точно — ниже; номер в базе хранится по-разному
+    const list = app.findRecordsByFilter(c, 'contacts ~ {:t} && status != "archived"', '', 0, 0, { t: tail });
+    for (const card of list) {
+      if (card.id === own) continue;
+      if (phoneKey(jsonOf(card, 'contacts').phone) === phone) seen[card.id] = true;
+    }
+  }
+  const revs = app.findRecordsByFilter('revisions', `data ~ {:t} && venue = "" && specialist = "" && ${OPEN_FILTER}`, '', 0, 0, { t: tail });
+  for (const r of revs) {
+    if (r.id === rev.id) continue;
+    const c = jsonOf(r, 'data').contacts;
+    if (c && phoneKey(c.phone) === phone) seen[r.id] = true;
+  }
+  const n = Object.keys(seen).length;
+  return n >= MAX_CARDS_PER_PHONE
+    ? `этот телефон уже указан в ${n} карточках — один номер можно указать не больше чем в ${MAX_CARDS_PER_PHONE}`
+    : '';
+}
+
+/** ссылки на видео — настоящие адреса, а не обрывок текста */
+function videoProblem(data) {
+  const list = (Array.isArray(data.videos) ? data.videos : []).map((v) => str(v && v.url, 1000)).filter((u) => !!u);
+  if (list.length > MAX_VIDEOS) return `не больше ${MAX_VIDEOS} ссылок на видео`;
+  return list.some((u) => !/^https?:\/\/\S+\.\S+/.test(u)) ? 'проверьте ссылку на видео — она начинается с https://' : '';
 }
 
 /** правку можно одобрить, только если карточка не изменилась после её начала */
@@ -466,6 +514,10 @@ function vendorUpdateRevision(e) {
   const submitting = to === 'review';
   if (submitting) {
     const problems = submitProblems(r);
+    const phone = phoneProblem(e.app, r);
+    if (phone) problems.push(phone);
+    const video = videoProblem(jsonOf(r, 'data'));
+    if (video) problems.push(video);
     const stale = staleProblem(e.app, r);
     if (stale) problems.push(stale + ' Начните правку заново из карточки.');
     if (problems.length) throw new BadRequestError('Не получилось отправить на проверку: ' + problems.join('; ') + '.');
