@@ -13,7 +13,9 @@
 .cab .cab-body { grid-template-columns: minmax(0, 1fr); padding: calc(var(--s-5) + env(safe-area-inset-top)) var(--s-4) var(--s-8); }
 /* «Выйти» — тихо внизу «Моих карточек», шапки нет */
 .c-logout { justify-self: center; margin-top: var(--s-5); color: var(--adm-text-2) !important; font-weight: 400; }
-.cab .a-field__input { border-color: transparent; background: var(--adm-bg); }
+.cab .a-field__input { border-color: transparent; background: var(--adm-bg); font-size: var(--cab-fs-input); font-weight: 500; }
+.cab .a-field__input::placeholder { font-weight: 400; }
+.cab .a-field__label { font-size: var(--cab-fs-label); line-height: 18px; color: var(--adm-text-2); }
 .cab .a-btn--primary, .c-bar .a-btn { border-radius: 999px; }
 
 /* колонка формы: на ПК не растягиваем поля на весь экран */
@@ -140,6 +142,8 @@ details[open].c-row > summary .c-row__go { transform: rotate(90deg); }
 @media (hover: hover) { .c-row:hover { background: var(--adm-hover); } }
 .c-row__ic { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: var(--adm-bg); color: var(--adm-text-2); }
 .c-row__ic svg { width: 20px; height: 20px; }
+/* белый знак сервиса (MAX) — на чернильной подложке, как на кнопке входа */
+.c-row__ic--ink { background: var(--cab-ink); }
 .c-row__thumb { width: 44px; height: 55px; border-radius: 8px; object-fit: cover; background: var(--adm-bg); display: block; }
 /* «Мои карточки»: карточка крупно — кадр и имя видны сразу */
 .c-row--card { padding-block: 18px; }
@@ -150,6 +154,10 @@ details[open].c-row > summary .c-row__go { transform: rotate(90deg); }
 .c-row__title { font-weight: 500; font-size: 15px; line-height: 20px; overflow-wrap: anywhere; }
 .c-row__sub { font-size: var(--adm-fs-sm); line-height: 16px; color: var(--adm-text-2); overflow-wrap: anywhere; }
 .c-row__sub--bad { color: var(--st-bad-text); }
+/* пустой раздел до первой попытки отправить — серым, не ошибкой (Никита, 02.11) */
+.c-row__sub--empty { color: var(--adm-text-2); }
+.c-row__grow { flex: 1 1 auto; min-width: 0; }
+details.c-row > summary .c-row__ic { flex: none; }
 .c-row__state { width: 20px; height: 20px; color: var(--st-ok-text); }
 .c-row__go { width: 18px; height: 18px; color: var(--adm-text-2); }
 

@@ -4,6 +4,17 @@
 // vendors (viewRule: только сам). Подключить второй способ входа отсюда —
 // следующий шаг (BACKLOG), сейчас только показываем, что подключено.
 import CabinetShell from '../../../components/admin/CabinetShell.astro';
+import AdminIcon from '../../../components/admin/AdminIcon.astro';
+import { Image } from 'astro:assets';
+import maxMark from '../../../assets/profi/max-mark.webp';
+
+// способы входа — строки со значком, как разделы анкеты (Никита, 02.11:
+// без значков экран читался мелким); состояние ставит скрипт
+const WAYS = [
+  { key: 'telegram', title: 'Telegram' },
+  { key: 'max', title: 'MAX' },
+  { key: 'email', title: 'Почта' },
+];
 ---
 
 <CabinetShell title="Профиль" section="profile">
@@ -14,7 +25,20 @@ import CabinetShell from '../../../components/admin/CabinetShell.astro';
     <div class="c-sheet-area">
       <section class="c-cat">
         <h2 class="c-cat__h">Способы входа</h2>
-        <div class="c-rows" data-ways><p class="c-row c-row__sub">Загружаем…</p></div>
+        <div class="c-rows">
+          {WAYS.map((w) => (
+            <div class="c-row" data-way={w.key}>
+              <span class={`c-row__ic${w.key === 'max' ? ' c-row__ic--ink' : ''}`}>
+                {w.key === 'telegram' && <AdminIcon name="telegram" />}
+                {w.key === 'max' && <Image src={maxMark} alt="" width={22} height={22} widths={[22, 44, 66]} sizes="22px" />}
+                {w.key === 'email' && <AdminIcon name="mail" />}
+              </span>
+              <span class="c-row__body"><span class="c-row__title">{w.title}</span><span class="c-row__sub" data-sub hidden></span></span>
+              <span class="c-badge" data-badge></span>
+              <span></span>
+            </div>
+          ))}
+        </div>
       </section>
       <section class="c-cat">
         <h2 class="c-cat__h">Документы</h2>
@@ -30,9 +54,10 @@ import CabinetShell from '../../../components/admin/CabinetShell.astro';
 
 <script>
   import { api, esc, requireSession, saveSession } from '../../../lib/cabinet-api';
+  import { ADMIN_ICONS } from '../../../lib/admin-icons';
+  const docIcon = `<svg viewBox="0 0 24 24" aria-hidden="true">${ADMIN_ICONS.text}</svg>`;
 
   const root = document.querySelector<HTMLElement>('[data-profile]')!;
-  const ways = root.querySelector<HTMLElement>('[data-ways]')!;
   const error = root.querySelector<HTMLElement>('[data-error]')!;
   const s = requireSession('vendor');
   if (s) {
@@ -40,31 +65,32 @@ import CabinetShell from '../../../components/admin/CabinetShell.astro';
       const me = await api('vendor', 'GET', `/api/collections/vendors/records/${s.record.id}`);
       saveSession('vendor', { ...s, record: me });
       if (me.name) root.querySelector('[data-name]')!.textContent = me.name;
-      // статус плашкой: подключено — зелёным, нет — серым «не подключён»
-      const row = (title: string, sub: string, on: boolean) => `
-        <div class="c-row">
-          <span></span>
-          <span class="c-row__body"><span class="c-row__title">${title}</span>${sub ? `<span class="c-row__sub">${esc(sub)}</span>` : ''}</span>
-          <span class="c-badge ${on ? 'c-badge--ok' : ''}">${on ? 'подключён' : 'не подключён'}</span>
-          <span></span>
-        </div>`;
-      // у учётки через мессенджер почты нет (messengerAuth её не ставит)
-      const realEmail = String(me.email ?? '');
-      ways.innerHTML = [
-        row('Telegram', '', !!me.telegramId),
-        row('MAX', '', !!me.maxId),
-        row('Почта', realEmail, !!realEmail && me.verified !== false),
-      ].join('');
+      // статус плашкой: подключено — зелёным, нет — серым «не подключён».
+      // У учётки через мессенджер почты нет (messengerAuth её не ставит)
+      const email = String(me.email ?? '');
+      const state: Record<string, { on: boolean; sub?: string }> = {
+        telegram: { on: !!me.telegramId },
+        max: { on: !!me.maxId },
+        email: { on: !!email && me.verified !== false, sub: email },
+      };
+      root.querySelectorAll<HTMLElement>('[data-way]').forEach((row) => {
+        const st = state[row.dataset.way!];
+        const badge = row.querySelector<HTMLElement>('[data-badge]')!;
+        badge.textContent = st.on ? 'подключён' : 'не подключён';
+        badge.classList.toggle('c-badge--ok', st.on);
+        const sub = row.querySelector<HTMLElement>('[data-sub]')!;
+        sub.textContent = st.sub ?? '';
+        sub.hidden = !st.sub;
+      });
       const docs = await api(null, 'GET', `/api/collections/legal_docs/records?sort=-created&perPage=50&filter=${encodeURIComponent('kind = "vendor-offer" || kind = "vendor-pdn"')}`);
       const latest = ['vendor-offer', 'vendor-pdn'].map((k) => docs.items.find((d: any) => d.kind === k)).filter(Boolean);
       // текст документа пишем мы сами в базе (редактор) — как HTML, как на экране условий
       root.querySelector<HTMLElement>('[data-docs]')!.innerHTML = latest.map((d: any) => `
         <details class="c-row">
-          <summary><span class="c-row__title">${esc(d.title)}</span><svg class="c-row__go" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M9 5l6 7-6 7"/></svg></summary>
+          <summary><span class="c-row__ic">${docIcon}</span><span class="c-row__title c-row__grow">${esc(d.title)}</span><svg class="c-row__go" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M9 5l6 7-6 7"/></svg></summary>
           <div class="c-details__text">${d.text}</div>
         </details>`).join('') || '<p class="c-row c-row__sub">пусто</p>';
     } catch (err) {
-      ways.innerHTML = '';
       error.textContent = (err as Error).message;
       error.hidden = false;
     }
