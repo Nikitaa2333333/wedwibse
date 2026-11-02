@@ -1,9 +1,16 @@
 ---
 // ПРОФИЛЬ — раздел нижнего меню кабинета (Никита, 02.11). Учётка:
-// имя, способы входа (Telegram, MAX, почта) и выход. Данные — своя запись
-// vendors (viewRule: только сам). Подключить второй способ входа отсюда —
-// следующий шаг (BACKLOG), сейчас только показываем, что подключено.
+// вход и уведомления о заявках одной группой, документы, выход.
+// Никита, 02.11: «Способы входа» и «Куда присылать заявки» дублировали друг
+// друга. Теперь один ряд на канал: вошёл через Telegram или MAX — заявки
+// туда и приходят (по умолчанию включено, выключается переключателем);
+// не подключён — плашка «не подключён» и подсказка, что войти — и всё.
+// Бот пишет лишь тем, кто к нему приходил, поэтому без входа канал не
+// включить. Почта — любой адрес. Настройки — vendors.notify (хук).
 import CabinetShell from '../../../components/admin/CabinetShell.astro';
+import AdminIcon from '../../../components/admin/AdminIcon.astro';
+import { Image } from 'astro:assets';
+import maxMark from '../../../assets/profi/max-mark.webp';
 ---
 
 <CabinetShell title="Профиль" section="profile">
@@ -12,9 +19,30 @@ import CabinetShell from '../../../components/admin/CabinetShell.astro';
       <h1 class="a-h1" data-name>Профиль</h1>
     </div>
     <div class="c-sheet-area">
-      <section class="c-cat">
-        <h2 class="c-cat__h">Способы входа</h2>
-        <div class="c-rows" data-ways><p class="c-row c-row__sub">Загружаем…</p></div>
+      <section class="c-cat" data-notify>
+        <h2 class="c-cat__h">Вход и уведомления</h2>
+        <p class="c-cat__lead">Куда приходят заявки: в мессенджер, через который вы входите, и на почту.</p>
+        <div class="c-rows">
+          <div class="c-row" data-ch="telegram">
+            <span class="c-row__ic c-row__ic--tg"><AdminIcon name="tgLogo" /></span>
+            <span class="c-row__body"><span class="c-row__title">Telegram</span><span class="c-row__sub" data-sub></span></span>
+            <span class="c-ch-ctl" data-ctl></span>
+            <span></span>
+          </div>
+          <div class="c-row" data-ch="max">
+            <span class="c-row__ic c-row__ic--ink"><Image src={maxMark} alt="" width={22} height={22} widths={[22, 44, 66]} sizes="22px" /></span>
+            <span class="c-row__body"><span class="c-row__title">MAX</span><span class="c-row__sub" data-sub></span></span>
+            <span class="c-ch-ctl" data-ctl></span>
+            <span></span>
+          </div>
+          <div class="c-row" data-ch="email">
+            <span class="c-row__ic"><AdminIcon name="mail" /></span>
+            <span class="c-row__body"><span class="c-row__title">Почта</span><input class="c-inline-input" type="email" inputmode="email" autocomplete="email" placeholder="почта для заявок" aria-label="Почта для заявок" data-email-to /></span>
+            <span class="c-ch-ctl" data-ctl></span>
+            <span></span>
+          </div>
+        </div>
+        <p class="c-cat__note c-error" data-notify-error hidden></p>
       </section>
       <section class="c-cat">
         <h2 class="c-cat__h">Документы</h2>
@@ -30,9 +58,10 @@ import CabinetShell from '../../../components/admin/CabinetShell.astro';
 
 <script>
   import { api, esc, requireSession, saveSession } from '../../../lib/cabinet-api';
+  import { ADMIN_ICONS } from '../../../lib/admin-icons';
+  const docIcon = `<svg viewBox="0 0 24 24" aria-hidden="true">${ADMIN_ICONS.text}</svg>`;
 
   const root = document.querySelector<HTMLElement>('[data-profile]')!;
-  const ways = root.querySelector<HTMLElement>('[data-ways]')!;
   const error = root.querySelector<HTMLElement>('[data-error]')!;
   const s = requireSession('vendor');
   if (s) {
@@ -40,31 +69,63 @@ import CabinetShell from '../../../components/admin/CabinetShell.astro';
       const me = await api('vendor', 'GET', `/api/collections/vendors/records/${s.record.id}`);
       saveSession('vendor', { ...s, record: me });
       if (me.name) root.querySelector('[data-name]')!.textContent = me.name;
-      // статус плашкой: подключено — зелёным, нет — серым «не подключён»
-      const row = (title: string, sub: string, on: boolean) => `
-        <div class="c-row">
-          <span></span>
-          <span class="c-row__body"><span class="c-row__title">${title}</span>${sub ? `<span class="c-row__sub">${esc(sub)}</span>` : ''}</span>
-          <span class="c-badge ${on ? 'c-badge--ok' : ''}">${on ? 'подключён' : 'не подключён'}</span>
-          <span></span>
-        </div>`;
-      // у учётки через мессенджер почты нет (messengerAuth её не ставит)
-      const realEmail = String(me.email ?? '');
-      ways.innerHTML = [
-        row('Telegram', '', !!me.telegramId),
-        row('MAX', '', !!me.maxId),
-        row('Почта', realEmail, !!realEmail && me.verified !== false),
-      ].join('');
+      // вход и уведомления: переключатели сохраняются сразу, почта — через секунду
+      const box = root.querySelector<HTMLElement>('[data-notify]')!;
+      const err = box.querySelector<HTMLElement>('[data-notify-error]')!;
+      const emailTo = box.querySelector<HTMLInputElement>('[data-email-to]')!;
+      type Ch = 'telegram' | 'max' | 'email';
+      const linked: Record<Ch, boolean> = { telegram: !!me.telegramId, max: !!me.maxId, email: true };
+      // по умолчанию (настройки ещё не трогали) — заявки идут в мессенджер входа
+      const n = { telegram: linked.telegram, max: linked.max, email: false, emailTo: '', ...(me.notify ?? {}) };
+      if (!n.emailTo) n.emailTo = String(me.email ?? '');
+      emailTo.value = n.emailTo;
+      const NAME: Record<Ch, string> = { telegram: 'Telegram', max: 'MAX', email: 'почту' };
+      const paint = () => box.querySelectorAll<HTMLElement>('[data-ch]').forEach((row) => {
+        const ch = row.dataset.ch as Ch;
+        const ctl = row.querySelector<HTMLElement>('[data-ctl]')!;
+        const sub = row.querySelector<HTMLElement>('[data-sub]');
+        if (!linked[ch]) {
+          ctl.innerHTML = '<span class="c-badge">не подключён</span>';
+          if (sub) sub.textContent = `войдите через ${NAME[ch]} — заявки будут приходить сюда`;
+          return;
+        }
+        ctl.innerHTML = `<button class="c-switch" type="button" role="switch" aria-checked="${!!n[ch]}" aria-label="Присылать заявки в ${NAME[ch]}" ${ch === 'email' && !n.emailTo ? 'disabled' : ''}></button>`;
+        if (sub) sub.textContent = n[ch] ? 'вход подключён · заявки приходят сюда' : 'вход подключён · заявки сюда не приходят';
+      });
+      const saveNotify = async () => {
+        err.hidden = true;
+        try {
+          me.notify = (await api('vendor', 'PATCH', `/api/collections/vendors/records/${me.id}`, { notify: n })).notify;
+          Object.assign(n, me.notify);
+        } catch (x) { err.textContent = (x as Error).message; err.hidden = false; }
+        paint();
+      };
+      box.addEventListener('click', (e) => {
+        const sw = (e.target as HTMLElement).closest<HTMLButtonElement>('.c-switch');
+        if (!sw || sw.disabled) return;
+        const ch = sw.closest<HTMLElement>('[data-ch]')!.dataset.ch as Ch;
+        n[ch] = !n[ch];
+        paint();
+        saveNotify();
+      });
+      let t = 0;
+      emailTo.addEventListener('input', () => {
+        n.emailTo = emailTo.value.trim();
+        if (!n.emailTo) n.email = false;
+        paint();
+        clearTimeout(t);
+        t = window.setTimeout(saveNotify, 900);
+      });
+      paint();
       const docs = await api(null, 'GET', `/api/collections/legal_docs/records?sort=-created&perPage=50&filter=${encodeURIComponent('kind = "vendor-offer" || kind = "vendor-pdn"')}`);
       const latest = ['vendor-offer', 'vendor-pdn'].map((k) => docs.items.find((d: any) => d.kind === k)).filter(Boolean);
       // текст документа пишем мы сами в базе (редактор) — как HTML, как на экране условий
       root.querySelector<HTMLElement>('[data-docs]')!.innerHTML = latest.map((d: any) => `
         <details class="c-row">
-          <summary><span class="c-row__title">${esc(d.title)}</span><svg class="c-row__go" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M9 5l6 7-6 7"/></svg></summary>
+          <summary><span class="c-row__ic">${docIcon}</span><span class="c-row__title c-row__grow">${esc(d.title)}</span><svg class="c-row__go" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M9 5l6 7-6 7"/></svg></summary>
           <div class="c-details__text">${d.text}</div>
         </details>`).join('') || '<p class="c-row c-row__sub">пусто</p>';
     } catch (err) {
-      ways.innerHTML = '';
       error.textContent = (err as Error).message;
       error.hidden = false;
     }

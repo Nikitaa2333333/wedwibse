@@ -1058,7 +1058,22 @@ function vendorCreateAccount(e) {
   return e.next();
 }
 function vendorUpdateAccount(e) {
-  denyExtra(e.requestInfo().body, ['name', 'phone']);
+  const body = e.requestInfo().body;
+  denyExtra(body, ['name', 'phone', 'notify']);
+  // куда присылать заявки: только известные ключи и только нужных типов;
+  // Telegram и MAX — лишь при подключённом входе (бот пишет тем, кто приходил)
+  if (body && 'notify' in body) {
+    const n = body.notify && typeof body.notify === 'object' ? body.notify : {};
+    const emailTo = str(n.emailTo, 200);
+    if (emailTo && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailTo)) throw new BadRequestError('Проверьте почту для заявок.');
+    const r = e.record;
+    r.set('notify', {
+      telegram: n.telegram === true && !!r.getString('telegramId'),
+      max: n.max === true && !!r.getString('maxId'),
+      email: n.email === true && !!emailTo,
+      emailTo,
+    });
+  }
   return e.next();
 }
 
@@ -1089,8 +1104,48 @@ function createLead(e) {
   return e.json(200, { ok: true });
 }
 
+// ---------- модератор снимает и удаляет (Никита, 02.11) ----------
+// POST /api/wed/mod/remove { what: 'revision' | 'specialist' | 'venue', id, mode }
+//   revision            — удалить новую карточку / правку (ещё не на сайте)
+//   карточка, archive   — снять с сайта: status = archived (cardSaved → выкладка)
+//   карточка, delete    — удалить запись совсем; только уже снятую (archived),
+//                         чтобы опубликованная не пропала одним нажатием
+function modRemove(e) {
+  if (!isModerator(e)) throw new ForbiddenError('Только для модераторов.');
+  const body = e.requestInfo().body || {};
+  const what = str(body.what);
+  const id = str(body.id, 40);
+  if (!id) throw new BadRequestError('Не указана карточка.');
+  if (what === 'revision') {
+    const rev = e.app.findRecordById('revisions', id);
+    e.app.delete(rev);
+    return e.json(200, { ok: true, removed: 'revision' });
+  }
+  if (what !== 'specialist' && what !== 'venue') throw new BadRequestError('Неизвестный вид карточки.');
+  const card = e.app.findRecordById(cardCollection(what), id);
+  if (str(body.mode) === 'delete') {
+    if (card.getString('status') !== 'archived') throw new BadRequestError('Сначала снимите карточку с сайта.');
+    // открытые правки этой карточки — вместе с ней, иначе висят в очереди
+    for (const r of e.app.findRecordsByFilter('revisions', `${cardField(what)} = {:id}`, '', 0, 0, { id })) e.app.delete(r);
+    e.app.delete(card);
+    return e.json(200, { ok: true, removed: 'card' });
+  }
+  card.set('status', 'archived');
+  e.app.save(card);
+  return e.json(200, { ok: true, archived: true });
+}
+
+/** карточку из кабинета удалили совсем — сайт пересобрать без неё */
+function cardDeleted(e) {
+  e.next();
+  const page = jsonOf(e.record, 'page');
+  if (page.source === 'cabinet') deploySite(`${e.record.getString('slug')} → удалена`);
+}
+
 module.exports = {
   createLead,
+  modRemove,
+  cardDeleted,
   cardSaved,
   MIN_PHOTOS,
   parseSection,

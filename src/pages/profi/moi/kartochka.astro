@@ -58,6 +58,15 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
   let savedAt = '';
   let saveError = '';
 
+  // Пустой раздел краснеет только после попытки отправить или возврата
+  // модератором (Никита, 02.11: «ещё ничего не заполнил, а уже как ошибка»).
+  // Попытку помним до закрытия вкладки.
+  const triedKey = () => `wed-cab-tried-${rev?.id}`;
+  const tried = () => rev?.status === 'rejected' || (() => { try { return sessionStorage.getItem(triedKey()) === '1'; } catch { return false; } })();
+  const markTried = () => {
+    try { sessionStorage.setItem(triedKey(), '1'); } catch {}
+    view.querySelectorAll('.c-row__sub--empty').forEach((el) => el.classList.replace('c-row__sub--empty', 'c-row__sub--bad'));
+  };
   const locked = () => rev?.status === 'review' || rev?.status === 'approved';
   const isNew = () => !rev.venue && !rev.specialist;
   const role = () => (kind === 'venue' ? 'Площадка' : cfg.roles[rev.categorySlug] ?? rev.categorySlug);
@@ -67,14 +76,37 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
 
   // ---------- сохранение ----------
   /** плашка в углу: статус карточки и время сохранения — одним местом */
+  // Никита, 02.11: пилюля «Черновик · сохранено 12:00» висела постоянно
+  // и дёргалась на каждой правке. Теперь статус карточки — только на обзоре,
+  // а сохранение — короткое уведомление внизу: «Сохранено» и исчезает;
+  // ошибка висит, пока следующее сохранение не пройдёт.
+  let justSaved = false;
+  let toastTimer = 0;
+  function toast(text: string, bad = false) {
+    let el = document.querySelector<HTMLElement>('.c-toast');
+    if (!el) {
+      el = document.createElement('p');
+      el.className = 'c-toast';
+      el.setAttribute('role', 'status');
+      document.body.append(el);
+    }
+    clearTimeout(toastTimer);
+    el.textContent = text;
+    el.classList.toggle('c-toast--bad', bad);
+    el.classList.add('is-on');
+    if (!bad) toastTimer = window.setTimeout(() => el!.classList.remove('is-on'), 1600);
+  }
   function savedLabel() {
     const el = view.querySelector<HTMLElement>('[data-saved]');
-    if (!el) return;
-    const st = cardState(rev.status, !isNew());
-    el.className = `c-state ${st.cls}`;
-    el.classList.toggle('c-state--bad', !!saveError);
-    const when = saveError ? `не сохранилось: ${saveError}` : saving ? 'сохраняем…' : savedAt ? `сохранено ${savedAt}` : '';
-    el.textContent = [st.label, when].filter(Boolean).join(' · ');
+    if (el) {
+      const st = cardState(rev.status, !isNew());
+      el.className = `c-state ${st.cls}`;
+      el.textContent = st.label;
+    }
+    if (saveError) toast(`Не сохранилось: ${saveError}`, true);
+    else if (justSaved) toast('Сохранено');
+    else document.querySelector('.c-toast--bad')?.classList.remove('is-on');
+    justSaved = false;
   }
 
   /** производные поля — то, что человек не вводит руками */
@@ -108,6 +140,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
 
   async function save() {
     clearTimeout(timer);
+    timer = 0;
     if (saving) await saving;
     if (locked()) return;
     derive();
@@ -123,6 +156,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         rev = await api('vendor', 'PATCH', `/api/collections/revisions/records/${rev.id}`, body);
         savedAt = time();
         saveError = '';
+        justSaved = true;
       } catch (err) {
         saveError = (err as Error).message;
       }
@@ -131,14 +165,31 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     saving = null;
     savedLabel();
   }
-  const later = () => { clearTimeout(timer); saveError = ''; timer = window.setTimeout(save, 900); const el = view.querySelector('[data-saved]'); if (el) el.textContent = `${cardState(rev.status, !isNew()).label} · изменено`; };
+  const later = () => { clearTimeout(timer); saveError = ''; timer = window.setTimeout(save, 900); };
 
   // ---------- обзор: список разделов ----------
+  // Никита, 02.11: плитка показывает уже сделанное — портрет вместо значка
+  // «Основного», первые кадры вместо значка «Фото». Заполнено —
+  // тонкая галочка в углу (зелёные и красные плитки — «светофор», сняты 02.11).
+  function tileVisual(key: SectionKey, ic: string): string {
+    if (key === 'osnovnoe' && rev.avatar && token) {
+      return `<span class="c-tile__ava"><img src="${fileUrl(rev, rev.avatar, { thumb: '200x200', token })}" alt="" /></span>`;
+    }
+    const photos: string[] = rev.photos ?? [];
+    if (key === 'foto' && photos.length && token) {
+      return `<span class="c-tile__stack">${photos.slice(0, 3).map((n) => `<img src="${fileUrl(rev, n, { thumb: '200x0', token })}" alt="" loading="lazy" />`).join('')}</span>`;
+    }
+    return `<span class="c-tile__ic">${icon(ic)}</span>`;
+  }
+
   function renderOverview() {
     const st = cardState(rev.status, !isNew());
     const secs = SECTIONS[kind];
     const states = secs.map((x) => ({ ...x, ...sectionState(x.key, rev, questions) }));
     const must = states.filter((x) => !x.optional);
+    // Никита, 02.11: пока обязательное не заполнено — кнопка серая, на замке;
+    // нажатие — дрожит, пустые плитки краснеют, внизу подсказка, чего нет
+    const missing = must.filter((x) => !x.done);
     const done = must.filter((x) => x.done).length;
     // удалить можно новую карточку в любом состоянии до публикации (Евгений,
     // 31.10: тестовые не удалялись — кнопка была только у черновика);
@@ -151,20 +202,20 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         <div class="c-head__top"><a class="c-back" href="/profi/moi/">${icon('back')} Мои карточки</a><span data-saved></span></div>
         <h1 class="a-h1">${esc(title)}</h1>
         ${rev.slug ? `<p class="c-url" title="wed-secrets.ru${esc(siteUrl)}">Ваша ссылка: wed-secrets.ru/…/${esc(rev.slug)}/</p>` : ''}
-      </div>
-      ${rev.status === 'rejected' && rev.rejectReason ? `<p class="c-reason"><b>Вернули с причиной:</b> ${esc(rev.rejectReason)}<br>Исправьте и отправьте снова.</p>` : ''}
-      ${rev.status === 'review' ? '<p class="c-reason c-reason--info">Карточка на проверке — ответим в течение 24 часов. Пока она на проверке, менять её нельзя; можно отозвать.</p>' : ''}
-      <div class="c-progress" role="progressbar" aria-label="Заполнено разделов" aria-valuemin="0" aria-valuemax="${must.length}" aria-valuenow="${done}">
-        <div class="c-progress__bar"><i style="width:${Math.round((done / must.length) * 100)}%"></i></div>
+        ${rev.status === 'rejected' && rev.rejectReason ? `<p class="c-reason"><b>Вернули с причиной:</b> ${esc(rev.rejectReason)}<br>Исправьте и отправьте снова.</p>` : ''}
+        ${rev.status === 'review' ? '<p class="c-reason c-reason--info">Карточка на проверке — ответим в течение 24 часов. Пока она на проверке, менять её нельзя; можно отозвать.</p>' : ''}
+        <div class="c-progress" role="progressbar" aria-label="Заполнено разделов" aria-valuemin="0" aria-valuemax="${must.length}" aria-valuenow="${done}">
+          <div class="c-progress__bar"><i style="width:${Math.round((done / must.length) * 100)}%"></i></div>
+        </div>
       </div>
       <div class="c-sheet-area">
-      <div class="c-rows">
+      <div class="c-tiles">
         ${states.map((x) => `
-          <a class="c-row" href="${url(x.key)}">
-            <span class="c-row__ic">${icon(x.icon)}</span>
-            <span class="c-row__body"><span class="c-row__title">${x.title}</span><span class="c-row__sub${x.empty ? ' c-row__sub--bad' : ''}">${esc(x.sub)}</span></span>
-            ${x.done ? tick : '<span></span>'}
-            ${go}
+          <a class="c-row c-tile" href="${url(x.key)}" data-tile="${x.key}">
+            ${tileVisual(x.key, x.icon)}
+            ${x.done ? `<span class="c-tile__done" aria-label="заполнено">${tick}</span>` : ''}
+            <span class="c-tile__title">${x.title}</span>
+            <span class="c-tile__sub c-row__sub${x.empty ? (tried() ? ' c-row__sub--bad' : ' c-row__sub--empty') : ''}">${esc(x.sub)}</span>
           </a>`).join('')}
       </div>
       <div class="c-bar">
@@ -172,7 +223,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
           ? '<button class="a-btn a-btn--lg" type="button" data-withdraw>Отозвать с проверки</button>'
           : rev.status === 'approved'
             ? `<a class="a-btn a-btn--lg" href="${siteUrl}" target="_blank" rel="noopener">Открыть на сайте</a>`
-            : '<button class="a-btn a-btn--primary a-btn--lg" type="button" data-submit>Отправить на проверку</button>'}
+            : `<button class="a-btn a-btn--primary a-btn--lg${missing.length ? ' c-btn-locked' : ''}" type="button" data-submit ${missing.length ? 'aria-disabled="true"' : ''}>${missing.length ? icon('lock') : ''}Отправить на проверку</button>`}
         <span class="c-error" data-error hidden></span>
         <span class="c-ok" data-ok hidden></span>
       </div>
@@ -183,6 +234,16 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     const ok = view.querySelector<HTMLElement>('[data-ok]')!;
     view.querySelector<HTMLButtonElement>('[data-submit]')?.addEventListener('click', async (e) => {
       const b = e.currentTarget as HTMLButtonElement;
+      if (missing.length) {
+        markTried();
+        b.classList.remove('c-shake');
+        void b.offsetWidth; // перезапуск анимации на повторное нажатие
+        b.classList.add('c-shake');
+        navigator.vibrate?.([30, 40, 30]);
+        toast(`Заполните: ${missing.map((x) => x.title).join(', ')}`, true);
+        setTimeout(() => document.querySelector('.c-toast')?.classList.remove('is-on'), 3500);
+        return;
+      }
       b.disabled = true;
       err.hidden = true;
       try {
@@ -193,6 +254,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         view.querySelector<HTMLElement>('[data-ok]')!.hidden = false;
       } catch (x) {
         // хук перечисляет, чего не хватает, через «; » — по строке на пункт
+        markTried();
         err.textContent = (x as Error).message.replace(/^Не получилось отправить на проверку: /, 'Чтобы отправить, осталось:\n— ').replace(/; /g, '\n— ');
         err.hidden = false;
         b.disabled = false;
@@ -499,11 +561,11 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
                 ${field('Средний чек от, ₽ на гостя', 'checkFrom', data.checkFrom, { mode: 'numeric' })}
               </div>` }
           : { title: role(), lead: '', html: `
-              <div class="c-grid2">
+              <div class="c-card">
                 ${field('Имя', 'firstName', data.firstName, { placeholder: 'Елена' })}
                 ${field('Фамилия', 'lastName', data.lastName, { placeholder: 'Каморина' })}
+                <p class="a-field__note">Студия или команда — название в поле «Имя», фамилию оставьте пустой.</p>
               </div>
-              <p class="a-field__note">Студия или команда — название в поле «Имя», фамилию оставьте пустой.</p>
               ${field('Строка под именем', 'tagline', data.tagline, { placeholder: 'Репортаж без постановки, плёнка по желанию', note: 'Одна фраза, до 80 знаков.', max: 80 })}
               <div class="a-field">
                 <span class="a-field__label">Портрет</span>
@@ -624,14 +686,13 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     const b = sectionBody(key);
     view.innerHTML = `
       <div class="c-head">
-        <div class="c-head__top"><a class="c-back" href="${url()}">${icon('back')} ${esc(data.name || 'Анкета')}</a><span data-saved></span></div>
+        <div class="c-head__top"><a class="c-back" href="${url()}">${icon('back')} ${esc(data.name || 'Анкета')}</a></div>
         <h1 class="a-h1 c-title">${b.title}${PREVIEWABLE.includes(key) && kind === 'specialist' ? ` <button class="c-help" type="button" data-preview="${key}" aria-label="Как это выглядит на сайте">?</button>` : ''}</h1>
         ${b.lead ? `<p class="a-lead">${b.lead}</p>` : ''}
         ${locked() ? '<p class="c-reason c-reason--info">Карточка на проверке — менять её сейчас нельзя.</p>' : ''}
       </div>
       <div class="c-sheet-area">
         <div class="c-form" data-form>${b.html}</div>
-        <div class="c-bar"><a class="a-btn a-btn--primary a-btn--lg" href="${url()}" data-done>Готово</a></div>
       </div>`;
     savedLabel();
     if (locked()) view.querySelectorAll<HTMLInputElement>('input, textarea, button.c-opt, button.c-add, button.c-tool, button.c-link').forEach((x) => (x.disabled = true));
@@ -789,6 +850,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       rev = await api('vendor', 'PATCH', `/api/collections/revisions/records/${rev.id}`, body);
       if (rev.photos?.length && !token) token = await fileToken('vendor');
       savedAt = time();
+      justSaved = true;
     } catch (x) {
       err.textContent = (x as Error).message;
       err.hidden = false;
@@ -877,7 +939,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
   });
 
   view.addEventListener('click', async (e) => {
-    const b = (e.target as HTMLElement).closest<HTMLElement>('button, a[data-done]');
+    const b = (e.target as HTMLElement).closest<HTMLElement>('button');
     if (!b || (b as HTMLButtonElement).disabled) return;
     if (b.dataset.preview) { e.preventDefault(); openPreview(b.dataset.preview as SectionKey); return; }
     // цена: способ и готовые «за что»
@@ -956,11 +1018,6 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       await photoPatch({ 'photos-': [rev.photos[Number(b.dataset.premove)]] });
       return;
     }
-    if (b.hasAttribute('data-done')) {
-      e.preventDefault();
-      await save();
-      if (!saveError) navigate();
-    }
   });
 
   // переходы внутри анкеты — без перезагрузки, данные уже в памяти
@@ -976,6 +1033,34 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     route();
   }
   addEventListener('popstate', route);
+  // Заполняют с телефона: поле, в которое перешли, подкручиваем к середине
+  // экрана (над клавиатурой), Enter в однострочном поле — к следующему
+  // (Никита, 02.11: «по ходу, как человек заполняет, само проскролливалось»)
+  const coarse = matchMedia('(pointer: coarse)').matches;
+  view.addEventListener('focusin', (e) => {
+    const t = e.target as HTMLElement;
+    if (!coarse || !t.matches('input:not([type=file]), textarea')) return;
+    setTimeout(() => (t.closest('.a-field, .c-card, .c-q') ?? t).scrollIntoView({ block: 'center', behavior: 'smooth' }), 300);
+  });
+  view.addEventListener('keydown', (e) => {
+    const t = e.target as HTMLInputElement;
+    if (e.key !== 'Enter' || t.tagName !== 'INPUT' || !t.closest('[data-form]')) return;
+    const all = [...view.querySelectorAll<HTMLElement>('[data-form] input:not([type=hidden]):not([type=file]), [data-form] textarea')];
+    const next = all[all.indexOf(t) + 1];
+    if (next) { e.preventDefault(); next.focus(); }
+  });
+
+  // Кнопки «Готово» в разделах нет (Никита, 02.11: всё сохраняется само,
+  // подтверждать нечего). Уход по нижнему меню — полная загрузка страницы:
+  // дописываем несохранённое ДО перехода, иначе правка последней секунды
+  // уйдёт вместе со страницей. Не сохранилось — остаёмся, плашка скажет почему.
+  document.addEventListener('click', async (e) => {
+    const a = (e.target as HTMLElement).closest<HTMLAnchorElement>('a.c-tab');
+    if (!a || e.metaKey || e.ctrlKey || (!timer && !saving)) return;
+    e.preventDefault();
+    await save();
+    if (!saveError) location.href = a.href;
+  });
   // ушли со страницы или свернули браузер — дописываем несохранённое (без «Вы уверены?»)
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && timer) save(); });
 
@@ -1007,7 +1092,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       // правка старой карточки с «О себе» одним полем — первым разделом текста
       if (!data.sections?.length && data.about) data.sections = [{ title: '', body: data.about }];
       questions = kind === 'venue' ? VENUE_QUESTIONS : cfg.questions[rev.categorySlug] ?? [];
-      if (rev.photos?.length) token = await fileToken('vendor');
+      if (rev.photos?.length || rev.avatar) token = await fileToken('vendor');
       route();
     } catch (err) {
       view.innerHTML = `<p class="c-error">${esc((err as Error).message)}</p><a class="c-link" href="/profi/moi/">К моим карточкам</a>`;

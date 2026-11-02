@@ -2,13 +2,14 @@
 // ПОМОЩЬ — раздел нижнего меню кабинета (Никита, 02.11). Короткие ответы
 // на то, о чём подрядчики спрашивают при заполнении (цифры — те же, что
 // в cabinet-form.ts и хуке), и «Написать нам».
-// ЗАГЛУШКА: контакт поддержки не выбран — SUPPORT пустой, блок не рисуется.
+// ЗАГЛУШКА: адрес поддержки не выбран (Никита, 02.11: «пока без адреса») —
+// кнопка стоит, SUPPORT_HREF пустой; вписать t.me/…, max.ru/… или mailto:.
 import CabinetShell from '../../../components/admin/CabinetShell.astro';
 import AdminIcon from '../../../components/admin/AdminIcon.astro';
 import { MIN_PHOTOS, MAX_PHOTOS, MIN_TEXT, MAX_VIDEOS } from '../../../lib/cabinet-form';
 
-/** куда писать подрядчику: ссылка t.me/… или max.ru/… — заполнить, когда решим */
-const SUPPORT: { label: string; href: string }[] = [];
+/** куда писать подрядчику — одна строка, когда решим */
+const SUPPORT_HREF = '';
 
 const FAQ: { q: string; a: string }[] = [
   { q: 'Сколько ждать проверки', a: 'Отвечаем в течение 24 часов. Если карточку вернули, причина будет написана в самой карточке — исправьте и отправьте снова.' },
@@ -27,21 +28,6 @@ const FAQ: { q: string; a: string }[] = [
       <h1 class="a-h1">Помощь</h1>
     </div>
     <div class="c-sheet-area">
-      {SUPPORT.length > 0 && (
-        <section class="c-cat">
-          <h2 class="c-cat__h">Написать нам</h2>
-          <div class="c-rows">
-            {SUPPORT.map((s) => (
-              <a class="c-row" href={s.href} target="_blank" rel="noopener">
-                <span></span>
-                <span class="c-row__body"><span class="c-row__title">{s.label}</span></span>
-                <span></span>
-                <AdminIcon name="external" />
-              </a>
-            ))}
-          </div>
-        </section>
-      )}
       <section class="c-cat">
         <h2 class="c-cat__h">Частые вопросы</h2>
         <div class="c-rows">
@@ -56,9 +42,18 @@ const FAQ: { q: string; a: string }[] = [
           ))}
         </div>
       </section>
+      {/* Никита, 02.11: кнопка — под вопросами: сперва ответ, потом письмо */}
+      <a class="a-btn a-btn--primary a-btn--lg c-support" href={SUPPORT_HREF || '#'} target={SUPPORT_HREF ? '_blank' : undefined} rel="noopener">
+        <AdminIcon name="tgLogo" /> Написать в поддержку
+      </a>
     </div>
   </div>
 </CabinetShell>
+
+<style>
+  .c-support { width: 100%; height: 52px; font-size: 16px; gap: 10px; margin-top: var(--s-2); }
+  .c-support :global(svg) { width: 22px; height: 22px; }
+</style>
 
 <script>
   import { requireSession } from '../../../lib/cabinet-api';
