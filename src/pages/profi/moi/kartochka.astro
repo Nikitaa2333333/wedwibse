@@ -187,6 +187,9 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     const secs = SECTIONS[kind];
     const states = secs.map((x) => ({ ...x, ...sectionState(x.key, rev, questions) }));
     const must = states.filter((x) => !x.optional);
+    // Никита, 02.11: пока обязательное не заполнено — кнопка серая, на замке;
+    // нажатие — дрожит, пустые плитки краснеют, внизу подсказка, чего нет
+    const missing = must.filter((x) => !x.done);
     const done = must.filter((x) => x.done).length;
     // удалить можно новую карточку в любом состоянии до публикации (Евгений,
     // 31.10: тестовые не удалялись — кнопка была только у черновика);
@@ -208,7 +211,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       <div class="c-sheet-area">
       <div class="c-tiles">
         ${states.map((x) => `
-          <a class="c-row c-tile${x.done ? ' c-tile--done' : ''}" href="${url(x.key)}">
+          <a class="c-row c-tile${x.done ? ' c-tile--done' : !x.optional && tried() ? ' c-tile--bad' : ''}" href="${url(x.key)}" data-tile="${x.key}">
             ${tileVisual(x.key, x.icon)}
             <span class="c-tile__title">${x.title}</span>
             <span class="c-tile__sub c-row__sub${x.empty ? (tried() ? ' c-row__sub--bad' : ' c-row__sub--empty') : ''}">${esc(x.sub)}</span>
@@ -219,7 +222,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
           ? '<button class="a-btn a-btn--lg" type="button" data-withdraw>Отозвать с проверки</button>'
           : rev.status === 'approved'
             ? `<a class="a-btn a-btn--lg" href="${siteUrl}" target="_blank" rel="noopener">Открыть на сайте</a>`
-            : '<button class="a-btn a-btn--primary a-btn--lg" type="button" data-submit>Отправить на проверку</button>'}
+            : `<button class="a-btn a-btn--primary a-btn--lg${missing.length ? ' c-btn-locked' : ''}" type="button" data-submit ${missing.length ? 'aria-disabled="true"' : ''}>${missing.length ? icon('lock') : ''}Отправить на проверку</button>`}
         <span class="c-error" data-error hidden></span>
         <span class="c-ok" data-ok hidden></span>
       </div>
@@ -230,6 +233,17 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     const ok = view.querySelector<HTMLElement>('[data-ok]')!;
     view.querySelector<HTMLButtonElement>('[data-submit]')?.addEventListener('click', async (e) => {
       const b = e.currentTarget as HTMLButtonElement;
+      if (missing.length) {
+        markTried();
+        missing.forEach((x) => view.querySelector(`[data-tile="${x.key}"]`)?.classList.add('c-tile--bad'));
+        b.classList.remove('c-shake');
+        void b.offsetWidth; // перезапуск анимации на повторное нажатие
+        b.classList.add('c-shake');
+        navigator.vibrate?.([30, 40, 30]);
+        toast(`Заполните: ${missing.map((x) => x.title).join(', ')}`, true);
+        setTimeout(() => document.querySelector('.c-toast')?.classList.remove('is-on'), 3500);
+        return;
+      }
       b.disabled = true;
       err.hidden = true;
       try {

@@ -40,9 +40,11 @@
   left: 50%;
   bottom: calc(var(--cab-tabs-h) + env(safe-area-inset-bottom) + var(--s-3));
   z-index: 7;
+  width: max-content;
   max-width: calc(100% - 2 * var(--s-4));
   margin: 0;
   padding: 8px 16px;
+  text-align: center;
   border-radius: 999px;
   background: var(--cab-ink);
   color: #fff;
@@ -470,3 +472,20 @@ html:has(.cab), html:has(.cab) body { background: var(--adm-bg); }
 .c-tile__stack img + img { margin-left: -18px; }
 .c-tile__stack img:nth-child(1) { transform: rotate(-6deg); }
 .c-tile__stack img:nth-child(3) { transform: rotate(6deg); }
+
+/* «Отправить на проверку» на замке, пока обязательное не заполнено:
+   серая, с замочком; нажатие — дрожит (только transform) */
+.c-btn-locked, .c-btn-locked:hover { background: var(--adm-line) !important; border-color: transparent !important; color: var(--adm-text-2) !important; gap: 8px; }
+.c-btn-locked svg { width: 18px; height: 18px; }
+.c-shake { animation: c-shake 0.45s var(--ease-out); }
+@keyframes c-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(7px); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(3px); }
+}
+/* незаполненный обязательный раздел после попытки отправить — красноватая плитка */
+.c-tile--bad { background: color-mix(in srgb, var(--st-bad) 22%, var(--adm-card)); }
+.c-tile--bad .c-tile__ic { background: var(--adm-card); }
+body:has(.c-bar .a-btn) .c-toast { bottom: calc(var(--cab-tabs-h) + env(safe-area-inset-bottom) + 80px); }
