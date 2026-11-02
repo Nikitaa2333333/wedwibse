@@ -295,6 +295,28 @@ function telegram(text) {
 }
 
 /**
+ * Письмо нам самим (ящик отправителя из настроек почты, kabinet@wed-secrets.ru) —
+ * копия того, что ушло в группу модерации: заявка не теряется, если Telegram
+ * недоступен (Никита, 02.11). Без настроенной почты — молча пропускаем.
+ */
+function mailUs(subject, text) {
+  const s = $app.settings();
+  const to = s.meta.senderAddress;
+  if (!s.smtp.enabled || !to) return;
+  try {
+    const esc = (v) => String(v).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
+    $app.newMailClient().send(new MailerMessage({
+      from: { address: to, name: s.meta.senderName || 'WED Secrets' },
+      to: [{ address: to }],
+      subject,
+      html: '<p>' + esc(text).replace(/\n/g, '<br>') + '</p>',
+    }));
+  } catch (err) {
+    $app.logger().warn('cabinet: письмо нам не ушло', 'error', String(err));
+  }
+}
+
+/**
  * Выкладка сайта сразу после решения по карточке из кабинета (27.10):
  * пока страницы собирает сборка, а не сервер из базы, одобренная карточка
  * ждала бы следующего пуша. Запускает Deploy в GitHub Actions — тот же
@@ -1100,7 +1122,9 @@ function createLead(e) {
   r.set('consent', true);
   r.set('status', 'new');
   e.app.save(r);
-  telegram(`Заявка с сайта\n${name}, ${phone}\n${message}\n${sourceUrl}`);
+  const text = `Заявка с сайта\n${name}, ${phone}\n${message}\n${sourceUrl}`;
+  telegram(text);
+  mailUs(`Заявка с сайта: ${name}`, text);
   return e.json(200, { ok: true });
 }
 
