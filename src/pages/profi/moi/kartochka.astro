@@ -58,6 +58,15 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
   let savedAt = '';
   let saveError = '';
 
+  // Пустой раздел краснеет только после попытки отправить или возврата
+  // модератором (Никита, 02.11: «ещё ничего не заполнил, а уже как ошибка»).
+  // Попытку помним до закрытия вкладки.
+  const triedKey = () => `wed-cab-tried-${rev?.id}`;
+  const tried = () => rev?.status === 'rejected' || (() => { try { return sessionStorage.getItem(triedKey()) === '1'; } catch { return false; } })();
+  const markTried = () => {
+    try { sessionStorage.setItem(triedKey(), '1'); } catch {}
+    view.querySelectorAll('.c-row__sub--empty').forEach((el) => el.classList.replace('c-row__sub--empty', 'c-row__sub--bad'));
+  };
   const locked = () => rev?.status === 'review' || rev?.status === 'approved';
   const isNew = () => !rev.venue && !rev.specialist;
   const role = () => (kind === 'venue' ? 'Площадка' : cfg.roles[rev.categorySlug] ?? rev.categorySlug);
@@ -163,7 +172,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         ${states.map((x) => `
           <a class="c-row" href="${url(x.key)}">
             <span class="c-row__ic">${icon(x.icon)}</span>
-            <span class="c-row__body"><span class="c-row__title">${x.title}</span><span class="c-row__sub${x.empty ? ' c-row__sub--bad' : ''}">${esc(x.sub)}</span></span>
+            <span class="c-row__body"><span class="c-row__title">${x.title}</span><span class="c-row__sub${x.empty ? (tried() ? ' c-row__sub--bad' : ' c-row__sub--empty') : ''}">${esc(x.sub)}</span></span>
             ${x.done ? tick : '<span></span>'}
             ${go}
           </a>`).join('')}
@@ -194,6 +203,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         view.querySelector<HTMLElement>('[data-ok]')!.hidden = false;
       } catch (x) {
         // хук перечисляет, чего не хватает, через «; » — по строке на пункт
+        markTried();
         err.textContent = (x as Error).message.replace(/^Не получилось отправить на проверку: /, 'Чтобы отправить, осталось:\n— ').replace(/; /g, '\n— ');
         err.hidden = false;
         b.disabled = false;
