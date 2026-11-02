@@ -92,8 +92,20 @@
 
 /* группа строк на листе: крупный заголовок, строки от края до края;
    документ или вопрос — <details class="c-row">, раскрывается на месте */
-.c-cat { display: grid; gap: 0; }
-.c-cat__h { padding: var(--s-4) var(--s-4) var(--s-3); /* отступы — padding: `html[data-look] .adm h2 { margin: 0 }` в admin.css сильнее любого margin здесь */ font-size: var(--adm-fs-h2); line-height: 28px; font-weight: 600; color: var(--adm-text); }
+/* группа — одна плашка, заголовок внутри (Никита, 02.11, «Сводка» в Директе) */
+.c-cat { display: grid; gap: 0; background: var(--adm-card); border-radius: var(--cab-sheet-radius); overflow: hidden; }
+.c-cat .c-rows { background: none; border-radius: 0; }
+.c-cat__note { padding: 0 var(--s-4) var(--s-3); margin: 0; }
+
+/* переключатель (оповещения): чёрный — включено, серый — выключено */
+.c-switch { position: relative; width: 48px; height: 28px; flex: none; border-radius: 999px; background: var(--adm-line); transition: background var(--dur-fast) var(--ease-out); }
+.c-switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--adm-card); box-shadow: 0 1px 3px rgba(15, 20, 30, 0.25); transition: transform var(--dur-fast) var(--ease-out); }
+.c-switch[aria-checked="true"] { background: var(--cab-ink); }
+.c-switch[aria-checked="true"]::after { transform: translateX(20px); }
+.c-switch:disabled { opacity: 0.4; }
+/* поле прямо в строке (почта для заявок) */
+.c-inline-input { width: 100%; min-width: 0; border: 0; padding: 0; background: none; font: inherit; font-size: var(--adm-fs); color: var(--adm-text); outline: none; }
+.c-cat__h { padding: var(--s-4) var(--s-4) var(--s-1); /* отступы — padding: `html[data-look] .adm h2 { margin: 0 }` в admin.css сильнее любого margin здесь */ font-size: var(--adm-fs-h2); line-height: 28px; font-weight: 600; color: var(--adm-text); }
 details.c-row { display: block; }
 details.c-row > summary { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); list-style: none; cursor: pointer; }
 details.c-row > summary::-webkit-details-marker { display: none; }

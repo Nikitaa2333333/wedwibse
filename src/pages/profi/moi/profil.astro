@@ -25,15 +25,32 @@ const WAYS = [
       <h1 class="a-h1" data-name>Профиль</h1>
     </div>
     <div class="c-sheet-area">
-      <section class="c-cat">
-        <h2 class="c-cat__h">Контакты для заявок</h2>
-        <div class="c-card">
-          <label class="a-field">
-            <span class="a-field__label">Телефон</span>
-            <input class="a-field__input" type="tel" inputmode="tel" autocomplete="tel" placeholder="+7 900 000-00-00" data-phone />
-          </label>
-          <p class="a-field__note" data-phone-note>По этому номеру позвоним или напишем, когда на вашу карточку придёт заявка.</p>
+      {/* Никита, 02.11: заявки не звонком — оповещением туда, где человек
+          их увидит. Telegram и MAX — только при подключённом входе: бот
+          пишет лишь тем, кто к нему приходил. Настройки — vendors.notify */}
+      <section class="c-cat" data-notify>
+        <h2 class="c-cat__h">Куда присылать заявки</h2>
+        <div class="c-rows">
+          <div class="c-row" data-ch="telegram">
+            <span class="c-row__ic c-row__ic--tg"><AdminIcon name="tgLogo" /></span>
+            <span class="c-row__body"><span class="c-row__title">Telegram</span><span class="c-row__sub" data-sub></span></span>
+            <button class="c-switch" type="button" role="switch" aria-checked="false" aria-label="Присылать в Telegram"></button>
+            <span></span>
+          </div>
+          <div class="c-row" data-ch="max">
+            <span class="c-row__ic c-row__ic--ink"><Image src={maxMark} alt="" width={22} height={22} widths={[22, 44, 66]} sizes="22px" /></span>
+            <span class="c-row__body"><span class="c-row__title">MAX</span><span class="c-row__sub" data-sub></span></span>
+            <button class="c-switch" type="button" role="switch" aria-checked="false" aria-label="Присылать в MAX"></button>
+            <span></span>
+          </div>
+          <div class="c-row" data-ch="email">
+            <span class="c-row__ic"><AdminIcon name="mail" /></span>
+            <span class="c-row__body"><span class="c-row__title">Почта</span><input class="c-inline-input" type="email" inputmode="email" autocomplete="email" placeholder="почта для заявок" aria-label="Почта для заявок" data-email-to /></span>
+            <button class="c-switch" type="button" role="switch" aria-checked="false" aria-label="Присылать на почту"></button>
+            <span></span>
+          </div>
         </div>
+        <p class="c-cat__note c-error" data-notify-error hidden></p>
       </section>
       <section class="c-cat">
         <h2 class="c-cat__h">Способы входа</h2>
@@ -77,25 +94,47 @@ const WAYS = [
       const me = await api('vendor', 'GET', `/api/collections/vendors/records/${s.record.id}`);
       saveSession('vendor', { ...s, record: me });
       if (me.name) root.querySelector('[data-name]')!.textContent = me.name;
-      // телефон для заявок: сохраняем сам, через секунду после правки
-      const phone = root.querySelector<HTMLInputElement>('[data-phone]')!;
-      const note = root.querySelector<HTMLElement>('[data-phone-note]')!;
-      const NOTE = note.textContent;
-      phone.value = me.phone ?? '';
-      let t = 0;
-      const savePhone = async () => {
-        clearTimeout(t);
-        const v = phone.value.trim();
-        if (v === (me.phone ?? '')) return;
-        if (v && v.replace(/\D/g, '').length < 10) { note.textContent = 'Номер неполный — нужно 10 цифр и больше.'; note.classList.add('c-error'); return; }
+      // куда присылать заявки: переключатели сохраняются сразу, почта — через секунду
+      const box = root.querySelector<HTMLElement>('[data-notify]')!;
+      const err = box.querySelector<HTMLElement>('[data-notify-error]')!;
+      const emailTo = box.querySelector<HTMLInputElement>('[data-email-to]')!;
+      const n = { telegram: false, max: false, email: false, emailTo: '', ...(me.notify ?? {}) };
+      if (!n.emailTo) n.emailTo = String(me.email ?? '');
+      emailTo.value = n.emailTo;
+      const linked: Record<string, boolean> = { telegram: !!me.telegramId, max: !!me.maxId, email: true };
+      const paint = () => box.querySelectorAll<HTMLElement>('[data-ch]').forEach((row) => {
+        const ch = row.dataset.ch as 'telegram' | 'max' | 'email';
+        const sw = row.querySelector<HTMLButtonElement>('.c-switch')!;
+        sw.setAttribute('aria-checked', String(!!n[ch]));
+        sw.disabled = !linked[ch] || (ch === 'email' && !n.emailTo);
+        const sub = row.querySelector<HTMLElement>('[data-sub]');
+        if (sub) sub.textContent = linked[ch] ? 'сообщением от бота WED Secrets' : `войдите через ${ch === 'max' ? 'MAX' : 'Telegram'}, чтобы получать сюда`;
+      });
+      const saveNotify = async () => {
+        err.hidden = true;
         try {
-          me.phone = (await api('vendor', 'PATCH', `/api/collections/vendors/records/${me.id}`, { phone: v })).phone;
-          note.textContent = 'Сохранено. ' + NOTE;
-          note.classList.remove('c-error');
-        } catch (x) { note.textContent = (x as Error).message; note.classList.add('c-error'); }
+          me.notify = (await api('vendor', 'PATCH', `/api/collections/vendors/records/${me.id}`, { notify: n })).notify;
+          Object.assign(n, me.notify);
+        } catch (x) { err.textContent = (x as Error).message; err.hidden = false; }
+        paint();
       };
-      phone.addEventListener('input', () => { clearTimeout(t); t = window.setTimeout(savePhone, 900); });
-      phone.addEventListener('blur', savePhone);
+      box.addEventListener('click', (e) => {
+        const sw = (e.target as HTMLElement).closest<HTMLButtonElement>('.c-switch');
+        if (!sw || sw.disabled) return;
+        const ch = sw.closest<HTMLElement>('[data-ch]')!.dataset.ch as 'telegram' | 'max' | 'email';
+        n[ch] = !n[ch];
+        paint();
+        saveNotify();
+      });
+      let t = 0;
+      emailTo.addEventListener('input', () => {
+        n.emailTo = emailTo.value.trim();
+        if (!n.emailTo) n.email = false;
+        paint();
+        clearTimeout(t);
+        t = window.setTimeout(saveNotify, 900);
+      });
+      paint();
       // статус плашкой: подключено — зелёным, нет — серым «не подключён».
       // У учётки через мессенджер почты нет (messengerAuth её не ставит)
       const email = String(me.email ?? '');
