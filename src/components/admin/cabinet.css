@@ -439,3 +439,26 @@ select.a-field__input { appearance: none; background-image: linear-gradient(45de
 
 /* между плашками-полями в сетке (аренда / чек у площадки) — тот же шаг */
 .c-form > .c-grid2 { gap: var(--cab-gap); }
+
+/* ---------- разделы анкеты плитками (Никита, 02.11: «крупнее, в плиточках,
+   в две колонки, ровненько») ---------- */
+.c-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--cab-gap); }
+.c-tile { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-height: 148px; padding: var(--s-4); border: 0; border-radius: var(--cab-sheet-radius); background: var(--adm-card); color: inherit; text-decoration: none; }
+.c-tile:last-child:nth-child(odd) { grid-column: span 2; min-height: 0; }
+.c-tile__ic { display: grid; place-items: center; width: 52px; height: 52px; margin-bottom: auto; border-radius: 16px; background: var(--adm-bg); color: var(--adm-text); }
+.c-tile__ic svg { width: 28px; height: 28px; }
+.c-tile--done .c-tile__ic { background: color-mix(in srgb, var(--st-ok) 35%, var(--adm-card)); }
+.c-tile__done { position: absolute; top: var(--s-4); right: var(--s-4); display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--st-ok); color: var(--st-ok-ink); }
+.c-tile__done svg { width: 18px; height: 18px; }
+.c-tile__title { margin-top: var(--s-3); font-size: 18px; line-height: 24px; font-weight: 600; }
+.c-tile__sub { font-size: var(--adm-fs); line-height: 18px; }
+@media (hover: hover) { .c-tile:hover { background: var(--adm-hover); } }
+
+/* вход и уведомления: подсказка группы и место под переключатель / плашку */
+.c-cat__lead { margin: 0; padding: 0 var(--s-4) var(--s-2); font-size: var(--adm-fs); color: var(--adm-text-2); }
+.c-ch-ctl { display: flex; flex: none; }
+
+/* поля и оттяжка страницы — серым фоном кабинета, не кремом сайта
+   (Никита, 02.11: «откуда бежевый по краям»); цвет рамки браузера — в CabinetShell */
+html:has(.cab), html:has(.cab) body { background: var(--adm-bg); }
+.c-tile__done .c-row__state { width: 18px; height: 18px; color: inherit; }
