@@ -29,10 +29,32 @@
 .cab { background: var(--adm-bg); }
 .cab .cab-body { min-height: 100dvh; padding: calc(var(--s-2) + env(safe-area-inset-top)) var(--s-2) calc(var(--cab-tabs-h) + env(safe-area-inset-bottom) + var(--s-2)); }
 .cab .cab-col { gap: var(--s-2); }
-.cab .c-head, .cab .a-title { padding: var(--s-4); border-radius: var(--cab-sheet-radius); background: var(--adm-card); }
-.cab .c-head .c-state:not(.c-badge--ok):not(.c-badge--bad):not(.c-badge--info):not(.c-state--bad) { background: var(--adm-bg); }
-.cab .c-head .c-progress__bar, .cab .c-head .c-help { background: var(--adm-bg); }
+/* шапка экрана — прямо на фоне, без плашки (Никита, 02.11), текст в край
+   текста плашек */
+.cab .c-head, .cab .a-title { padding: var(--s-3) var(--s-4) var(--s-2); }
 .cab .c-head .a-lead { color: var(--adm-text-2); }
+
+/* уведомление о сохранении: над нижним меню, само уходит */
+.c-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--cab-tabs-h) + env(safe-area-inset-bottom) + var(--s-3));
+  z-index: 7;
+  max-width: calc(100% - 2 * var(--s-4));
+  margin: 0;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: var(--cab-ink);
+  color: #fff;
+  font-size: var(--adm-fs);
+  font-weight: 500;
+  opacity: 0;
+  transform: translate(-50%, 8px);
+  pointer-events: none;
+  transition: opacity var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+}
+.c-toast.is-on { opacity: 1; transform: translate(-50%, 0); }
+.c-toast--bad { background: var(--st-bad-text); }
 .c-sheet-area { display: flex; flex-direction: column; gap: var(--s-2); --c-bar-bg: var(--adm-bg); }
 .c-sheet-area .a-card { padding: 0; border-radius: 0; background: none; }
 /* текст прямо на фоне (заголовок группы, счётчик знаков, ошибка) — в край текста плашек */

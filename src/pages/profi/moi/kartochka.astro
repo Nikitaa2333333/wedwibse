@@ -76,14 +76,37 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
 
   // ---------- сохранение ----------
   /** плашка в углу: статус карточки и время сохранения — одним местом */
+  // Никита, 02.11: пилюля «Черновик · сохранено 12:00» висела постоянно
+  // и дёргалась на каждой правке. Теперь статус карточки — только на обзоре,
+  // а сохранение — короткое уведомление внизу: «Сохранено» и исчезает;
+  // ошибка висит, пока следующее сохранение не пройдёт.
+  let justSaved = false;
+  let toastTimer = 0;
+  function toast(text: string, bad = false) {
+    let el = document.querySelector<HTMLElement>('.c-toast');
+    if (!el) {
+      el = document.createElement('p');
+      el.className = 'c-toast';
+      el.setAttribute('role', 'status');
+      document.body.append(el);
+    }
+    clearTimeout(toastTimer);
+    el.textContent = text;
+    el.classList.toggle('c-toast--bad', bad);
+    el.classList.add('is-on');
+    if (!bad) toastTimer = window.setTimeout(() => el!.classList.remove('is-on'), 1600);
+  }
   function savedLabel() {
     const el = view.querySelector<HTMLElement>('[data-saved]');
-    if (!el) return;
-    const st = cardState(rev.status, !isNew());
-    el.className = `c-state ${st.cls}`;
-    el.classList.toggle('c-state--bad', !!saveError);
-    const when = saveError ? `не сохранилось: ${saveError}` : saving ? 'сохраняем…' : savedAt ? `сохранено ${savedAt}` : '';
-    el.textContent = [st.label, when].filter(Boolean).join(' · ');
+    if (el) {
+      const st = cardState(rev.status, !isNew());
+      el.className = `c-state ${st.cls}`;
+      el.textContent = st.label;
+    }
+    if (saveError) toast(`Не сохранилось: ${saveError}`, true);
+    else if (justSaved) toast('Сохранено');
+    else document.querySelector('.c-toast--bad')?.classList.remove('is-on');
+    justSaved = false;
   }
 
   /** производные поля — то, что человек не вводит руками */
@@ -133,6 +156,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         rev = await api('vendor', 'PATCH', `/api/collections/revisions/records/${rev.id}`, body);
         savedAt = time();
         saveError = '';
+        justSaved = true;
       } catch (err) {
         saveError = (err as Error).message;
       }
@@ -141,7 +165,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     saving = null;
     savedLabel();
   }
-  const later = () => { clearTimeout(timer); saveError = ''; timer = window.setTimeout(save, 900); const el = view.querySelector('[data-saved]'); if (el) el.textContent = `${cardState(rev.status, !isNew()).label} · изменено`; };
+  const later = () => { clearTimeout(timer); saveError = ''; timer = window.setTimeout(save, 900); };
 
   // ---------- обзор: список разделов ----------
   function renderOverview() {
@@ -635,7 +659,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     const b = sectionBody(key);
     view.innerHTML = `
       <div class="c-head">
-        <div class="c-head__top"><a class="c-back" href="${url()}">${icon('back')} ${esc(data.name || 'Анкета')}</a><span data-saved></span></div>
+        <div class="c-head__top"><a class="c-back" href="${url()}">${icon('back')} ${esc(data.name || 'Анкета')}</a></div>
         <h1 class="a-h1 c-title">${b.title}${PREVIEWABLE.includes(key) && kind === 'specialist' ? ` <button class="c-help" type="button" data-preview="${key}" aria-label="Как это выглядит на сайте">?</button>` : ''}</h1>
         ${b.lead ? `<p class="a-lead">${b.lead}</p>` : ''}
         ${locked() ? '<p class="c-reason c-reason--info">Карточка на проверке — менять её сейчас нельзя.</p>' : ''}
@@ -799,6 +823,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       rev = await api('vendor', 'PATCH', `/api/collections/revisions/records/${rev.id}`, body);
       if (rev.photos?.length && !token) token = await fileToken('vendor');
       savedAt = time();
+      justSaved = true;
     } catch (x) {
       err.textContent = (x as Error).message;
       err.hidden = false;
