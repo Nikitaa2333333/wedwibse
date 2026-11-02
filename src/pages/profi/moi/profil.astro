@@ -1,6 +1,8 @@
 ---
 // ПРОФИЛЬ — раздел нижнего меню кабинета (Никита, 02.11). Учётка:
-// имя, способы входа (Telegram, MAX, почта) и выход. Данные — своя запись
+// телефон для заявок, способы входа (Telegram, MAX, почта), документы, выход.
+// Телефон для заявок — поле vendors.phone (подрядчик меняет его сам,
+// хук пускает name и phone): по нему мы связываемся, когда придёт заявка. Данные — своя запись
 // vendors (viewRule: только сам). Подключить второй способ входа отсюда —
 // следующий шаг (BACKLOG), сейчас только показываем, что подключено.
 import CabinetShell from '../../../components/admin/CabinetShell.astro';
@@ -24,12 +26,22 @@ const WAYS = [
     </div>
     <div class="c-sheet-area">
       <section class="c-cat">
+        <h2 class="c-cat__h">Контакты для заявок</h2>
+        <div class="c-card">
+          <label class="a-field">
+            <span class="a-field__label">Телефон</span>
+            <input class="a-field__input" type="tel" inputmode="tel" autocomplete="tel" placeholder="+7 900 000-00-00" data-phone />
+          </label>
+          <p class="a-field__note" data-phone-note>По этому номеру позвоним или напишем, когда на вашу карточку придёт заявка.</p>
+        </div>
+      </section>
+      <section class="c-cat">
         <h2 class="c-cat__h">Способы входа</h2>
         <div class="c-rows">
           {WAYS.map((w) => (
             <div class="c-row" data-way={w.key}>
-              <span class={`c-row__ic${w.key === 'max' ? ' c-row__ic--ink' : ''}`}>
-                {w.key === 'telegram' && <AdminIcon name="telegram" />}
+              <span class={`c-row__ic${w.key === 'max' ? ' c-row__ic--ink' : w.key === 'telegram' ? ' c-row__ic--tg' : ''}`}>
+                {w.key === 'telegram' && <AdminIcon name="tgLogo" />}
                 {w.key === 'max' && <Image src={maxMark} alt="" width={22} height={22} widths={[22, 44, 66]} sizes="22px" />}
                 {w.key === 'email' && <AdminIcon name="mail" />}
               </span>
@@ -65,6 +77,25 @@ const WAYS = [
       const me = await api('vendor', 'GET', `/api/collections/vendors/records/${s.record.id}`);
       saveSession('vendor', { ...s, record: me });
       if (me.name) root.querySelector('[data-name]')!.textContent = me.name;
+      // телефон для заявок: сохраняем сам, через секунду после правки
+      const phone = root.querySelector<HTMLInputElement>('[data-phone]')!;
+      const note = root.querySelector<HTMLElement>('[data-phone-note]')!;
+      const NOTE = note.textContent;
+      phone.value = me.phone ?? '';
+      let t = 0;
+      const savePhone = async () => {
+        clearTimeout(t);
+        const v = phone.value.trim();
+        if (v === (me.phone ?? '')) return;
+        if (v && v.replace(/\D/g, '').length < 10) { note.textContent = 'Номер неполный — нужно 10 цифр и больше.'; note.classList.add('c-error'); return; }
+        try {
+          me.phone = (await api('vendor', 'PATCH', `/api/collections/vendors/records/${me.id}`, { phone: v })).phone;
+          note.textContent = 'Сохранено. ' + NOTE;
+          note.classList.remove('c-error');
+        } catch (x) { note.textContent = (x as Error).message; note.classList.add('c-error'); }
+      };
+      phone.addEventListener('input', () => { clearTimeout(t); t = window.setTimeout(savePhone, 900); });
+      phone.addEventListener('blur', savePhone);
       // статус плашкой: подключено — зелёным, нет — серым «не подключён».
       // У учётки через мессенджер почты нет (messengerAuth её не ставит)
       const email = String(me.email ?? '');
