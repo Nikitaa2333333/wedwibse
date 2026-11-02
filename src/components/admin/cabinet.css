@@ -447,9 +447,6 @@ select.a-field__input { appearance: none; background-image: linear-gradient(45de
 .c-tile:last-child:nth-child(odd) { grid-column: span 2; min-height: 0; }
 .c-tile__ic { display: grid; place-items: center; width: 52px; height: 52px; margin-bottom: auto; border-radius: 16px; background: var(--adm-bg); color: var(--adm-text); }
 .c-tile__ic svg { width: 28px; height: 28px; }
-.c-tile--done .c-tile__ic { background: color-mix(in srgb, var(--st-ok) 35%, var(--adm-card)); }
-.c-tile__done { position: absolute; top: var(--s-4); right: var(--s-4); display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--st-ok); color: var(--st-ok-ink); }
-.c-tile__done svg { width: 18px; height: 18px; }
 .c-tile__title { margin-top: var(--s-3); font-size: 18px; line-height: 24px; font-weight: 600; }
 .c-tile__sub { font-size: var(--adm-fs); line-height: 18px; }
 @media (hover: hover) { .c-tile:hover { background: var(--adm-hover); } }
@@ -461,4 +458,15 @@ select.a-field__input { appearance: none; background-image: linear-gradient(45de
 /* поля и оттяжка страницы — серым фоном кабинета, не кремом сайта
    (Никита, 02.11: «откуда бежевый по краям»); цвет рамки браузера — в CabinetShell */
 html:has(.cab), html:has(.cab) body { background: var(--adm-bg); }
-.c-tile__done .c-row__state { width: 18px; height: 18px; color: inherit; }
+/* заполненный раздел — плитка светло-зелёная целиком (без галочки) */
+.c-tile--done { background: color-mix(in srgb, var(--st-ok) 30%, var(--adm-card)); }
+.c-tile--done .c-tile__ic { background: var(--adm-card); }
+@media (hover: hover) { .c-tile--done:hover { background: color-mix(in srgb, var(--st-ok) 40%, var(--adm-card)); } }
+/* превью сделанного: портрет кругом, кадры веером */
+.c-tile__ava { width: 52px; height: 52px; margin-bottom: auto; border-radius: 50%; overflow: hidden; background: var(--adm-bg); }
+.c-tile__ava img, .c-tile__stack img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.c-tile__stack { position: relative; display: flex; height: 64px; margin-bottom: auto; }
+.c-tile__stack img { width: 48px; height: 64px; border-radius: 10px; border: 2px solid var(--adm-card); box-shadow: 0 2px 6px rgba(15, 20, 30, 0.12); }
+.c-tile__stack img + img { margin-left: -18px; }
+.c-tile__stack img:nth-child(1) { transform: rotate(-6deg); }
+.c-tile__stack img:nth-child(3) { transform: rotate(6deg); }

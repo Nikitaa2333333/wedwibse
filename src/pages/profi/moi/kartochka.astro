@@ -168,6 +168,20 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
   const later = () => { clearTimeout(timer); saveError = ''; timer = window.setTimeout(save, 900); };
 
   // ---------- обзор: список разделов ----------
+  // Никита, 02.11: плитка показывает уже сделанное — портрет вместо значка
+  // «Основного», первые кадры вместо значка «Фото». Заполнено — плитка
+  // светло-зелёная целиком, без отдельной галочки.
+  function tileVisual(key: SectionKey, ic: string): string {
+    if (key === 'osnovnoe' && rev.avatar && token) {
+      return `<span class="c-tile__ava"><img src="${fileUrl(rev, rev.avatar, { thumb: '200x200', token })}" alt="" /></span>`;
+    }
+    const photos: string[] = rev.photos ?? [];
+    if (key === 'foto' && photos.length && token) {
+      return `<span class="c-tile__stack">${photos.slice(0, 3).map((n) => `<img src="${fileUrl(rev, n, { thumb: '200x0', token })}" alt="" loading="lazy" />`).join('')}</span>`;
+    }
+    return `<span class="c-tile__ic">${icon(ic)}</span>`;
+  }
+
   function renderOverview() {
     const st = cardState(rev.status, !isNew());
     const secs = SECTIONS[kind];
@@ -195,8 +209,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       <div class="c-tiles">
         ${states.map((x) => `
           <a class="c-row c-tile${x.done ? ' c-tile--done' : ''}" href="${url(x.key)}">
-            <span class="c-tile__ic">${icon(x.icon)}</span>
-            ${x.done ? `<span class="c-tile__done" aria-label="заполнено">${tick}</span>` : ''}
+            ${tileVisual(x.key, x.icon)}
             <span class="c-tile__title">${x.title}</span>
             <span class="c-tile__sub c-row__sub${x.empty ? (tried() ? ' c-row__sub--bad' : ' c-row__sub--empty') : ''}">${esc(x.sub)}</span>
           </a>`).join('')}
@@ -1065,7 +1078,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       // правка старой карточки с «О себе» одним полем — первым разделом текста
       if (!data.sections?.length && data.about) data.sections = [{ title: '', body: data.about }];
       questions = kind === 'venue' ? VENUE_QUESTIONS : cfg.questions[rev.categorySlug] ?? [];
-      if (rev.photos?.length) token = await fileToken('vendor');
+      if (rev.photos?.length || rev.avatar) token = await fileToken('vendor');
       route();
     } catch (err) {
       view.innerHTML = `<p class="c-error">${esc((err as Error).message)}</p><a class="c-link" href="/profi/moi/">К моим карточкам</a>`;
