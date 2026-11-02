@@ -161,11 +161,11 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         <div class="c-head__top"><a class="c-back" href="/profi/moi/">${icon('back')} Мои карточки</a><span data-saved></span></div>
         <h1 class="a-h1">${esc(title)}</h1>
         ${rev.slug ? `<p class="c-url" title="wed-secrets.ru${esc(siteUrl)}">Ваша ссылка: wed-secrets.ru/…/${esc(rev.slug)}/</p>` : ''}
-      </div>
-      ${rev.status === 'rejected' && rev.rejectReason ? `<p class="c-reason"><b>Вернули с причиной:</b> ${esc(rev.rejectReason)}<br>Исправьте и отправьте снова.</p>` : ''}
-      ${rev.status === 'review' ? '<p class="c-reason c-reason--info">Карточка на проверке — ответим в течение 24 часов. Пока она на проверке, менять её нельзя; можно отозвать.</p>' : ''}
-      <div class="c-progress" role="progressbar" aria-label="Заполнено разделов" aria-valuemin="0" aria-valuemax="${must.length}" aria-valuenow="${done}">
-        <div class="c-progress__bar"><i style="width:${Math.round((done / must.length) * 100)}%"></i></div>
+        ${rev.status === 'rejected' && rev.rejectReason ? `<p class="c-reason"><b>Вернули с причиной:</b> ${esc(rev.rejectReason)}<br>Исправьте и отправьте снова.</p>` : ''}
+        ${rev.status === 'review' ? '<p class="c-reason c-reason--info">Карточка на проверке — ответим в течение 24 часов. Пока она на проверке, менять её нельзя; можно отозвать.</p>' : ''}
+        <div class="c-progress" role="progressbar" aria-label="Заполнено разделов" aria-valuemin="0" aria-valuemax="${must.length}" aria-valuenow="${done}">
+          <div class="c-progress__bar"><i style="width:${Math.round((done / must.length) * 100)}%"></i></div>
+        </div>
       </div>
       <div class="c-sheet-area">
       <div class="c-rows">
