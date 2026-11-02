@@ -17,7 +17,70 @@
 .cab .a-btn--primary, .c-bar .a-btn { border-radius: 999px; }
 
 /* колонка формы: на ПК не растягиваем поля на весь экран */
-.cab-col { width: 100%; max-width: 720px; margin-inline: auto; display: grid; gap: var(--s-4); }
+.cab-col { width: 100%; max-width: 720px; margin-inline: auto; display: flex; flex-direction: column; gap: var(--s-4); }
+
+/* ---------- поле и лист (реф. Яндекс Директ, Никита 02.11) ----------
+   Шапка экрана (назад, заголовок, статус) — на голубом поле; всё
+   остальное — белый лист во всю ширину телефона, со скруглёнными верхними
+   углами, до самого нижнего меню. Внутри листа своих плашек нет
+   (плашка в плашке запрещена): строки и поля стоят прямо на нём. */
+.cab { background: var(--cab-tint); }
+.cab .cab-body { min-height: 100dvh; grid-template-rows: minmax(0, 1fr); padding-bottom: calc(var(--cab-tabs-h) + env(safe-area-inset-bottom)); }
+.cab .cab-main { align-content: stretch; }
+.c-sheet-area {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  margin-inline: calc(-1 * var(--s-4));
+  padding: var(--s-5) var(--s-4) var(--s-4);
+  border-radius: var(--cab-sheet-radius) var(--cab-sheet-radius) 0 0;
+  background: var(--adm-card);
+  --c-bar-bg: var(--adm-card);
+}
+/* строки на листе — во всю его ширину, линии от края до края */
+.c-sheet-area > .c-rows { margin-inline: calc(-1 * var(--s-4)); }
+.c-sheet-area > .c-rows:first-child { margin-top: calc(-1 * var(--s-3)); }
+.c-sheet-area .a-card { padding: 0; border-radius: 0; background: none; }
+.c-sheet-area .a-card--flush { margin-inline: calc(-1 * var(--s-4)); }
+/* на поле шапки ссылки и подписи — на тон темнее, чтобы читались на голубом */
+.cab .c-head .a-lead { color: var(--adm-text); }
+@media (min-width: 640px) {
+  .c-sheet-area { margin-inline: 0; margin-bottom: var(--s-5); padding-inline: var(--s-5); border-radius: var(--cab-sheet-radius); }
+  .c-sheet-area > .c-rows, .c-sheet-area .a-card--flush { margin-inline: calc(-1 * var(--s-5)); }
+}
+
+/* группа строк на листе: крупный заголовок, строки от края до края;
+   документ или вопрос — <details class="c-row">, раскрывается на месте */
+.c-cat { display: grid; gap: var(--s-1); }
+.c-cat__h { margin: var(--s-2) 0 0; font-size: var(--adm-fs-h2); line-height: 28px; font-weight: 600; color: var(--adm-text); }
+.c-cat .c-rows { margin-inline: calc(-1 * var(--s-4)); }
+details.c-row { display: block; }
+details.c-row > summary { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); list-style: none; cursor: pointer; }
+details.c-row > summary::-webkit-details-marker { display: none; }
+details.c-row > summary .c-row__go { flex: none; transition: transform var(--dur-fast) var(--ease-out); }
+details[open].c-row > summary .c-row__go { transform: rotate(90deg); }
+.c-details__text { margin-top: var(--s-3); font-size: var(--adm-fs); line-height: 1.5; overflow-wrap: anywhere; }
+@media (min-width: 640px) { .c-cat .c-rows { margin-inline: calc(-1 * var(--s-5)); } }
+
+/* ---------- нижнее меню ---------- */
+.c-tabs {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 6;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  height: calc(var(--cab-tabs-h) + env(safe-area-inset-bottom));
+  padding: 0 max(0px, (100% - 560px) / 2) env(safe-area-inset-bottom);
+  background: var(--adm-card);
+  border-top: 1px solid var(--adm-line);
+}
+.c-tab { display: grid; justify-items: center; align-content: center; gap: 4px; min-width: 0; color: var(--adm-text-2); text-decoration: none; font-size: var(--adm-fs-sm); line-height: 16px; font-weight: 500; }
+.c-tab svg { width: 26px; height: 26px; display: block; }
+.c-tab[aria-current="page"] { color: var(--cab-ink); font-weight: 600; }
+@media (hover: hover) { .c-tab:hover { color: var(--cab-ink); } }
 
 /* ---------- бейдж статуса ---------- */
 .c-badge {
@@ -167,15 +230,16 @@ select.a-field__input { appearance: none; background-image: linear-gradient(45de
    растворяется в цвет поля страницы — без белой плашки и без обводки. */
 .c-bar {
   position: sticky;
-  bottom: 0;
   z-index: 2;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--s-3);
-  padding: var(--cab-bar-fade) 0 calc(16px + env(safe-area-inset-bottom));
+  /* над нижним меню; растворение — в цвет того, на чём стоит (лист — белый) */
+  bottom: calc(var(--cab-tabs-h) + env(safe-area-inset-bottom));
+  padding: var(--cab-bar-fade) 0 var(--s-3);
   margin-top: calc(-1 * var(--cab-bar-fade) + var(--s-2));
-  background: linear-gradient(to bottom, transparent 0, color-mix(in srgb, var(--adm-bg) 55%, transparent) 40%, var(--adm-bg) calc(var(--cab-bar-fade) - 8px));
+  background: linear-gradient(to bottom, transparent 0, color-mix(in srgb, var(--c-bar-bg, var(--adm-bg)) 55%, transparent) 40%, var(--c-bar-bg, var(--adm-bg)) calc(var(--cab-bar-fade) - 8px));
   pointer-events: none;
 }
 .c-bar > * { pointer-events: auto; }
@@ -218,7 +282,7 @@ select.a-field__input { appearance: none; background-image: linear-gradient(45de
 .c-state:empty { display: none; }
 
 /* действие текстом: удалить черновик */
-.c-link--danger { color: var(--st-bad-text) !important; justify-self: center; padding: 8px; }
+.c-link--danger { color: var(--st-bad-text) !important; justify-self: center; align-self: center; padding: 8px; }
 
 /* «?» у подписи поля — открывает «как это выглядит» */
 .c-help { width: 20px; height: 20px; margin-left: 4px; border-radius: 50%; background: var(--adm-bg); color: var(--adm-text); font-size: 12px; font-weight: 600; line-height: 20px; text-align: center; vertical-align: 1px; }

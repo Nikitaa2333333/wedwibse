@@ -157,7 +157,8 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       <div class="c-progress" role="progressbar" aria-label="Заполнено разделов" aria-valuemin="0" aria-valuemax="${must.length}" aria-valuenow="${done}">
         <div class="c-progress__bar"><i style="width:${Math.round((done / must.length) * 100)}%"></i></div>
       </div>
-      <section class="a-card a-card--flush"><div class="c-rows">
+      <div class="c-sheet-area">
+      <div class="c-rows">
         ${states.map((x) => `
           <a class="c-row" href="${url(x.key)}">
             <span class="c-row__ic">${icon(x.icon)}</span>
@@ -165,7 +166,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
             ${x.done ? tick : '<span></span>'}
             ${go}
           </a>`).join('')}
-      </div></section>
+      </div>
       <div class="c-bar">
         ${rev.status === 'review'
           ? '<button class="a-btn a-btn--lg" type="button" data-withdraw>Отозвать с проверки</button>'
@@ -175,7 +176,8 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         <span class="c-error" data-error hidden></span>
         <span class="c-ok" data-ok hidden></span>
       </div>
-      ${canDelete ? '<button class="c-link c-link--danger" type="button" data-delete>Удалить карточку</button>' : ''}`;
+      ${canDelete ? '<button class="c-link c-link--danger" type="button" data-delete>Удалить карточку</button>' : ''}
+      </div>`;
     savedLabel();
     const err = view.querySelector<HTMLElement>('[data-error]')!;
     const ok = view.querySelector<HTMLElement>('[data-ok]')!;
@@ -627,8 +629,10 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         ${b.lead ? `<p class="a-lead">${b.lead}</p>` : ''}
         ${locked() ? '<p class="c-reason c-reason--info">Карточка на проверке — менять её сейчас нельзя.</p>' : ''}
       </div>
-      <section class="a-card"><div class="c-form" data-form>${b.html}</div></section>
-      <div class="c-bar"><a class="a-btn a-btn--primary a-btn--lg" href="${url()}" data-done>Готово</a></div>`;
+      <div class="c-sheet-area">
+        <div class="c-form" data-form>${b.html}</div>
+        <div class="c-bar"><a class="a-btn a-btn--primary a-btn--lg" href="${url()}" data-done>Готово</a></div>
+      </div>`;
     savedLabel();
     if (locked()) view.querySelectorAll<HTMLInputElement>('input, textarea, button.c-opt, button.c-add, button.c-tool, button.c-link').forEach((x) => (x.disabled = true));
     if (key === 'foto') renderPhotos();

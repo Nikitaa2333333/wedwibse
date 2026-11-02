@@ -19,11 +19,10 @@ const ROLES = Object.fromEntries(SPECIALIST_CATEGORIES.map((c) => [c.slug, c.rol
         <a class="a-btn a-btn--primary" href="/profi/moi/novaya/" data-add hidden><AdminIcon name="plus" /> Новая карточка</a>
       </div>
     </div>
-    <section class="a-card a-card--flush">
+    <div class="c-sheet-area">
       <div class="c-rows" data-list><p class="c-row c-row__sub">Загружаем…</p></div>
-    </section>
-    <p class="c-error" data-error hidden></p>
-    <a class="c-link c-logout" href="#" data-cab-logout>Выйти из кабинета</a>
+      <p class="c-error" data-error hidden></p>
+    </div>
   </div>
 </CabinetShell>
 

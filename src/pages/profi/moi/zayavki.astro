@@ -1,0 +1,26 @@
+---
+// ЗАЯВКИ — раздел нижнего меню кабинета (Никита, 02.11). Заявки от пар
+// идут через нас (STAGE2.md: «заявки через нас») — коллекции и маршрута
+// для подрядчика ещё нет. ЗАГЛУШКА: пустое состояние до этого шага.
+import CabinetShell from '../../../components/admin/CabinetShell.astro';
+---
+
+<CabinetShell title="Заявки" section="leads">
+  <div class="cab-col">
+    <div class="c-head">
+      <h1 class="a-h1">Заявки</h1>
+    </div>
+    <div class="c-sheet-area">
+      <p class="c-empty">Заявок пока нет. Когда пара захочет связаться с вами через карточку, заявка появится здесь.</p>
+    </div>
+  </div>
+</CabinetShell>
+
+<style>
+  .c-empty { margin: var(--s-6) auto 0; max-width: 32ch; text-align: center; color: var(--adm-text-2); }
+</style>
+
+<script>
+  import { requireSession } from '../../../lib/cabinet-api';
+  requireSession('vendor');
+</script>
