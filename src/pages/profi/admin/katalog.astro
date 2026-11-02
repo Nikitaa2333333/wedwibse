@@ -12,6 +12,9 @@ import AdminIcon from '../../../components/admin/AdminIcon.astro';
 import { resolveImage, IMG_WIDTHS } from '../../../lib/images';
 import { CATALOG, GAPS, PHOTOS_LOW, PHOTOS_MAX } from '../../../lib/admin-catalog';
 import { OWNERS, OWNER_STEP } from '../../../data/admin-demo';
+import { SPECIALIST_CATEGORIES } from '../../../data/specialists';
+
+const ROLES = Object.fromEntries(SPECIALIST_CATEGORIES.map((c) => [c.slug, c.role]));
 
 const rows = CATALOG.map((c) => ({ ...c, owner: OWNERS[c.key] ?? { step: 'none' as const } }));
 const venues = rows.filter((r) => r.kind === 'venue').length;
@@ -36,6 +39,15 @@ const gaps = (r: (typeof rows)[number]) => [
   <div class="a-title">
     <h1 class="a-h1">Карточки</h1>
   </div>
+
+  {/* ИЗ КАБИНЕТА — живые карточки из базы (Никита, 02.11: «нужно удалять»).
+      Новая (ещё не на сайте) — «Удалить»; опубликованная — «Снять с сайта»
+      (archived, сайт пересоберётся сам); снятая — «Удалить совсем».
+      Нажатие дважды: первое спрашивает. Маршрут — POST /api/wed/mod/remove. */}
+  <section class="a-card a-card--flush" data-cab-cards data-roles={JSON.stringify(ROLES)} hidden>
+    <div class="a-card__head"><h2 class="a-h2">Из кабинета</h2></div>
+    <div class="a-tasks" data-cab-list></div>
+  </section>
 
   <section class="a-card a-card--flush">
     <nav class="a-tabs" aria-label="Отбор карточек">
@@ -133,3 +145,62 @@ const gaps = (r: (typeof rows)[number]) => [
   /* действие в строке — ссылкой, не кнопкой */
   .cat__link { color: var(--adm-link); font-size: var(--adm-fs); font-weight: 500; }
 </style>
+
+<script>
+  import { api, esc, session } from '../../../lib/cabinet-api';
+
+  const REV: Record<string, string> = { draft: 'черновик', review: 'на проверке', rejected: 'вернули' };
+  document.addEventListener('astro:page-load', async () => {
+    const box = document.querySelector<HTMLElement>('[data-cab-cards]');
+    if (!box || box.dataset.live || !session('moderator')) return;
+    box.dataset.live = '1';
+    box.hidden = false;
+    const list = box.querySelector<HTMLElement>('[data-cab-list]')!;
+    const roles: Record<string, string> = JSON.parse(box.dataset.roles!);
+    const role = (kind: string, cat: string) => (kind === 'venue' ? 'Площадка' : roles[cat] ?? cat);
+    const row = (name: string, sub: string, actions: string) => `
+      <div class="a-task a-cabrow">
+        <span class="a-task__cover a-task__cover--empty" aria-hidden="true">${esc(name.slice(0, 1))}</span>
+        <span class="a-task__body"><span class="a-task__name">${esc(name)}</span><span class="a-task__fill">${sub}</span></span>
+        <span class="a-cabrow__act">${actions}</span>
+      </div>`;
+    const btn = (label: string, what: string, id: string, mode = '', danger = true) =>
+      `<button type="button" class="a-link${danger ? ' a-link--danger' : ''}" data-rm="${what}" data-id="${id}" data-mode="${mode}">${label}</button>`;
+    const load = async () => {
+      try {
+        const [revs, specs, vens] = await Promise.all([
+          api('moderator', 'GET', `/api/collections/revisions/records?perPage=200&sort=-updated&expand=owner&filter=${encodeURIComponent('venue = "" && specialist = "" && status != "approved"')}`),
+          api('moderator', 'GET', `/api/collections/specialists/records?perPage=200&sort=-updated&filter=${encodeURIComponent('owner != ""')}`),
+          api('moderator', 'GET', `/api/collections/venues/records?perPage=200&sort=-updated&filter=${encodeURIComponent('owner != ""')}`),
+        ]);
+        const rows: string[] = [];
+        for (const c of [...specs.items.map((x: any) => ({ ...x, kind: 'specialist' })), ...vens.items.map((x: any) => ({ ...x, kind: 'venue' }))]) {
+          const on = c.status === 'published';
+          rows.push(row(c.name || 'Без названия', `${esc(role(c.kind, c.categorySlug))} · ${on ? 'на сайте' : c.status === 'archived' ? 'снята с сайта' : esc(c.status)}`,
+            on ? btn('Снять с сайта', c.kind, c.id, 'archive') : c.status === 'archived' ? btn('Удалить совсем', c.kind, c.id, 'delete') : ''));
+        }
+        for (const r of revs.items) {
+          const who = r.expand?.owner?.name || r.expand?.owner?.email || '';
+          rows.push(row(r.data?.name || 'Без названия', `${esc(role(r.kind, r.categorySlug))} · новая, ${REV[r.status] ?? esc(r.status)}${who ? ` · ${esc(who)}` : ''}`, btn('Удалить', 'revision', r.id)));
+        }
+        list.innerHTML = rows.join('') || '<p class="a-task a-task__fill">Карточек из кабинета пока нет.</p>';
+      } catch (err) {
+        list.innerHTML = `<p class="a-task a-login__error">Не загрузилось: ${esc((err as Error).message)}</p>`;
+      }
+    };
+    list.addEventListener('click', async (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-rm]');
+      if (!b) return;
+      if (!b.dataset.sure) { b.dataset.sure = '1'; b.textContent = 'Точно? Нажмите ещё раз'; return; }
+      b.disabled = true;
+      try {
+        await api('moderator', 'POST', '/api/wed/mod/remove', { what: b.dataset.rm, id: b.dataset.id, mode: b.dataset.mode });
+        await load();
+      } catch (err) {
+        b.disabled = false;
+        b.textContent = (err as Error).message;
+      }
+    });
+    load();
+  });
+</script>

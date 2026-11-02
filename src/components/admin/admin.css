@@ -535,3 +535,8 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
 html:has(.adm), html:has(.adm) body { background: var(--adm-bg); }
 .a-logout { justify-self: center; padding: var(--s-3); color: var(--st-bad-text); font-weight: 500; text-decoration: none; }
 .a-total { padding-inline: var(--s-4); }
+.a-cabrow { grid-template-columns: 48px minmax(0, 1fr) auto; }
+.a-cabrow__act { grid-row: 1 / span 2; grid-column: 3; align-self: center; }
+.a-link { border: 0; padding: 4px 0; background: none; font: inherit; font-weight: 500; color: var(--adm-link); cursor: pointer; text-align: right; }
+.a-link--danger { color: var(--st-bad-text); }
+.a-cabrow .a-task__fill { white-space: normal; }
