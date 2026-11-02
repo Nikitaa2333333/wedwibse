@@ -43,9 +43,10 @@
   width: max-content;
   max-width: calc(100% - 2 * var(--s-4));
   margin: 0;
-  padding: 8px 16px;
+  padding: 12px 20px;
+  line-height: 20px;
   text-align: center;
-  border-radius: 999px;
+  border-radius: 22px;
   background: var(--cab-ink);
   color: #fff;
   font-size: var(--adm-fs);
@@ -460,10 +461,6 @@ select.a-field__input { appearance: none; background-image: linear-gradient(45de
 /* поля и оттяжка страницы — серым фоном кабинета, не кремом сайта
    (Никита, 02.11: «откуда бежевый по краям»); цвет рамки браузера — в CabinetShell */
 html:has(.cab), html:has(.cab) body { background: var(--adm-bg); }
-/* заполненный раздел — плитка светло-зелёная целиком (без галочки) */
-.c-tile--done { background: color-mix(in srgb, var(--st-ok) 30%, var(--adm-card)); }
-.c-tile--done .c-tile__ic { background: var(--adm-card); }
-@media (hover: hover) { .c-tile--done:hover { background: color-mix(in srgb, var(--st-ok) 40%, var(--adm-card)); } }
 /* превью сделанного: портрет кругом, кадры веером */
 .c-tile__ava { width: 52px; height: 52px; margin-bottom: auto; border-radius: 50%; overflow: hidden; background: var(--adm-bg); }
 .c-tile__ava img, .c-tile__stack img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -485,7 +482,8 @@ html:has(.cab), html:has(.cab) body { background: var(--adm-bg); }
   60% { transform: translateX(-5px); }
   80% { transform: translateX(3px); }
 }
-/* незаполненный обязательный раздел после попытки отправить — красноватая плитка */
-.c-tile--bad { background: color-mix(in srgb, var(--st-bad) 22%, var(--adm-card)); }
-.c-tile--bad .c-tile__ic { background: var(--adm-card); }
 body:has(.c-bar .a-btn) .c-toast { bottom: calc(var(--cab-tabs-h) + env(safe-area-inset-bottom) + 80px); }
+/* заполненный раздел — тонкая галочка в углу, без кружка и без заливки
+   (Никита, 02.11: зелёные и красные плитки — «светофор», сняты) */
+.c-tile__done { position: absolute; top: var(--s-4); right: var(--s-4); width: 22px; height: 22px; color: var(--st-ok-text); }
+.c-tile__done svg { width: 100%; height: 100%; display: block; }
