@@ -577,7 +577,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
                 <span class="a-field__note">Ваше лицо, а не работа: пара видит, с кем будет иметь дело.</span>
               </div>` };
       case 'foto':
-        return { title: 'Фото', lead: `От ${MIN_PHOTOS} до ${MAX_PHOTOS} кадров, лучше вертикальные: каталог смотрят с телефона. Чтобы сменить обложку или порядок, зажмите фото и перетащите — на место обложки или между другими.`, html: '<div class="c-photos" data-photos></div><p class="c-ok" data-upload hidden></p><p class="c-error" data-photo-error hidden></p>' };
+        return { title: 'Фото', lead: `От ${MIN_PHOTOS} до ${MAX_PHOTOS} кадров, лучше вертикальные: каталог смотрят с телефона. Порядок и обложка — перетаскиванием.`, html: '<div class="c-hint" data-drag-hint hidden></div><div class="c-photos" data-photos></div><p class="c-ok" data-upload hidden></p><p class="c-error" data-photo-error hidden></p>' };
       case 'video': {
         // Евгений, 31.10: ссылка на ролик — своим разделом. Ролик на карточку
         // ставим мы (VIDEO.md: пережатие, постер), подрядчик даёт только ссылку
@@ -722,6 +722,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         <input type="file" accept="image/jpeg,image/png,image/webp" multiple hidden data-pfiles />
       </label>`);
     if (!lock) bindPhotoDrag(box);
+    dragHint(lock ? [] : names);
   }
 
   /**
@@ -754,6 +755,39 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     label();
     history.pushState({ viewer: true }, '');
     addEventListener('popstate', onPop);
+  }
+
+  /**
+   * Подсказка «зажмите и перетащите» (Никита, 02.11): плашка над кадрами
+   * с мини-анимацией на своих же первых трёх фото — третий кадр уезжает на
+   * место обложки. Работе не мешает (не всплывает поверх), уходит навсегда
+   * после крестика или первого настоящего перетаскивания.
+   */
+  const HINT_KEY = 'wed-cab-hint-drag';
+  function hintSeen() { try { return localStorage.getItem(HINT_KEY) === '1'; } catch { return false; } }
+  function hideDragHint() {
+    try { localStorage.setItem(HINT_KEY, '1'); } catch {}
+    const el = view.querySelector<HTMLElement>('[data-drag-hint]');
+    if (el) el.hidden = true;
+  }
+  function dragHint(names: string[]) {
+    const el = view.querySelector<HTMLElement>('[data-drag-hint]');
+    if (!el) return;
+    if (names.length < 2 || hintSeen()) { el.hidden = true; return; }
+    if (el.dataset.ready) { el.hidden = false; return; }
+    el.dataset.ready = '1';
+    const pic = (i: number) => names[i] ? `style="background-image:url('${fileUrl(rev, names[i], { thumb: '100x0', token })}')"` : '';
+    el.innerHTML = `
+      <span class="c-hint__demo" aria-hidden="true">
+        <span class="c-hint__tile c-hint__tile--1" ${pic(0)}></span>
+        <span class="c-hint__tile c-hint__tile--2" ${pic(1)}></span>
+        <span class="c-hint__tile c-hint__tile--3" ${pic(2) || pic(1)}></span>
+        <span class="c-hint__touch"></span>
+      </span>
+      <span class="c-hint__text"><b>Зажмите фото и перетащите</b><span>Так меняется порядок. Первое фото — обложка в каталоге.</span></span>
+      <button class="c-hint__close" type="button" aria-label="Понятно"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.6" d="M6 6l12 12M18 6L6 18"/></svg></button>`;
+    el.querySelector('.c-hint__close')!.addEventListener('click', hideDragHint);
+    el.hidden = false;
   }
 
   /**
@@ -837,7 +871,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       box.classList.remove('is-sorting');
       const names: string[] = rev.photos ?? [];
       const order = tiles().map((el) => names[Number(el.dataset.pi)]);
-      if (order.some((n, i) => n !== names[i])) await photoPatch({ photos: order });
+      if (order.some((n, i) => n !== names[i])) { hideDragHint(); await photoPatch({ photos: order }); }
     };
     addEventListener('pointerup', end);
     addEventListener('pointercancel', end);
