@@ -508,3 +508,12 @@ body:has(.c-bar .a-btn) .c-toast { bottom: calc(var(--cab-tabs-h) + env(safe-are
   100% { transform: translateX(-68px); opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce) { .c-hint__tile, .c-hint__touch { animation: none; } }
+
+/* цена: переключатель способа — белой плашкой; готовые «за что» — в той же
+   плашке, что поле (Никита, 02.11: чипы висели на фоне и сливались с ним) */
+.c-form > .c-seg { padding: 6px; border-radius: var(--cab-sheet-radius); background: var(--adm-card); }
+.c-form > .c-seg button { height: 44px; border-radius: 18px; font-size: 15px; }
+.c-card--chips { display: grid; gap: var(--s-3); }
+/* тариф — белая плашка кабинета, а не кремовая карточка сайта */
+.c-form .c-tcard { border-radius: var(--cab-sheet-radius); background: var(--adm-card); color: var(--adm-text); font-family: inherit; padding: var(--s-4); }
+.c-form .c-tcard input::placeholder, .c-form .c-tcard textarea::placeholder { color: var(--adm-text-2); }

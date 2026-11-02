@@ -628,8 +628,10 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
           <div class="c-seg">${modes.map(([v, l]) => `<button type="button" aria-pressed="${mode === v}" data-pmode="${v}">${l}</button>`).join('')}</div>
           ${mode === 'one' ? `
             ${field('Цена от, ₽', 'priceFrom', data.priceFrom, { mode: 'numeric', placeholder: '40000' })}
-            ${field('За что', 'priceNote', data.priceNote, { placeholder: 'за 6 часов работы' })}
-            ${unitChips('priceNote', data.priceNote)}` : ''}
+            <div class="c-card c-card--chips">
+              ${field('За что', 'priceNote', data.priceNote, { placeholder: 'за 6 часов работы' })}
+              ${unitChips('priceNote', data.priceNote)}
+            </div>` : ''}
           ${mode === 'tariffs' ? `
             <div class="c-items">${ts.map((t: any, i: number) => `
               <div class="c-tcard">
