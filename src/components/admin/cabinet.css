@@ -27,8 +27,8 @@
    Метрики — «вот фон и плашки с минимальным расстоянием»). Внутри плашки
    второй подложки нет: поле без серой заливки, подсказка — внутри. */
 .cab { background: var(--adm-bg); }
-.cab .cab-body { min-height: 100dvh; padding: calc(var(--s-2) + env(safe-area-inset-top)) var(--s-2) calc(var(--cab-tabs-h) + env(safe-area-inset-bottom) + var(--s-2)); }
-.cab .cab-col { gap: var(--s-2); }
+.cab .cab-body { min-height: 100dvh; padding: calc(var(--cab-gap) + env(safe-area-inset-top)) var(--cab-gap) calc(var(--cab-tabs-h) + env(safe-area-inset-bottom) + var(--cab-gap)); }
+.cab .cab-col { gap: var(--cab-gap); }
 /* шапка экрана — прямо на фоне, без плашки (Никита, 02.11), текст в край
    текста плашек */
 .cab .c-head, .cab .a-title { padding: var(--s-3) var(--s-4) var(--s-2); }
@@ -55,7 +55,7 @@
 }
 .c-toast.is-on { opacity: 1; transform: translate(-50%, 0); }
 .c-toast--bad { background: var(--st-bad-text); }
-.c-sheet-area { display: flex; flex-direction: column; gap: var(--s-2); --c-bar-bg: var(--adm-bg); }
+.c-sheet-area { display: flex; flex-direction: column; gap: var(--cab-gap); --c-bar-bg: var(--adm-bg); }
 .c-sheet-area .a-card { padding: 0; border-radius: 0; background: none; }
 /* текст прямо на фоне (заголовок группы, счётчик знаков, ошибка) — в край текста плашек */
 .c-sheet-area > .c-error, .c-form > .a-field__note, .c-form > .c-error, .c-text-foot, .c-form > .c-ok { padding-inline: var(--s-4); }
@@ -93,7 +93,7 @@
 /* группа строк на листе: крупный заголовок, строки от края до края;
    документ или вопрос — <details class="c-row">, раскрывается на месте */
 .c-cat { display: grid; gap: 0; }
-.c-cat__h { margin: var(--s-3) 0 var(--s-1); padding-inline: var(--s-4); font-size: var(--adm-fs-h2); line-height: 28px; font-weight: 600; color: var(--adm-text); }
+.c-cat__h { margin: var(--s-3) 0 var(--cab-gap); padding-inline: var(--s-4); font-size: var(--adm-fs-h2); line-height: 28px; font-weight: 600; color: var(--adm-text); }
 details.c-row { display: block; }
 details.c-row > summary { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); list-style: none; cursor: pointer; }
 details.c-row > summary::-webkit-details-marker { display: none; }
@@ -200,7 +200,7 @@ details.c-row > summary .c-row__ic { flex: none; }
 .c-row__go { width: 18px; height: 18px; color: var(--adm-text-2); }
 
 /* ---------- поля ---------- */
-.c-form { display: grid; gap: var(--s-4); }
+.c-form { display: grid; gap: var(--cab-gap); }
 .a-field__note { font-size: var(--adm-fs-sm); line-height: 16px; color: var(--adm-text-2); }
 textarea.a-field__input { height: auto; min-height: 160px; padding: 12px 14px; line-height: 1.5; resize: vertical; }
 /* описание одним полем — под вставку готового текста */
@@ -234,9 +234,8 @@ select.a-field__input { appearance: none; background-image: linear-gradient(45de
 @media (hover: hover) { .c-opt[aria-pressed="false"]:hover { background: var(--adm-line) !important; } }
 
 /* ---------- блоки, которые добавляют (разделы текста, пакеты, залы) ---------- */
-.c-items { display: grid; gap: var(--s-3); }
-.c-item { display: grid; gap: var(--s-3); padding-bottom: var(--s-4); }
-.c-item + .c-item { padding-top: var(--s-2); }
+.c-items { display: grid; gap: var(--cab-gap); }
+.c-item { display: grid; gap: var(--s-3); }
 .c-item__tools { display: flex; align-items: center; gap: 4px; justify-content: flex-end; }
 .c-tool { width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; color: var(--adm-text-2); }
 .c-tool svg { width: 16px; height: 16px; }
@@ -425,3 +424,6 @@ select.a-field__input { appearance: none; background-image: linear-gradient(45de
 .c-tcard__inc { resize: vertical; font-size: var(--fs-small); line-height: var(--lh-body); }
 .c-tcard:focus-within { box-shadow: 0 0 0 2px var(--cab-ink); }
 .c-tcard .c-item__tools { margin-top: calc(-1 * var(--s-2)); }
+
+/* между плашками-полями в сетке (аренда / чек у площадки) — тот же шаг */
+.c-form > .c-grid2 { gap: var(--cab-gap); }
