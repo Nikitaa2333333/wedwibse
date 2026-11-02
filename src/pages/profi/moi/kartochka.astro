@@ -108,6 +108,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
 
   async function save() {
     clearTimeout(timer);
+    timer = 0;
     if (saving) await saving;
     if (locked()) return;
     derive();
@@ -631,7 +632,6 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       </div>
       <div class="c-sheet-area">
         <div class="c-form" data-form>${b.html}</div>
-        <div class="c-bar"><a class="a-btn a-btn--primary a-btn--lg" href="${url()}" data-done>Готово</a></div>
       </div>`;
     savedLabel();
     if (locked()) view.querySelectorAll<HTMLInputElement>('input, textarea, button.c-opt, button.c-add, button.c-tool, button.c-link').forEach((x) => (x.disabled = true));
@@ -877,7 +877,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
   });
 
   view.addEventListener('click', async (e) => {
-    const b = (e.target as HTMLElement).closest<HTMLElement>('button, a[data-done]');
+    const b = (e.target as HTMLElement).closest<HTMLElement>('button');
     if (!b || (b as HTMLButtonElement).disabled) return;
     if (b.dataset.preview) { e.preventDefault(); openPreview(b.dataset.preview as SectionKey); return; }
     // цена: способ и готовые «за что»
@@ -956,11 +956,6 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       await photoPatch({ 'photos-': [rev.photos[Number(b.dataset.premove)]] });
       return;
     }
-    if (b.hasAttribute('data-done')) {
-      e.preventDefault();
-      await save();
-      if (!saveError) navigate();
-    }
   });
 
   // переходы внутри анкеты — без перезагрузки, данные уже в памяти
@@ -976,6 +971,17 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     route();
   }
   addEventListener('popstate', route);
+  // Кнопки «Готово» в разделах нет (Никита, 02.11: всё сохраняется само,
+  // подтверждать нечего). Уход по нижнему меню — полная загрузка страницы:
+  // дописываем несохранённое ДО перехода, иначе правка последней секунды
+  // уйдёт вместе со страницей. Не сохранилось — остаёмся, плашка скажет почему.
+  document.addEventListener('click', async (e) => {
+    const a = (e.target as HTMLElement).closest<HTMLAnchorElement>('a.c-tab');
+    if (!a || e.metaKey || e.ctrlKey || (!timer && !saving)) return;
+    e.preventDefault();
+    await save();
+    if (!saveError) location.href = a.href;
+  });
   // ушли со страницы или свернули браузер — дописываем несохранённое (без «Вы уверены?»)
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && timer) save(); });
 
