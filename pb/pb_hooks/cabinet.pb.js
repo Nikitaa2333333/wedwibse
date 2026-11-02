@@ -20,6 +20,7 @@ onRecordUpdateRequest((e) => {
 // или снятие карточки в админке базы сразу запускает деплой
 onRecordAfterCreateSuccess((e) => require(`${__hooks}/lib/cabinet.js`).cardSaved(e), 'specialists');
 onRecordAfterUpdateSuccess((e) => require(`${__hooks}/lib/cabinet.js`).cardSaved(e), 'specialists');
+onRecordAfterDeleteSuccess((e) => require(`${__hooks}/lib/cabinet.js`).cardDeleted(e), 'specialists');
 
 // ---------- видео ----------
 onRecordCreateRequest((e) => {
@@ -39,6 +40,9 @@ onRecordUpdateRequest((e) => {
 }, 'vendors');
 
 // ---------- маршруты ----------
+// модератор: удалить новую карточку / правку, снять карточку с сайта, удалить снятую
+routerAdd('POST', '/api/wed/mod/remove', (e) => require(`${__hooks}/lib/cabinet.js`).modRemove(e), $apis.requireAuth('moderators'));
+
 routerAdd('POST', '/api/wed/edit', (e) => require(`${__hooks}/lib/cabinet.js`).startEdit(e), $apis.requireAuth('vendors'));
 
 routerAdd('GET', '/api/wed/slug', (e) => require(`${__hooks}/lib/cabinet.js`).checkSlug(e), $apis.requireAuth('vendors'));
