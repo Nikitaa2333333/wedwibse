@@ -1062,7 +1062,35 @@ function vendorUpdateAccount(e) {
   return e.next();
 }
 
+// ---------- заявки пар ----------
+// Форма на карточке (BookingSheet) без входа → POST /api/wed/lead. Служебное
+// (статус, связь с учёткой невесты) из запроса не берём. Частоту держит
+// rate limit маршрута (миграция 1762200000).
+function createLead(e) {
+  const body = e.requestInfo().body || {};
+  const name = str(body.name, 120);
+  const phone = str(body.phone, 40);
+  const message = str(body.message, 4000);
+  const sourceUrl = str(body.sourceUrl, 500);
+  if (!name) throw new BadRequestError('Напишите, как вас зовут.');
+  if (phone.replace(/\D/g, '').length < 10) throw new BadRequestError('Проверьте телефон — нужно 10 цифр и больше.');
+  if (body.consent !== true) throw new BadRequestError('Нужно согласие на обработку данных.');
+  const r = new Record(e.app.findCollectionByNameOrId('leads'));
+  r.set('kind', 'client');
+  r.set('name', name);
+  r.set('phone', phone);
+  r.set('message', message);
+  if (/^https?:\/\//.test(sourceUrl)) r.set('sourceUrl', sourceUrl);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str(body.eventDate))) r.set('eventDate', str(body.eventDate) + ' 12:00:00.000Z');
+  r.set('consent', true);
+  r.set('status', 'new');
+  e.app.save(r);
+  telegram(`Заявка с сайта\n${name}, ${phone}\n${message}\n${sourceUrl}`);
+  return e.json(200, { ok: true });
+}
+
 module.exports = {
+  createLead,
   cardSaved,
   MIN_PHOTOS,
   parseSection,

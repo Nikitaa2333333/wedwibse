@@ -14,9 +14,10 @@
 // шторки тогда говорит не «оставьте», а «проверьте». Это и есть обещание
 // «нужно один раз»: по второй площадке заявка отправляется в два касания.
 //
-// ЗАГЛУШКА: отправки на сервер нет (фаза дизайна) — форма показывает
-// экран «принято» и запоминает контакты локально. Когда появится бэкенд,
-// сюда встанет fetch, разметка и стили не изменятся.
+// ОТПРАВКА (02.11.2026): заявка уходит в базу маршрутом POST /api/wed/lead
+// (хук: проверка, коллекция `leads`, сообщение в Telegram-группу модерации). До этого форма была заглушкой: показывала «принято», а заявка
+// не уходила никуда — заявки с сайта до 02.11 потеряны. Экран «принято» —
+// только после ответа базы; не дошло — ошибка под кнопкой, форма остаётся.
 import Icon from './Icon.astro';
 
 interface Props {
@@ -112,6 +113,7 @@ const WAYS = [
 
       <footer class="sheet__foot">
         <button class="pill pill--lg booking__submit" type="submit">{action}</button>
+        <p class="booking__error t-small" data-booking-error role="alert" hidden></p>
         <p class="booking__legal t-caption">
           Отправляя заявку, вы соглашаетесь на обработку своих данных.
         </p>
@@ -176,6 +178,7 @@ const WAYS = [
   /* Правовая строка — мелким кеглем, но обычным тоном: серым в этой
      шторке не пишем ничего. */
   .booking__legal { font-size: var(--fs-caption); }
+  .booking__error { color: var(--st-bad-text); }
 
   /* Экран «принято»: знак, заголовок и строка — по центру панели */
   .booking__done-mark {
@@ -193,10 +196,10 @@ const WAYS = [
 
 <script>
   import { bindSheet } from '../lib/sheet';
+  import { api } from '../lib/cabinet-api';
 
-  // ЗАГЛУШКА (фаза дизайна): заявка никуда не уходит — контакты остаются
-  // в браузере, чтобы форма держала своё обещание «нужно один раз».
-  // Ключ отдельный от избранного: то — снимки карточек, это — человек.
+  // Контакты остаются и в браузере, чтобы форма держала обещание «нужно
+  // один раз». Ключ отдельный от избранного: то — снимки карточек, это — человек.
   const STORE_KEY = 'wed:contact';
 
   interface Contact {
@@ -246,9 +249,41 @@ const WAYS = [
       })
     );
 
-    form.addEventListener('submit', (e) => {
+    const error = sheet.querySelector<HTMLElement>('[data-booking-error]')!;
+    const submit = form.querySelector<HTMLButtonElement>('[type="submit"]')!;
+    const subject = sheet.querySelector('.booking__name')?.textContent?.trim() ?? '';
+    const WAY_LABEL: Record<string, string> = { telegram: 'Telegram', whatsapp: 'WhatsApp', call: 'звонок' };
+
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const data = new FormData(form);
+      const get = (k: string) => String(data.get(k) ?? '').trim();
+      error.hidden = true;
+      submit.disabled = true;
+      try {
+        // карточку называем словами и адресом страницы: у статичной
+        // страницы нет id записи в базе, а по адресу её найдёт любой
+        await api(null, 'POST', '/api/wed/lead', {
+          name: get('name'),
+          phone: get('phone'),
+          message: [
+            `Карточка: ${subject}`,
+            `Связаться: ${WAY_LABEL[get('way')] ?? get('way')}`,
+            get('date') && `Дата свадьбы: ${get('date')}`,
+            get('comment'),
+          ].filter(Boolean).join('\n'),
+          eventDate: get('date'),
+          sourceUrl: location.href.split('#')[0],
+          consent: true,
+        });
+      } catch {
+        error.textContent = 'Заявка не отправилась — проверьте интернет и нажмите ещё раз.';
+        error.hidden = false;
+        submit.disabled = false;
+        return;
+      }
+      submit.disabled = false;
+      try { (window as any).ym?.(113797542, 'reachGoal', 'lead'); } catch {}
       try {
         localStorage.setItem(
           STORE_KEY,
