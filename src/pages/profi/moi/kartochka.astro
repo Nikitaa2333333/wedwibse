@@ -192,13 +192,13 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         </div>
       </div>
       <div class="c-sheet-area">
-      <div class="c-rows">
+      <div class="c-tiles">
         ${states.map((x) => `
-          <a class="c-row" href="${url(x.key)}">
-            <span class="c-row__ic">${icon(x.icon)}</span>
-            <span class="c-row__body"><span class="c-row__title">${x.title}</span><span class="c-row__sub${x.empty ? (tried() ? ' c-row__sub--bad' : ' c-row__sub--empty') : ''}">${esc(x.sub)}</span></span>
-            ${x.done ? tick : '<span></span>'}
-            ${go}
+          <a class="c-row c-tile${x.done ? ' c-tile--done' : ''}" href="${url(x.key)}">
+            <span class="c-tile__ic">${icon(x.icon)}</span>
+            ${x.done ? `<span class="c-tile__done" aria-label="заполнено">${tick}</span>` : ''}
+            <span class="c-tile__title">${x.title}</span>
+            <span class="c-tile__sub c-row__sub${x.empty ? (tried() ? ' c-row__sub--bad' : ' c-row__sub--empty') : ''}">${esc(x.sub)}</span>
           </a>`).join('')}
       </div>
       <div class="c-bar">
