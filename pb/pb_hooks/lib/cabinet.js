@@ -1058,7 +1058,22 @@ function vendorCreateAccount(e) {
   return e.next();
 }
 function vendorUpdateAccount(e) {
-  denyExtra(e.requestInfo().body, ['name', 'phone']);
+  const body = e.requestInfo().body;
+  denyExtra(body, ['name', 'phone', 'notify']);
+  // куда присылать заявки: только известные ключи и только нужных типов;
+  // Telegram и MAX — лишь при подключённом входе (бот пишет тем, кто приходил)
+  if (body && 'notify' in body) {
+    const n = body.notify && typeof body.notify === 'object' ? body.notify : {};
+    const emailTo = str(n.emailTo, 200);
+    if (emailTo && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailTo)) throw new BadRequestError('Проверьте почту для заявок.');
+    const r = e.record;
+    r.set('notify', {
+      telegram: n.telegram === true && !!r.getString('telegramId'),
+      max: n.max === true && !!r.getString('maxId'),
+      email: n.email === true && !!emailTo,
+      emailTo,
+    });
+  }
   return e.next();
 }
 
