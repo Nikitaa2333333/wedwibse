@@ -7,7 +7,8 @@
 // Переходы между разделами без перезагрузки — ClientRouter Astro: страница
 // не мигает, ссылки меню подгружаются заранее. Поэтому скрипты страниц
 // вешаются на `astro:page-load`, а не выполняются один раз.
-// На телефоне меню — полоса разделов сверху, листается вбок.
+// На телефоне (02.11, вид кабинета подрядчика) шапки и полосы разделов нет —
+// нижнее меню из пяти разделов со счётчиками, «Выйти» — внизу «Сводки».
 // noindex всегда: индексация сайта открыта, админка в выдачу не должна.
 import { ClientRouter } from 'astro:transitions';
 import Layout from '../../layouts/Layout.astro';
@@ -42,6 +43,7 @@ const items: { key: AdminSection; href: string; label: string; n?: number; tone?
     <meta name="robots" content="noindex, nofollow" />
     <link rel="preload" href="/fonts/inter-cyrillic.woff2" as="font" type="font/woff2" crossorigin />
     <ClientRouter />
+    <script is:inline>document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#eff2f7');</script>
   </Fragment>
 
   <div class="adm">
@@ -79,6 +81,16 @@ const items: { key: AdminSection; href: string; label: string; n?: number; tone?
         <slot />
       </main>
     </div>}
+    {!bare && (
+      <nav class="c-tabs" aria-label="Разделы админки">
+        {items.map((it) => (
+          <a class="c-tab" href={it.href} aria-current={it.key === section ? 'page' : undefined}>
+            <span class="c-tab__ic"><AdminIcon name={it.key} />{it.n ? <span class={`c-tab__n${it.tone === 'info' ? ' c-tab__n--info' : ''}`}>{it.n}</span> : null}</span>
+            <span>{it.label}</span>
+          </a>
+        ))}
+      </nav>
+    )}
   </div>
 </Layout>
 
@@ -97,12 +109,14 @@ const items: { key: AdminSection; href: string; label: string; n?: number; tone?
     ava.textContent = name.slice(0, 1).toUpperCase();
     ava.hidden = false;
     user.removeAttribute('href');
-    const out = document.querySelector<HTMLAnchorElement>('[data-adm-logout]')!;
-    out.hidden = false;
-    out.onclick = (e) => {
-      e.preventDefault();
-      saveSession('moderator', null);
-      location.href = '/profi/admin/vhod/';
-    };
+    // «Выйти» — в шапке (ПК) и внизу «Сводки» (телефон)
+    document.querySelectorAll<HTMLAnchorElement>('[data-adm-logout]').forEach((out) => {
+      out.hidden = false;
+      out.onclick = (e) => {
+        e.preventDefault();
+        saveSession('moderator', null);
+        location.href = '/profi/admin/vhod/';
+      };
+    });
   });
 </script>
