@@ -26,7 +26,8 @@ interface Props {
 
 const { active, items: customItems, label = 'Основная навигация' } = Astro.props;
 
-// icon — ключ из реестра src/lib/icons.ts (Solar Linear, контурные).
+// icon — ключ из реестра src/lib/icons.ts (контурные; arch и host —
+// свои, нарисованы под проект, см. CUSTOM в scripts/gen-icons.mjs).
 const items = [
   {
     key: 'feed',
@@ -38,7 +39,7 @@ const items = [
     key: 'venues',
     href: '/moskva/ploshchadki/',
     label: 'Площадки',
-    icon: 'venue',
+    icon: 'arch',
   },
   // Раздел «Специалисты» ведёт на хаб с плитками групп
   // (pages/moskva/podryadchiki/index.astro); из группы — в каталог,
@@ -47,7 +48,7 @@ const items = [
     key: 'vendors',
     href: '/moskva/podryadchiki/',
     label: 'Специалисты',
-    icon: 'vendors',
+    icon: 'host',
   },
   {
     key: 'saved',
