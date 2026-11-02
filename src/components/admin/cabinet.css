@@ -155,12 +155,14 @@ details[open].c-row > summary .c-row__go { transform: rotate(90deg); }
 
 /* ---------- шапка экрана ---------- */
 .c-head { display: grid; gap: var(--s-2); }
-.c-back { display: inline-flex; align-items: center; gap: 4px; color: var(--adm-text-2); text-decoration: none; font-weight: 500; justify-self: start; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
-.c-back svg { width: 16px; height: 16px; flex: none; }
+/* «Назад» — крупно и с полем под палец 44px (Никита, 02.11: «удобно кликать»);
+   стрелка уходит в поле слева, текст остаётся в край заголовка */
+.c-back { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; margin-left: -6px; padding-right: var(--s-3); color: var(--adm-text); text-decoration: none; font-size: var(--cab-fs-label); font-weight: 500; justify-self: start; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.c-back svg { width: 24px; height: 24px; flex: none; }
 @media (hover: hover) { .c-back:hover { color: var(--adm-text); } }
 .c-head__row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-3); }
 /* верхняя строка: «‹ назад» слева, плашка статуса справа — заголовок ниже на всю ширину */
-.c-head__top { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); min-height: 28px; }
+.c-head__top { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); min-height: 44px; }
 .c-head__top .c-back { min-width: 0; }
 .c-head__top .c-state { margin-left: 0; flex: none; }
 /* ссылка страницы — одной строкой, без разрыва посреди слова */
