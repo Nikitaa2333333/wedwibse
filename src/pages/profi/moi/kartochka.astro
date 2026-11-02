@@ -510,11 +510,11 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
                 ${field('Средний чек от, ₽ на гостя', 'checkFrom', data.checkFrom, { mode: 'numeric' })}
               </div>` }
           : { title: role(), lead: '', html: `
-              <div class="c-grid2">
+              <div class="c-card">
                 ${field('Имя', 'firstName', data.firstName, { placeholder: 'Елена' })}
                 ${field('Фамилия', 'lastName', data.lastName, { placeholder: 'Каморина' })}
+                <p class="a-field__note">Студия или команда — название в поле «Имя», фамилию оставьте пустой.</p>
               </div>
-              <p class="a-field__note">Студия или команда — название в поле «Имя», фамилию оставьте пустой.</p>
               ${field('Строка под именем', 'tagline', data.tagline, { placeholder: 'Репортаж без постановки, плёнка по желанию', note: 'Одна фраза, до 80 знаков.', max: 80 })}
               <div class="a-field">
                 <span class="a-field__label">Портрет</span>
@@ -981,6 +981,23 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     route();
   }
   addEventListener('popstate', route);
+  // Заполняют с телефона: поле, в которое перешли, подкручиваем к середине
+  // экрана (над клавиатурой), Enter в однострочном поле — к следующему
+  // (Никита, 02.11: «по ходу, как человек заполняет, само проскролливалось»)
+  const coarse = matchMedia('(pointer: coarse)').matches;
+  view.addEventListener('focusin', (e) => {
+    const t = e.target as HTMLElement;
+    if (!coarse || !t.matches('input:not([type=file]), textarea')) return;
+    setTimeout(() => (t.closest('.a-field, .c-card, .c-q') ?? t).scrollIntoView({ block: 'center', behavior: 'smooth' }), 300);
+  });
+  view.addEventListener('keydown', (e) => {
+    const t = e.target as HTMLInputElement;
+    if (e.key !== 'Enter' || t.tagName !== 'INPUT' || !t.closest('[data-form]')) return;
+    const all = [...view.querySelectorAll<HTMLElement>('[data-form] input:not([type=hidden]):not([type=file]), [data-form] textarea')];
+    const next = all[all.indexOf(t) + 1];
+    if (next) { e.preventDefault(); next.focus(); }
+  });
+
   // Кнопки «Готово» в разделах нет (Никита, 02.11: всё сохраняется само,
   // подтверждать нечего). Уход по нижнему меню — полная загрузка страницы:
   // дописываем несохранённое ДО перехода, иначе правка последней секунды

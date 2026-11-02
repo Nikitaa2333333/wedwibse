@@ -20,11 +20,14 @@
 /* колонка формы: на ПК не растягиваем поля на весь экран */
 .cab-col { width: 100%; max-width: 720px; margin-inline: auto; display: flex; flex-direction: column; gap: var(--s-4); }
 
-/* ---------- поле и лист (реф. Яндекс Директ, Никита 02.11) ----------
-   Шапка экрана (назад, заголовок, статус) — на голубом поле; всё
-   остальное — белый лист во всю ширину телефона, со скруглёнными верхними
-   углами, до самого нижнего меню. Внутри листа своих плашек нет
-   (плашка в плашке запрещена): строки и поля стоят прямо на нём. */
+/* ---------- поле, лист и плашки (реф. Яндекс Директ / настройки Яндекса) ----------
+   Шапка экрана (назад, заголовок, статус) — на голубом поле; под ней
+   светлый лист во всю ширину телефона со скруглёнными верхними углами,
+   до самого нижнего меню. Содержимое листа — отдельными белыми плашками
+   с небольшим отступом (Никита, 02.11: «не всё в единой плашке, а
+   разделение, как у Яндекса»): группа строк, поле, вопрос — своя плашка.
+   Внутри плашки второй подложки нет: поле без серой заливки, подсказка
+   и ошибка — тоже внутри. */
 .cab { background: var(--cab-tint); }
 .cab .cab-body { min-height: 100dvh; grid-template-rows: minmax(0, 1fr); padding-bottom: calc(var(--cab-tabs-h) + env(safe-area-inset-bottom)); }
 .cab .cab-main { align-content: stretch; }
@@ -32,37 +35,60 @@
   flex: 1 0 auto;
   display: flex;
   flex-direction: column;
-  gap: var(--s-4);
+  gap: var(--s-3);
   margin-inline: calc(-1 * var(--s-4));
-  padding: var(--s-5) var(--s-4) var(--s-4);
+  padding: var(--s-4) var(--s-3) var(--s-4);
   border-radius: var(--cab-sheet-radius) var(--cab-sheet-radius) 0 0;
-  background: var(--adm-card);
-  --c-bar-bg: var(--adm-card);
+  background: var(--adm-bg);
+  --c-bar-bg: var(--adm-bg);
 }
-/* строки на листе — во всю его ширину, линии от края до края */
-.c-sheet-area > .c-rows { margin-inline: calc(-1 * var(--s-4)); }
-.c-sheet-area > .c-rows:first-child { margin-top: calc(-1 * var(--s-3)); }
 .c-sheet-area .a-card { padding: 0; border-radius: 0; background: none; }
-.c-sheet-area .a-card--flush { margin-inline: calc(-1 * var(--s-4)); }
 /* на поле шапки ссылки и подписи — на тон темнее, чтобы читались на голубом */
 .cab .c-head .a-lead { color: var(--adm-text); }
 @media (min-width: 640px) {
-  .c-sheet-area { margin-inline: 0; margin-bottom: var(--s-5); padding-inline: var(--s-5); border-radius: var(--cab-sheet-radius); }
-  .c-sheet-area > .c-rows, .c-sheet-area .a-card--flush { margin-inline: calc(-1 * var(--s-5)); }
+  .c-sheet-area { margin-inline: 0; margin-bottom: var(--s-5); padding-inline: var(--s-4); border-radius: var(--cab-sheet-radius); }
 }
+
+/* плашка: группа строк, поле анкеты, вопрос, раздел текста, тариф, зал */
+.c-card,
+.c-sheet-area > .c-rows,
+.c-cat .c-rows,
+.c-form > .a-field,
+.c-form > .c-grid2 > .a-field,
+.c-form > .c-q,
+.c-form > .c-photos,
+.c-form > .c-items > .c-item,
+.c-form > .c-items > .c-vrow {
+  background: var(--adm-card);
+  border-radius: var(--adm-radius);
+}
+.c-card, .c-form > .a-field, .c-form > .c-grid2 > .a-field, .c-form > .c-q, .c-form > .c-items > .c-item { padding: 14px var(--s-4); }
+.c-form > .c-photos { padding: var(--s-3); }
+.c-form > .c-items > .c-vrow { padding: 6px 6px 6px var(--s-4); }
+.c-sheet-area > .c-rows, .c-cat .c-rows { overflow: hidden; }
+/* поле внутри плашки — без своей подложки: заголовок поля, под ним текст */
+.c-form .a-field__input, .c-card .a-field__input { height: 32px; padding: 0; border-radius: 0; background: none; }
+.c-form textarea.a-field__input, .c-card textarea.a-field__input { height: auto; min-height: 120px; padding: 0; }
+.c-form .a-field__input:focus-visible, .c-card .a-field__input:focus-visible { outline: none; }
+.c-form > .a-field:focus-within, .c-form > .c-grid2 > .a-field:focus-within, .c-card:focus-within { box-shadow: 0 0 0 2px var(--cab-ink); }
+.c-form .c-phone, .c-card .c-phone { height: 32px; background: none; border-radius: 0; }
+.c-form .c-phone:focus-within { outline: none; }
+.c-form .cc-toggle { padding-left: 0; }
+/* несколько полей в одной плашке (имя и фамилия, разделы, залы) — через линию */
+.c-card > .a-field + .a-field, .c-item > .a-field + .a-field, .c-item > .c-grid2 { border-top: 1px solid var(--adm-line); padding-top: 12px; }
+.c-card > .a-field__note { margin: 0; }
+.c-q { border-bottom: 0 !important; padding-block: 14px; }
 
 /* группа строк на листе: крупный заголовок, строки от края до края;
    документ или вопрос — <details class="c-row">, раскрывается на месте */
 .c-cat { display: grid; gap: var(--s-1); }
-.c-cat__h { margin: var(--s-2) 0 0; font-size: var(--adm-fs-h2); line-height: 28px; font-weight: 600; color: var(--adm-text); }
-.c-cat .c-rows { margin-inline: calc(-1 * var(--s-4)); }
+.c-cat__h { margin: var(--s-2) 0 0; padding-inline: var(--s-2); font-size: var(--adm-fs-h2); line-height: 28px; font-weight: 600; color: var(--adm-text); }
 details.c-row { display: block; }
 details.c-row > summary { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); list-style: none; cursor: pointer; }
 details.c-row > summary::-webkit-details-marker { display: none; }
 details.c-row > summary .c-row__go { flex: none; transition: transform var(--dur-fast) var(--ease-out); }
 details[open].c-row > summary .c-row__go { transform: rotate(90deg); }
 .c-details__text { margin-top: var(--s-3); font-size: var(--adm-fs); line-height: 1.5; overflow-wrap: anywhere; }
-@media (min-width: 640px) { .c-cat .c-rows { margin-inline: calc(-1 * var(--s-5)); } }
 
 /* ---------- нижнее меню ---------- */
 .c-tabs {
@@ -143,6 +169,8 @@ details[open].c-row > summary .c-row__go { transform: rotate(90deg); }
 .c-row__ic svg { width: 20px; height: 20px; }
 /* белый знак сервиса (MAX) — на чернильной подложке, как на кнопке входа */
 .c-row__ic--ink { background: var(--cab-ink); }
+.c-row__ic--tg { background: var(--brand-telegram); color: #fff; }
+.c-row__ic--tg svg { width: 22px; height: 22px; }
 .c-row__thumb { width: 44px; height: 55px; border-radius: 8px; object-fit: cover; background: var(--adm-bg); display: block; }
 /* «Мои карточки»: карточка крупно — кадр и имя видны сразу */
 .c-row--card { padding-block: 18px; }
@@ -165,7 +193,7 @@ details.c-row > summary .c-row__ic { flex: none; }
 .a-field__note { font-size: var(--adm-fs-sm); line-height: 16px; color: var(--adm-text-2); }
 textarea.a-field__input { height: auto; min-height: 160px; padding: 12px 14px; line-height: 1.5; resize: vertical; }
 /* описание одним полем — под вставку готового текста */
-textarea.c-text { min-height: 52vh; }
+textarea.c-text, .c-form textarea.c-text { min-height: 48vh; }
 .c-text-foot { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s-3); flex-wrap: wrap; }
 /* ссылка на видео: поле и крестик в строку */
 .c-vrow { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px; }
@@ -302,7 +330,7 @@ select.a-field__input { appearance: none; background-image: linear-gradient(45de
 
 /* портрет */
 .c-ava { display: flex; align-items: center; gap: var(--s-3); cursor: pointer; justify-self: start; }
-.c-ava__img { width: 72px; height: 72px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: var(--adm-bg); color: var(--adm-text-2); flex: none; }
+.c-ava__img { width: 112px; height: 112px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: var(--adm-bg); color: var(--adm-text-2); flex: none; }
 .c-ava__img img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .c-ava__img svg { width: 28px; height: 28px; }
 
