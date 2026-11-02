@@ -976,6 +976,8 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && timer) save(); });
 
   function route() {
+    // «назад» закрывает открытый кадр (openViewer) — анкету не перерисовываем
+    if (document.querySelector('.c-viewer')) return;
     const p = new URLSearchParams(location.search);
     q.set('s', p.get('s') ?? '');
     if (!p.get('s')) q.delete('s');
