@@ -222,7 +222,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         ${rev.status === 'review'
           ? '<button class="a-btn a-btn--lg" type="button" data-withdraw>Отозвать с проверки</button>'
           : rev.status === 'approved'
-            ? `<a class="a-btn a-btn--lg" href="${siteUrl}" target="_blank" rel="noopener">Открыть на сайте</a>`
+            ? `<a class="a-btn a-btn--lg" href="${siteUrl}" target="_blank" rel="noopener" data-site-link hidden>Открыть на сайте</a><p class="c-reason c-reason--info" data-site-wait>Карточка одобрена и выходит на сайт — обычно это несколько минут.</p>`
             : `<button class="a-btn a-btn--primary a-btn--lg${missing.length ? ' c-btn-locked' : ''}" type="button" data-submit ${missing.length ? 'aria-disabled="true"' : ''}>${missing.length ? icon('lock') : ''}Отправить на проверку</button>`}
         <span class="c-error" data-error hidden></span>
         <span class="c-ok" data-ok hidden></span>
@@ -230,6 +230,16 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       ${canDelete ? '<button class="c-link c-link--danger" type="button" data-delete>Удалить карточку</button>' : ''}
       </div>`;
     savedLabel();
+    // «Открыть на сайте» — только когда страница уже есть: сайт пересобирается
+    // после одобрения несколько минут, а кнопка вела на пустую страницу (03.11)
+    const siteLink = view.querySelector<HTMLAnchorElement>('[data-site-link]');
+    if (siteLink) {
+      fetch(siteUrl, { method: 'HEAD', cache: 'no-store' }).then((r) => {
+        if (!r.ok) return;
+        siteLink.hidden = false;
+        view.querySelector('[data-site-wait]')?.remove();
+      }).catch(() => {});
+    }
     const err = view.querySelector<HTMLElement>('[data-error]')!;
     const ok = view.querySelector<HTMLElement>('[data-ok]')!;
     view.querySelector<HTMLButtonElement>('[data-submit]')?.addEventListener('click', async (e) => {
