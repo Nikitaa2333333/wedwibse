@@ -51,6 +51,14 @@ for (const s of todo) {
     priceFrom: s.priceFrom ?? null, filters: s.filters ?? {}, page: s,
     source: s.source ?? '',
   };
+  // карточка «ведём мы» (пилот, 03.11): цену и ответы на вопросы владелец
+  // правит сам через кабинет — перезаливка нашего JSON их не затирает
+  const own = existing?.page?.ownerEdits;
+  if (own) {
+    data.page = { ...s, ownerEdits: own };
+    delete data.priceFrom;
+    delete data.filters;
+  }
   if (!existing) data.status = publish ? 'published' : 'draft';
   else if (publish) data.status = 'published';
   const rec = existing ? await api.update('specialists', existing.id, data) : await api.create('specialists', data);

@@ -21,24 +21,45 @@ if (!BASE) { console.log('pb-pull-cabinet: PB_PUBLIC_URL не задан, про
 
 const DATA = 'src/data/cabinet/specialists';
 const ASSETS = 'src/assets/cabinet';
+// правки владельцев карточек «ведём мы» (пилот, 03.11): цена и ответы на
+// вопросы поверх нашего JSON из git — накладывает data/specialists.ts
+const OWNER_EDITS = 'src/data/cabinet/owner-edits.json';
 // каждый раз с нуля: снятая с публикации карточка должна исчезнуть с сайта
 await rm(DATA, { recursive: true, force: true });
 await rm(ASSETS, { recursive: true, force: true });
+await rm(OWNER_EDITS, { force: true });
 
-const filter = encodeURIComponent('status = "published" && source = "кабинет"');
-const items = [];
-try {
+async function fetchAll(filterExpr) {
+  const filter = encodeURIComponent(filterExpr);
+  const out = [];
   for (let page = 1; ; page++) {
     const r = await fetch(`${BASE}/api/collections/specialists/records?perPage=200&page=${page}&filter=${filter}`, { signal: AbortSignal.timeout(20000) });
     if (!r.ok) throw new Error(`${r.status} ${await r.text()}`);
     const res = await r.json();
-    items.push(...res.items);
+    out.push(...res.items);
     if (page >= res.totalPages) break;
   }
+  return out;
+}
+
+let items = [];
+let ours = [];
+try {
+  items = await fetchAll('status = "published" && source = "кабинет"');
+  ours = await fetchAll('status = "published" && source != "кабинет"');
 } catch (err) {
   console.log(`pb-pull-cabinet: база не ответила (${err.message}) — собираю без карточек из кабинета`);
   process.exit(0);
 }
+
+const ownerEdits = {};
+for (const rec of ours) {
+  const e = rec.page?.ownerEdits;
+  if (e && rec.categorySlug && rec.slug) ownerEdits[`${rec.categorySlug}/${rec.slug}`] = e;
+}
+await mkdir('src/data/cabinet', { recursive: true });
+await writeFile(OWNER_EDITS, JSON.stringify(ownerEdits, null, 2) + '\n');
+console.log(`pb-pull-cabinet: правок владельцев «ведём мы» ${Object.keys(ownerEdits).length}`);
 
 /** файл карточки; сбой сети по одному кадру не роняет деплой — кадр пропускается */
 async function download(url, dest) {

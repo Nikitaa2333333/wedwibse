@@ -56,7 +56,35 @@ if (cmd === 'moderator') {
   });
   // ключ показывается один раз: в базе только его хэш
   console.log(`${card.name}: ${SITE}/profi/vhod/?invite=${key}`);
+} else if (cmd === 'invite-pilot') {
+  // Пилот (STAGE2.md, 03.11): ссылки пачкой на карточки «ведём мы» без
+  // владельца → research/pilot-links.csv (в git не попадает). Столбец «кому»
+  // заполняет Никита; рассылает тоже он — скрипт никому ничего не шлёт.
+  // Можно ограничить: invite-pilot <kat>/<slug> …
+  const { mkdir, writeFile } = await import('node:fs/promises');
+  const only = args;
+  const list = (await api.list('specialists', `filter=${encodeURIComponent('owner = "" && status = "published"')}`))?.items ?? [];
+  const rows = [['карточка', 'имя', 'ссылка', 'действует до', 'кому']];
+  for (const card of list) {
+    const ref = `${card.categorySlug}/${card.slug}`;
+    if (only.length && !only.includes(ref)) continue;
+    if (card.form?.managed !== true) { console.log(`${ref}: нет анкеты (card-to-form.mjs --write), пропуск`); continue; }
+    const key = randomBytes(24).toString('base64url');
+    const until = new Date(Date.now() + 30 * 86400000);
+    await api.create('invites', {
+      tokenHash: createHash('sha256').update(key).digest('hex'),
+      specialist: card.id,
+      expiresAt: until.toISOString().replace('T', ' '),
+      note: 'пилот 03.11',
+    });
+    rows.push([ref, card.name, `${SITE}/profi/vhod/?invite=${key}`, until.toISOString().slice(0, 10), '']);
+    console.log(`${ref}: ссылка выдана`);
+  }
+  await mkdir('research', { recursive: true });
+  const csv = rows.map((r) => r.map((x) => `"${String(x).replace(/"/g, '""')}"`).join(';')).join('\r\n');
+  await writeFile('research/pilot-links.csv', '﻿' + csv + '\r\n');
+  console.log(`\n${rows.length - 1} ссылок → research/pilot-links.csv (ключи показаны один раз, в базе только хэш)`);
 } else {
-  console.log('команды: moderator <почта> <пароль> [имя] | test-terms | invite <kat>/<slug>|venue:<slug> [заметка]');
+  console.log('команды: moderator <почта> <пароль> [имя] | test-terms | invite <kat>/<slug>|venue:<slug> [заметка] | invite-pilot [<kat>/<slug> …]');
   process.exit(1);
 }

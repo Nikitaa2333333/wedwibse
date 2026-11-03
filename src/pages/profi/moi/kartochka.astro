@@ -69,6 +69,15 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
   };
   const locked = () => rev?.status === 'review' || rev?.status === 'approved';
   const isNew = () => !rev.venue && !rev.specialist;
+  // «Карточку ведём мы» (пилот, 03.11, CABINET.md §24): визитку оформили мы,
+  // владелец сам меняет цену, вопросы, контакты и видео; текст, фото, имя
+  // и портрет — просьбой «что поправить» (data.requests). Хук всё равно
+  // пропускает только это — экран просто не предлагает лишнего.
+  const managed = () => data?.managed === true && !isNew();
+  const MANAGED_NOTE = 'Карточку оформили мы. Цену, ответы на вопросы, контакты и видео меняете сами, а текст и фото — напишите, что поправить, сделаем сами.';
+  /** поле просьбы нам: текст или фото */
+  const requestField = (key: 'text' | 'photos', label: string, placeholder: string) =>
+    field(label, `requests.${key}`, data.requests?.[key], { area: true, placeholder, note: 'Модератор увидит вместе с остальной правкой и поправит сам.' });
   const role = () => (kind === 'venue' ? 'Площадка' : cfg.roles[rev.categorySlug] ?? rev.categorySlug);
   const section = () => q.get('s') as SectionKey | null;
   const url = (sec?: string) => `/profi/moi/kartochka/?id=${rev.id}${sec ? `&s=${sec}` : ''}`;
@@ -204,6 +213,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         ${rev.slug ? `<p class="c-url" title="wed-secrets.ru${esc(siteUrl)}">Ваша ссылка: wed-secrets.ru/…/${esc(rev.slug)}/</p>` : ''}
         ${rev.status === 'rejected' && rev.rejectReason ? `<p class="c-reason"><b>Вернули с причиной:</b> ${esc(rev.rejectReason)}<br>Исправьте и отправьте снова.</p>` : ''}
         ${rev.status === 'review' ? '<p class="c-reason c-reason--info">Карточка на проверке — ответим в течение 24 часов. Пока она на проверке, менять её нельзя; можно отозвать.</p>' : ''}
+        ${managed() && rev.status !== 'review' ? `<p class="c-reason c-reason--info">${MANAGED_NOTE}</p>` : ''}
         <div class="c-progress" role="progressbar" aria-label="Заполнено разделов" aria-valuemin="0" aria-valuemax="${must.length}" aria-valuenow="${done}">
           <div class="c-progress__bar"><i style="width:${Math.round((done / must.length) * 100)}%"></i></div>
         </div>
@@ -559,7 +569,31 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       <button class="c-tool" type="button" data-remove="${list}" data-i="${i}" aria-label="Удалить"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.6" d="M6 6l12 12M18 6L6 18"/></svg></button>
     </div>`;
 
+  /** карточка «ведём мы»: основное, фото и текст — просмотр и просьба */
+  function managedBody(key: SectionKey): { title: string; lead: string; html: string } | null {
+    if (!managed()) return null;
+    if (key === 'osnovnoe') return { title: role(), lead: '', html: `
+      <div class="c-card">
+        <p class="a-field__label">Имя</p><p>${esc(data.name)}</p>
+        ${data.tagline ? `<p class="a-field__label">Строка под именем</p><p>${esc(data.tagline)}</p>` : ''}
+        ${rev.avatar ? `<span class="c-ava__img"><img src="${fileUrl(rev, rev.avatar, { thumb: '200x200', token })}" alt="" /></span>` : ''}
+      </div>
+      ${requestField('text', 'Что поправить', 'Например: строка под именем — «Веду свадьбы с 2005 года»; заменить портрет — пришлю в Telegram')}` };
+    if (key === 'foto') return { title: 'Фото', lead: 'Кадры подобрали мы — так, чтобы карточка смотрелась с телефона.', html: `
+      <div class="c-photos" data-photos></div>
+      ${requestField('photos', 'Что поменять в фото', 'Например: убрать 5-й и 12-й кадр; новые кадры — ссылка на Яндекс Диск')}` };
+    if (key === 'tekst') {
+      const secs = (data.sections ?? []).filter((x: any) => String(x?.body ?? '').trim());
+      return { title: 'Описание', lead: 'Так текст стоит на вашей странице сейчас.', html: `
+        <div class="c-pv c-pv-story">${secs.map((x: any) => `<section>${x.title ? `<h3>${esc(x.title)}</h3>` : ''}${storyHtml(x.body)}</section>`).join('')}</div>
+        ${requestField('text', 'Что поправить в тексте', 'Например: во втором абзаце — «работаю с 2012 года»; добавить раздел про выездную регистрацию')}` };
+    }
+    return null;
+  }
+
   function sectionBody(key: SectionKey): { title: string; lead: string; html: string } {
+    const m = managedBody(key);
+    if (m) return m;
     switch (key) {
       case 'osnovnoe':
         return kind === 'venue'
@@ -632,7 +666,8 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         // (кейтеринг, кавер-группа). На визитке — «от N ₽» и под ней «за что».
         const mode = priceMode();
         const ts = data.tariffs ?? [];
-        const modes = [['one', 'Одна цена'], ['tariffs', 'Тарифы'], ['request', 'По запросу']];
+        // у карточки «ведём мы» тарифы живут в тексте визитки — их правим мы
+        const modes = managed() ? [['one', 'Одна цена'], ['request', 'По запросу']] : [['one', 'Одна цена'], ['tariffs', 'Тарифы'], ['request', 'По запросу']];
         const unitChips = (bind: string, cur: unknown) => `<div class="c-opts">${PRICE_UNITS.map((u) => `<button class="c-opt" type="button" aria-pressed="${cur === u}" data-unit="${bind}" data-v="${u}">${u}</button>`).join('')}</div>`;
         return { title: 'Цена', lead: '', html: `
           <div class="c-seg">${modes.map(([v, l]) => `<button type="button" aria-pressed="${mode === v}" data-pmode="${v}">${l}</button>`).join('')}</div>
@@ -717,7 +752,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     const box = view.querySelector<HTMLElement>('[data-photos]');
     if (!box) return;
     const names: string[] = rev.photos ?? [];
-    const lock = locked();
+    const lock = locked() || managed();
     // Евгений, 31.10: стрелки «левее/правее» — как на калькуляторе. Порядок —
     // перетаскиванием (bindPhotoDrag). Обложка — первый кадр, обычного размера
     // с плашкой «Обложка» (Никита, 02.11: крупная 2×2 — вернули обычную);

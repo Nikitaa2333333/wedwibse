@@ -494,6 +494,73 @@ console.log('\nвход по почте');
   check('новый пароль подходит', (await login(pass1)).status === 200);
 }
 
+// ---------- карточка «ведём мы» (пилот, 03.11) ----------
+// Наша карточка с анкетой из card-to-form.mjs → приглашение → правка:
+// владелец меняет только цену, вопросы, контакты, видео и просьбы;
+// одобрение не трогает фото, текст и вид визитки (CABINET.md §24).
+{
+  console.log('\nкарточка «ведём мы»');
+  const { cardToForm } = await import('./card-to-form.mjs');
+  const C = await makeVendor('c');
+  const ours = {
+    slug: `test-managed-${stamp}`, categorySlug: 'vedushchie', name: 'Михаил Пилотов', tagline: 'Ведущий без конкурсов',
+    priceFrom: 90000, priceNote: 'за 6 часов', filters: { gender: 'м', style: ['modern'] },
+    story: [{ title: 'Обо мне', text: [ABOUT], items: [{ title: 'Свой звук', text: 'Колонки и свет — мои.' }] }],
+  };
+  const fd = new FormData();
+  for (let i = 0; i < 8; i++) fd.append('photos', new Blob([PNG], { type: 'image/png' }), `m${i}.png`);
+  for (const [k, v] of Object.entries({
+    slug: ours.slug, categorySlug: ours.categorySlug, citySlug: 'moskva', name: ours.name, tagline: ours.tagline,
+    priceFrom: String(ours.priceFrom), status: 'published', filters: JSON.stringify(ours.filters),
+    page: JSON.stringify(ours), form: JSON.stringify(cardToForm(ours)),
+  })) fd.append(k, v);
+  const card = await call(SU, 'POST', '/api/collections/specialists/records', fd);
+  check('наша карточка с анкетой заводится', card.status === 200, card.text);
+  cleanup.specialists.push(card.json?.id);
+  const key = crypto.randomUUID();
+  const inv = await call(SU, 'POST', '/api/collections/invites/records', {
+    tokenHash: createHash('sha256').update(key).digest('hex'), specialist: card.json?.id,
+    expiresAt: new Date(Date.now() + 86400000).toISOString().replace('T', ' '),
+  });
+  cleanup.invites.push(inv.json?.id);
+  res = await call(C.token, 'POST', '/api/wed/invite', { invite: key });
+  check('владелец забирает карточку по ссылке', res.status === 200, res.text);
+
+  res = await call(C.token, 'POST', '/api/wed/edit', { kind: 'specialist', card: card.json?.id });
+  const ed = res.json;
+  cleanup.revisions.push(ed?.id);
+  check('анкета открывается заполненной', res.status === 200 && ed.data?.managed === true && ed.data?.name === ours.name &&
+    ed.data?.sections?.[0]?.body.includes('Свой звук') && ed.data?.priceFrom === 90000 && ed.photos?.length === 8, res.text);
+
+  res = await call(C.token, 'PATCH', `/api/collections/revisions/records/${ed?.id}`, { 'photos-': [ed?.photos?.[0]] });
+  check('фото владелец сам не убирает', refused(res), res.text);
+
+  res = await call(C.token, 'PATCH', `/api/collections/revisions/records/${ed?.id}`, {
+    data: {
+      ...ed?.data, name: 'Взлом', tagline: 'Чужая строка', sections: [{ title: '', body: 'подмена' }],
+      priceFrom: 55000, priceNote: 'за 5 часов', filters: { gender: 'м', style: ['humor'] },
+      contacts: { phone: '+79160000077' }, requests: { text: 'Добавьте про выездную регистрацию' },
+    },
+  });
+  check('из анкеты доходит только разрешённое', res.status === 200 && res.json.data.name === ours.name &&
+    res.json.data.tagline === ours.tagline && res.json.data.sections[0].body.includes('Свой звук') &&
+    res.json.data.priceFrom === 55000 && res.json.data.requests?.text?.includes('выездную'), res.text);
+
+  res = await call(C.token, 'PATCH', `/api/collections/revisions/records/${ed?.id}`, { status: 'review' });
+  check('правка «ведём мы» уходит на проверку', res.status === 200, res.text);
+  res = await call(M.token, 'PATCH', `/api/collections/revisions/records/${ed?.id}`, { status: 'approved' });
+  check('одобрение правки «ведём мы»', res.status === 200 && res.json.status === 'approved', res.text);
+
+  res = await call(null, 'GET', `/api/collections/specialists/records/${card.json?.id}`);
+  const p = res.json?.page ?? {};
+  check('на сайт едут только правки владельца', p.source !== 'cabinet' && p.ownerEdits?.priceFrom === 55000 &&
+    p.ownerEdits?.priceNote === 'за 5 часов' && p.ownerEdits?.filters?.style?.[0] === 'humor' && p.story?.[0]?.items?.length === 1, res.text);
+  check('фото, имя и цена в каталоге', res.json?.photos?.length === 8 && res.json?.name === ours.name && res.json?.priceFrom === 55000 && res.json?.version === 1, res.text);
+  res = await call(SU, 'GET', `/api/collections/specialists/records/${card.json?.id}`);
+  check('анкета карточки: режим остался, просьбы — в ревизии', res.json?.form?.managed === true && !res.json?.form?.requests &&
+    res.json?.contacts?.phone === '+79160000077', res.text);
+}
+
 // ---------- уборка ----------
 for (const [col, ids] of Object.entries(cleanup)) {
   for (const id of ids.filter(Boolean)) await call(SU, 'DELETE', `/api/collections/${col}/records/${id}`);

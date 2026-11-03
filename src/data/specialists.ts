@@ -424,10 +424,47 @@ const cabinetSpecialists = Object.values(
   import.meta.glob<Specialist>('./cabinet/specialists/*.json', { eager: true, import: 'default' })
 ).map((s) => ({ ...s, category: SPECIALIST_CATEGORIES.find((c) => c.slug === s.categorySlug)?.label ?? s.categorySlug }));
 const fromCabinet = new Set(cabinetSpecialists.map((s) => `${s.categorySlug}/${s.slug}`));
+
+// Карточки «ведём мы» (пилот, 03.11, CABINET.md §24): визитка — наш JSON
+// из git, а цену и ответы на вопросы владелец правит сам в кабинете.
+// Одобренные правки кладёт scripts/pb-pull-cabinet.mjs (owner-edits.json,
+// в .gitignore); здесь они ложатся поверх JSON. Нет файла — JSON как есть.
+type OwnerEdits = { priceMode?: string; priceFrom?: number | null; priceNote?: string; filters?: Record<string, string | string[]> };
+const ownerEdits: Record<string, OwnerEdits> =
+  Object.values(import.meta.glob<Record<string, OwnerEdits>>('./cabinet/owner-edits.json', { eager: true, import: 'default' }))[0] ?? {};
+
+/** ответы на вопросы дублируются плоскими полями (каталог, сравнение, «Похожие») — сводим их к новым ответам */
+function withOwnerEdits(s: Specialist): Specialist {
+  const e = ownerEdits[`${s.categorySlug}/${s.slug}`];
+  if (!e) return s;
+  const out: Specialist = { ...s, priceNote: e.priceNote ?? s.priceNote };
+  if (e.priceFrom && e.priceFrom > 0) out.priceFrom = e.priceFrom;
+  else delete out.priceFrom; // «по запросу»
+  if (e.filters) {
+    const f = e.filters;
+    const list = (v: unknown) => ([] as string[]).concat((v as string[]) ?? []);
+    const one = (v: unknown) => (Array.isArray(v) ? v[0] : v) as string | undefined;
+    out.filters = f;
+    if ('gender' in f) out.gender = one(f.gender) as Specialist['gender'];
+    if ('city' in f) out.cities = list(f.city);
+    if ('style' in f) out.styles = list(f.style);
+    if ('age' in f) out.age = one(f.age) as Specialist['age'];
+    if ('formats' in f) out.formats = list(f.formats);
+    if ('languages' in f) out.languages = list(f.languages);
+    if ('ownDJ' in f) out.hasOwnDJ = one(f.ownDJ) === 'yes';
+    if ('ceremonyMaster' in f) out.ceremonyMaster = one(f.ceremonyMaster) === 'yes';
+    if ('equipment' in f) out.hasEquipment = one(f.equipment) === 'yes';
+    // стаж числом нам известен только для прежнего ответа
+    if (f.experience !== s.filters?.experience) delete out.experienceYears;
+  }
+  return out;
+}
+
 const jsonSpecialists = Object.values(
   import.meta.glob<Specialist>('./specialists/*/*.json', { eager: true, import: 'default' })
 )
   .filter((s) => !fromCabinet.has(`${s.categorySlug}/${s.slug}`))
+  .map(withOwnerEdits)
   .concat(cabinetSpecialists);
 
 export const SPECIALISTS_BY_CATEGORY: Record<string, Specialist[]> = (() => {

@@ -363,7 +363,7 @@ function deploySite(why) {
 function cardSaved(e) {
   e.next();
   const page = jsonOf(e.record, 'page');
-  if (page.source === 'cabinet') deploySite(`${e.record.getString('categorySlug')}/${e.record.getString('slug')} → ${e.record.getString('status')}`);
+  if (page.source === 'cabinet' || page.ownerEdits) deploySite(`${e.record.getString('categorySlug')}/${e.record.getString('slug')} → ${e.record.getString('status')}`);
 }
 
 function mailVendor(app, vendorId, subject, html) {
@@ -384,9 +384,47 @@ function mailVendor(app, vendorId, subject, html) {
   }
 }
 
+// ---------- карточка, которую ведём мы (пилот, 03.11) ----------
+// Наши заведённые карточки переходят к владельцам в режиме «ведём мы»
+// (CABINET.md §24, решение Никиты 03.11): визитку держит JSON в git,
+// владелец сам меняет только цену, ответы на вопросы, контакты и видео,
+// а описание и фото — просьбой (requests), правим руками. Признак —
+// form.managed у карточки: form пишет только суперпользователь
+// (scripts/card-to-form.mjs), подрядчик в карточку не пишет никогда.
+const MANAGED_KEYS = ['priceMode', 'priceFrom', 'priceNote', 'filters', 'contacts', 'videos', 'requests'];
+
+/** карточка правки, если она в режиме «ведём мы»; иначе null */
+function managedCard(app, rev) {
+  if (rev.getString('kind') !== 'specialist') return null;
+  const cardId = rev.getString('specialist');
+  if (!cardId) return null;
+  const card = findOne(app, 'specialists', 'id = {:id}', { id: cardId });
+  return card && jsonOf(card, 'form').managed === true ? card : null;
+}
+
+/** анкета правки: всё из карточки, от владельца — только разрешённое */
+function lockManaged(form, data) {
+  const out = JSON.parse(JSON.stringify(form || {}));
+  for (const k of MANAGED_KEYS) if (data && k in data) out[k] = data[k];
+  out.managed = true;
+  // тарифы у этих карточек — в тексте визитки, их правим мы
+  out.tariffs = [];
+  if (out.priceMode !== 'request') out.priceMode = 'one';
+  return out;
+}
+
+/** просьбы владельца одной строкой — для группы модерации и письма */
+function requestsText(data) {
+  const r = data.requests && typeof data.requests === 'object' ? data.requests : {};
+  return [['текст', r.text], ['фото', r.photos]]
+    .filter((x) => str(x[1]))
+    .map((x) => `${x[0]}: ${str(x[1], 1000)}`)
+    .join('\n');
+}
+
 // ---------- отправка на модерацию ----------
 /** что мешает отправить ревизию на проверку; пустой список — можно */
-function submitProblems(rev) {
+function submitProblems(rev, managed) {
   const data = jsonOf(rev, 'data');
   const kind = rev.getString('kind');
   const problems = [];
@@ -402,7 +440,9 @@ function submitProblems(rev) {
   if (tariffsOf(data).some((t) => t.price !== null && t.price > MAX_PRICE)) problems.push('проверьте цены в прайсе');
   const contacts = data.contacts && typeof data.contacts === 'object' ? data.contacts : {};
   if (!str(contacts.phone)) problems.push('укажите телефон в блоке «Контакты» — клиент откроет его кнопкой');
-  const hit = findContact(data, '');
+  // у карточки «ведём мы» текст наш, владелец его не правит — проверяем
+  // только то, что он вписал сам (просьбы нам — не витрина, их не трогаем)
+  const hit = managed ? findContact({ priceNote: data.priceNote, filters: data.filters }, '') : findContact(data, '');
   if (hit) {
     problems.push(
       `в разделе «${fieldLabel(hit.path)}» ${hit.what}. Телефон, почту и ссылки на соцсети можно добавлять только в раздел «Контакты»`
@@ -521,6 +561,14 @@ function vendorUpdateRevision(e) {
     throw new BadRequestError('Из кабинета карточку можно сохранить черновиком или отправить на проверку.');
   }
 
+  // «ведём мы»: фото, портрет и обложку меняем мы по просьбе, из анкеты
+  // доходит только разрешённое — остальное всегда как в карточке
+  const managed = isNewCard ? null : managedCard(e.app, r);
+  if (managed) {
+    denyExtra(body, ['data', 'status']);
+    r.set('data', lockManaged(jsonOf(managed, 'form'), jsonOf(r, 'data')));
+  }
+
   if (isNewCard) {
     if (r.getString('kind') === 'venue') r.set('categorySlug', '');
     const slugChanged =
@@ -535,7 +583,7 @@ function vendorUpdateRevision(e) {
   photoLimit(e.app, r);
   const submitting = to === 'review';
   if (submitting) {
-    const problems = submitProblems(r);
+    const problems = submitProblems(r, !!managed);
     const phone = phoneProblem(e.app, r);
     if (phone) problems.push(phone);
     const video = videoProblem(jsonOf(r, 'data'));
@@ -551,7 +599,8 @@ function vendorUpdateRevision(e) {
   if (submitting) {
     const data = jsonOf(r, 'data');
     telegram(`На проверку: ${str(data.name, 120)} (${r.getString('kind') === 'venue' ? 'площадка' : r.getString('categorySlug')})` +
-      `${isNewCard ? ', новая карточка' : ', правка'}\n${SITE_URL}/profi/admin/moderaciya/pravka/?id=${r.id}`);
+      `${isNewCard ? ', новая карточка' : managed ? ', правка (ведём мы)' : ', правка'}\n${SITE_URL}/profi/admin/moderaciya/pravka/?id=${r.id}` +
+      (managed && requestsText(data) ? `\nПросит поправить —\n${requestsText(data)}` : ''));
     mailVendor(e.app, r.getString('owner'), 'Карточка отправлена на проверку — WED Secrets',
       `<p>Получили вашу карточку «${str(data.name, 120)}» и проверим её в ближайшее время.</p>` +
       `<p>Когда она появится на сайте, пришлём письмо со ссылкой.</p>`);
@@ -624,6 +673,7 @@ function approve(app, rev) {
     card = app.findRecordById(collection, rev.getString(relField));
     const stale = staleProblem(app, rev);
     if (stale) throw new BadRequestError(stale + ' Верните правку подрядчику: пусть откроет карточку заново.');
+    if (kind === 'specialist' && jsonOf(card, 'form').managed === true) return approveManaged(app, rev, card);
   } else {
     if (slugTaken(app, kind, rev.getString('categorySlug'), rev.getString('slug'), rev.id)) {
       throw new BadRequestError(`Адрес «${rev.getString('slug')}» уже занят — поменяйте slug в ревизии.`);
@@ -668,6 +718,35 @@ function approve(app, rev) {
   app.save(card);
 
   rev.set(relField, card.id);
+  rev.set('reviewedAt', new DateTime());
+  rev.set('rejectReason', '');
+}
+
+/**
+ * Одобрение правки карточки «ведём мы»: фото, текст и вид визитки не
+ * трогаем (их держит JSON в git), в карточку — только разрешённые поля.
+ * На сайт они едут через page.ownerEdits: pb-pull-cabinet кладёт их
+ * поверх JSON из git (data/specialists.ts). Просьбы (requests) остаются
+ * в ревизии — модератор делает их руками.
+ */
+function approveManaged(app, rev, card) {
+  const data = lockManaged(jsonOf(card, 'form'), jsonOf(rev, 'data'));
+  delete data.requests;
+  applyData('specialist', card, data);
+  card.set('version', card.getInt('version') + 1);
+  card.set('form', data);
+  card.set('contacts', data.contacts && typeof data.contacts === 'object' ? data.contacts : {});
+  const page = jsonOf(card, 'page');
+  page.ownerEdits = {
+    priceMode: data.priceMode,
+    priceFrom: priceFromOf(data),
+    priceNote: str(data.priceNote, 300),
+    filters: data.filters && typeof data.filters === 'object' ? data.filters : {},
+    version: card.getInt('version'),
+  };
+  card.set('page', page);
+  app.save(card);
+  rev.set('specialist', card.id);
   rev.set('reviewedAt', new DateTime());
   rev.set('rejectReason', '');
 }

@@ -139,6 +139,13 @@ const QUESTIONS = Object.fromEntries(
       if (videos.length) rows.push(`<dt>Видео — подготовить по VIDEO.md</dt><dd>${videos.map((u: string) => `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(u)}</a>`).join('\n')}</dd>`);
       const c = d.contacts ?? {};
       rows.push(`<dt>Контакты (скрыты, за кнопкой)</dt><dd>${esc([c.phone, c.telegram && `Telegram ${c.telegram}`, c.max && `MAX ${c.max}`, c.site, c.email].filter(Boolean).join(' · ')) || 'пусто'}</dd>`);
+      // карточка «ведём мы» (пилот, 03.11): одобрение меняет только цену,
+      // вопросы, контакты и видео; текст и фото — просьбы, делаем руками в JSON
+      if (d.managed) {
+        const r = d.requests ?? {};
+        const asks = [r.text && `Текст: ${r.text}`, r.photos && `Фото: ${r.photos}`].filter(Boolean);
+        rows.unshift(`<dt>Ведём мы — текст и фото владелец не меняет</dt><dd>${asks.length ? `Просит поправить — сделать руками в src/data/specialists/${esc(rev.categorySlug)}/${esc(rev.slug)}.json:\n${esc(asks.join('\n'))}` : 'Просьб по тексту и фото нет.'}</dd>`);
+      }
       $('[data-pr-fields]').innerHTML = rows.join('');
 
       const token = rev.photos?.length ? await fileToken('moderator') : '';
