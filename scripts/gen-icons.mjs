@@ -57,7 +57,22 @@ const MAP = {
   check: 'check-read-bold',
 };
 
+// Свои иконки, нарисованные под проект (02.11.2026): разделы нижнего дока.
+// Сетка 24, линия 1.5, скруглённые концы — тот же вес, что у Solar Linear
+// рядом. «Площадки» — свадебная арка с раздвинутым занавесом (вместо
+// метки на карте: метка — это «где», а раздел — «где расписаться»),
+// «Специалисты» — человек с бабочкой (вместо безликой группы).
+// Метка venue остаётся — она нужна в чипе локации (ScopePicker).
+const CUSTOM = {
+  arch: '<g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V10a7 7 0 0 1 14 0v11"/><path d="M3 21h18"/><path d="M12 3c-.2 6.4-2.4 10.4-7 11.6M12 3c.2 6.4 2.4 10.4 7 11.6"/></g>',
+  host: '<g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7.5" r="3.5"/><path d="M5 21c0-4 3.1-6.8 7-6.8s7 2.8 7 6.8"/><path d="M10.2 17.4 12 18.6l1.8-1.2v2.6L12 18.8l-1.8 1.2z" fill="currentColor" stroke-width="1"/></g>',
+};
+
 const data = require(`@iconify-json/${SET}/icons.json`);
+for (const [key, body] of Object.entries(CUSTOM)) {
+  data.icons[`wed-${key}`] = { body, width: 24, height: 24 };
+  MAP[key] = `wed-${key}`;
+}
 
 const entries = Object.entries(MAP).map(([key, name]) => {
   const item = data.icons[name];
