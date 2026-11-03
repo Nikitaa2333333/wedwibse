@@ -36,8 +36,8 @@ const CITY = multi('city', 'Город и выезд', [
   ['mo', 'Московская область'], ['вне-мо', 'Готов выехать за МО'],
 ]);
 const GENDER = single('gender', 'Кто снимает', [['м', 'Мужчина'], ['ж', 'Женщина'], ['pair', 'Пара, фото и видео']]);
-const EXPERIENCE = single('experience', 'Опыт работы', [['0-5', 'менее 5 лет'], ['5-10', '5–10 лет'], ['15+', 'более 15 лет']]);
-const PREPAYMENT = single('prepayment', 'Предоплата', [['0-20', 'до 20%'], ['20-50', '20–50%'], ['50-100', '50–100%']]);
+const EXPERIENCE = single('experience', 'Опыт работы', [['0-5', 'менее 5 лет'], ['5-10', '5–10 лет'], ['10-15', '10–15 лет'], ['15+', 'более 15 лет']]);
+const PREPAYMENT = single('prepayment', 'Предоплата', [['0-25', 'до 25%'], ['25-50', 'до 50%'], ['50-75', 'до 75%'], ['75+', 'более 75%']]);
 const CONTRACT = yesNo('contract', 'Договор', 'С договором');
 const LEAD_TIME_SHORT = single('leadTime', 'Сроки подготовки', [['1-2d', '1–2 дня'], ['3-7d', '3–7 дней'], ['7d+', 'более 7 дней']]);
 
@@ -119,6 +119,7 @@ export const VEDUSHCHIE_FILTERS: FilterGroup[] = [
     options: [
       { value: '0-5', label: 'менее 5 лет' },
       { value: '5-10', label: '5–10 лет' },
+      { value: '10-15', label: '10–15 лет' },
       { value: '15+', label: 'более 15 лет' },
     ],
   },
@@ -226,6 +227,7 @@ export const FOTOGRAFY_FILTERS: FilterGroup[] = [
     options: [
       { value: '0-5', label: 'менее 5 лет' },
       { value: '5-10', label: '5–10 лет' },
+      { value: '10-15', label: '10–15 лет' },
       { value: '15+', label: 'более 15 лет' },
     ],
   },
@@ -311,9 +313,10 @@ export const FOTOGRAFY_FILTERS: FilterGroup[] = [
     label: 'Предоплата',
     type: 'single',
     options: [
-      { value: '0-20', label: 'до 20%' },
-      { value: '20-50', label: '20–50%' },
-      { value: '50-100', label: '50–100%' },
+      { value: '0-25', label: 'до 25%' },
+      { value: '25-50', label: 'до 50%' },
+      { value: '50-75', label: 'до 75%' },
+      { value: '75+', label: 'более 75%' },
     ],
   },
 ];
@@ -438,9 +441,10 @@ export const DEKORATORY_FILTERS: FilterGroup[] = [
     label: 'Предоплата',
     type: 'single',
     options: [
-      { value: '0-20', label: 'до 20%' },
-      { value: '20-50', label: '20–50%' },
-      { value: '50-100', label: '50–100%' },
+      { value: '0-25', label: 'до 25%' },
+      { value: '25-50', label: 'до 50%' },
+      { value: '50-75', label: 'до 75%' },
+      { value: '75+', label: 'более 75%' },
     ],
   },
   {

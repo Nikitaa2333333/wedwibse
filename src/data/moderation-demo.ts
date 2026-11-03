@@ -128,7 +128,7 @@ export const DEMO_REVISIONS: DemoRevision[] = [
           'Чтобы зарезервировать тариф на съёмку, заключается договор и вносится задаток 15 000 ₽. Конечная стоимость зависит от даты и длительности съёмки.',
         ],
       },
-      filters: { prepayment: '20-50' },
+      filters: { prepayment: '25-50' },
       photosToFront: [
         '/specialists/fotografy/nirvani/gal/p12.webp',
         '/specialists/fotografy/nirvani/gal/p07.webp',
