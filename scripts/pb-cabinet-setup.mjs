@@ -56,6 +56,32 @@ if (cmd === 'moderator') {
   });
   // ключ показывается один раз: в базе только его хэш
   console.log(`${card.name}: ${SITE}/profi/vhod/?invite=${key}`);
+} else if (cmd === 'release') {
+  // Отвязать карточку «ведём мы» от учётки после теста (пилот, 03.11):
+  // владелец снимается, правки и ревизии теста удаляются, анкета — заново
+  // из нашего JSON, цена и ответы на сайте — снова из git. После этого
+  // на карточку можно выдать ссылку настоящему владельцу.
+  //   node scripts/pb-cabinet-setup.mjs release <kat>/<slug> …
+  const { readFile } = await import('node:fs/promises');
+  const { cardToForm } = await import('./card-to-form.mjs');
+  for (const ref of args) {
+    const [cat, slug] = ref.split('/');
+    const card = await api.first('specialists', `categorySlug = "${cat}" && slug = "${slug}"`);
+    if (!card) { console.log(`${ref}: нет в базе`); continue; }
+    if (card.form?.managed !== true) { console.log(`${ref}: не «ведём мы», не трогаю`); continue; }
+    const json = JSON.parse(await readFile(`src/data/specialists/${cat}/${slug}.json`, 'utf8'));
+    const revs = (await api.list('revisions', `filter=${encodeURIComponent(`specialist = "${card.id}"`)}`))?.items ?? [];
+    for (const r of revs) await api.remove('revisions', r.id);
+    const invs = (await api.list('invites', `filter=${encodeURIComponent(`specialist = "${card.id}"`)}`))?.items ?? [];
+    for (const i of invs) await api.remove('invites', i.id);
+    const page = { ...(card.page ?? {}) };
+    delete page.ownerEdits;
+    await api.update('specialists', card.id, {
+      owner: '', form: cardToForm(json), contacts: {}, page,
+      priceFrom: json.priceFrom ?? null, filters: json.filters ?? {},
+    });
+    console.log(`${ref}: отвязана (ревизий ${revs.length}, приглашений ${invs.length})`);
+  }
 } else if (cmd === 'invite-pilot') {
   // Пилот (STAGE2.md, 03.11): ссылки пачкой на карточки «ведём мы» без
   // владельца → research/pilot-links.csv (в git не попадает). Столбец «кому»

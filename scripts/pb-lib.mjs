@@ -40,6 +40,7 @@ export async function pb(cfg) {
     first: async (col, filter) => (await call('GET', `/api/collections/${col}/records?perPage=1&filter=${encodeURIComponent(filter)}`))?.items?.[0] ?? null,
     create: (col, form) => call('POST', `/api/collections/${col}/records`, form, form instanceof FormData),
     update: (col, id, form) => call('PATCH', `/api/collections/${col}/records/${id}`, form, form instanceof FormData),
+    remove: (col, id) => call('DELETE', `/api/collections/${col}/records/${id}`),
     fileUrl: (rec, file) => `${cfg.url}/api/files/${rec.collectionId}/${rec.id}/${file}`,
     fetch: (path) => fetch(`${cfg.url}${path}`, { headers: headers() }),
   };
