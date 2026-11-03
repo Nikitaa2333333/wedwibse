@@ -1,5 +1,6 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
+import node from '@astrojs/node';
 
 // Локально сайт живёт в корне (base = '/'), на GitHub Pages — в подпапке репозитория.
 // Значения приходят из окружения сборки (см. .github/workflows/pages.yml),
@@ -7,6 +8,16 @@ import { defineConfig } from 'astro/config';
 export default defineConfig({
   site: process.env.SITE_URL || undefined,
   base: process.env.SITE_BASE || '/',
+
+  // Сайт остаётся статикой (output по умолчанию): все страницы собираются
+  // заранее. Адаптер нужен ровно одной странице — превью карточки до
+  // одобрения (/profi/prevyu/, `prerender = false`): её рисует маленький
+  // серверный процесс на VPS из анкеты в базе (STAGE2.md, 03.11).
+  adapter: node({ mode: 'standalone' }),
+  // фото анкеты в превью приходят из базы по ссылке — разрешаем ровно её файлы
+  image: {
+    remotePatterns: [{ protocol: 'https', hostname: 'wed-secrets.ru', pathname: '/api/files/**' }],
+  },
 
   // Корень раздела «Специалисты» (/moskva/podryadchiki/) — живая страница-хаб
   // с плитками групп (pages/moskva/podryadchiki/index.astro). Редиректа

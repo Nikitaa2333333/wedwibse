@@ -1,0 +1,11 @@
+---
+// ПРОБА серверного рендера с фото по ссылке — удалить после проверки.
+export const prerender = false;
+import { Image, inferRemoteSize } from 'astro:assets';
+const url = Astro.url.searchParams.get('u') || '';
+const size = url ? await inferRemoteSize(url) : null;
+---
+<html><body>
+<p data-size>{size ? `${size.width}x${size.height} ${size.format}` : 'нет'}</p>
+{size && <Image src={url} width={size.width} height={size.height} widths={[400, 800]} sizes="100vw" alt="" />}
+</body></html>
