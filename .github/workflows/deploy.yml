@@ -99,7 +99,11 @@ jobs:
       - name: Rsync dist to server
         # --delete: удалённые страницы исчезают и на сервере,
         # иначе каталог копит мусор от прошлых сборок.
-        timeout-minutes: 10
+        # до трёх попыток по 8 минут (03.11): 02.11 канал раннер → VPS завис,
+        # шаг оборвался по таймауту, и одобренная карточка сутки не выходила.
+        # rsync докачивает только недостающее — повтор продолжает, а не
+        # начинает заново.
+        timeout-minutes: 26
         run: |
           # registry/ — отчёт утренней сверки (registry-nightly.yml): его кладут
           # на сервер отдельно, и --delete стирал бы его каждым деплоем
@@ -109,9 +113,17 @@ jobs:
           # это растянуло заливку с 18 секунд до 7 минут (а до таймаутов —
           # до бесконечного «висит»). С -c сравнение по содержимому идёт
           # на самом сервере, по сети — только изменившиеся файлы.
-          rsync -az --checksum --delete --timeout=60 --stats --exclude '.write-test' --exclude 'registry/' \
-            -e "ssh -i ~/.ssh/id_ed25519 -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=10 -o ServerAliveCountMax=3" \
-            dist/ "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_PATH }}/"
+          for attempt in 1 2 3; do
+            echo "::group::попытка $attempt"
+            if timeout 8m rsync -az --checksum --delete --timeout=60 --stats --exclude '.write-test' --exclude 'registry/' \
+              -e "ssh -i ~/.ssh/id_ed25519 -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=10 -o ServerAliveCountMax=3" \
+              dist/ "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_PATH }}/"; then
+              echo "::endgroup::"; exit 0
+            fi
+            echo "::endgroup::"
+            echo "попытка $attempt не прошла"; sleep 20
+          done
+          exit 1
 
       # Проверять по IP бессмысленно: nginx разбирает запросы по server_name,
       # и на голый адрес отвечает дефолтный сервер, а не наш сайт. Стучимся
@@ -136,3 +148,19 @@ jobs:
             if [ "$code" != "206" ] && [ "$code" != "200" ]; then echo "нет на сервере ($code): $u"; missing=1; fi
           done
           test "$missing" = "0" || { echo "Залить: bash scripts/media-push.sh"; exit 1; }
+
+      # Упавшая выкладка раньше проходила молча: 02.11 одобренная карточка
+      # сутки не выходила на сайт, и никто не знал. Теперь — сообщение в группу
+      # модерации (тот же бот и чат, что у базы; секреты TG_BOT_TOKEN, TG_CHAT_ID).
+      - name: Notify moderation chat on failure
+        if: failure()
+        env:
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          WHY: ${{ github.event_name == 'workflow_dispatch' && 'после решения модератора' || 'после изменений в коде' }}
+        run: |
+          [ -n "$TG_BOT_TOKEN" ] && [ -n "$TG_CHAT_ID" ] || { echo "нет TG_BOT_TOKEN / TG_CHAT_ID в секретах"; exit 0; }
+          text="Сайт не обновился ($WHY). Одобренные карточки пока не на сайте — нужно перезапустить выкладку: Actions → Deploy → Re-run. $RUN_URL"
+          curl -s -o /dev/null -w "telegram %{http_code}\n" -X POST "https://api.telegram.org/bot$TG_BOT_TOKEN/sendMessage" \
+            -d chat_id="$TG_CHAT_ID" --data-urlencode text="$text" -d disable_web_page_preview=true
