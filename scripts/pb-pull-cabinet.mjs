@@ -15,6 +15,7 @@
 // Площадки из кабинета (страница из блоков) — следующим шагом, BACKLOG.md.
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { cardFromPage, orderedPhotos } from '../src/lib/cabinet-card.mjs';
 
 const BASE = (process.env.PB_PUBLIC_URL || '').replace(/\/$/, '');
 if (!BASE) { console.log('pb-pull-cabinet: PB_PUBLIC_URL не задан, пропускаю'); process.exit(0); }
@@ -74,24 +75,6 @@ async function download(url, dest) {
   }
 }
 
-const rub = (n) => `${Number(n).toLocaleString('ru-RU').replace(/\u00a0/g, ' ')} ₽`;
-
-/** текст визитки: разделы анкеты (уже StorySection) + тарифы отдельным
- *  разделом; у старых правок без разделов — «О себе» абзацами */
-function storyOf(p) {
-  const story = Array.isArray(p.story) && p.story.length
-    ? p.story
-    : [{ text: String(p.about ?? '').split(/\n\s*\n/).map((x) => x.trim()).filter(Boolean) }];
-  const tariffs = (p.tariffs ?? []).filter((t) => t.name && t.price);
-  if (tariffs.length) {
-    story.push({
-      title: 'Тарифы',
-      tariffs: tariffs.map((t) => ({ name: t.name, price: rub(t.price), ...(t.unit ? { unit: t.unit } : {}), ...(t.includes?.length ? { includes: t.includes } : {}) })),
-    });
-  }
-  return story;
-}
-
 await mkdir(DATA, { recursive: true });
 let written = 0;
 for (const rec of items) {
@@ -100,30 +83,15 @@ for (const rec of items) {
   const dir = join(ASSETS, rec.categorySlug, rec.slug);
   await mkdir(dir, { recursive: true });
   // обложка — первым кадром: [0] — главный кадр карточки
-  const names = [...(p.photos ?? rec.photos ?? [])];
-  const cover = names.splice(p.cover ?? 0, 1);
   const photos = [];
-  for (const [i, name] of [...cover, ...names].entries()) {
+  for (const [i, name] of orderedPhotos(p, rec.photos ?? []).entries()) {
     const ext = (name.match(/\.(webp|jpe?g|png)$/i)?.[1] ?? 'jpg').toLowerCase();
     const file = `p${String(i + 1).padStart(2, '0')}.${ext}`;
     if (!(await download(`${BASE}/api/files/${rec.collectionId}/${rec.id}/${encodeURIComponent(name)}`, join(dir, file)))) continue;
     photos.push(`/cabinet/${rec.categorySlug}/${rec.slug}/${file}`);
   }
   if (!photos.length) { console.error(`  ${rec.slug}: нет фото, пропуск`); continue; }
-  const card = {
-    slug: rec.slug,
-    categorySlug: rec.categorySlug,
-    category: '', // подпись раздела ставит data/specialists.ts по categorySlug
-    name: p.name || rec.name,
-    photos,
-    tagline: p.tagline ?? '',
-    bio: p.about ?? '',
-    ...(p.priceFrom ? { priceFrom: p.priceFrom } : {}),
-    ...(p.priceNote ? { priceNote: p.priceNote } : {}),
-    ...(p.filters && Object.keys(p.filters).length ? { filters: p.filters } : {}),
-    ...(p.filters?.gender ? { gender: p.filters.gender } : {}),
-    story: storyOf(p),
-  };
+  const card = cardFromPage(p, { slug: rec.slug, categorySlug: rec.categorySlug, name: rec.name, photos });
   await writeFile(join(DATA, `${rec.categorySlug}--${rec.slug}.json`), JSON.stringify(card, null, 2) + '\n');
   written++;
   console.log(`  ${rec.categorySlug}/${rec.slug}: ${photos.length} фото`);

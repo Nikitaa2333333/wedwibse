@@ -59,6 +59,10 @@ routerAdd('GET', '/api/wed/slug', (e) => require(`${__hooks}/lib/cabinet.js`).ch
 // вход и регистрация через Telegram (виджет входа), погашение приглашения
 routerAdd('POST', '/api/wed/telegram', (e) => require(`${__hooks}/lib/cabinet.js`).telegramAuth(e));
 
+// превью анкеты до одобрения: ссылка автору и данные для серверной страницы
+routerAdd('POST', '/api/wed/preview-link', (e) => require(`${__hooks}/lib/cabinet.js`).previewLink(e), $apis.requireAuth('vendors'));
+routerAdd('GET', '/api/wed/preview', (e) => require(`${__hooks}/lib/cabinet.js`).previewData(e));
+
 // вход через MAX: код → бот (вебхук подтверждает аккаунт) → вход (lib/max.js)
 routerAdd('POST', '/api/wed/max/start', (e) => require(`${__hooks}/lib/max.js`).start(e));
 routerAdd('POST', '/api/wed/max/webhook', (e) => require(`${__hooks}/lib/max.js`).webhook(e));

@@ -1,0 +1,70 @@
+---
+// ПРЕВЬЮ АНКЕТЫ ДО ОДОБРЕНИЯ (STAGE2.md, 03.11): подрядчик видит страницу
+// один в один с сайтом ещё до решения модератора. Единственная страница
+// сайта, которую рисует сервер в момент открытия (`prerender = false`),
+// остальные собираются заранее.
+//
+// Путь данных тот же, что у опубликованной карточки:
+//   база: анкета → buildPage (как при одобрении) — /api/wed/preview?t=
+//   здесь: cardFromPage (как в сборке, lib/cabinet-card.mjs) → SpecialistProfile
+// Ссылку ?t= выдаёт кабинет (/api/wed/preview-link) — подписана, 15 минут,
+// только к своей анкете. В поиск страница не идёт (noindex).
+export const prerender = false;
+
+import { inferRemoteSize } from 'astro:assets';
+import CabinetShell from '../../../components/admin/CabinetShell.astro';
+import SpecialistProfile from '../../../components/SpecialistProfile.astro';
+import { SPECIALIST_CATEGORIES, type Specialist } from '../../../data/specialists';
+import { cardFromPage, orderedPhotos } from '../../../lib/cabinet-card.mjs';
+import { registerRemote } from '../../../lib/images';
+
+// база — по внутреннему адресу на том же сервере; файлы — по публичному
+// (их пережимает /_image, адрес разрешён в astro.config: image.remotePatterns)
+const PB = (process.env.PB_INTERNAL_URL || 'http://127.0.0.1:8090').replace(/\/$/, '');
+const FILES = (process.env.PREVIEW_FILES_URL || 'https://wed-secrets.ru').replace(/\/$/, '');
+
+Astro.response.headers.set('cache-control', 'no-store');
+Astro.response.headers.set('x-robots-tag', 'noindex, nofollow');
+
+let card: Specialist | null = null;
+let problem = '';
+const t = Astro.url.searchParams.get('t') || '';
+
+try {
+  if (!t) throw new Error('Откройте превью из кабинета — кнопкой «Посмотреть, как будет выглядеть».');
+  const r = await fetch(`${PB}/api/wed/preview?t=${encodeURIComponent(t)}`, { signal: AbortSignal.timeout(15000) });
+  const res = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(res.message || 'Превью не открылось — попробуйте ещё раз из кабинета.');
+  const p = res.page ?? {};
+  const names = orderedPhotos(p);
+  if (!names.length) throw new Error('В анкете пока нет фото — добавьте их, и превью покажет страницу целиком.');
+
+  const photos = await Promise.all(names.map(async (name: string) => {
+    const key = `${FILES}${res.files}${encodeURIComponent(name)}`;
+    const src = `${key}?token=${encodeURIComponent(res.fileToken)}`;
+    const size = await inferRemoteSize(src);
+    registerRemote(key, { src, width: size.width, height: size.height, format: size.format } as ImageMetadata);
+    return key;
+  }));
+
+  card = {
+    ...cardFromPage(p, { slug: p.slug || 'prevyu', categorySlug: p.categorySlug, name: p.name, photos }),
+    category: SPECIALIST_CATEGORIES.find((c) => c.slug === p.categorySlug)?.label ?? p.categorySlug,
+  } as Specialist;
+} catch (err) {
+  problem = (err as Error).message;
+  Astro.response.status = 400;
+}
+---
+
+{card ? (
+  <SpecialistProfile s={card} preview />
+) : (
+  <CabinetShell title="Превью" bare>
+    <section class="a-card a-login">
+      <h1 class="a-h1">Превью не открылось</h1>
+      <p class="a-lead">{problem}</p>
+      <a class="c-link" href="/profi/moi/">Вернуться в кабинет</a>
+    </section>
+  </CabinetShell>
+)}

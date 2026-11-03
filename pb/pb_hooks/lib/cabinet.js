@@ -813,6 +813,57 @@ function buildPage(kind, card, data, photos, coverIndex) {
   return common;
 }
 
+// ---------- превью анкеты до одобрения (Никита, 03.11) ----------
+// Подрядчик видит страницу один в один с сайтом ещё до решения модератора.
+// Ссылка — подписанный токен на 15 минут к одной ревизии; страницу рисует
+// серверный Astro (/profi/prevyu/), данные берёт здесь — тем же buildPage,
+// что и одобрение, чтобы превью не разошлось с настоящей страницей.
+const PREVIEW_TTL = 15 * 60;
+
+function previewSecret() {
+  const s = $os.getenv('PREVIEW_SECRET');
+  if (!s) throw new BadRequestError('Превью ещё не настроено.');
+  return s;
+}
+
+/** POST /api/wed/preview-link { revision } — ссылка на превью своей анкеты */
+function previewLink(e) {
+  const body = e.requestInfo().body || {};
+  let rev;
+  try { rev = e.app.findRecordById('revisions', str(body.revision, 40)); } catch (_) {
+    throw new NotFoundError('Анкета не найдена.');
+  }
+  if (rev.getString('owner') !== e.auth.id) throw new ForbiddenError('Это не ваша анкета.');
+  if (rev.getString('kind') !== 'specialist') throw new BadRequestError('Превью площадки пока нет — оно появится вместе со страницами площадок из кабинета.');
+  const t = $security.createJWT({ rev: rev.id }, previewSecret(), PREVIEW_TTL);
+  return e.json(200, { url: `/profi/prevyu/?t=${encodeURIComponent(t)}` });
+}
+
+/** GET /api/wed/preview?t= — тело страницы для превью (как page у карточки) */
+function previewData(e) {
+  let claims;
+  try { claims = $security.parseJWT(str(e.request.url.query().get('t'), 2000), previewSecret()); } catch (err) {
+    if (err instanceof BadRequestError) throw err;
+    throw new BadRequestError('Ссылка на превью устарела — откройте её из кабинета ещё раз.');
+  }
+  let rev;
+  try { rev = e.app.findRecordById('revisions', str(claims.rev, 40)); } catch (_) {
+    throw new NotFoundError('Анкета не найдена — возможно, её удалили.');
+  }
+  const data = jsonOf(rev, 'data');
+  const names = photosOf(rev);
+  // revision подставляется вместо карточки: slug, категория и портрет у неё свои
+  const page = buildPage('specialist', rev, data, names, Math.max(0, names.indexOf(rev.getString('cover'))));
+  // файлы ревизии закрыты — короткий ключ владельца на их чтение
+  const owner = e.app.findRecordById('vendors', rev.getString('owner'));
+  return e.json(200, {
+    page,
+    status: rev.getString('status'),
+    files: `/api/files/${rev.collection().id}/${rev.id}/`,
+    fileToken: owner.newFileToken(),
+  });
+}
+
 // ---------- маршруты /api/wed ----------
 /**
  * Начать правку опубликованной карточки: ревизия-черновик с текущими
@@ -1264,6 +1315,8 @@ module.exports = {
   isModerator,
   telegramAuth,
   maxAuth,
+  previewLink,
+  previewData,
   emailRegister,
   confirmCode,
   passwordReset,

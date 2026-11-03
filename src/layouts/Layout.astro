@@ -7,12 +7,15 @@ interface Props {
   description?: string;
   /** абсолютный или корневой путь к обложке для соцсетей */
   ogImage?: string;
+  /** страница не для поиска при любой сборке (превью анкеты до одобрения) */
+  noindex?: boolean;
 }
 
 const {
   title,
   description = 'WED Secrets — свадебный онлайн-сервис',
   ogImage,
+  noindex = false,
 } = Astro.props;
 
 const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://wed-secrets.ru');
@@ -21,7 +24,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://wed-secrets
 // Пока идёт дизайн-фаза, сырые страницы не должны попасть в индекс —
 // выкатились бы в выдачу недоделанными и потом висели там месяцами.
 // Открыть индексацию — собрать с SITE_INDEXABLE=true (см. .github/workflows).
-const indexable = process.env.SITE_INDEXABLE === 'true';
+const indexable = process.env.SITE_INDEXABLE === 'true' && !noindex;
 ---
 
 <!doctype html>

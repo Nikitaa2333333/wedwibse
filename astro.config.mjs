@@ -2,6 +2,10 @@
 import { defineConfig } from 'astro/config';
 import node from '@astrojs/node';
 
+// Откуда превью берёт фото анкеты (pages/profi/prevyu): на боевом — сам сайт,
+// при локальной проверке — тестовая база (PREVIEW_FILES_URL=http://127.0.0.1:8097).
+const previewFiles = new URL(process.env.PREVIEW_FILES_URL || 'https://wed-secrets.ru');
+
 // Локально сайт живёт в корне (base = '/'), на GitHub Pages — в подпапке репозитория.
 // Значения приходят из окружения сборки (см. .github/workflows/pages.yml),
 // чтобы дев-режим и продакшн-домен не зависели от превью-хостинга.
@@ -16,7 +20,12 @@ export default defineConfig({
   adapter: node({ mode: 'standalone' }),
   // фото анкеты в превью приходят из базы по ссылке — разрешаем ровно её файлы
   image: {
-    remotePatterns: [{ protocol: 'https', hostname: 'wed-secrets.ru', pathname: '/api/files/**' }],
+    remotePatterns: [{
+      protocol: previewFiles.protocol.replace(':', ''),
+      hostname: previewFiles.hostname,
+      ...(previewFiles.port ? { port: previewFiles.port } : {}),
+      pathname: '/api/files/**',
+    }],
   },
 
   // Корень раздела «Специалисты» (/moskva/podryadchiki/) — живая страница-хаб

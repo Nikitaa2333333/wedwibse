@@ -24,6 +24,18 @@ const registry = new Map<string, ImageMetadata>(
   Object.entries(modules).map(([path, mod]) => [path.replace(/^\/src\/assets/, ''), mod.default])
 );
 
+/**
+ * Кадр не из src/assets, а из базы по ссылке — только для превью анкеты
+ * (/profi/prevyu/, серверный рендер). Ключ — постоянный адрес файла, а src —
+ * тот же адрес с ключом доступа (файлы анкеты закрыты): повторное открытие
+ * превью просто обновляет запись, реестр не растёт. Размеры даёт
+ * inferRemoteSize — по ним isPortrait и первый экран ведут себя как с
+ * обычным кадром, а <Image> пережимает его на лету через /_image.
+ */
+export function registerRemote(key: string, meta: ImageMetadata) {
+  registry.set(key, meta);
+}
+
 // ============================================================
 // ШИРИНЫ srcset ПО РОЛИ КАДРА — единый набор на весь проект.
 //

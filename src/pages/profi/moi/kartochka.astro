@@ -237,6 +237,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         <span class="c-error" data-error hidden></span>
         <span class="c-ok" data-ok hidden></span>
       </div>
+      ${kind === 'specialist' && rev.status !== 'approved' ? '<button class="c-link" type="button" data-preview>Посмотреть, как будет выглядеть</button>' : ''}
       ${canDelete ? '<button class="c-link c-link--danger" type="button" data-delete>Удалить карточку</button>' : ''}
       </div>`;
     savedLabel();
@@ -252,6 +253,23 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     }
     const err = view.querySelector<HTMLElement>('[data-error]')!;
     const ok = view.querySelector<HTMLElement>('[data-ok]')!;
+    // превью до одобрения (/profi/prevyu/): сначала сохраняем набранное,
+    // потом ссылку у базы; в той же вкладке — айфон не открывает окно,
+    // открытое после ответа сервера (как с MAX, 31.10)
+    view.querySelector<HTMLButtonElement>('[data-preview]')?.addEventListener('click', async (e) => {
+      const b = e.currentTarget as HTMLButtonElement;
+      b.disabled = true;
+      err.hidden = true;
+      try {
+        if (rev.status !== 'review') await save();
+        const res = await api('vendor', 'POST', '/api/wed/preview-link', { revision: rev.id });
+        location.href = res.url;
+      } catch (x) {
+        err.textContent = (x as Error).message;
+        err.hidden = false;
+        b.disabled = false;
+      }
+    });
     view.querySelector<HTMLButtonElement>('[data-submit]')?.addEventListener('click', async (e) => {
       const b = e.currentTarget as HTMLButtonElement;
       if (missing.length) {
