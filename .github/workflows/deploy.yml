@@ -69,7 +69,7 @@ jobs:
 
       # Карта сайта из готовой сборки (страницы с noindex в неё не идут).
       - name: Sitemap
-        run: node scripts/sitemap.mjs dist https://wed-secrets.ru
+        run: node scripts/sitemap.mjs dist/client https://wed-secrets.ru
 
       - name: Prepare SSH
         run: |
@@ -117,13 +117,34 @@ jobs:
             echo "::group::попытка $attempt"
             if timeout 8m rsync -az --checksum --delete --timeout=60 --stats --exclude '.write-test' --exclude 'registry/' \
               -e "ssh -i ~/.ssh/id_ed25519 -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=10 -o ServerAliveCountMax=3" \
-              dist/ "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_PATH }}/"; then
+              dist/client/ "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_PATH }}/"; then
               echo "::endgroup::"; exit 0
             fi
             echo "::endgroup::"
             echo "попытка $attempt не прошла"; sleep 20
           done
           exit 1
+
+      # СЕРВЕР ПРЕВЬЮ (03.11). Сайт — статика из dist/client (шаг выше), а одну
+      # страницу — превью анкеты до одобрения (/profi/prevyu/) — рисует Astro
+      # на самом VPS: служба wedsecrets-ssr (node dist/server/entry.mjs на
+      # 127.0.0.1:4321), nginx проксирует ей /profi/prevyu/ и /_image.
+      # Зависимости ставятся на сервере, только когда поменялся package-lock.
+      # Падение здесь не трогает сайт: статика уже залита.
+      - name: Preview server
+        timeout-minutes: 15
+        run: |
+          SSH="ssh -i ~/.ssh/id_ed25519 -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=10 -o ServerAliveCountMax=3"
+          TARGET="${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}"
+          mkdir -p ssr && cp -r dist/server ssr/server && cp package.json package-lock.json ssr/
+          rsync -az --checksum --delete --timeout=60 --exclude 'node_modules/' --exclude '.installed-lock' --exclude 'client/' \
+            -e "$SSH" ssr/ "$TARGET:/srv/wedsecrets-ssr/"
+          $SSH "$TARGET" 'set -e; cd /srv/wedsecrets-ssr; mkdir -p client
+            if ! cmp -s package-lock.json .installed-lock; then
+              npm ci --omit=dev --no-audit --no-fund && cp package-lock.json .installed-lock
+            fi
+            sudo /usr/bin/systemctl restart wedsecrets-ssr; sleep 3
+            curl -s -o /dev/null -w "превью отвечает: %{http_code}\n" http://127.0.0.1:4321/profi/prevyu/'
 
       # Проверять по IP бессмысленно: nginx разбирает запросы по server_name,
       # и на голый адрес отвечает дефолтный сервер, а не наш сайт. Стучимся
@@ -143,7 +164,7 @@ jobs:
       - name: Reels on server
         run: |
           missing=0
-          for u in $(grep -rhoE '/[A-Za-z0-9/_.-]+\.mp4' dist --include=*.html | sort -u); do
+          for u in $(grep -rhoE '/[A-Za-z0-9/_.-]+\.mp4' dist/client --include=*.html | sort -u); do
             code=$(curl -s -o /dev/null -r 0-1 -w '%{http_code}' "https://wed-secrets.ru$u")
             if [ "$code" != "206" ] && [ "$code" != "200" ]; then echo "нет на сервере ($code): $u"; missing=1; fi
           done
