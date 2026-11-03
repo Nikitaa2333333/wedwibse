@@ -259,6 +259,14 @@ select.a-field__input { appearance: none; background-image: linear-gradient(45de
 .c-photo__tools { position: absolute; left: 4px; right: 4px; bottom: 4px; display: flex; justify-content: space-between; gap: 4px; }
 .c-photo__tools { justify-content: flex-end; }
 
+/* отбор кадров с Яндекс Диска: та же плитка, нажатие отмечает, номер — порядок добавления */
+.c-yd-grid { max-height: 56vh; overflow-y: auto; overflow-x: clip; margin-block: var(--s-3); }
+.c-yd-pick { padding: 0; border: 0; cursor: pointer; }
+.c-yd-pick[aria-pressed="true"] { outline: 3px solid var(--st-ok-text); outline-offset: -3px; }
+.c-yd-pick__n { position: absolute; right: 6px; top: 6px; min-width: 24px; height: 24px; padding-inline: 6px; border-radius: 12px; display: grid; place-items: center; background: var(--st-ok); color: var(--st-ok-ink); font-size: var(--fs-small); font-weight: var(--w-semibold); }
+.c-yd-pick__n:empty { display: none; }
+.c-yd-tools { display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: center; }
+
 .c-photo__tools button { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; background: rgba(255, 255, 255, 0.92); color: var(--adm-text); }
 .c-photo__tools svg { width: 16px; height: 16px; }
 .c-photo__tools .c-tool--up svg, .c-photo__tools .c-tool--down svg { transform: none; }

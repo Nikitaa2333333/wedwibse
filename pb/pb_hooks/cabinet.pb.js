@@ -50,6 +50,10 @@ routerAdd('POST', '/api/wed/mod/remove', (e) => require(`${__hooks}/lib/cabinet.
 
 routerAdd('POST', '/api/wed/edit', (e) => require(`${__hooks}/lib/cabinet.js`).startEdit(e), $apis.requireAuth('vendors'));
 
+// фото по ссылке на Яндекс Диск: показать кадры папки, забрать выбранные (lib/yadisk.js)
+routerAdd('GET', '/api/wed/yadisk/list', (e) => require(`${__hooks}/lib/yadisk.js`).list(e), $apis.requireAuth('vendors'));
+routerAdd('POST', '/api/wed/yadisk/import', (e) => require(`${__hooks}/lib/yadisk.js`).importPhotos(e), $apis.requireAuth('vendors'));
+
 routerAdd('GET', '/api/wed/slug', (e) => require(`${__hooks}/lib/cabinet.js`).checkSlug(e), $apis.requireAuth('vendors'));
 
 // вход и регистрация через Telegram (виджет входа), погашение приглашения

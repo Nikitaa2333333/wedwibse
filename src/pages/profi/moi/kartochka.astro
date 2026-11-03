@@ -621,7 +621,8 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
                 <span class="a-field__note">Ваше лицо, а не работа: пара видит, с кем будет иметь дело.</span>
               </div>` };
       case 'foto':
-        return { title: 'Фото', lead: `От ${MIN_PHOTOS} до ${MAX_PHOTOS} кадров, лучше вертикальные: каталог смотрят с телефона. Порядок и обложка — перетаскиванием.`, html: '<div class="c-hint" data-drag-hint hidden></div><div class="c-photos" data-photos></div><p class="c-ok" data-upload hidden></p><p class="c-error" data-photo-error hidden></p>' };
+        return { title: 'Фото', lead: `От ${MIN_PHOTOS} до ${MAX_PHOTOS} кадров, лучше вертикальные: каталог смотрят с телефона. Порядок и обложка — перетаскиванием.`, html: `<div class="c-hint" data-drag-hint hidden></div><div class="c-photos" data-photos></div><p class="c-ok" data-upload hidden></p><p class="c-error" data-photo-error hidden></p>
+          ${locked() ? '' : '<button class="c-link c-add-link" type="button" data-yadisk>Добавить с Яндекс Диска</button><p class="a-field__note">Много фото — удобнее ссылкой на папку: выберете кадры, мы заберём оригиналы.</p>'}` };
       case 'video': {
         // Евгений, 31.10: ссылка на ролик — своим разделом. Ролик на карточку
         // ставим мы (VIDEO.md: пережатие, постер), подрядчик даёт только ссылку
@@ -924,6 +925,136 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     addEventListener('pointercancel', end);
   }
 
+  /**
+   * Фото с Яндекс Диска (CABINET.md §13): ссылка на папку → превью кадров →
+   * отмечаем нажатием (номер — порядок) → сервер забирает выбранные пачками
+   * по 5 (lib/yadisk.js), здесь — «Забираем с диска… N из M». Вкладку
+   * закрыли — догрузка встала, уже забранное остаётся в карточке.
+   */
+  function openYadisk() {
+    const dlg = document.createElement('dialog');
+    dlg.className = 'c-sheet';
+    const x = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.6" d="M6 6l12 12M18 6L6 18"/></svg>';
+    dlg.innerHTML = `<div class="c-sheet__body">
+      <button class="c-sheet__x" type="button" data-close aria-label="Закрыть">${x}</button>
+      <h2 class="a-h2">Фото с Яндекс Диска</h2>
+      <p class="a-lead">Вставьте ссылку на папку с доступом «всем, у кого есть ссылка» и отметьте кадры.</p>
+      <div class="c-vrow">
+        <input class="a-field__input" type="url" inputmode="url" placeholder="https://disk.yandex.ru/d/…" aria-label="Ссылка на папку" data-yd-url />
+        <button class="a-btn" type="button" data-yd-show>Показать</button>
+      </div>
+      <p class="c-error" data-yd-error hidden></p>
+      <p class="a-field__note" data-yd-info hidden></p>
+      <div class="c-photos c-yd-grid" data-yd-grid></div>
+      <div class="c-yd-tools" data-yd-tools hidden>
+        <button class="a-btn a-btn--primary a-btn--lg" type="button" data-yd-go>Добавить</button>
+        <button class="c-link" type="button" data-yd-all>Отметить все</button>
+      </div>
+      <p class="c-ok" data-yd-status hidden></p>
+    </div>`;
+    document.body.append(dlg);
+    const $ = <T extends HTMLElement>(s: string) => dlg.querySelector<T>(s)!;
+    const err = $('[data-yd-error]'), info = $('[data-yd-info]'), grid = $('[data-yd-grid]'), tools = $('[data-yd-tools]'), go = $<HTMLButtonElement>('[data-yd-go]'), status = $('[data-yd-status]');
+    let link = '';
+    let items: { path: string; name: string; preview: string }[] = [];
+    const picked: string[] = [];
+    let busy = false;
+    const room = () => MAX_PHOTOS - (rev.photos ?? []).length;
+    const fail = (m: string) => { err.textContent = m; err.hidden = !m; };
+    const sync = () => {
+      grid.querySelectorAll<HTMLElement>('[data-yd-path]').forEach((b) => {
+        const i = picked.indexOf(b.dataset.ydPath!);
+        b.setAttribute('aria-pressed', String(i !== -1));
+        b.querySelector('.c-yd-pick__n')!.textContent = i === -1 ? '' : String(i + 1);
+      });
+      go.textContent = picked.length ? `Добавить ${picked.length}` : 'Добавить';
+      go.disabled = !picked.length || busy;
+    };
+    const close = () => { if (busy) return; dlg.close(); dlg.remove(); renderPhotos(); savedLabel(); };
+    dlg.addEventListener('click', (e) => { if (e.target === dlg || (e.target as HTMLElement).closest('[data-close]')) close(); });
+    dlg.addEventListener('cancel', (e) => { e.preventDefault(); close(); });
+
+    $('[data-yd-show]').addEventListener('click', async () => {
+      link = $<HTMLInputElement>('[data-yd-url]').value.trim();
+      fail('');
+      grid.innerHTML = '';
+      tools.hidden = true;
+      picked.length = 0;
+      info.textContent = 'Открываем папку…';
+      info.hidden = false;
+      try {
+        const r = await api('vendor', 'GET', `/api/wed/yadisk/list?url=${encodeURIComponent(link)}`);
+        items = r.items ?? [];
+        if (!items.length) { info.hidden = true; fail('В папке нет фотографий — проверьте ссылку.'); return; }
+        info.textContent = `${r.title ? `«${r.title}» · ` : ''}${items.length} фото${r.capped ? ' (показаны первые)' : ''} · можно добавить ещё ${room()}`;
+        grid.innerHTML = items.map((it) => `
+          <button class="c-photo c-yd-pick" type="button" aria-pressed="false" data-yd-path="${esc(it.path)}" title="${esc(it.name)}">
+            ${it.preview ? `<img src="${esc(it.preview)}" alt="" loading="lazy" referrerpolicy="no-referrer" />` : ''}
+            <span class="c-yd-pick__n"></span>
+          </button>`).join('');
+        tools.hidden = false;
+        sync();
+      } catch (x) {
+        info.hidden = true;
+        fail((x as Error).message);
+      }
+    });
+
+    grid.addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLElement>('[data-yd-path]');
+      if (!b || busy) return;
+      const p = b.dataset.ydPath!;
+      const i = picked.indexOf(p);
+      if (i !== -1) picked.splice(i, 1);
+      else if (picked.length < room()) picked.push(p);
+      else fail(`Больше не поместится: на карточке до ${MAX_PHOTOS} фото.`);
+      sync();
+    });
+    $('[data-yd-all]').addEventListener('click', () => {
+      for (const it of items) if (!picked.includes(it.path) && picked.length < room()) picked.push(it.path);
+      sync();
+    });
+
+    go.addEventListener('click', async () => {
+      if (!picked.length) return;
+      busy = true;
+      fail('');
+      sync();
+      const todo = [...picked];
+      const skipped: string[] = [];
+      let done = 0;
+      try {
+        for (let i = 0; i < todo.length; i += 5) {
+          status.textContent = `Забираем с диска… ${done} из ${todo.length}. Не закрывайте страницу.`;
+          status.hidden = false;
+          const r = await api('vendor', 'POST', '/api/wed/yadisk/import', { revision: rev.id, url: link, paths: todo.slice(i, i + 5) });
+          rev = r.record;
+          done += r.added;
+          for (const s of r.skipped ?? []) skipped.push(items.find((it) => it.path === s.path)?.name ?? s.path);
+        }
+        if (rev.photos?.length && !token) token = await fileToken('vendor');
+        justSaved = true;
+        busy = false;
+        if (skipped.length) {
+          status.hidden = true;
+          fail(`Добавлено ${done}. Не получилось забрать: ${skipped.join(', ')} — попробуйте ещё раз или загрузите с телефона.`);
+          picked.length = 0;
+          sync();
+          return;
+        }
+        close();
+        toast(`Добавлено фото: ${done}`);
+      } catch (x) {
+        busy = false;
+        status.hidden = true;
+        fail(`${done ? `Добавлено ${done}. ` : ''}${(x as Error).message}`);
+        sync();
+      }
+    });
+    dlg.showModal();
+    $<HTMLInputElement>('[data-yd-url]').focus();
+  }
+
   async function photoPatch(body: any) {
     const err = view.querySelector<HTMLElement>('[data-photo-error]')!;
     err.hidden = true;
@@ -1023,6 +1154,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     const b = (e.target as HTMLElement).closest<HTMLElement>('button');
     if (!b || (b as HTMLButtonElement).disabled) return;
     if (b.dataset.preview) { e.preventDefault(); openPreview(b.dataset.preview as SectionKey); return; }
+    if (b.hasAttribute('data-yadisk')) { openYadisk(); return; }
     // цена: способ и готовые «за что»
     if (b.dataset.pmode) {
       data.priceMode = b.dataset.pmode;

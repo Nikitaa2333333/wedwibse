@@ -561,6 +561,30 @@ console.log('\nвход по почте');
     res.json?.contacts?.phone === '+79160000077', res.text);
 }
 
+// ---------- фото с Яндекс Диска (lib/yadisk.js) ----------
+// Ходит в настоящий API Яндекса: нужен интернет. Папка — YADISK_TEST_URL
+// (по умолчанию открытая папка из материалов подрядчика).
+{
+  console.log('\nфото с Яндекс Диска');
+  const D = await makeVendor('d');
+  const YD = process.env.YADISK_TEST_URL || 'https://disk.yandex.ru/d/0owf_ON_qfNKUg';
+  res = await call(D.token, 'GET', `/api/wed/yadisk/list?url=${encodeURIComponent('https://evil.example.com/d/x')}`);
+  check('чужой адрес не принимается', refused(res) && says(res, 'Яндекс Диск'), res.text);
+  res = await call(D.token, 'GET', `/api/wed/yadisk/list?url=${encodeURIComponent(YD)}`);
+  const items = res.json?.items ?? [];
+  check('папка с диска показывает кадры с превью', res.status === 200 && items.length > 0 && !!items[0].preview, res.text.slice(0, 300));
+  const d = await call(D.token, 'POST', '/api/collections/revisions/records', {
+    owner: D.id, kind: 'specialist', categorySlug: 'fotografy', slug: `test-yd-${stamp}`, status: 'draft', data: { name: 'Диск' },
+  });
+  cleanup.revisions.push(d.json?.id);
+  res = await call(A.token, 'POST', '/api/wed/yadisk/import', { revision: d.json?.id, url: YD, paths: [items[0]?.path] });
+  check('в чужую карточку с диска не добавить', res.status === 403, res.text);
+  res = await call(D.token, 'POST', '/api/wed/yadisk/import', { revision: d.json?.id, url: YD, paths: items.slice(0, 6).map((x) => x.path) });
+  check('за раз не больше 5 кадров', refused(res), res.text);
+  res = await call(D.token, 'POST', '/api/wed/yadisk/import', { revision: d.json?.id, url: YD, paths: items.slice(0, 2).map((x) => x.path) });
+  check('выбранные кадры забираются в черновик', res.status === 200 && res.json.added === 2 && res.json.record.photos.length === 2, JSON.stringify({ added: res.json?.added, skipped: res.json?.skipped, photos: res.json?.record?.photos, msg: res.json?.message }));
+}
+
 // ---------- уборка ----------
 for (const [col, ids] of Object.entries(cleanup)) {
   for (const id of ids.filter(Boolean)) await call(SU, 'DELETE', `/api/collections/${col}/records/${id}`);

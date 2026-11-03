@@ -246,12 +246,10 @@ function isModerator(e) {
   return !!e.auth && e.auth.collection().name === 'moderators';
 }
 
-function photoLimit(app, r) {
-  // в обработчике запроса новые файлы ещё не сохранены: в значении поля
-  // их нет, они лежат отдельно до сохранения записи
-  const n = photosOf(r).length + r.getUnsavedFiles('photos').length;
+/** потолок фото ревизии: 50, а у карточек, заведённых нами, — сколько уже на карточке */
+function photoCap(app, r) {
   // у карточек, заведённых нами, кадров бывает больше 50 (Гребнево — 102):
-  // правка их не режет, потолок для неё — сколько уже на карточке
+  // правка их не режет
   let cap = MAX_PHOTOS;
   const kind = r.getString('kind');
   const cardId = r.getString(cardField(kind));
@@ -259,6 +257,14 @@ function photoLimit(app, r) {
     const card = findOne(app, cardCollection(kind), 'id = {:id}', { id: cardId });
     if (card) cap = Math.max(cap, photosOf(card).length);
   }
+  return cap;
+}
+
+function photoLimit(app, r) {
+  // в обработчике запроса новые файлы ещё не сохранены: в значении поля
+  // их нет, они лежат отдельно до сохранения записи
+  const n = photosOf(r).length + r.getUnsavedFiles('photos').length;
+  const cap = photoCap(app, r);
   if (n > cap) throw new BadRequestError(`На карточке до ${cap} фото, сейчас ${n} — уберите лишние.`);
 }
 
@@ -1252,6 +1258,8 @@ module.exports = {
   cardSaved,
   MIN_PHOTOS,
   parseSection,
+  managedCard,
+  photoCap,
   MAX_PHOTOS,
   isModerator,
   telegramAuth,
