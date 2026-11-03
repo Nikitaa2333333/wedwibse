@@ -295,6 +295,28 @@ function telegram(text) {
 }
 
 /**
+ * Письмо нам самим (ящик отправителя из настроек почты, kabinet@wed-secrets.ru) —
+ * копия того, что ушло в группу модерации: заявка не теряется, если Telegram
+ * недоступен (Никита, 02.11). Без настроенной почты — молча пропускаем.
+ */
+function mailUs(subject, text) {
+  const s = $app.settings();
+  const to = s.meta.senderAddress;
+  if (!s.smtp.enabled || !to) return;
+  try {
+    const esc = (v) => String(v).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
+    $app.newMailClient().send(new MailerMessage({
+      from: { address: to, name: s.meta.senderName || 'WED Secrets' },
+      to: [{ address: to }],
+      subject,
+      html: '<p>' + esc(text).replace(/\n/g, '<br>') + '</p>',
+    }));
+  } catch (err) {
+    $app.logger().warn('cabinet: письмо нам не ушло', 'error', String(err));
+  }
+}
+
+/**
  * Выкладка сайта сразу после решения по карточке из кабинета (27.10):
  * пока страницы собирает сборка, а не сервер из базы, одобренная карточка
  * ждала бы следующего пуша. Запускает Deploy в GitHub Actions — тот же
@@ -1077,6 +1099,35 @@ function vendorUpdateAccount(e) {
   return e.next();
 }
 
+// ---------- заявки пар ----------
+// Форма на карточке (BookingSheet) без входа → POST /api/wed/lead. Служебное
+// (статус, связь с учёткой невесты) из запроса не берём. Частоту держит
+// rate limit маршрута (миграция 1762200000).
+function createLead(e) {
+  const body = e.requestInfo().body || {};
+  const name = str(body.name, 120);
+  const phone = str(body.phone, 40);
+  const message = str(body.message, 4000);
+  const sourceUrl = str(body.sourceUrl, 500);
+  if (!name) throw new BadRequestError('Напишите, как вас зовут.');
+  if (phone.replace(/\D/g, '').length < 10) throw new BadRequestError('Проверьте телефон — нужно 10 цифр и больше.');
+  if (body.consent !== true) throw new BadRequestError('Нужно согласие на обработку данных.');
+  const r = new Record(e.app.findCollectionByNameOrId('leads'));
+  r.set('kind', 'client');
+  r.set('name', name);
+  r.set('phone', phone);
+  r.set('message', message);
+  if (/^https?:\/\//.test(sourceUrl)) r.set('sourceUrl', sourceUrl);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str(body.eventDate))) r.set('eventDate', str(body.eventDate) + ' 12:00:00.000Z');
+  r.set('consent', true);
+  r.set('status', 'new');
+  e.app.save(r);
+  const text = `Заявка с сайта\n${name}, ${phone}\n${message}\n${sourceUrl}`;
+  telegram(text);
+  mailUs(`Заявка с сайта: ${name}`, text);
+  return e.json(200, { ok: true });
+}
+
 // ---------- модератор снимает и удаляет (Никита, 02.11) ----------
 // POST /api/wed/mod/remove { what: 'revision' | 'specialist' | 'venue', id, mode }
 //   revision            — удалить новую карточку / правку (ещё не на сайте)
@@ -1116,6 +1167,7 @@ function cardDeleted(e) {
 }
 
 module.exports = {
+  createLead,
   modRemove,
   cardDeleted,
   cardSaved,

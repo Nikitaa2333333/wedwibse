@@ -28,6 +28,11 @@ onRecordCreateRequest((e) => {
   return require(`${__hooks}/lib/cabinet.js`).vendorCreateVideoRequest(e);
 }, 'video_requests');
 
+// ---------- заявки пар (форма на карточке, BookingSheet) ----------
+// Запись в leads закрыта (createRule = null, миграция stage2) — только этот
+// маршрут: проверяет поля, ставит статус и шлёт заявку в группу модерации.
+routerAdd('POST', '/api/wed/lead', (e) => require(`${__hooks}/lib/cabinet.js`).createLead(e));
+
 // ---------- учётки ----------
 onRecordCreateRequest((e) => {
   if (e.hasSuperuserAuth()) return e.next();
