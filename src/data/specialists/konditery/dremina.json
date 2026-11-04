@@ -3,6 +3,7 @@
   "categorySlug": "konditery",
   "category": "Кондитеры",
   "name": "Евгения Дремина",
+  "age": "25–35",
   "avatar": "/specialists/konditery/avatars/dremina.webp",
   "photos": [
     "/specialists/konditery/dremina/gal/p02.webp",
@@ -86,6 +87,7 @@
       "mo"
     ],
     "priceKg": "3-4",
+    "delivery": "yes",
     "productType": [
       "wedding-cake",
       "mini-desserts"
