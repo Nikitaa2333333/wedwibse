@@ -40,6 +40,18 @@ import '../../components/profi/auth.css';
   const q = new URLSearchParams(location.search);
   // вошли раньше и это не приглашение — сразу в кабинет
   if (session('vendor') && !q.get('invite')) afterLogin(q.get('next') || undefined);
+  // вошли раньше и открыли ссылку-приглашение — гасим ключ сразу, без
+  // повторного входа (пилот 04.11: Никита открывал ссылку уже вошедшим,
+  // страница показывала форму, и карточка не привязывалась)
+  if (session('vendor') && q.get('invite')) {
+    api('vendor', 'POST', '/api/wed/invite', { invite: q.get('invite') })
+      .then(() => afterLogin(q.get('next') || undefined))
+      .catch((err) => {
+        const box = document.querySelector<HTMLElement>('[data-mail-error]')!;
+        box.textContent = `${(err as Error).message} Можно войти другой учёткой ниже.`;
+        box.hidden = false;
+      });
+  }
 
   document.querySelectorAll<HTMLAnchorElement>('[data-keep-query]').forEach((a) => { a.search = location.search; });
 
