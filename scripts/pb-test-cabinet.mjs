@@ -368,6 +368,16 @@ if (!BOT) {
   check('чужое приглашение второй раз не гасится', refused(res), res.text);
   res = await call(null, 'POST', '/api/collections/vendors/records', { email: `x-${stamp}@example.com`, password: 'x1234567890', passwordConfirm: 'x1234567890' });
   check('учётку в обход условий не создать', refused(res), res.text);
+
+  // «Подключить» Telegram из профиля — к той же учётке
+  const tgB = String(9100000000 + Math.floor(Math.random() * 99999999));
+  const tgBUser = () => signTg({ id: tgB, first_name: 'Борис', auth_date: String(Math.floor(Date.now() / 1000)) });
+  res = await call(A.token, 'POST', '/api/wed/link', { tg: { ...tgBUser(), first_name: 'Подмена' } });
+  check('подключение с поддельной подписью отклонено', res.status === 401, res.text);
+  res = await call(A.token, 'POST', '/api/wed/link', { tg: tgBUser() });
+  check('Telegram подключён к той же учётке', res.status === 200 && res.json.record?.id === A.id && res.json.record?.telegramId === tgB, res.text);
+  res = await call(A.token, 'POST', '/api/wed/link', { tg: tgUser() });
+  check('Telegram учётки с карточкой не перехватить', res.status === 400, res.text);
 }
 
 // ---------- вход через MAX ----------
@@ -418,6 +428,38 @@ if (!MAX_SECRET) {
   await hook(started(res.json?.code));
   res = await call(null, 'POST', '/api/wed/max', { code: res.json?.code });
   check('повторный вход без условий', res.status === 200 && res.json.record?.id === X.id, res.text);
+
+  // «Подключить» MAX из профиля — к ТОЙ ЖЕ учётке (POST /api/wed/link)
+  console.log('\nподключить мессенджер к учётке');
+  const fresh = async (id) => {
+    const r = await call(null, 'POST', '/api/wed/max/start');
+    await hook(started(r.json?.code, id));
+    return r.json?.code;
+  };
+  const maxA = String(6000000000 + Math.floor(Math.random() * 99999999));
+  res = await call(null, 'POST', '/api/wed/link', { code: await fresh(maxA) });
+  check('без входа не подключить', res.status === 401, res.text);
+  res = await call(SU, 'PATCH', `/api/collections/vendors/records/${A.id}`, { notify: { telegram: false, max: false, email: false, emailTo: '' } });
+  const pendingCode = (await call(null, 'POST', '/api/wed/max/start')).json?.code;
+  res = await call(A.token, 'POST', '/api/wed/link', { code: pendingCode });
+  check('до «Начать» в боте — ждём', res.status === 200 && res.json.status === 'waiting', res.text);
+  res = await call(A.token, 'POST', '/api/wed/link', { code: await fresh(maxA) });
+  check('MAX подключён к той же учётке', res.status === 200 && res.json.status === 'linked' && res.json.record?.id === A.id && res.json.record?.maxId === maxA, res.text);
+  check('заявки в новый канал включены', res.json?.record?.notify?.max === true && res.json.record.notify.email === false, res.text);
+  res = await call(null, 'POST', '/api/wed/max', { code: await fresh(maxA) });
+  check('теперь вход через MAX открывает ту же учётку', res.status === 200 && res.json.record?.id === A.id, res.text);
+
+  // мессенджер у учётки с данными (у B почта) — не забираем
+  const maxB = String(5000000000 + Math.floor(Math.random() * 99999999));
+  await call(SU, 'PATCH', `/api/collections/vendors/records/${B.id}`, { maxId: maxB });
+  res = await call(A.token, 'POST', '/api/wed/link', { code: await fresh(maxB) });
+  check('MAX чужой учётки с данными не перехватить', res.status === 400 && says(res, 'объединим'), res.text);
+  check('у чужой учётки MAX остался', (await call(SU, 'GET', `/api/collections/vendors/records/${B.id}`)).json?.maxId === maxB);
+
+  // у пустой учётки (зашли через MAX мимо, ни карточек, ни почты) — забираем
+  res = await call(A.token, 'POST', '/api/wed/link', { code: await fresh(maxId) });
+  check('MAX пустой учётки переходит к этой', res.status === 200 && res.json.record?.maxId === maxId, res.text);
+  check('у пустой учётки MAX снят', (await call(SU, 'GET', `/api/collections/vendors/records/${X.id}`)).json?.maxId === '');
 }
 
 // ---------- вход по почте ----------

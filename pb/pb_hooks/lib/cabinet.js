@@ -375,9 +375,64 @@ function cardSaved(e) {
   e.next();
 }
 
+/**
+ * Куда писать подрядчику (правило Никиты 05.11: через какой мессенджер вошёл,
+ * туда и уведомления; выключается тумблером в профиле — vendors.notify).
+ * Настройки не трогали — включены все подключённые мессенджеры.
+ */
+function vendorChannels(vendor) {
+  let n = null;
+  try { n = JSON.parse(vendor.getString('notify') || 'null'); } catch (_) {}
+  const set = n && typeof n === 'object' && Object.keys(n).length > 0;
+  return {
+    telegram: !!vendor.getString('telegramId') && (set ? n.telegram === true : true),
+    max: !!vendor.getString('maxId') && (set ? n.max === true : true),
+  };
+}
+
+/** личное сообщение подрядчику ботом Telegram (бот пишет, раз человек входил через него с правом писать) */
+function telegramTo(chatId, text) {
+  const token = $os.getenv('TG_BOT_TOKEN');
+  if (!token || !chatId) return;
+  try {
+    const res = $http.send({
+      url: `https://api.telegram.org/bot${token}/sendMessage`,
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text, link_preview_options: { is_disabled: true } }),
+      timeout: 5,
+    });
+    if (res.statusCode !== 200) $app.logger().warn('cabinet: telegram подрядчику отказал', 'status', res.statusCode, 'body', toString(res.body).slice(0, 300));
+  } catch (err) {
+    $app.logger().warn('cabinet: telegram подрядчику не ответил', 'error', String(err));
+  }
+}
+
+/**
+ * Уведомление подрядчику: письмо на почту учётки (как было) и сообщение
+ * в мессенджеры по vendorChannels. Мессенджеры — только при
+ * VENDOR_MESSENGER_NOTIFY=1 в окружении базы: это сообщения людям, тексты
+ * и включение — с согласия Никиты (CLAUDE.md, «сообщения людям»).
+ * Не часть действия: сбой отправки модерацию не роняет.
+ */
+function notifyVendor(app, vendorId, subject, html, text) {
+  mailVendor(app, vendorId, subject, html);
+  if ($os.getenv('VENDOR_MESSENGER_NOTIFY') !== '1' || !text) return;
+  try {
+    const vendor = app.findRecordById('vendors', vendorId);
+    const ch = vendorChannels(vendor);
+    if (ch.telegram) telegramTo(vendor.getString('telegramId'), text);
+    if (ch.max) require(`${__hooks}/lib/max.js`).send(vendor.getString('maxId'), text);
+  } catch (err) {
+    app.logger().warn('cabinet: уведомление подрядчику не ушло', 'vendor', vendorId, 'error', String(err));
+  }
+}
+
 function mailVendor(app, vendorId, subject, html) {
   try {
     const vendor = app.findRecordById('vendors', vendorId);
+    // учётка без почты (вход только через мессенджер) — письма нет, это не сбой
+    if (!vendor.email()) return;
     const meta = app.settings().meta;
     const message = new MailerMessage({
       from: { address: meta.senderAddress, name: meta.senderName || meta.appName },
@@ -610,9 +665,11 @@ function vendorUpdateRevision(e) {
     telegram(`На проверку: ${str(data.name, 120)} (${r.getString('kind') === 'venue' ? 'площадка' : r.getString('categorySlug')})` +
       `${isNewCard ? ', новая карточка' : managed ? ', правка (ведём мы)' : ', правка'}\n${SITE_URL}/profi/admin/moderaciya/pravka/?id=${r.id}` +
       (managed && requestsText(data) ? `\nПросит поправить —\n${requestsText(data)}` : ''));
-    mailVendor(e.app, r.getString('owner'), 'Карточка отправлена на проверку — WED Secrets',
+    // тексты для мессенджеров — ЧЕРНОВИК на согласование Никите (до VENDOR_MESSENGER_NOTIFY=1 не уходят)
+    notifyVendor(e.app, r.getString('owner'), 'Карточка отправлена на проверку — WED Secrets',
       `<p>Получили вашу карточку «${str(data.name, 120)}» и проверим её в ближайшее время.</p>` +
-      `<p>Когда она появится на сайте, пришлём письмо со ссылкой.</p>`);
+      `<p>Когда она появится на сайте, пришлём письмо со ссылкой.</p>`,
+      `Получили вашу карточку «${str(data.name, 120)}» и проверим её в ближайшее время. Когда она появится на сайте, пришлём ссылку.`);
   }
 }
 
@@ -648,9 +705,11 @@ function moderateRevision(e) {
     const data = jsonOf(r, 'data');
     const kind = r.getString('kind');
     const url = cardUrl(kind, r.getString('categorySlug'), r.getString('slug'));
-    mailVendor(app, r.getString('owner'), 'Карточка опубликована — WED Secrets',
+    notifyVendor(app, r.getString('owner'), 'Карточка опубликована — WED Secrets',
       `<p>Карточку «${str(data.name, 120)}» одобрили — через несколько минут она появится на сайте:<a href="${url}">${url}</a>.</p>` +
-      `<p>Теперь в кабинете можно добавить видео — пришлите ссылку на Яндекс.Диск, ролики мы обработаем сами.</p>`);
+      `<p>Теперь в кабинете можно добавить видео — пришлите ссылку на Яндекс.Диск, ролики мы обработаем сами.</p>`,
+      `Карточку «${str(data.name, 120)}» одобрили — через несколько минут она появится на сайте: ${url}
+Теперь в кабинете можно добавить видео.`);
     return;
   }
 
@@ -661,10 +720,13 @@ function moderateRevision(e) {
     r.set('reviewedAt', new DateTime());
     e.next();
     const data = jsonOf(r, 'data');
-    mailVendor(e.app, r.getString('owner'), 'Карточку нужно поправить — WED Secrets',
+    notifyVendor(e.app, r.getString('owner'), 'Карточку нужно поправить — WED Secrets',
       `<p>Мы посмотрели карточку «${str(data.name, 120)}» и вернули её на доработку.</p>` +
       `<p><strong>Что исправить:</strong> ${reason.replace(/</g, '&lt;')}</p>` +
-      `<p>Поправьте в кабинете и отправьте на проверку снова.</p>`);
+      `<p>Поправьте в кабинете и отправьте на проверку снова.</p>`,
+      `Карточку «${str(data.name, 120)}» вернули на доработку.
+Что исправить: ${reason}
+Поправьте в кабинете и отправьте на проверку снова.`);
     return;
   }
 
@@ -1095,6 +1157,56 @@ function maxAuth(e) {
 }
 
 /**
+ * POST /api/wed/link { tg } | { code } — «Подключить» из профиля: второй
+ * мессенджер к ТОЙ ЖЕ учётке, а не новая учётка (разбор Никиты 05.11).
+ * Аккаунт подтверждается так же, как при входе (подпись Telegram, бот MAX).
+ * Мессенджер уже у другой учётки:
+ *   та пустая (ни карточек, ни ревизий, ни почты — зашли разок мимо) — забираем;
+ *   у неё есть данные — отказ: сливать учётки руками, через нас.
+ * Уведомления о заявках в новый канал включаются сразу (правило «куда вошёл,
+ * туда и заявки»; выключить — тумблером в профиле).
+ */
+function linkMessenger(e) {
+  const body = e.requestInfo().body || {};
+  let field, ch, who, maxLogin = null;
+  if (body.code) {
+    const c = require(`${__hooks}/lib/max.js`).confirmed(e.app, body.code);
+    if (!c) return e.json(200, { status: 'waiting' });
+    field = 'maxId'; ch = 'max'; who = c.id; maxLogin = c.login;
+  } else {
+    const botToken = $os.getenv('TG_BOT_TOKEN');
+    if (!botToken) throw new BadRequestError('Вход через Telegram ещё не настроен.');
+    field = 'telegramId'; ch = 'telegram';
+    who = require(`${__hooks}/lib/telegram.js`).verifyTelegram(body.tg, botToken).id;
+  }
+  const name = ch === 'max' ? 'MAX' : 'Telegram';
+  const me = e.app.findRecordById('vendors', e.auth.id);
+  const other = findOne(e.app, 'vendors', `${field} = {:id} && id != {:me}`, { id: who, me: me.id });
+  if (other) {
+    const busy = cardCount(e.app, other.id) > 0
+      || !!findOne(e.app, 'revisions', 'owner = {:v}', { v: other.id })
+      || !!other.getString('email');
+    if (busy) throw new BadRequestError(`Этот ${name} уже входит в другую учётку с карточками. Напишите нам — объединим учётки.`);
+  }
+  e.app.runInTransaction((tx) => {
+    if (other) {
+      const o = tx.findRecordById('vendors', other.id);
+      o.set(field, '');
+      tx.save(o);
+    }
+    const m = tx.findRecordById('vendors', me.id);
+    m.set(field, who);
+    let n = null;
+    try { n = JSON.parse(m.getString('notify') || 'null'); } catch (_) {}
+    // настройки уже трогали — включаем новый канал; не трогали — он и так включён по умолчанию
+    if (n && typeof n === 'object' && Object.keys(n).length) m.set('notify', Object.assign({}, n, { [ch]: true }));
+    tx.save(m);
+    if (maxLogin) tx.delete(tx.findRecordById('max_logins', maxLogin.id));
+  });
+  return e.json(200, { status: 'linked', record: e.app.findRecordById('vendors', me.id) });
+}
+
+/**
  * общий вход через мессенджер: field — telegramId | maxId
  *   учётка есть           → вход (токен как у обычного входа)
  *   нет и accept не стоит → { status: 'needs-accept' }: кабинет показывает условия
@@ -1342,6 +1454,7 @@ module.exports = {
   isModerator,
   telegramAuth,
   maxAuth,
+  linkMessenger,
   previewLink,
   previewData,
   previewFile,

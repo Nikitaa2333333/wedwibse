@@ -13,10 +13,10 @@ import '../../components/profi/auth.css';
 <ProfiShell title="Вход" look="auth">
   <main class="container auth">
     <div class="auth__head">
-      <h1 class="t-h1">Вход</h1>
+      <h1 class="t-h1" data-title>Вход</h1>
     </div>
 
-    <form class="auth__form auth__form--lg" data-mail-login>
+    <form class="auth__form auth__form--lg" data-mail-login data-login-only>
       <input class="input" type="email" name="email" placeholder="Почта" aria-label="Почта" autocomplete="username" inputmode="email" autocapitalize="off" spellcheck="false" required />
       <input class="input" type="password" name="password" placeholder="Пароль" aria-label="Пароль" autocomplete="current-password" required />
       <a class="auth__forgot" href="/profi/parol/" data-keep-query>Забыли пароль?</a>
@@ -24,22 +24,34 @@ import '../../components/profi/auth.css';
       <button class="pill pill--lg pill--solid pill--block" type="submit">Войти</button>
     </form>
 
-    <p class="auth__divider">или</p>
+    <p class="auth__divider" data-login-only>или</p>
 
     <AuthMethods />
 
-    <p class="auth__alt">Нет учётки? <a href="/profi/registraciya/" data-keep-query>Зарегистрироваться</a></p>
+    <p class="auth__alt" data-link-only hidden><a href="/profi/moi/profil/">Вернуться в профиль</a></p>
+    <p class="auth__alt" data-login-only>Нет учётки? <a href="/profi/registraciya/" data-keep-query>Зарегистрироваться</a></p>
   </main>
 </ProfiShell>
 
 <script>
   import { api, session } from '../../lib/cabinet-api';
-  import { afterLogin } from '../../lib/tg-login';
+  import { afterLogin, linkVia } from '../../lib/tg-login';
   import { loginWithPassword } from '../../lib/email-login';
 
   const q = new URLSearchParams(location.search);
+  // «Подключить» из профиля (?via=telegram|max, учётка уже открыта): на экране
+  // только кнопка этого мессенджера, она привязывает его к учётке (tg-login.ts)
+  const via = linkVia();
+  if (via) {
+    document.querySelector('[data-title]')!.textContent = `Подключить ${via === 'max' ? 'MAX' : 'Telegram'}`;
+    document.title = 'Подключить мессенджер';
+    document.querySelectorAll<HTMLElement>('[data-login-only]').forEach((el) => { el.style.display = 'none'; });
+    document.querySelectorAll<HTMLElement>('[data-link-only]').forEach((el) => { el.hidden = false; });
+    const other = document.querySelector<HTMLElement>(via === 'max' ? '[data-tg-login]' : '[data-max-login]');
+    if (other) other.style.display = 'none';
+  }
   // вошли раньше и это не приглашение — сразу в кабинет
-  if (session('vendor') && !q.get('invite')) afterLogin(q.get('next') || undefined);
+  else if (session('vendor') && !q.get('invite')) afterLogin(q.get('next') || undefined);
   // вошли раньше и открыли ссылку-приглашение — гасим ключ сразу, без
   // повторного входа (пилот 04.11: Никита открывал ссылку уже вошедшим,
   // страница показывала форму, и карточка не привязывалась)
