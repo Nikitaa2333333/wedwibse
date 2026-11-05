@@ -699,7 +699,7 @@ window.MAP = {
      "t": "Уведомления о заявках по vendors.notify (Telegram/MAX/почта)",
      "s": "work",
      "src": "audit/code-review.md 2.2",
-     "note": "05.11: notifyVendor — письма модерации + Telegram/MAX по vendors.notify (по умолчанию мессенджер входа); мессенджеры за VENDOR_MESSENGER_NOTIFY=1 до согласия Никиты на тексты; заявки подрядчику — после решения по передаче (2-й этап не входит)",
+     "note": "05.11 выложено выключенным: notifyVendor на сервере, мессенджеры ждут VENDOR_MESSENGER_NOTIFY=1 после согласия Никиты на тексты; заявки подрядчику — OPEN-QUESTIONS №14",
      "date": "05.11.2026"
     },
     {
@@ -809,8 +809,8 @@ window.MAP = {
     },
     {
      "t": "Админские уведомления и в чат MAX",
-     "s": "work",
-     "note": "05.11: код готов (MAX_CHAT_ID, sendChat), проверен на тестовой базе; ждёт чат модераторов в MAX с ботом от Никиты и выкладки",
+     "s": "done",
+     "note": "05.11 выложено: MAX_CHAT_ID=-80926289403953 (чат «Уведомления Wed Secrets»), подписка вебхука с bot_added/bot_stopped/dialog_removed",
      "src": "pb/pb_hooks/lib/max.js",
      "date": "05.11.2026"
     }
