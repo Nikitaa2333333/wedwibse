@@ -5,7 +5,7 @@
 // в карту не идут. Зависимостей нет — решение 20.10.2026 (docs/seo/SEO.md, раздел 5).
 //
 //   node scripts/sitemap.mjs [dist] [https://wed-secrets.ru]
-import { readdirSync, readFileSync, writeFileSync, statSync } from 'node:fs';
+import { readdirSync, readFileSync, writeFileSync, statSync, existsSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
 const dist = process.argv[2] || 'dist';
@@ -25,6 +25,18 @@ for (const file of walk(dist)) {
   if (NOINDEX.test(html)) continue;
   const rel = relative(dist, file).split(sep).slice(0, -1).join('/');
   urls.push(`${site}/${rel ? rel + '/' : ''}`);
+}
+// Визитки карточек из кабинета готовыми файлами не собираются — их рисует
+// сервер из базы (сайт из базы, этап 1, 05.11.2026). В карту — из тех же
+// данных, что сборка выгрузила из базы перед build (pb-pull-cabinet).
+const CAB = 'src/data/cabinet/specialists';
+if (existsSync(CAB)) {
+  for (const f of readdirSync(CAB).filter((n) => n.endsWith('.json'))) {
+    const c = JSON.parse(readFileSync(join(CAB, f), 'utf8'));
+    if (!c.slug || !c.categorySlug || !(c.quote || c.offers || c.story?.length)) continue;
+    const u = `${site}/moskva/podryadchiki/${c.categorySlug}/${c.slug}/`;
+    if (!urls.includes(u)) urls.push(u);
+  }
 }
 urls.sort();
 

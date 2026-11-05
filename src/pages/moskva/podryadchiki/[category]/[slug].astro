@@ -9,7 +9,7 @@
 // «Фотографах», и в «Видеографах»), имеет РОВНО ОДИН адрес: путь строится
 // по родной categorySlug, дубля страницы под тем же текстом нет.
 import SpecialistProfile from '../../../../components/SpecialistProfile.astro';
-import { SPECIALISTS_BY_CATEGORY, hasProfile, type Specialist } from '../../../../data/specialists';
+import { SPECIALISTS_BY_CATEGORY, hasProfile, isFromCabinet, type Specialist } from '../../../../data/specialists';
 
 export function getStaticPaths() {
   const seen = new Set<string>();
@@ -18,6 +18,9 @@ export function getStaticPaths() {
     .flat()
     // визитка есть у тех, кто дал материал: предложение или список причин
     .filter(hasProfile)
+    // карточки из кабинета — не готовым файлом, а с сервера из базы
+    // (src/pages/live/…): правка видна сразу, без пересборки (05.11.2026)
+    .filter((s) => !isFromCabinet(s))
     .filter((s) => !seen.has(s.slug) && seen.add(s.slug))
     .map((s) => ({ params: { category: s.categorySlug, slug: s.slug }, props: { s } }));
 }

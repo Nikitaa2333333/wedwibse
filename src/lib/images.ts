@@ -35,6 +35,7 @@ const registry = new Map<string, ImageMetadata>(
  */
 const remote = new Map<string, ImageMetadata>();
 const REMOTE_MAX = 600;
+export const hasRemote = (key: string) => remote.has(key);
 export function registerRemote(key: string, meta: ImageMetadata) {
   remote.delete(key);
   remote.set(key, meta);

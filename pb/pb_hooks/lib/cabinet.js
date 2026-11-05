@@ -366,10 +366,33 @@ function deploySite(why) {
 }
 
 /** карточка из кабинета сохранена (одобрение, снятие, правка в админке базы) — на сайт */
-function cardSaved(e) {
+// САЙТ ИЗ БАЗЫ, этап 1 (05.11.2026): визитку карточки из кабинета рисует
+// сервер прямо из базы (src/pages/live/…) — правка видна через секунды.
+// Пересборка нужна, только когда меняется то, что лежит в КАТАЛОГЕ готовыми
+// файлами (этап 2 уберёт и это): карточка появилась или снята, сменились
+// имя, слоган, цена, обложка, фильтры. Правка текста, порядка фото, тарифов —
+// без пересборки. Карточки «ведём мы» (ownerEdits) пока статика из git — им
+// пересборка нужна всегда.
+const CATALOG_KEYS = ['name', 'tagline', 'priceFrom', 'priceNote', 'cover', 'filters'];
+function catalogChanged(rec) {
+  const orig = rec.original();
+  if (orig.getString('status') !== rec.getString('status')) return true;
+  if (orig.getString('slug') !== rec.getString('slug') || orig.getString('categorySlug') !== rec.getString('categorySlug')) return true;
+  const a = jsonOf(orig, 'page'), b = jsonOf(rec, 'page');
+  if (CATALOG_KEYS.some((k) => JSON.stringify(a[k] ?? null) !== JSON.stringify(b[k] ?? null))) return true;
+  // главный кадр каталога — первый по порядку показа
+  const first = (p, r) => { const n = (p.photos ?? r.getStringSlice('photos')); return n[p.cover ?? 0] ?? n[0] ?? ''; };
+  return first(a, orig) !== first(b, rec);
+}
+
+function cardSaved(e, created) {
   e.next();
   const page = jsonOf(e.record, 'page');
-  if (page.source === 'cabinet' || page.ownerEdits) deploySite(`${e.record.getString('categorySlug')}/${e.record.getString('slug')} → ${e.record.getString('status')}`);
+  const where = `${e.record.getString('categorySlug')}/${e.record.getString('slug')} → ${e.record.getString('status')}`;
+  if (page.ownerEdits) return deploySite(where);
+  if (page.source !== 'cabinet') return;
+  if (created || catalogChanged(e.record)) deploySite(where);
+  else e.app.logger().info('карточка из кабинета обновлена без пересборки — визитка с сервера', 'card', where);
 }
 
 function mailVendor(app, vendorId, subject, html) {

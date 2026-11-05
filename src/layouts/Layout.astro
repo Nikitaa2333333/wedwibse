@@ -9,6 +9,8 @@ interface Props {
   ogImage?: string;
   /** страница не для поиска при любой сборке (превью анкеты до одобрения) */
   noindex?: boolean;
+  /** публичный путь страницы, если сервер рисует её по внутреннему (/live/…) */
+  path?: string;
 }
 
 const {
@@ -16,9 +18,10 @@ const {
   description = 'WED Secrets — свадебный онлайн-сервис',
   ogImage,
   noindex = false,
+  path,
 } = Astro.props;
 
-const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://wed-secrets.ru');
+const canonical = new URL(path ?? Astro.url.pathname, Astro.site ?? 'https://wed-secrets.ru');
 
 // ВРЕМЕННО (снять перед запуском, см. docs/seo/SEO.md): сайт закрыт от поисковиков.
 // Пока идёт дизайн-фаза, сырые страницы не должны попасть в индекс —

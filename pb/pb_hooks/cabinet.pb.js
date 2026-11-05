@@ -18,7 +18,7 @@ onRecordUpdateRequest((e) => {
 // ---------- карточки из кабинета → выкладка сайта ----------
 // после записи (одобрение — уже после транзакции): решение модератора
 // или снятие карточки в админке базы сразу запускает деплой
-onRecordAfterCreateSuccess((e) => require(`${__hooks}/lib/cabinet.js`).cardSaved(e), 'specialists');
+onRecordAfterCreateSuccess((e) => require(`${__hooks}/lib/cabinet.js`).cardSaved(e, true), 'specialists');
 onRecordAfterUpdateSuccess((e) => require(`${__hooks}/lib/cabinet.js`).cardSaved(e), 'specialists');
 onRecordAfterDeleteSuccess((e) => require(`${__hooks}/lib/cabinet.js`).cardDeleted(e), 'specialists');
 

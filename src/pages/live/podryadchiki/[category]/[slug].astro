@@ -1,0 +1,27 @@
+---
+// ВИЗИТКА ПОДРЯДЧИКА ИЗ КАБИНЕТА — с сервера, прямо из базы (сайт из базы,
+// этап 1, 05.11.2026). Публичный адрес тот же: /moskva/podryadchiki/<кат>/<slug>/.
+// nginx отдаёт готовую страницу, если она есть (карточки из git), а если нет —
+// передаёт запрос сюда (внутренний путь /live/…; снаружи /live/ закрыт).
+// Короткий кэш nginx (секунды) — правка карточки видна почти сразу, без пересборки.
+export const prerender = false;
+
+import SpecialistProfile from '../../../../components/SpecialistProfile.astro';
+import { hasProfile } from '../../../../data/specialists';
+import { liveSpecialist } from '../../../../lib/live-card';
+
+const { category = '', slug = '' } = Astro.params;
+let s = null;
+try {
+  s = await liveSpecialist(category, slug);
+} catch {
+  // база недоступна: nginx в этот момент отдаёт прошлую копию из кэша
+  return new Response('Сервис временно недоступен', { status: 503, headers: { 'retry-after': '10' } });
+}
+// нет карточки — честная 404 (nginx покажет страницу 404 сайта), не пустая 200
+if (!s || !hasProfile(s)) return new Response(null, { status: 404 });
+
+Astro.response.headers.set('cache-control', 'public, max-age=0, s-maxage=10');
+---
+
+<SpecialistProfile s={s} path={`/moskva/podryadchiki/${category}/${slug}/`} />

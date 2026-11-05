@@ -424,6 +424,8 @@ const cabinetSpecialists = Object.values(
   import.meta.glob<Specialist>('./cabinet/specialists/*.json', { eager: true, import: 'default' })
 ).map((s) => ({ ...s, category: SPECIALIST_CATEGORIES.find((c) => c.slug === s.categorySlug)?.label ?? s.categorySlug }));
 const fromCabinet = new Set(cabinetSpecialists.map((s) => `${s.categorySlug}/${s.slug}`));
+/** карточка из кабинета: визитку рисует сервер из базы (сайт из базы, этап 1) */
+export const isFromCabinet = (s: Pick<Specialist, 'categorySlug' | 'slug'>) => fromCabinet.has(`${s.categorySlug}/${s.slug}`);
 
 // Карточки «ведём мы» (пилот, 03.11, docs/cabinet/CABINET.md §24): визитка — наш JSON
 // из git, а цену и ответы на вопросы владелец правит сам в кабинете.

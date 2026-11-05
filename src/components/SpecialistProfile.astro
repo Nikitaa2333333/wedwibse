@@ -31,9 +31,11 @@ interface Props {
   s: Specialist;
   /** превью анкеты до одобрения (/profi/prevyu/): плашка «черновик», без «Похожих» и заявки */
   preview?: boolean;
+  /** публичный путь, если визитку рисует сервер по внутреннему адресу (/live/…) */
+  path?: string;
 }
 
-const { s, preview = false } = Astro.props;
+const { s, preview = false, path } = Astro.props;
 
 function labelsFor(groupKey: string, values: string[]): string[] {
   const group = FILTERS_BY_CATEGORY[s.categorySlug]?.find((g) => g.key === groupKey);
@@ -98,6 +100,7 @@ const saveData = JSON.stringify({
   title={`${s.name} — ${s.category.toLowerCase()} на свадьбу в Москве и области — WED Secrets`}
   description={`${s.name} — ${s.tagline.toLowerCase()}. ${s.category} на свадьбу в Москве и Московской области.`}
   noindex={preview}
+  path={path}
 >
   <SiteHeader />
 
