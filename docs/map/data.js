@@ -1781,13 +1781,13 @@ window.MAP = {
      "t": "Общий модуль окон и уведомлений lib/cab-ui.ts (openDialog, toast, X_ICON)",
      "s": "done",
      "src": "audit/code-review.md 3.2",
-     "note": "Тост ×4, dialog ×5, крестик ×7 · 05.11, ветка claude/cleanup"
+     "note": "Тост ×4, dialog ×5, крестик ×7 · выложено 05.11"
     },
     {
      "t": "Окна Диска и кадрирования → белое окно кабинета .c-dialog, фон не листается",
      "s": "done",
      "src": "audit/code-review.md 1.1",
-     "note": "05.11, ветка claude/cleanup"
+     "note": "выложено 05.11"
     },
     {
      "t": "Сбросить data-theme=dark в CabinetShell",
@@ -1804,7 +1804,7 @@ window.MAP = {
      "t": "Крестик — один X_ICON в lib/cab-ui.ts",
      "s": "done",
      "src": "audit/code-review.md 1.4",
-     "note": "05.11, ветка claude/cleanup"
+     "note": "выложено 05.11"
     },
     {
      "t": "Константы MIN_PHOTOS/MAX_*: один limits.json для хука и клиента",
@@ -1815,19 +1815,19 @@ window.MAP = {
      "t": "Токены кабинета и админки — в components/admin/base.css, сайт их не видит",
      "s": "done",
      "src": "audit/code-review.md 3.4",
-     "note": "05.11, ветка claude/cleanup"
+     "note": "выложено 05.11"
     },
     {
      "t": "Страж стилей кабинета в деплое (scripts/check-cabinet-style.mjs)",
      "s": "done",
-     "note": "05.11, ветка claude/cleanup",
+     "note": "выложено 05.11",
      "src": "deploy.yml"
     },
     {
      "t": "--brand-telegram объявлен дважды в :root (#5b95e5 / #229ed9)",
      "s": "done",
      "src": "audit/code-review.md 3.4",
-     "note": "05.11, ветка claude/cleanup"
+     "note": "выложено 05.11"
     },
     {
      "t": "Устаревший комментарий про pages.yml в astro.config.mjs",
@@ -1844,67 +1844,67 @@ window.MAP = {
      "t": "package.json без gsap, хотя CLAUDE.md пишет «GSAP установлен»",
      "s": "done",
      "src": "audit/code-review.md 3.5",
-     "note": "05.11, ветка claude/cleanup"
+     "note": "выложено 05.11"
     },
     {
      "t": "Экраны входа/промо в стиле сайта — записать исключение в CLAUDE.md",
      "s": "done",
      "src": "audit/code-review.md 1.3",
-     "note": "Решение Никиты 31.10 · 05.11, ветка claude/cleanup"
+     "note": "Решение Никиты 31.10 · выложено 05.11"
     },
     {
      "t": "ROADMAP.md ≤ 60 строк одним экраном — единый план",
      "s": "done",
      "src": "audit/docs-audit.md §3, §7 п.1",
-     "note": "05.11, ветка claude/cleanup"
+     "note": "выложено 05.11"
     },
     {
      "t": "AGENTS.md → заглушка 3–5 строк; поправить ссылки (в т.ч. registry-nightly.yml)",
      "s": "done",
      "src": "audit/docs-audit.md §2",
-     "note": "05.11, ветка claude/cleanup"
+     "note": "выложено 05.11"
     },
     {
      "t": "CLAUDE.md 642 → ~160 строк: законы; остальное в docs/",
      "s": "done",
      "src": "audit/docs-audit.md §1",
-     "note": "05.11, ветка claude/cleanup"
+     "note": "выложено 05.11"
     },
     {
      "t": "docs/: DEPLOY.md, TRAPS.md, IMAGES.md, REGISTRY.md",
      "s": "done",
      "src": "audit/docs-audit.md §3",
-     "note": "05.11, ветка claude/cleanup"
+     "note": "выложено 05.11"
     },
     {
      "t": "DESIGN.md принимает разделы «Фото» и «Навигация»",
      "s": "done",
      "src": "audit/docs-audit.md §1",
-     "note": "05.11, ветка claude/cleanup"
+     "note": "выложено 05.11"
     },
     {
      "t": "STAGE2/CABINET → DECISIONS.md + docs/archive; переписать шапку «Ход работ»",
      "s": "done",
      "src": "audit/docs-audit.md §3",
-     "note": "05.11, ветка claude/cleanup"
+     "note": "выложено 05.11"
     },
     {
      "t": "Скилл site-design (витрина невесты)",
      "s": "done",
      "src": "audit/docs-audit.md §6",
-     "note": "05.11, ветка claude/cleanup"
+     "note": "выложено 05.11"
     },
     {
      "t": "Скилл cabinet-ui (кабинет и админка) + ux-sources как references",
      "s": "done",
      "src": "audit/docs-audit.md §6, ux-sources.md",
-     "note": "05.11, ветка claude/cleanup"
+     "note": "выложено 05.11"
     },
     {
      "t": "specialist-page и venue-page: «что ломалось» → references/lessons.md",
      "s": "done",
      "src": "audit/docs-audit.md §6",
-     "note": "≈ 40 % объёма · 05.11, ветка claude/cleanup"
+     "note": "≈ 40 % объёма · выложено 05.11"
     },
     {
      "t": "Память 32 → ~14 файлов, ≈ 840 → ≈ 300 строк; починить hosting/pocketbase/orangeries",
@@ -1915,7 +1915,7 @@ window.MAP = {
      "t": "README.md: шаблон Astro Starter → 15 строк",
      "s": "done",
      "src": "audit/docs-audit.md §4",
-     "note": "05.11, ветка claude/cleanup"
+     "note": "выложено 05.11"
     },
     {
      "t": "Удалить глобальный скилл venue-pages (дубль venue-page)",
@@ -2775,7 +2775,7 @@ window.MAP = {
    "sev": "high",
    "area": "Кабинет/UI",
    "where": "moi/kartochka.astro:952-1074, cabinet.css:374-405",
-   "fix": "Окно кабинета .c-dialog через lib/cab-ui.ts — в ветке claude/cleanup 05.11, в master ещё не влито",
+   "fix": "Окно кабинета .c-dialog через lib/cab-ui.ts — выложено 05.11",
    "s": "done",
    "src": "code-review 1.1"
   },
@@ -2784,7 +2784,7 @@ window.MAP = {
    "sev": "mid",
    "area": "Кабинет/UI",
    "where": "kartochka.astro (showModal без bindSheet)",
-   "fix": "openDialog блокирует фон (lockPage) — в ветке claude/cleanup 05.11, в master ещё не влито",
+   "fix": "openDialog блокирует фон (lockPage) — выложено 05.11",
    "s": "done",
    "src": "code-review 1.1"
   },
@@ -2793,7 +2793,7 @@ window.MAP = {
    "sev": "low",
    "area": "Кабинет/UI",
    "where": "Layout.astro:96",
-   "fix": "Окно кабинета не берёт токены сайта — в ветке claude/cleanup 05.11, в master ещё не влито",
+   "fix": "Окно кабинета не берёт токены сайта — выложено 05.11",
    "s": "done",
    "src": "code-review 1.1"
   },
@@ -2802,7 +2802,7 @@ window.MAP = {
    "sev": "mid",
    "area": "Дизайн-система",
    "where": "admin.css, moderaciya/[id].astro",
-   "fix": "Все цвета — токены base.css, страж в деплое — в ветке claude/cleanup 05.11, в master ещё не влито",
+   "fix": "Все цвета — токены base.css, страж в деплое — выложено 05.11",
    "s": "done",
    "src": "code-review 1.2"
   },
@@ -2820,7 +2820,7 @@ window.MAP = {
    "sev": "low",
    "area": "Кабинет/UI",
    "where": "kartochka.astro, moderaciya/[id].astro",
-   "fix": "X_ICON в lib/cab-ui.ts — в ветке claude/cleanup 05.11, в master ещё не влито",
+   "fix": "X_ICON в lib/cab-ui.ts — выложено 05.11",
    "s": "done",
    "src": "code-review 1.4"
   },
@@ -2982,7 +2982,7 @@ window.MAP = {
    "sev": "mid",
    "area": "Дубли",
    "where": "kartochka, katalog, moderaciya/[id], zayavki/[id]",
-   "fix": "openDialog / toast в lib/cab-ui.ts — в ветке claude/cleanup 05.11, в master ещё не влито",
+   "fix": "openDialog / toast в lib/cab-ui.ts — выложено 05.11",
    "s": "done",
    "src": "code-review 3.2"
   },
@@ -3000,7 +3000,7 @@ window.MAP = {
    "sev": "low",
    "area": "Токены",
    "where": "global.css:376, 440",
-   "fix": "Одно значение — в ветке claude/cleanup 05.11, в master ещё не влито",
+   "fix": "Одно значение — выложено 05.11",
    "s": "done",
    "src": "code-review 3.4"
   },
@@ -3009,7 +3009,7 @@ window.MAP = {
    "sev": "low",
    "area": "Токены",
    "where": "global.css:395-450",
-   "fix": "Вынесены в components/admin/base.css — в ветке claude/cleanup 05.11, в master ещё не влито",
+   "fix": "Вынесены в components/admin/base.css — выложено 05.11",
    "s": "done",
    "src": "code-review 3.4"
   },
@@ -3018,7 +3018,7 @@ window.MAP = {
    "sev": "low",
    "area": "Токены",
    "where": "admin.css, cabinet.css:376",
-   "fix": "Токен --adm-backdrop — в ветке claude/cleanup 05.11, в master ещё не влито",
+   "fix": "Токен --adm-backdrop — выложено 05.11",
    "s": "done",
    "src": "code-review 3.4"
   },
@@ -3036,7 +3036,7 @@ window.MAP = {
    "sev": "low",
    "area": "Мёртвый код",
    "where": "scripts/yadisk-*, wordstat-specialists, reels-reencode",
-   "fix": "list-disk удалён; остальные — ручные инструменты — в ветке claude/cleanup 05.11, в master ещё не влито",
+   "fix": "list-disk удалён; остальные — ручные инструменты — выложено 05.11",
    "s": "done",
    "src": "code-review 3.5"
   },
@@ -3054,7 +3054,7 @@ window.MAP = {
    "sev": "low",
    "area": "Документация",
    "where": "package.json, CLAUDE.md",
-   "fix": "Строка про GSAP убрана из CLAUDE.md — в ветке claude/cleanup 05.11, в master ещё не влито",
+   "fix": "Строка про GSAP убрана из CLAUDE.md — выложено 05.11",
    "s": "done",
    "src": "code-review 3.5"
   },
@@ -3153,7 +3153,7 @@ window.MAP = {
    "sev": "low",
    "area": "Токены",
    "where": "components/admin",
-   "fix": "Цвета только в base.css — в ветке claude/cleanup 05.11, в master ещё не влито",
+   "fix": "Цвета только в base.css — выложено 05.11",
    "s": "done",
    "src": "code-review P5"
   },
@@ -3162,7 +3162,7 @@ window.MAP = {
    "sev": "high",
    "area": "Документация",
    "where": "CLAUDE.md",
-   "fix": "CLAUDE.md 150 строк, остальное в docs/ — в ветке claude/cleanup 05.11, в master ещё не влито",
+   "fix": "CLAUDE.md 150 строк, остальное в docs/ — выложено 05.11",
    "s": "done",
    "src": "docs-audit §0–1"
   },
@@ -3171,7 +3171,7 @@ window.MAP = {
    "sev": "mid",
    "area": "Документация",
    "where": "CLAUDE.md",
-   "fix": "Устаревшее убрано — в ветке claude/cleanup 05.11, в master ещё не влито",
+   "fix": "Устаревшее убрано — выложено 05.11",
    "s": "done",
    "src": "docs-audit §1"
   },
@@ -3180,7 +3180,7 @@ window.MAP = {
    "sev": "low",
    "area": "Документация",
    "where": "CLAUDE.md 633–642",
-   "fix": "Убран — в ветке claude/cleanup 05.11, в master ещё не влито",
+   "fix": "Убран — выложено 05.11",
    "s": "done",
    "src": "docs-audit §1"
   },
@@ -3207,7 +3207,7 @@ window.MAP = {
    "sev": "mid",
    "area": "Документация",
    "where": "AGENTS.md, registry-nightly.yml:172",
-   "fix": "Заглушка на 4 строки — в ветке claude/cleanup 05.11, в master ещё не влито",
+   "fix": "Заглушка на 4 строки — выложено 05.11",
    "s": "done",
    "src": "docs-audit §2"
   },
@@ -3216,7 +3216,7 @@ window.MAP = {
    "sev": "high",
    "area": "Документация",
    "where": "STAGE2.md",
-   "fix": "ROADMAP.md + docs/DECISIONS.md + архив — в ветке claude/cleanup 05.11, в master ещё не влито",
+   "fix": "ROADMAP.md + docs/DECISIONS.md + архив — выложено 05.11",
    "s": "done",
    "src": "docs-audit §3"
   },
@@ -3225,7 +3225,7 @@ window.MAP = {
    "sev": "high",
    "area": "Документация",
    "where": "CABINET.md",
-   "fix": "Шапка заменена картой разделов — в ветке claude/cleanup 05.11, в master ещё не влито",
+   "fix": "Шапка заменена картой разделов — выложено 05.11",
    "s": "done",
    "src": "docs-audit §3"
   },
@@ -3234,7 +3234,7 @@ window.MAP = {
    "sev": "low",
    "area": "Документация",
    "where": "README.md",
-   "fix": "Короткий README — в ветке claude/cleanup 05.11, в master ещё не влито",
+   "fix": "Короткий README — выложено 05.11",
    "s": "done",
    "src": "docs-audit §4"
   },
@@ -3252,7 +3252,7 @@ window.MAP = {
    "sev": "low",
    "area": "Корень",
    "where": "корень",
-   "fix": "Удалён — в ветке claude/cleanup 05.11, в master ещё не влито",
+   "fix": "Удалён — выложено 05.11",
    "s": "done",
    "src": "docs-audit §4"
   },
@@ -3288,7 +3288,7 @@ window.MAP = {
    "sev": "mid",
    "area": "Скиллы",
    "where": ".claude/skills",
-   "fix": "Скиллы написаны, страж стилей — в ветке claude/cleanup 05.11, в master ещё не влито",
+   "fix": "Скиллы написаны, страж стилей — выложено 05.11",
    "s": "done",
    "src": "docs-audit §6"
   },
@@ -3297,7 +3297,7 @@ window.MAP = {
    "sev": "low",
    "area": "Скиллы",
    "where": ".claude/skills",
-   "fix": "История в references/lessons.md — в ветке claude/cleanup 05.11, в master ещё не влито",
+   "fix": "История в references/lessons.md — выложено 05.11",
    "s": "done",
    "src": "docs-audit §6"
   },
@@ -3405,7 +3405,7 @@ window.MAP = {
    "sev": "mid",
    "area": "Деплой",
    "where": ".github/workflows/registry-nightly.yml:172",
-   "fix": "Ссылка поправлена на CLAUDE.md — в ветке claude/cleanup 05.11, в master ещё не влито",
+   "fix": "Ссылка поправлена на CLAUDE.md — выложено 05.11",
    "s": "done",
    "src": "docs-audit §2"
   },
