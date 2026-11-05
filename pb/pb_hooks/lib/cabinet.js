@@ -278,7 +278,15 @@ function cardCount(app, vendorId) {
   return n;
 }
 
+/**
+ * Админское уведомление (карточка на проверку, ссылка на видео, заявка пары) —
+ * в группу модераторов Telegram (TG_CHAT_ID) и в такой же чат MAX (MAX_CHAT_ID,
+ * бот добавлен в чат; решение Никиты 05.11). Каждый канал — сам по себе:
+ * не настроен или не ответил — второй всё равно получает.
+ */
 function telegram(text) {
+  const maxChat = $os.getenv('MAX_CHAT_ID');
+  if (maxChat) require(`${__hooks}/lib/max.js`).sendChat(maxChat, text);
   const token = $os.getenv('TG_BOT_TOKEN');
   const chat = $os.getenv('TG_CHAT_ID');
   if (!token || !chat) return;
