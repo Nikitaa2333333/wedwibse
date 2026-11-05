@@ -84,6 +84,9 @@ const FIELD_LABELS = {
 // абзац. Храним как написано ({ title, body }) — правка открывается тем же
 // текстом; в разделы визитки (StorySection) разбираем при публикации.
 const BULLET = /^\s*[—–\-•·*]\s+/;
+// крупная фраза (Никита 05.11, стиль «Aa» в «Описании»): абзац с «> » в начале.
+// Редактор ставит её первой в разделе — на визитке это lead (StoryText)
+const LEAD = /^\s*>\s*/;
 
 function sectionsOf(data) {
   return (Array.isArray(data.sections) ? data.sections : [])
@@ -110,7 +113,12 @@ function parseSection(sec) {
   const out = { text: [], list: [], after: [] };
   if (sec.title) out.title = sec.title;
   for (const para of sec.body.split(/\n\s*\n/)) {
-    const lines = para.split('\n').map((l) => l.trim()).filter((l) => !!l);
+    // крупная фраза — только первым абзацем раздела; в другом месте это обычный текст
+    if (LEAD.test(para) && !out.lead && !out.text.length && !out.list.length) {
+      out.lead = para.replace(LEAD, '').replace(/\s+/g, ' ').trim();
+      continue;
+    }
+    const lines = para.split('\n').map((l) => l.replace(LEAD, '').trim()).filter((l) => !!l);
     // подводка «Что входит:» в одном абзаце со списком — до списка, а не после
     // (прогон 27.10): место строки решает, начался ли список к ней
     let plain = [];

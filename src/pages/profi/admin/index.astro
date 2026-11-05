@@ -5,10 +5,6 @@
 // цифры по карточкам — по каталогу сайта. Демо-примеров нет: пусто — так
 // и пишем «Задач нет».
 import AdminShell from '../../../components/admin/AdminShell.astro';
-import { CATALOG } from '../../../lib/admin-catalog';
-import { plural } from '../../../lib/plural';
-
-const venues = CATALOG.filter((c) => c.kind === 'venue').length;
 ---
 
 <AdminShell title="Сводка" section="overview">
@@ -28,8 +24,6 @@ const venues = CATALOG.filter((c) => c.kind === 'venue').length;
     <div class="a-tasks" data-ov-fresh></div>
   </section>
 
-  <p class="a-total">На сайте {CATALOG.length} {plural(CATALOG.length, ['карточка', 'карточки', 'карточек'])}: {venues} {plural(venues, ['площадка', 'площадки', 'площадок'])}, {CATALOG.length - venues} {plural(CATALOG.length - venues, ['подрядчик', 'подрядчика', 'подрядчиков'])}. </p>
-  <a class="c-chipbtn a-total__go" href="/profi/admin/katalog/">Все карточки</a>
 </AdminShell>
 
 <script>
@@ -37,12 +31,10 @@ const venues = CATALOG.filter((c) => c.kind === 'venue').length;
   import { openDialog } from '../../../lib/cab-ui';
   import { loadRevisions, counts, leftMin, leftText, taskRow, failBox, URGENT_MIN, DEADLINE_MIN } from '../../../lib/admin-live';
   import { ADMIN_ICONS } from '../../../lib/admin-icons';
-  import { plural } from '../../../lib/plural';
 
   const ic = (name: keyof typeof ADMIN_ICONS, cls: string) => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${ADMIN_ICONS[name]}</svg>`;
 
-  // Сводка — список ДЕЙСТВИЙ (Никита, 27.10): что сделать и сколько. Срок —
-  // ближайший по этому действию; мало времени — красным.
+  // Сводка: плитки «что ждёт» с числом и ближайшим сроком (мало времени — красным), ниже новые заявки
   async function render(force = false) {
     const acts = document.querySelector<HTMLElement>('[data-ov-acts]');
     const fresh = document.querySelector<HTMLElement>('[data-ov-fresh]');
@@ -53,20 +45,20 @@ const venues = CATALOG.filter((c) => c.kind === 'venue').length;
         const xs = rs.map(leftMin).filter((x): x is number => x !== undefined);
         return xs.length ? Math.min(...xs) : undefined;
       };
-      const due = (m?: number) => (m === undefined ? '' : m <= 0 ? 'срок вышел' : `ближайший срок: ${leftText(m).replace('осталось ', 'через ')}`);
       const nNew = c.newReview.length, nEdit = c.editReview.length, nDraft = c.drafts.length;
-      const list = [
-        { n: nNew, text: `Проверить ${nNew} ${plural(nNew, ['новую карточку', 'новые карточки', 'новых карточек'])}`, left: soon(c.newReview), href: '/profi/admin/zayavki/#review', icon: 'partners', tone: 'info' },
-        { n: nEdit, text: `Проверить ${nEdit} ${plural(nEdit, ['правку', 'правки', 'правок'])}`, left: soon(c.editReview), href: '/profi/admin/moderaciya/', icon: 'moderation', tone: 'info' },
-        { n: nDraft, text: `Связаться: ${nDraft} ${plural(nDraft, ['анкета не закончена', 'анкеты не закончены', 'анкет не закончено'])}`, note: 'перезвонить или написать', href: '/profi/admin/zayavki/#draft', icon: 'phone', tone: 'warn' },
-      ].filter((a) => a.n > 0) as { n: number; text: string; left?: number; note?: string; href: string; icon: keyof typeof ADMIN_ICONS; tone: string }[];
-      acts.innerHTML = list.length
-        ? list.map((a) => {
-            const note = a.note ?? due(a.left);
-            const urgent = (a.left ?? DEADLINE_MIN) < URGENT_MIN;
-            return `<a class="a-act a-act--${a.tone}" href="${a.href}"><span class="a-act__ic">${ic(a.icon, '')}</span><span class="a-act__text">${a.text}</span>${note ? `<span class="a-act__note${urgent ? ' a-act__note--urgent' : ''}">${note}</span>` : ''}${ic('next', 'a-act__go')}</a>`;
-          }).join('')
-        : '<p class="a-empty a-empty--card">Задач нет: новых карточек и правок на проверке сейчас нет</p>';
+      // плитки 2×2 как в Напоминаниях Apple: значок в круге, крупное число, подпись (Никита 05.11)
+      const tiles = [
+        { n: nNew, label: 'Новые карточки', left: soon(c.newReview), href: '/profi/admin/zayavki/#review', icon: 'partners' },
+        { n: nEdit, label: 'Правки', left: soon(c.editReview), href: '/profi/admin/moderaciya/', icon: 'moderation' },
+        { n: nDraft, label: 'Не закончены', href: '/profi/admin/zayavki/#draft', icon: 'catalog' },
+        { n: 0, label: 'Жалобы', href: '/profi/admin/zhaloby/', icon: 'complaints' },
+      ] as { n: number; label: string; left?: number; href: string; icon: keyof typeof ADMIN_ICONS }[];
+      // плитки стоят всегда (ноль — тоже ответ), как смарт-списки в Напоминаниях
+      acts.innerHTML = `<div class="a-tiles">${tiles.map((t) => {
+            const urgent = (t.left ?? DEADLINE_MIN) < URGENT_MIN;
+            const note = t.left !== undefined ? leftText(t.left) : '';
+            return `<a class="a-tile" href="${t.href}"><span class="a-tile__ic">${ic(t.icon, '')}</span><b class="a-tile__n">${t.n}</b><span class="a-tile__label">${t.label}</span>${note ? `<span class="a-tile__note${urgent ? ' a-tile__note--urgent' : ''}">${note}</span>` : ''}</a>`;
+          }).join('')}</div>`;
       const rows = [
         ...c.newReview.sort((a, b) => (leftMin(a) ?? 0) - (leftMin(b) ?? 0)).map((r) => taskRow(r, { task: 'Проверить', tone: 'check' })),
         ...c.drafts.map((r) => taskRow(r, { task: 'Не закончена', tone: 'wait', fill: true })),

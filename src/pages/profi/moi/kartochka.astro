@@ -354,6 +354,8 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
   /** текст раздела как на визитке: пустая строка — абзац, «— » — пункт списка */
   function storyHtml(body: unknown): string {
     return String(body ?? '').split(/\n\s*\n/).map((block) => {
+      // крупная фраза («> » в начале абзаца) — как lead раздела на визитке
+      if (/^\s*>/.test(block)) return `<p class="c-pv-lead">${esc(block.replace(/^\s*>\s*/, '').replace(/\s+/g, ' ').trim())}</p>`;
       const ls = lines(block).filter(Boolean);
       const items = ls.filter((l) => /^[—–-]\s*/.test(l));
       const text = ls.filter((l) => !/^[—–-]\s*/.test(l));
@@ -1124,6 +1126,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       const todo = [...picked];
       const skipped: string[] = [];
       let done = 0;
+      let had = 0; // уже были в карточке (сервер: already) — например, после перезагрузки отметили те же кадры
       let stop = false;
       const bar = progress('Забираем с Диска', () => { stop = true; });
       // в анкете виден свежий набор кадров, даже если окно уже закрыли
@@ -1135,6 +1138,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
           const r = await api('vendor', 'POST', '/api/wed/yadisk/import', { revision: rev.id, url: link, paths: part });
           rev = r.record;
           done += r.added;
+          had += r.already ?? 0;
           const bad = new Set((r.skipped ?? []).map((x: any) => x.path));
           for (const p of part) if (!bad.has(p)) imported.add(p);
           for (const s of r.skipped ?? []) skipped.push(items.find((it) => it.path === s.path)?.name ?? s.path);
@@ -1154,7 +1158,8 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         }
         close();
         if (!dlg.open) { refresh(); savedLabel(); }
-        toast(stop ? `Остановили. Добавлено фото: ${done}` : `Добавлено фото: ${done}`);
+        const sum = `Добавлено ${done}${had ? `, уже были в карточке ${had}` : ''}`;
+        toast(stop ? `Остановили. ${sum}` : sum);
       } catch (x) {
         bar.done();
         busy = false;

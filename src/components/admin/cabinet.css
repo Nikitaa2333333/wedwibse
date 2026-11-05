@@ -334,6 +334,7 @@ select.a-field__input { appearance: none; background-image: var(--adm-chevron-do
 .c-pv-story section { display: grid; gap: var(--s-3); }
 .c-pv-story h3 { font-family: var(--font-serif); font-size: clamp(26px, 6vw, 34px); font-weight: var(--w-head-lg); line-height: var(--lh-heading); } /* site-preview */
 .c-pv-story p { font-size: var(--fs-body); line-height: var(--lh-body); }
+.c-pv-story p.c-pv-lead { font-family: var(--font-serif); font-size: var(--fs-lead); line-height: var(--lh-heading); } /* site-preview */
 
 
 /* ПАНЕЛЬ ПРЕВЬЮ «как будет на сайте» — единственное окно кабинета в оформлении
@@ -643,12 +644,14 @@ body:has(.c-bar .a-btn) .c-toast { bottom: calc(var(--cab-tabs-h) + env(safe-are
 .c-notes { position: relative; background: var(--adm-card); border-radius: var(--cab-sheet-radius); padding: 18px var(--s-4) 24px; min-height: 52vh; }
 .c-notes__ed, .c-notes__ph { font-size: 17px; line-height: 1.45; color: var(--adm-text); overflow-wrap: anywhere; }
 .c-notes__ed { min-height: calc(52vh - 42px); outline: none; caret-color: var(--cab-ink); }
-.c-notes :is(h3, p, ul) { margin: 0; }
+.c-notes :is(h3, blockquote, p, ul) { margin: 0; }
 /* сброс админки html[data-look] .adm :is(h3, p) { margin: 0 } сильнее — поэтому .adm и теги в селекторе */
-.adm .c-notes :is(.c-notes__ed, .c-notes__ph) > :is(h3, p, ul) + :is(h3, p, ul) { margin-top: 10px; }
+.adm .c-notes :is(.c-notes__ed, .c-notes__ph) > :is(h3, blockquote, p, ul) + :is(h3, blockquote, p, ul) { margin-top: 10px; }
 .c-notes__ed h3, .c-notes__ph h3 { font-size: 24px; line-height: 1.2; font-weight: 600; }
-.adm .c-notes :is(.c-notes__ed, .c-notes__ph) > :is(h3, p, ul) + h3 { margin-top: 24px; }   /* заголовок открывает раздел: снаружи больше, чем внутри */
-.adm .c-notes :is(.c-notes__ed, .c-notes__ph) > h3 + :is(p, ul) { margin-top: 6px; }   /* заголовок ближе к своему тексту, чем к прошлому разделу */
+/* крупная фраза — кеглем, не жирностью: девиз, премия, главная мысль (на визитке — lead раздела) */
+.c-notes__ed blockquote { margin: 0; font-size: 21px; line-height: 1.3; font-weight: 500; }
+.adm .c-notes :is(.c-notes__ed, .c-notes__ph) > :is(h3, blockquote, p, ul) + :is(h3, blockquote) { margin-top: 24px; }   /* заголовок открывает раздел: снаружи больше, чем внутри */
+.adm .c-notes :is(.c-notes__ed, .c-notes__ph) > h3 + :is(blockquote, p, ul) { margin-top: 6px; }   /* заголовок ближе к своему тексту, чем к прошлому разделу */
 .c-notes__ed ul { padding-left: 22px; list-style: none; }
 .c-notes__ed li { position: relative; }
 .c-notes .c-notes__ed li + li { margin-top: 6px; }
@@ -672,9 +675,10 @@ body:has(.c-bar .a-btn) .c-toast { bottom: calc(var(--cab-tabs-h) + env(safe-are
 .c-notes-bar__gap { flex: 1 1 auto; min-width: 12px; }
 /* «Назад»/«Вперёд», когда идти некуда: значок светлее — приглушённость функциональна, как у выключенной кнопки iOS */
 .c-notes-bar button:disabled { color: var(--adm-placeholder); }
-.c-notes-bar__styles button { flex: 1 1 0; padding: 0 10px; background: var(--adm-bg); }
+.c-notes-bar__styles button { flex: 1 1 auto; min-width: 0; padding: 0 10px; background: var(--adm-bg); font-size: 15px; }
 .c-notes-bar__styles svg { width: 18px; height: 18px; }
-.c-notes-bar .c-notes-bar__h { font-size: 19px; font-weight: 600; }
+.c-notes-bar .c-notes-bar__h { font-size: 17px; font-weight: 600; }
+.c-notes-bar .c-notes-bar__lead { font-size: 17px; }
 .c-notes-bar [aria-pressed="true"], .c-notes-bar [aria-expanded="true"] { background: var(--cab-ink); color: var(--adm-on-dark); }
 @media (hover: hover) { .c-notes-bar button:hover:not([aria-pressed="true"]):not([aria-expanded="true"]) { background: var(--adm-bg); } }
 

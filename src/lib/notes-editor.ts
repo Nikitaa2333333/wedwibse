@@ -14,7 +14,7 @@ import type { Block, BlockKind } from './notes-model';
 import { plainToBlocks, looksLikeHeading } from './notes-model';
 import { later as undoable, LIST_ICON, UNDO_ICON, REDO_ICON } from './cab-ui';
 
-const TAG: Record<BlockKind, string> = { h: 'h3', p: 'p', li: 'li' };
+const TAG: Record<BlockKind, string> = { h: 'h3', lead: 'blockquote', p: 'p', li: 'li' };
 const BLOCK_TAGS = /^(P|DIV|H[1-6]|LI|UL|OL|BLOCKQUOTE|SECTION|ARTICLE|HEADER|FOOTER|MAIN|ASIDE|TABLE|TBODY|THEAD|TR|TD|TH|DL|DT|DD|FIGURE|FIGCAPTION|PRE|ADDRESS|NAV)$/;
 const SKIP_TAGS = /^(SCRIPT|STYLE|HEAD|META|TITLE|LINK|IMG|SVG|VIDEO|AUDIO|IFRAME|OBJECT|NOSCRIPT|TEMPLATE|BUTTON|INPUT|SELECT|TEXTAREA|CANVAS)$/;
 
@@ -63,6 +63,8 @@ export function domToBlocks(root: Node, boldHeads = false): Block[] {
     // Google Docs кладёт весь документ в <b style="font-weight:normal">
     const b = /font-weight:\s*(normal|[1-5]00)/.test(el.getAttribute('style') ?? '') ? false : bold || isBold(el);
     if (/^H[1-6]$/.test(tag)) { flush(); buf = el.textContent ?? ''; flush('h'); return; }
+    // цитата из буфера и крупная фраза самого поля — одна строка «крупная фраза»
+    if (tag === 'BLOCKQUOTE') { flush(); buf = el.textContent ?? ''; flush('lead'); return; }
     if (tag === 'LI') {
       flush();
       // вложенный список внутри пункта — отдельными пунктами следом
@@ -97,8 +99,8 @@ export function mountNotes(o: NotesOptions) {
   ed.innerHTML = blocksHtml(o.blocks.length ? o.blocks : [{ t: 'h', text: '' }]);
 
   // ---------- модель и курсор ----------
-  const els = () => [...ed.querySelectorAll<HTMLElement>(':scope > h3, :scope > p, :scope > ul > li')];
-  const kindOf = (el: Element): BlockKind => (el.tagName === 'H3' ? 'h' : el.tagName === 'LI' ? 'li' : 'p');
+  const els = () => [...ed.querySelectorAll<HTMLElement>(':scope > h3, :scope > blockquote, :scope > p, :scope > ul > li')];
+  const kindOf = (el: Element): BlockKind => (el.tagName === 'H3' ? 'h' : el.tagName === 'BLOCKQUOTE' ? 'lead' : el.tagName === 'LI' ? 'li' : 'p');
   const read = (): Block[] => els().map((el) => ({ t: kindOf(el), text: flat(el.textContent ?? '') }));
   const empty = () => !read().some((b) => b.text.trim());
 
@@ -110,7 +112,7 @@ export function mountNotes(o: NotesOptions) {
       const el = c as Element;
       if (el.tagName === 'UL') {
         for (const li of el.childNodes) if (li.nodeType !== 1 || (li as Element).tagName !== 'LI' || !plainInside(li as Element)) return false;
-      } else if (!/^(H3|P)$/.test(el.tagName) || !plainInside(el)) return false;
+      } else if (!/^(H3|BLOCKQUOTE|P)$/.test(el.tagName) || !plainInside(el)) return false;
     }
     return ed.childNodes.length > 0;
   }
@@ -223,7 +225,7 @@ export function mountNotes(o: NotesOptions) {
       // пустых строк не бывает (Никита 05.11): на сайте отступы всё равно
       // одни и те же, лишний Enter давал бы ложное ощущение вёрстки.
       // Пустой заголовок + Enter — строка становится текстом
-      if (!cur.text.trim()) { if (cur.t === 'h') { cur.t = 'p'; set(blocks, { i, off: 0 }); } return; }
+      if (!cur.text.trim()) { if (cur.t === 'h' || cur.t === 'lead') { cur.t = 'p'; set(blocks, { i, off: 0 }); } return; }
       // Enter в начале строки вставил бы пустую над ней
       if (!cur.text.slice(0, off).trim()) return;
       const next: Block = { t: cur.t === 'li' ? 'li' : 'p', text: cur.text.slice(off) };
@@ -320,7 +322,7 @@ export function mountNotes(o: NotesOptions) {
     }
     const cur = blocks[at.i];
     const left: Block = { t: cur.t, text: cur.text.slice(0, at.off) };
-    const right: Block = { t: cur.t === 'h' ? 'p' : cur.t, text: cur.text.slice(at.off) };
+    const right: Block = { t: cur.t === 'h' || cur.t === 'lead' ? 'p' : cur.t, text: cur.text.slice(at.off) };
     // в пустую строку текст встаёт целиком, со своими заголовками
     const parts = [...(left.text.trim() ? [left] : []), ...pasted, ...(right.text.trim() ? [right] : [])];
     blocks.splice(at.i, 1, ...parts);
@@ -337,6 +339,7 @@ export function mountNotes(o: NotesOptions) {
   bar.innerHTML = `
     <div class="c-notes-bar__styles" role="group" aria-label="Стиль строки" hidden>
       <button type="button" data-style="h" class="c-notes-bar__h">Заголовок</button>
+      <button type="button" data-style="lead" class="c-notes-bar__lead">Фраза</button>
       <button type="button" data-style="p">Текст</button>
       <button type="button" data-style="li">${LIST_ICON}Пункт</button>
     </div>

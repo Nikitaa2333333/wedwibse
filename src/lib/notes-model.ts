@@ -10,12 +10,14 @@
 // второй список после «текста после» начинает раздел без заголовка — иначе
 // на сайте он слился бы с первым и встал не на своё место.
 
-export type BlockKind = 'h' | 'p' | 'li';
+export type BlockKind = 'h' | 'lead' | 'p' | 'li';
 export interface Block { t: BlockKind; text: string }
 export interface Section { title: string; body: string }
 
 /** тот же признак пункта, что у хука (BULLET в cabinet.js) */
 export const BULLET = /^\s*[—–\-•·*]\s+/;
+/** крупная фраза — абзац с «> » в начале (LEAD в хуке); на визитке lead раздела */
+export const LEAD = /^\s*>\s*/;
 const clean = (s: unknown) => String(s ?? '').replace(/ /g, ' ').replace(/[ \t]+/g, ' ').trim();
 
 /** разделы из базы → строки редактора */
@@ -25,6 +27,7 @@ export function sectionsToBlocks(sections: unknown): Block[] {
     const title = clean((s as any)?.title);
     if (title) out.push({ t: 'h', text: title });
     for (const para of String((s as any)?.body ?? '').split(/\n\s*\n/)) {
+      if (LEAD.test(para)) { out.push({ t: 'lead', text: clean(para.replace(LEAD, '').replace(/\n/g, ' ')) }); continue; }
       let plain: string[] = [];
       const flush = () => { if (plain.length) out.push({ t: 'p', text: plain.join(' ') }); plain = []; };
       for (const raw of para.split('\n')) {
@@ -41,15 +44,24 @@ export function sectionsToBlocks(sections: unknown): Block[] {
 
 /** строки редактора → разделы для базы */
 export function blocksToSections(blocks: Block[]): Section[] {
-  const out: { title: string; paras: string[]; list: boolean; after: boolean }[] = [];
+  const out: { title: string; paras: string[]; list: boolean; after: boolean; lead: boolean }[] = [];
   let cur: (typeof out)[number] | null = null;
-  const open = (title: string) => { cur = { title, paras: [], list: false, after: false }; out.push(cur); return cur; };
+  const open = (title: string) => { cur = { title, paras: [], list: false, after: false, lead: false }; out.push(cur); return cur; };
   let lastLi = false;
   for (const b of blocks) {
     const text = clean(b.text);
     if (!text) continue;
     if (b.t === 'h') { open(text); lastLi = false; continue; }
     let c = cur ?? open('');
+    // крупная фраза на визитке стоит перед текстом раздела, поэтому после
+    // текста она начинает раздел без заголовка — и встаёт на своё место
+    if (b.t === 'lead') {
+      if (c.paras.length || c.lead) c = open('');
+      c.paras.push(`> ${text}`);
+      c.lead = true;
+      lastLi = false;
+      continue;
+    }
     if (b.t === 'li') {
       if (c.after && !lastLi) c = open(''); // второй список после «текста после»
       if (lastLi) c.paras[c.paras.length - 1] += `\n— ${text}`;
@@ -72,6 +84,7 @@ export function storyOf(sections: Section[]) {
     const text: string[] = [], list: string[] = [], after: string[] = [];
     if (clean(sec.title)) o.title = clean(sec.title);
     for (const para of sec.body.split(/\n\s*\n/)) {
+      if (LEAD.test(para) && !o.lead && !text.length && !list.length) { o.lead = clean(para.replace(LEAD, '').replace(/\n/g, ' ')); continue; }
       let plain: string[] = [];
       const flush = () => { if (plain.length) (list.length ? after : text).push(plain.join(' ')); plain = []; };
       for (const l of para.split('\n').map(clean).filter(Boolean)) {

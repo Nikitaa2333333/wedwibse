@@ -39,8 +39,10 @@ const QUESTIONS = Object.fromEntries(
       <p class="pr__state" data-pr-state></p>
       <div class="pr__acts" data-pr-acts hidden>
         <button class="a-btn a-btn--primary a-btn--lg a-btn--block" type="button" data-pr-approve>Одобрить</button>
-        <label class="pr__label" for="pr-reason">Что исправить</label>
-        <textarea class="a-input pr__reason" id="pr-reason" rows="4" placeholder="Что не так и что сделать: на двух кадрах чужой логотип — уберите их" data-pr-reason></textarea>
+        <div class="pr__why" data-pr-why hidden>
+          <label class="pr__label" for="pr-reason">Что исправить</label>
+          <textarea class="a-input pr__reason" id="pr-reason" rows="4" placeholder="Своими словами: что не так и что сделать" data-pr-reason></textarea>
+        </div>
         <button class="a-btn a-btn--lg a-btn--block" type="button" data-pr-reject>Вернуть с причиной</button>
       </div>
       <p class="pr__error" data-pr-error hidden></p>
@@ -52,15 +54,21 @@ const QUESTIONS = Object.fromEntries(
   .pr__main { display: grid; gap: var(--s-4); min-width: 0; }
   .pr__fields { display: grid; gap: var(--s-1); margin-top: var(--s-3); }
   /* строки приходят из базы через innerHTML — без scope-атрибута, поэтому :global */
-  .pr__fields :global(dt) { font-weight: var(--w-head-lg); font-size: var(--fs-small); margin-top: var(--s-2); }
-  .pr__fields :global(dd) { white-space: pre-line; overflow-wrap: anywhere; line-height: var(--lh-snug); }
+  /* акцент — на присланном, не на подписях (Никита 05.11): подпись мелкая, значение крупнее;
+     между полями отступ больше, чем между подписью и значением (внутреннее < внешнего) */
+  .pr__fields :global(dt) { font-size: var(--adm-fs-sm); font-weight: 500; margin-top: var(--s-4); }
+  .pr__fields :global(dt:first-child) { margin-top: 0; }
+  .pr__fields :global(dd) { margin-top: 2px; font-size: 16px; font-weight: 500; white-space: pre-line; overflow-wrap: anywhere; line-height: 1.4; }
+  .pr__fields :global(.pr__tariff) { display: block; margin-top: 6px; }
+  .pr__fields :global(.pr__tariff b) { font-weight: 600; }
   :global(.pr__was) { display: block; text-decoration: line-through; background: var(--diff-del); }
   :global(.pr__now) { background: var(--diff-add); }
-  .pr__photos { margin-top: var(--s-3); list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: var(--s-2); }
+  .pr__photos { margin-top: var(--s-3); list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; } /* три колонки, как у подрядчика: модератору хватит, быстрее пролистать */
   :global(.pr__photos img) { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-radius: var(--radius-card); display: block; }
   .pr__side { display: grid; gap: var(--s-3); align-content: start; }
   .pr__acts { display: grid; gap: var(--s-3); }
-  .pr__acts[hidden], .pr__error[hidden] { display: none; }
+  .pr__acts[hidden], .pr__error[hidden], .pr__why[hidden] { display: none; }
+  .pr__why { display: grid; gap: var(--s-2); }
   .pr__label { font-weight: 500; margin-bottom: calc(-1 * var(--s-2)); }
   .pr__n { font-weight: var(--w-body); }
   .pr__reason { width: 100%; resize: vertical; min-height: 96px; height: auto; padding-block: var(--s-2); }
@@ -136,7 +144,7 @@ const QUESTIONS = Object.fromEntries(
       const tariffs = (d.tariffs ?? []).filter((t: any) => t?.name || t?.price);
       if (tariffs.length) {
         const p = priceFrom(d);
-        rows.push(`<dt>Прайс${p ? ` · в каталоге от ${rub(p)}` : ''}</dt><dd>${tariffs.map((t: any) => `<b>${esc(t.name)}</b> — ${t.price ? rub(Number(t.price)) : 'без цены'}${t.includes ? `\n${esc(t.includes)}` : ''}`).join('\n\n')}</dd>`);
+        rows.push(`<dt>Тарифы${p ? `, в каталоге от ${rub(p)}` : ''}</dt><dd>${tariffs.map((t: any) => `<span class="pr__tariff"><b>${esc(t.name)}</b> — ${t.price ? rub(Number(t.price)) : 'без цены'}${t.includes ? `\n${esc(t.includes)}` : ''}</span>`).join('')}</dd>`);
       }
       const halls = (d.halls ?? []).filter((h: any) => h?.name);
       if (halls.length) rows.push(`<dt>Залы</dt><dd>${halls.map((h: any) => `<b>${esc(h.name)}</b> — банкет до ${esc(h.banquet || '—')}, фуршет до ${esc(h.buffet || '—')}${h.area ? `, ${esc(h.area)} м²` : ''}${h.priceFrom ? `, от ${rub(Number(h.priceFrom))}` : ''}${h.note ? `\n${esc(h.note)}` : ''}`).join('\n\n')}</dd>`);
@@ -168,7 +176,7 @@ const QUESTIONS = Object.fromEntries(
         `<li><a href="${fileUrl(rev, n, { token })}" target="_blank" rel="noopener"><img src="${fileUrl(rev, n, { thumb: '400x0', token })}" alt="" loading="lazy" /></a></li>`).join('');
 
       const st = REV_STATUS[rev.status];
-      $('[data-pr-state]').innerHTML = `<span class="status ${st.cls}">${st.label}</span>${rev.status === 'rejected' && rev.rejectReason ? `<br><span class="a-sub">Причина: ${esc(rev.rejectReason)}</span>` : ''}${rev.status === 'approved' ? '<br><span class="a-sub">Карточка опубликована в базе. На сайте появится со следующей выкладкой.</span>' : ''}`;
+      $('[data-pr-state]').innerHTML = rev.status === 'review' ? '' : `<span class="status ${st.cls}">${st.label}</span>${rev.status === 'rejected' && rev.rejectReason ? `<br><span class="a-sub">Причина: ${esc(rev.rejectReason)}</span>` : ''}${rev.status === 'approved' ? '<br><span class="a-sub">Карточка опубликована в базе. На сайте появится со следующей выкладкой.</span>' : ''}`;
       $('[data-pr-acts]').hidden = rev.status !== 'review';
     }
 
@@ -200,6 +208,14 @@ const QUESTIONS = Object.fromEntries(
     $('[data-pr-reason]').addEventListener('input', (e) => clearFieldError(e.target as HTMLInputElement));
     $('[data-pr-approve]').addEventListener('click', () => act({ status: 'approved' }, 'Одобрено'));
     $('[data-pr-reject]').addEventListener('click', () => {
+      // первое нажатие — раскрыть поле «Что исправить» и прокрутить к нему; второе — вернуть
+      const why = $('[data-pr-why]');
+      if (why.hidden) {
+        why.hidden = false;
+        why.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        $<HTMLTextAreaElement>('[data-pr-reason]').focus({ preventScroll: true });
+        return;
+      }
       const reason = $<HTMLTextAreaElement>('[data-pr-reason]').value.trim();
       // ошибка поля — облачком у поля, не строкой под кнопкой (правило «где какая ошибка»)
       if (!reason) return fieldError($<HTMLTextAreaElement>('[data-pr-reason]') as unknown as HTMLInputElement, 'Напишите, что исправить — без этого подрядчик не поймёт, что делать');

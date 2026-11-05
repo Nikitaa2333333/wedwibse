@@ -142,7 +142,7 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
 .adm-nav__n { font-variant-numeric: tabular-nums; font-weight: 600; }
 .adm-nav__n--info { color: var(--adm-primary); }
 .adm-nav__n--ok { color: var(--st-ok-text); }
-.adm-nav__n--bad { color: var(--st-bad-text); }
+.adm-nav__n--bad { color: var(--adm-text); } /* счётчик — спокойный, не красный (Никита 05.11) */
 
 /* ---------- сводка: действия (Никита, 27.10) — «Проверить 3 анкеты · срок
    24 ч». Число внутри фразы: строки одной высоты, ничего не прыгает. ---------- */
@@ -456,7 +456,7 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
 
 .c-tab__ic { position: relative; display: block; }
 .c-tab__ic svg { width: 26px !important; height: 26px !important; }
-.c-tab__n { position: absolute; top: -4px; right: -10px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--st-bad-text); color: var(--adm-on-dark); font-size: 11px; line-height: 18px; font-weight: 600; text-align: center; }
+.c-tab__n { position: absolute; top: -4px; right: -10px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--adm-dark); color: var(--adm-on-dark); font-size: 11px; line-height: 18px; font-weight: 600; text-align: center; }
 .c-tab__n--info { background: var(--adm-dark); }
 
 /* ---------- админка тем же видом, что кабинет (Никита, 02.11) ----------
@@ -515,3 +515,18 @@ html:has(.adm), html:has(.adm) body { background: var(--adm-bg); }
 
 /* срочный срок в карточке действия — красным текстом, как в строках заявок, не капсулой: высоты карточек одинаковые */
 .a-act__note--urgent { color: var(--st-bad-strong); font-weight: 600; }
+
+/* СВОДКА — плитки 2×2 как в Напоминаниях Apple: значок в сером круге, крупное число справа, подпись */
+.a-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--cab-gap); }
+.a-tile { display: grid; grid-template-columns: auto 1fr; grid-template-areas: "ic n" "label label" "note note"; align-items: center; gap: 8px 10px; padding: 14px 16px; border-radius: var(--adm-radius); background: var(--adm-card); color: inherit; text-decoration: none; min-height: 104px; align-content: start; }
+.a-tile__ic { grid-area: ic; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--adm-bg); }
+.a-tile__ic svg { width: 20px; height: 20px; }
+.a-tile__n { grid-area: n; justify-self: end; font-size: 28px; line-height: 32px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.a-tile__label { grid-area: label; font-size: 15px; font-weight: 600; }
+.a-tile__note { grid-area: note; font-size: var(--adm-fs-sm); margin-top: -4px; }
+.a-tile__note--urgent { color: var(--st-bad-strong); font-weight: 600; }
+@media (hover: hover) { .a-tile:hover { background: var(--adm-hover); } }
+@media (min-width: 768px) { .a-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+/* жалобы: текст без плашки */
+.a-plain { padding-inline: var(--s-4); max-width: 46ch; }
+.a-card__note { padding: 0 var(--adm-pad) var(--s-3); }

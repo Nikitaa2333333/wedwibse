@@ -21,12 +21,10 @@ const tabs = [
   { v: 'all', label: 'Все', n: rows.length },
   { v: 'venue', label: 'Площадки', n: venues },
   { v: 'specialist', label: 'Подрядчики', n: rows.length - venues },
-  { v: 'fewphotos', label: `Меньше ${PHOTOS_LOW} фото`, n: GAPS.fewPhotos.length, bad: true },
   { v: 'noprice', label: 'Без цены', n: GAPS.noPrice.length, bad: true },
 ];
 // чего не хватает — одной строкой; всё есть — так и пишем
 const gaps = (r: (typeof rows)[number]) => [
-  r.photos < PHOTOS_LOW && `${r.photos} фото из ${PHOTOS_MAX}`,
   !r.hasText && 'нет текста',
   !r.hasPrice && 'нет цены',
 ].filter(Boolean).join(' · ');
@@ -43,7 +41,8 @@ const gaps = (r: (typeof rows)[number]) => [
       Действие сразу, с «Отменить» на 6 секунд (lib/cab-ui.ts → later), запрос
       уходит потом. Маршрут — POST /api/wed/mod/remove. */}
   <section class="a-card a-card--flush" data-cab-cards data-roles={JSON.stringify(ROLES)} hidden>
-    <div class="a-card__head"><h2 class="a-h2">Из кабинета</h2></div>
+    <div class="a-card__head"><h2 class="a-h2">Завели подрядчики сами</h2></div>
+    <p class="a-sub a-card__note">Карточки, которые подрядчики создали в своём кабинете. Ниже — весь каталог сайта</p>
     <div class="a-tasks" data-cab-list></div>
   </section>
 
@@ -66,7 +65,7 @@ const gaps = (r: (typeof rows)[number]) => [
       <table class="a-table cat" id="cat" data-atable>
         <tbody>
           {rows.map((r) => {
-            const tab = [r.kind, r.photos < PHOTOS_LOW && 'fewphotos', !r.hasPrice && 'noprice'].filter(Boolean).join(' ');
+            const tab = [r.kind, !r.hasPrice && 'noprice'].filter(Boolean).join(' ');
             const miss = gaps(r);
             return (
               <tr data-tab={tab} data-key={r.key} data-text={`${r.name} ${r.category}`.toLowerCase()}>

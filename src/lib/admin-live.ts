@@ -78,10 +78,10 @@ export function counts(revs: any[]) {
  * и точек-разделителей в строке нет (Никита, 05.11).
  * Обложки у ревизии нет — первая буква имени. Ведёт на разбор.
  */
-// задача → цвет статуса по общей схеме (05.11): проверить — голубой (ждёт проверки),
+// задача → цвет статуса (05.11): проверить — серый, нейтральный (Никита: «не выделять голубым»),
 // одобрили — зелёный, вернули — красный, не закончена — жёлтый. Было: проверить зелёным (27.10) —
 // рядом с «Одобрили» путалось.
-const TONE = { check: ' status--info', ok: ' status--ok', wait: ' status--warn', bad: ' status--bad', none: '' } as const;
+const TONE = { check: '', ok: ' status--ok', wait: ' status--warn', bad: ' status--bad', none: '' } as const;
 
 export function taskRow(r: any, o: { task: string; tone: 'check' | 'ok' | 'wait' | 'bad' | 'none'; fill?: boolean }): string {
   const href = `/profi/admin/moderaciya/pravka/?id=${encodeURIComponent(r.id)}`;

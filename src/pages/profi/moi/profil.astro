@@ -87,12 +87,10 @@ import maxMark from '../../../assets/profi/max-mark.webp';
       const emailTo = box.querySelector<HTMLInputElement>('[data-email-to]')!;
       type Ch = 'telegram' | 'max' | 'email';
       const linked: Record<Ch, boolean> = { telegram: !!me.telegramId, max: !!me.maxId, email: true };
-      const linked_ = linked;
       // по умолчанию (настройки ещё не трогали) — заявки идут в мессенджер входа
       const n = { telegram: linked.telegram, max: linked.max, email: false, emailTo: '', ...(me.notify ?? {}) };
       if (!n.emailTo) n.emailTo = String(me.email ?? '');
       emailTo.value = n.emailTo;
-      const linkedOk = (c: Ch) => linked_[c];
       const NAME: Record<Ch, string> = { telegram: 'Telegram', max: 'MAX', email: 'почту' };
       const paint = () => box.querySelectorAll<HTMLElement>('[data-ch]').forEach((row) => {
         const ch = row.dataset.ch as Ch;
@@ -116,12 +114,6 @@ import maxMark from '../../../assets/profi/max-mark.webp';
           Object.assign(n, me.notify);
         } catch (x) { err.textContent = errText(x); err.hidden = false; }
         paint();
-      // вернулись после «Подключить» (tg-login → afterLogin): сказать, что вышло
-      const linked = new URLSearchParams(location.search).get('linked') as Ch | null;
-      if (linked && (linked === 'telegram' || linked === 'max')) {
-        toast(linked && linkedOk(linked) ? `${linked === 'max' ? 'MAX' : 'Telegram'} подключён — заявки придут и туда` : 'Не получилось подключить — попробуйте ещё раз', !linkedOk(linked));
-        history.replaceState(null, '', location.pathname);
-      }
       };
       box.addEventListener('click', (e) => {
         const sw = (e.target as HTMLElement).closest<HTMLButtonElement>('.c-switch');
@@ -147,6 +139,13 @@ import maxMark from '../../../assets/profi/max-mark.webp';
         if (!emailOk()) fieldError(emailTo, 'В адресе ошибка, пример: name@mail.ru', emailTo.closest<HTMLElement>('.c-row') ?? undefined);
       });
       paint();
+      // вернулись после «Подключить» (tg-login → afterLogin, ?linked=…): сказать, что вышло
+      const justLinked = new URLSearchParams(location.search).get('linked');
+      if (justLinked === 'telegram' || justLinked === 'max') {
+        const ok = linked[justLinked];
+        toast(ok ? `${NAME[justLinked]} подключён — заявки придут и туда` : 'Не получилось подключить — попробуйте ещё раз', !ok);
+        history.replaceState(null, '', location.pathname);
+      }
       const docs = await api(null, 'GET', `/api/collections/legal_docs/records?sort=-created&perPage=50&filter=${encodeURIComponent('kind = "vendor-offer" || kind = "vendor-pdn"')}`);
       const latest = ['vendor-offer', 'vendor-pdn'].map((k) => docs.items.find((d: any) => d.kind === k)).filter(Boolean);
       // текст документа пишем мы сами в базе (редактор) — как HTML, как на экране условий
