@@ -697,3 +697,7 @@ body:has(.c-bar .a-btn) .c-toast { bottom: calc(var(--cab-tabs-h) + env(safe-are
 .c-yd-pick__done { display: none; position: absolute; left: 6px; right: 6px; bottom: 6px; padding: 3px 8px; border-radius: 999px; background: var(--adm-card); font-size: 12px; font-weight: 600; text-align: center; }
 .c-yd-pick--done img { opacity: 0.45; }
 .c-yd-pick--done .c-yd-pick__done { display: block; }
+
+/* подсказка в окне Диска (не та ссылка, только ролики) — тёмным, не красным: это не ошибка (как у Apple) */
+.c-error.c-yd-note { color: var(--adm-text); }
+.c-yd-status { margin-top: var(--s-2); padding: 10px 14px; border-radius: 14px; background: var(--adm-bg); font-weight: 500; } /* ход забора — в окне над кадрами */

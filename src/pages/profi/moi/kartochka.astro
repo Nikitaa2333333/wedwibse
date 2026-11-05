@@ -1022,12 +1022,12 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       <p class="c-error" data-yd-error hidden></p>
       <p class="a-field__note" data-yd-have></p>
       <p class="a-field__note" data-yd-info hidden></p>
+      <p class="a-field__note c-yd-status" data-yd-status role="status" hidden></p>
       <div class="c-photos c-yd-grid" data-yd-grid></div>
       <div class="c-yd-tools" data-yd-tools hidden>
         <button class="a-btn a-btn--primary a-btn--lg" type="button" data-yd-go>Добавить</button>
-        <button class="c-link" type="button" data-yd-all>Отметить все</button>
+        <button class="c-chipbtn" type="button" data-yd-all>Отметить все</button>
       </div>
-      <p class="c-ok" data-yd-status hidden></p>
     </div>`,
     });
     const $ = <T extends HTMLElement>(s: string) => dlg.querySelector<T>(s)!;
@@ -1043,7 +1043,10 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       $('[data-yd-have]').textContent = n ? `В карточке уже ${n} из ${MAX_PHOTOS} фото — можно добавить ещё ${room()}` : `В карточке пока нет фото — можно добавить до ${MAX_PHOTOS}`;
     };
     const room = () => MAX_PHOTOS - (rev.photos ?? []).length;
-    const fail = (m: string) => { err.textContent = m; err.hidden = !m; };
+    // как у Apple: короткий текст под полем; красным — только сбой (fail),
+    // подсказка вроде «не та ссылка», «только ролики» — спокойным тёмным текстом (note)
+    const fail = (m: string) => { err.classList.remove('c-yd-note'); err.textContent = m; err.hidden = !m; };
+    const note = (m: string) => { err.classList.add('c-yd-note'); err.textContent = m; err.hidden = !m; };
     const sync = () => {
       haveLine();
       grid.querySelectorAll<HTMLElement>('[data-yd-path]').forEach((b) => {
@@ -1067,7 +1070,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       clearTimeout(ydTimer);
       const v = urlIn.value.trim();
       if (!v) return;
-      if (!isDisk(v)) { if (v.length > 12) fail('Нужна ссылка на папку Яндекс Диска — disk.yandex.ru/d/…'); return; }
+      if (!isDisk(v)) { if (v.length > 12) note('Нужна ссылка на папку Яндекс Диска — disk.yandex.ru/d/…'); return; }
       fail('');
       ydTimer = window.setTimeout(showFolder, 500);
     });
@@ -1086,7 +1089,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         if (!items.length) {
           info.hidden = true;
           // папка только с роликами — отдельно: ролики идут ссылкой в разделе «Видео»
-          fail(r.videos ? `В папке только видео (${r.videos}) — фото нет. Ролики пришлите ссылкой в разделе «Видео», мы подготовим их сами` : 'В папке нет фотографий — проверьте ссылку');
+          note(r.videos ? `В папке только видео (${r.videos}) — фото нет. Ролики пришлите ссылкой в разделе «Видео», мы подготовим их сами` : 'В папке нет фотографий — проверьте ссылку');
           return;
         }
         info.textContent = `${r.title ? `«${r.title}», ` : ''}${items.length} фото${r.capped ? ' (показаны первые)' : ''}${r.videos ? `, видео ${r.videos} — их пришлите в разделе «Видео»` : ''}`;
@@ -1129,6 +1132,10 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       let had = 0; // уже были в карточке (сервер: already) — например, после перезагрузки отметили те же кадры
       let stop = false;
       const bar = progress('Забираем с Диска', () => { stop = true; });
+      // ход — в самом окне, над кадрами: пока окно открыто, оно лежит поверх капсулы внизу
+      const say = () => { status.textContent = `Забираем ${done} из ${todo.length}. Окно можно закрыть — загрузка продолжится, кадры появятся в анкете`; status.hidden = false; };
+      say();
+      go.textContent = 'Забираем…';
       // в анкете виден свежий набор кадров, даже если окно уже закрыли
       const refresh = () => { if (new URLSearchParams(location.search).get('s') === 'foto' && !dlg.open && view.querySelector('[data-photos]')) renderPhotos(); };
       try {
@@ -1141,6 +1148,9 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
           had += r.already ?? 0;
           const bad = new Set((r.skipped ?? []).map((x: any) => x.path));
           for (const p of part) if (!bad.has(p)) imported.add(p);
+          say();
+          sync();
+          go.textContent = 'Забираем…';
           for (const s of r.skipped ?? []) skipped.push(items.find((it) => it.path === s.path)?.name ?? s.path);
           refresh();
         }
