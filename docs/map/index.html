@@ -99,6 +99,10 @@
   .tl li { position: relative; padding: 4px 0 8px 10px; }
   .tl li::before { content: ''; position: absolute; left: -22px; top: 9px; width: 10px; height: 10px; border-radius: 50%; background: var(--work); }
   .tl b { font-variant-numeric: tabular-nums; margin-right: 8px; }
+  .sess-list { display: grid; gap: 10px; max-width: 980px; }
+  .card.sess h4 { margin: 10px 0 2px; font-size: 12px; font-weight: 700; }
+  .card.sess h3 { font-size: 15px; margin: 4px 0; }
+  .trk-chip { cursor: pointer; }
   table.t { width: 100%; border-collapse: collapse; }
   table.t td, table.t th { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
   .empty { padding: 20px 0; }
@@ -158,7 +162,7 @@ document.getElementById('stats').innerHTML = Object.entries(ST).map(([k, v]) => 
 
 /* ═══ вкладки ═══ */
 const TABS = [
-  ['overview', 'Обзор'], ['metro', 'Путь', steps.length], ['system', 'Система', M.system.nodes.length],
+  ['overview', 'Обзор'], ['sessions', 'Сессии', (M.sessions || []).length], ['metro', 'Путь', steps.length], ['system', 'Система', M.system.nodes.length],
   ['issues', 'Проблемы', M.issues.filter(i => i.s !== 'done').length], ['decisions', 'Решения', M.decisions.length],
   ['questions', 'Вопросы', M.questions.length], ['skills', 'Скиллы и рутина', M.skills.length + M.routines.length],
   ['weeks', 'Недели', M.weeks.length], ['docs', 'Документы', M.docs.length], ['recent', 'Хроника', M.recent.length],
@@ -193,15 +197,36 @@ document.getElementById('px').onclick = () => { panel.hidden = true; selected = 
 function openPanel(html) { pb.innerHTML = html; panel.hidden = false; }
 function trackList(t) {
   return `<h3 style="color:${t.color}">${esc(t.title)} · ${count(t.steps, 'done')} из ${t.steps.length}</h3>${barHtml(t.steps)}
-    <ul class="lst">${t.steps.map(s => `<li><span class="dot" style="background:${C(s.s)}"></span><span>${esc(s.t)}</span></li>`).join('')}</ul>`;
+    <ul class="lst">${t.steps.map(s => `<li><span class="dot" style="background:${C(s.s)}"></span><span>${esc(s.t)}</span></li>`).join('')}</ul>
+    ${sessionsOf(t.id).length ? `<h3>Сессии по направлению · ${sessionsOf(t.id).length}</h3><ul class="lst">${sessionsOf(t.id).map(x => `<li><b class="num">${esc(x.date)}</b><span>${esc(x.title)}</span></li>`).join('')}</ul>` : ''}`;
 }
 function stepPanel(s) {
   openPanel(`<h2>${esc(s.t)}</h2>${chipS(s.s)} ${s.date ? `<span class="chip">${esc(s.date)}</span>` : ''}
     ${s.note ? `<p>${esc(s.note)}</p>` : ''}${s.src ? `<p class="src">источник: ${esc(s.src)}</p>` : ''}${trackList(s.track)}`);
 }
 
-/* ═══ ОБЗОР ═══ */
+/* ═══ СЕССИИ — итоги каждой работы, локальной и облачной ═══ */
 const VIEWS = {};
+const SESS = M.sessions || [];
+const sessionsOf = id => SESS.filter(x => (x.tracks || []).includes(id));
+function sessionCard(x, full = true) {
+  const chips = (x.tracks || []).map(id => trackById[id] ? `<span class="chip trk-chip" data-track="${id}" style="border-left:3px solid ${trackById[id].color}">${esc(trackById[id].title)}</span>` : '').join('');
+  const list = (title, arr, dot) => arr && arr.length ? `<h4>${title}</h4><ul class="lst">${arr.map(i => `<li><span class="dot" style="background:${dot}"></span><span>${esc(i)}</span></li>`).join('')}</ul>` : '';
+  return `<article class="card sess" style="--c:var(--work)">
+    <div class="meta"><b class="num">${esc(x.date)}</b><span class="chip">${esc(x.where || '')}</span>${x.branch ? `<span class="chip"><code>${esc(x.branch)}</code></span>` : ''}</div>
+    <h3>${esc(x.title)}</h3>${x.summary ? `<p>${esc(x.summary)}</p>` : ''}
+    <div class="meta">${chips}</div>
+    ${full ? list('Сделано', x.done, 'var(--done)') + list('Решили', x.decided, 'var(--block)') + list('Дальше', x.next, 'var(--todo)')
+      + (x.commits && x.commits.length ? `<p class="src">коммиты: ${x.commits.map(c => `<code>${esc(c)}</code>`).join(' ')}</p>` : '') : ''}
+  </article>`;
+}
+VIEWS.sessions = () => {
+  const list = SESS.filter(x => match(x.title, x.summary, x.where, x.branch, ...(x.done || []), ...(x.decided || []), ...(x.next || [])));
+  return `<p class="src" style="margin-top:0">Каждая сессия — локальная и облачная — записывает итог: <code>node scripts/map.mjs session итог.json</code> (скилл control-map).</p>
+    <div class="sess-list">${list.map(x => sessionCard(x)).join('') || '<p class="empty">Ничего не нашлось</p>'}</div>`;
+};
+
+/* ═══ ОБЗОР ═══ */
 VIEWS.overview = () => {
   const stages = M.stages.map(st => {
     const ss = steps.filter(s => s.track.stage === st.id);
@@ -217,7 +242,7 @@ VIEWS.overview = () => {
     <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(340px,1fr));margin-top:8px">
       <div><h2>Важные проблемы · ${hot.length}</h2>${hot.map(issueCard).join('')}</div>
       <div><h2>Блокеры и вопросы · ${blk.length}</h2>${blk.slice(0, 12).map(questionCard).join('')}</div>
-      <div><h2>Недавно</h2><ul class="tl">${M.recent.slice(0, 14).map(r => `<li><b>${esc(r.date)}</b>${esc(r.t)}</li>`).join('')}</ul></div>
+      <div><h2>Последние сессии · ${SESS.length}</h2>${SESS.slice(0, 4).map(x => sessionCard(x, false)).join('')}<p class="src"><a href="#sessions" style="color:inherit">все сессии →</a></p></div>
     </div>${tracks}`;
 };
 page.addEventListener('click', e => {
