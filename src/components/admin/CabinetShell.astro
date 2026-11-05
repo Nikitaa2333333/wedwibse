@@ -10,6 +10,7 @@
 // Раньше меню не было, пока раздел был один (27.10).
 // noindex всегда: индексация сайта открыта, кабинет в выдачу не должен.
 import Layout from '../../layouts/Layout.astro';
+import './base.css';
 import './admin.css';
 import './cabinet.css';
 import { ADMIN_ICONS, type AdminIconName } from '../../lib/admin-icons';
@@ -36,7 +37,7 @@ const TABS: { key: Tab; href: string; label: string; icon: AdminIconName }[] = [
     <link rel="preload" href="/fonts/inter-cyrillic.woff2" as="font" type="font/woff2" crossorigin />
     {/* рамка браузера (адресная строка, края на айфоне) — цветом фона
         кабинета; у сайта там крем #f6efe5 */}
-    <script is:inline>document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#eff2f7');</script>
+    <script is:inline>document.querySelector('meta[name="theme-color"]')?.setAttribute('content', getComputedStyle(document.documentElement).getPropertyValue('--adm-bg').trim());</script>
   </Fragment>
 
   <div class="adm cab">

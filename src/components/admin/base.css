@@ -1,0 +1,166 @@
+/* ОБЩИЙ СЛОЙ КАБИНЕТА И АДМИНКИ: токены + базовые компоненты (.status, окно, уведомление) — отдельный слой (05.11.2026).
+   Кабинет — не сайт (CLAUDE.md): цвет несёт смысл, плотность выше.
+   Подключают ТОЛЬКО CabinetShell и AdminShell; сайт этих токенов не видит,
+   и стиль кабинета не может «протечь» на витрину и наоборот.
+   Захардкоженный цвет в кабинете запрещён — нужен оттенок, заводи токен здесь.
+   Проверка: node scripts/check-cabinet-style.mjs */
+:root {
+  /* Кабинет подрядчика — не сайт (CLAUDE.md): цвет несёт смысл статуса.
+     Оттенки сняты с макета Никиты (Figma, 20.10.2026). */
+  --st-ok: #6edd68;         /* зелёный: на сайте, заполнено, порядок */
+  --st-ok-ink: #1a1613;     /* текст на зелёной плашке */
+  --st-bad: #d06478;        /* красный: вернули, нужно исправить */
+  --st-bad-fg: #fff;        /* текст на красной плашке */
+  --st-bad-text: #b3354d;   /* красный текстом на белом («пусто», ошибка) */
+  --st-ok-text: #1a8f43;    /* зелёный текстом на белом («заполнено», галочка раздела) */
+  --st-info: #8ec5fa;       /* голубой: отправлено, на проверке */
+  --st-info-ink: #1a1613;   /* текст на голубой плашке */
+  --st-muted: var(--surface-dim); /* серый: черновик, пусто */
+  --st-warn: #f6d66b;       /* жёлтый: на сайте, но проверить после (модерация) */
+  --st-warn-ink: #1a1613;   /* текст на жёлтой плашке */
+  /* Сравнение текста на экране модератора: удалённое — красная подложка
+     с зачёркиванием, добавленное — зелёная. Текст поверх остаётся тёмным. */
+  --diff-del: color-mix(in srgb, var(--st-bad) 24%, #fff);
+  --diff-add: color-mix(in srgb, var(--st-ok) 38%, #fff);
+
+  /* ---------- АДМИНКА (/profi/admin/) — копия устройства Яндекс Метрики и Директа ----------
+     Никита, 24.10.2026: «точь-в-точь: левое меню, шапка, вкладки, таблица,
+     шрифт интерфейса — Inter». Значения сняты с живых страниц Метрики и
+     Директа (computed style). Стили — components/admin/admin.css. */
+  --adm-font: 'Inter', -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --adm-bg: #eff2f7;                    /* поле страницы (Метрика) */
+  --adm-card: #ffffff;                  /* карточка, таблица, активный пункт меню */
+  --adm-text: #1e242e;                  /* основной текст */
+  --adm-text-2: #4f5a6e;                /* вторичный: подписи, подстроки — темнее Метрики, читается (Никита 24.10) */
+  --adm-line: #e6e9ef;                  /* линии таблиц */
+  --adm-hover: #f5f7fa;                 /* строка под курсором */
+  /* основная кнопка, ссылка, активный пункт: эппловский почти-чёрный вместо
+     синего Директа — как в кабинете (Никита, 27.10: «все наши принципы») */
+  --adm-primary: #1d1d1f;
+  --adm-primary-hover: #000000;
+  --adm-link: #1d1d1f;
+  --adm-dark: #1e242e;                  /* панель массовых действий (Директ) */
+  --adm-fs: 14px;                       /* набор: меню, таблицы, кнопки — 14/20 */
+  --adm-lh: 20px;
+  --adm-fs-sm: 12px;                    /* подстроки под строкой таблицы — 12/16 */
+  --adm-fs-h1: 24px;                    /* заголовок экрана — 24/32, вес 500 */
+  --adm-fs-h2: 20px;                    /* заголовок карточки — 20/28 */
+  --adm-fs-num: 24px;                   /* цифра показателя — 24/32 */
+  --adm-radius: 20px;                   /* карточка (Метрика) */
+  --adm-radius-md: 12px;                /* пункт меню, блок периода */
+  --adm-radius-btn: 10px;               /* кнопка (Директ) */
+  --adm-pad: clamp(16px, 2.4vw, 28px);  /* поля карточки: 28 на ПК, 16 на телефоне */
+  --adm-side-w: 216px;                  /* левое меню на ПК */
+  --adm-head-h: 64px;                   /* шапка */
+  /* кабинет подрядчика: вместо синего админки — эппловский почти-чёрный
+     (Никита, 27.10); кнопки — капсулой, прибиты к низу на растворении */
+  --cab-ink: #1d1d1f;                   /* кнопка, ссылка, выбранный вариант */
+  --cab-ink-hover: #000000;
+  --cab-bar-fade: 72px;                 /* высота растворения над прибитой кнопкой */
+  /* фон и плашки (реф. Яндекс Метрика, Никита 02.11): серый фон --adm-bg,
+     белые плашки с минимальным отступом; голубое поле и лист сняты */
+  --cab-sheet-radius: 24px;             /* скругление плашки кабинета (Метрика) */
+  --cab-gap: 4px;                       /* ОДНО расстояние между плашками и от края экрана (Никита, 02.11: 8 → «меньше!!» → 4) */
+  --cab-tabs-h: 64px;                   /* нижнее меню без безопасной зоны айфона */
+  /* поле анкеты: подпись — заголовком поля, крупно и жирно; введённое —
+     обычным весом на серой подложке (Никита, 02.11: подпись и текст в поле
+     были одного кегля и сливались; мелкая серая подпись — «сделай больше») */
+  --cab-fs-label: 17px;
+  --cab-fs-input: 16px;
+  --radius-status: 8px;     /* плашка статуса */
+
+  /* Подложки и оттенки статусов — одна шкала вместо россыпи hex (аудит 05.11):
+     раньше красный был четырьмя разными (#d23a3a, #c4314b, #b3263e, #e5484d). */
+  --st-ok-bg: #e3f6e9;      /* светло-зелёная подложка: заполнено, показатель «хорошо» */
+  --st-ok-strong: #17703a;  /* зелёный текст на зелёной подложке */
+  --st-ok-dot: #22b04b;     /* точка статуса «порядок» */
+  --st-bad-bg: #fde9e9;     /* светло-красная подложка: вернули, причина отказа */
+  --st-bad-strong: #b3263e; /* красный текст на красной подложке */
+  --st-bad-dot: #e5484d;    /* точка, обводка, бирка «нарушение» */
+  --st-info-bg: #e8efff;    /* светло-голубая подложка: на проверке, справка */
+  --st-warn-dot: #ff9d00;   /* точка «проверить» */
+  --st-muted-dot: #b8bec8;  /* точка «пусто, нет данных» */
+
+  /* Поверхности и тени интерфейса */
+  --adm-on-dark: #fff;                       /* текст и знаки на тёмной кнопке, панели, просмотрщике */
+  --adm-subtle: #fafbfc;                     /* шапка таблицы, строка «итого» */
+  --adm-picked: #f0f4ff;                     /* выбранная строка таблицы */
+  --adm-line-strong: #c3c8d1;                /* рамка галочки */
+  --adm-glass: rgba(255, 255, 255, 0.92);    /* кнопка поверх фото */
+  --adm-veil: rgba(255, 255, 255, 0.55);     /* фото в работе (загрузка) */
+  --adm-on-dark-soft: rgba(255, 255, 255, 0.16); /* кнопка на тёмном: просмотрщик, панель */
+  --adm-on-dark-hover: rgba(255, 255, 255, 0.24);
+  --adm-nav-hover: rgba(255, 255, 255, 0.6); /* пункт меню под курсором */
+  --adm-toast-link: #8fb0ff;                 /* «Отменить» в тёмном уведомлении */
+  --adm-backdrop: rgba(15, 20, 30, 0.45);    /* подложка под окном */
+  --adm-crop-veil: rgba(15, 20, 30, 0.55);   /* затемнение вокруг круга кадрирования */
+  --adm-shadow-xs: 0 1px 2px rgba(15, 20, 30, 0.08);
+  --adm-shadow-sm: 0 1px 3px rgba(15, 20, 30, 0.25);
+  --adm-shadow-md: 0 2px 6px rgba(15, 20, 30, 0.12);
+  --adm-shadow-lg: 0 8px 28px rgba(15, 20, 30, 0.14);
+  --adm-shadow-lift: 0 12px 32px rgba(0, 0, 0, 0.28); /* фото, которое тащат */
+  --adm-shadow-drag: 0 6px 14px rgba(15, 20, 30, 0.25); /* кадр в подсказке «перетащите» */
+  --adm-hint-dot: rgba(15, 20, 30, 0.35);    /* палец в подсказке */
+  --adm-hint-ring: rgba(255, 255, 255, 0.85);
+  --adm-viewer-bg: #000;                     /* просмотр фото во весь экран */
+  --adm-logo-bg: linear-gradient(135deg, #5b7bff, #2556ff); /* кружок-аватар в шапке админки */
+}
+/* ============ ПЛАШКА СТАТУСА (кабинет) ============
+   Статус карточки или раздела одним-двумя словами: зелёная — порядок,
+   красная — вернули, голубая — на проверке, серая — черновик/пусто. */
+.status {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: var(--radius-status);
+  background: var(--st-muted);
+  color: var(--fg);
+  font-size: var(--fs-caption);
+  font-weight: var(--w-medium);
+  line-height: 1.3;
+}
+.status--ok { background: var(--st-ok); color: var(--st-ok-ink); }
+.status--bad { background: var(--st-bad); color: var(--st-bad-fg); }
+.status--info { background: var(--st-info); color: var(--st-info-ink); }
+.status--warn { background: var(--st-warn); color: var(--st-warn-ink); }
+
+/* ОКНО КАБИНЕТА — одно на все окна (Яндекс Диск, кадрирование портрета, дальше
+   любые новые): lib/cab-ui.ts → openDialog(). Белая плашка кабинета на сером
+   поле, не бумага сайта. Снизу на телефоне, по центру на ПК. */
+.c-dialog { box-sizing: border-box; border: 0; padding: 0; margin: auto auto 0; width: 100%; max-width: 560px; max-height: 88vh; border-radius: var(--cab-sheet-radius) var(--cab-sheet-radius) 0 0; background: var(--adm-card); color: var(--adm-text); overflow-x: clip; overflow-y: auto; overscroll-behavior: contain; }
+@media (min-width: 640px) { .c-dialog { margin: auto; border-radius: var(--cab-sheet-radius); } }
+.c-dialog::backdrop { background: var(--adm-backdrop); }
+.c-dialog__body { position: relative; display: grid; gap: var(--s-4); min-width: 0; overflow-wrap: anywhere; padding: var(--s-6) var(--s-4) calc(var(--s-4) + env(safe-area-inset-bottom)); }
+.c-dialog__x { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--adm-bg); color: var(--adm-text); }
+.c-dialog__x svg { width: 18px; height: 18px; }
+
+/* УВЕДОМЛЕНИЕ — одно на кабинет и админку (lib/cab-ui.ts → toast): над нижним
+   меню, само уходит; с «Отменить» — ждёт решения и ловит нажатие. */
+.c-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--cab-tabs-h) + env(safe-area-inset-bottom) + var(--s-3));
+  z-index: 7;
+  width: max-content;
+  max-width: calc(100% - 2 * var(--s-4));
+  margin: 0;
+  padding: 12px 20px;
+  line-height: 20px;
+  text-align: center;
+  border-radius: 22px;
+  background: var(--cab-ink);
+  color: var(--adm-on-dark);
+  font-size: var(--adm-fs);
+  font-weight: 500;
+  opacity: 0;
+  transform: translate(-50%, 8px);
+  pointer-events: none;
+  transition: opacity var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+}
+.c-toast.is-on { opacity: 1; transform: translate(-50%, 0); }
+.c-toast--bad { background: var(--st-bad-text); }
+.c-toast:has(.c-toast__undo) { display: flex; align-items: center; gap: var(--s-4); padding: 10px 12px 10px 20px; text-align: left; pointer-events: auto; }
+.c-toast:not(.is-on) { pointer-events: none; }
+.c-toast__undo { color: var(--adm-toast-link); font-weight: 600; white-space: nowrap; }
+/* в админке на ПК слева меню — уведомление по центру рабочей области */
+@media (min-width: 1024px) { body:has(.adm-nav) .c-toast { left: calc(50% + var(--adm-side-w) / 2); bottom: var(--s-6); } }

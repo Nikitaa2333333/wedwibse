@@ -54,7 +54,7 @@
 .auth__checks { display: grid; gap: var(--s-3); }
 
 /* Ошибка формы — тем же цветом, что у плашек мессенджеров */
-.auth__error { color: var(--st-bad-text); font-size: var(--fs-small); line-height: var(--lh-snug); }
+.auth__error { color: var(--error-text); font-size: var(--fs-small); line-height: var(--lh-snug); }
 /* Галочка условий: «читать» в конце строки, текст документа раскрывается
    под ней — без отдельной строки-ссылки под каждой галочкой */
 .auth__doc { display: grid; gap: var(--s-2); }

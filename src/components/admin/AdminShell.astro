@@ -16,6 +16,7 @@ import AdminIcon from './AdminIcon.astro';
 import { DEMO_REVISIONS } from '../../data/moderation-demo';
 import { COMPLAINTS } from '../../data/admin-demo';
 import { PARTNER_APPS } from '../../data/partner-demo';
+import './base.css';
 import './admin.css';
 
 export type AdminSection = 'overview' | 'partners' | 'moderation' | 'catalog' | 'complaints';
@@ -43,7 +44,7 @@ const items: { key: AdminSection; href: string; label: string; n?: number; tone?
     <meta name="robots" content="noindex, nofollow" />
     <link rel="preload" href="/fonts/inter-cyrillic.woff2" as="font" type="font/woff2" crossorigin />
     <ClientRouter />
-    <script is:inline>document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#eff2f7');</script>
+    <script is:inline>document.querySelector('meta[name="theme-color"]')?.setAttribute('content', getComputedStyle(document.documentElement).getPropertyValue('--adm-bg').trim());</script>
   </Fragment>
 
   <div class="adm">

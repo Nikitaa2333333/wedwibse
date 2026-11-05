@@ -97,14 +97,13 @@ const gaps = (r: (typeof rows)[number]) => [
     </div>
   </section>
 
-  <div class="a-toast" data-toast hidden role="status"><span data-toast-text></span></div>
 </AdminShell>
 
 <script>
+  import { toast } from '../../../lib/cab-ui';
   // ПРОТОТИП: «Выдать ссылку» создаёт ссылку (вживую — одноразовый токен
   // в базе) и копирует её; владельцу её отправляет модератор сам, сайт
   // никому ничего не шлёт.
-  let t = 0;
   document.addEventListener('click', async (e) => {
     const b = (e.target as HTMLElement).closest<HTMLElement>('[data-copy]');
     if (!b) return;
@@ -117,12 +116,7 @@ const gaps = (r: (typeof rows)[number]) => [
     }
     let msg = `Ссылка скопирована: ${link}`;
     try { await navigator.clipboard.writeText(link); } catch { msg = link; }
-    const toast = document.querySelector<HTMLElement>('[data-toast]');
-    if (!toast) return;
-    toast.querySelector('[data-toast-text]')!.textContent = msg;
-    toast.hidden = false;
-    clearTimeout(t);
-    t = window.setTimeout(() => (toast.hidden = true), 3500);
+    toast(msg, false, 3500);
   });
 </script>
 

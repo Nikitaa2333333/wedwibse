@@ -33,6 +33,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
 <script>
   import { api, esc, fileToken, fileUrl, requireSession } from '../../../lib/cabinet-api';
   import { ADMIN_ICONS } from '../../../lib/admin-icons';
+  import { openDialog, toast, X_ICON } from '../../../lib/cab-ui';
   import { PHONE_COUNTRIES, DEFAULT_PHONE_COUNTRY, findCountry, flagSrc, nationalDigits, isComplete, fullE164, attachPhoneField } from '../../../lib/phone';
   import {
     SECTIONS, VENUE_QUESTIONS, VENUE_TERMS, MAX_PHOTOS, MAX_VIDEOS, MIN_PHOTOS, MIN_TEXT,
@@ -90,21 +91,6 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
   // а сохранение — короткое уведомление внизу: «Сохранено» и исчезает;
   // ошибка висит, пока следующее сохранение не пройдёт.
   let justSaved = false;
-  let toastTimer = 0;
-  function toast(text: string, bad = false) {
-    let el = document.querySelector<HTMLElement>('.c-toast');
-    if (!el) {
-      el = document.createElement('p');
-      el.className = 'c-toast';
-      el.setAttribute('role', 'status');
-      document.body.append(el);
-    }
-    clearTimeout(toastTimer);
-    el.textContent = text;
-    el.classList.toggle('c-toast--bad', bad);
-    el.classList.add('is-on');
-    if (!bad) toastTimer = window.setTimeout(() => el!.classList.remove('is-on'), 1600);
-  }
   function savedLabel() {
     const el = view.querySelector<HTMLElement>('[data-saved]');
     if (el) {
@@ -384,15 +370,8 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
   /** разделы, у которых есть «как это выглядит на сайте» — значок «?» у заголовка */
   const PREVIEWABLE: SectionKey[] = ['osnovnoe', 'tekst', 'prays'];
   function openPreview(key: SectionKey) {
-    let dlg = document.querySelector<HTMLDialogElement>('dialog.c-sheet--pv');
-    if (!dlg) {
-      dlg = document.createElement('dialog');
-      dlg.className = 'c-sheet c-sheet--pv';
-      dlg.addEventListener('click', (e) => { if (e.target === dlg || (e.target as HTMLElement).closest('[data-close]')) dlg!.close(); });
-      document.body.append(dlg);
-    }
-    dlg.innerHTML = `<div class="c-sheet__body"><button class="c-sheet__x" type="button" data-close aria-label="Закрыть"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.6" d="M6 6l12 12M18 6L6 18"/></svg></button>${previewHtml(key)}</div>`;
-    dlg.showModal();
+    // превью — единственное окно в оформлении сайта: показывает, как будет на витрине
+    openDialog({ site: true, cls: 'c-sheet--pv', html: `<div class="c-sheet__body"><button class="c-sheet__x" type="button" data-close aria-label="Закрыть">${X_ICON}</button>${previewHtml(key)}</div>` });
   }
 
   // ---------- портрет ----------
@@ -405,14 +384,16 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     const SIDE = 800;
     return new Promise((done) => {
       const src = URL.createObjectURL(file);
-      const dlg = document.createElement('dialog');
-      dlg.className = 'c-sheet';
-      dlg.innerHTML = `<div class="c-sheet__body">
-        <p class="c-pv__cap">Двигайте фото, приближайте двумя пальцами</p>
-        <div class="c-crop"><img src="${src}" alt="" draggable="false" /><span class="c-crop__ring"></span></div>
-        <div class="c-actions"><button class="a-btn a-btn--lg c-sheet__close" type="button" data-ok>Готово</button><button class="a-btn a-btn--lg c-add-btn" type="button" data-cancel>Отмена</button></div>
-      </div>`;
-      document.body.append(dlg);
+      let result: File | null = null;
+      const { dlg, close } = openDialog({
+        closeOnBackdrop: false, // жест кадрирования может закончиться на подложке
+        html: `<div class="c-dialog__body">
+          <p class="c-pv__cap">Двигайте фото, приближайте двумя пальцами</p>
+          <div class="c-crop"><img src="${src}" alt="" draggable="false" /><span class="c-crop__ring"></span></div>
+          <div class="c-actions"><button class="a-btn a-btn--primary a-btn--lg" type="button" data-ok>Готово</button><button class="a-btn a-btn--lg c-add-btn" type="button" data-close>Отмена</button></div>
+        </div>`,
+        onClose: () => { URL.revokeObjectURL(src); done(result); },
+      });
       const box = dlg.querySelector<HTMLElement>('.c-crop')!;
       const img = box.querySelector('img')!;
       let x = 0, y = 0, k = 1, base = 1;
@@ -461,9 +442,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       box.addEventListener('pointerup', up);
       box.addEventListener('pointercancel', up);
       box.addEventListener('wheel', (e) => { e.preventDefault(); const c = local({ x: e.clientX, y: e.clientY }); zoomAt(k * Math.exp(-e.deltaY / 400), c.x, c.y); }, { passive: false });
-      const finish = (out: File | null) => { URL.revokeObjectURL(src); dlg.close(); dlg.remove(); done(out); };
-      dlg.querySelector('[data-cancel]')!.addEventListener('click', () => finish(null));
-      dlg.addEventListener('cancel', () => finish(null));
+      const finish = (out: File | null) => { result = out; close(); };
       dlg.querySelector('[data-ok]')!.addEventListener('click', () => {
         const scale = base * k, v = view();
         const canvas = document.createElement('canvas');
@@ -471,7 +450,6 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         canvas.getContext('2d')!.drawImage(img, -x / scale, -y / scale, v / scale, v / scale, 0, 0, SIDE, SIDE);
         canvas.toBlob((b) => finish(b ? new File([b], 'avatar.jpg', { type: 'image/jpeg' }) : null), 'image/jpeg', 0.9);
       });
-      dlg.showModal();
     });
   }
 
@@ -584,7 +562,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     <div class="c-item__tools">
       <button class="c-tool c-tool--up" type="button" data-move="${list}" data-i="${i}" data-d="-1" aria-label="Выше" ${i === 0 ? 'disabled' : ''}>${icon('back')}</button>
       <button class="c-tool c-tool--down" type="button" data-move="${list}" data-i="${i}" data-d="1" aria-label="Ниже" ${i === n - 1 ? 'disabled' : ''}>${icon('back')}</button>
-      <button class="c-tool" type="button" data-remove="${list}" data-i="${i}" aria-label="Удалить"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.6" d="M6 6l12 12M18 6L6 18"/></svg></button>
+      <button class="c-tool" type="button" data-remove="${list}" data-i="${i}" aria-label="Удалить">${X_ICON}</button>
     </div>`;
 
   /** карточка «ведём мы»: основное, фото и текст — просмотр и просьба */
@@ -649,7 +627,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
           <div class="c-items">${vs.map((v: any, i: number) => `
             <div class="c-vrow">
               <input class="a-field__input" data-bind="videos.${i}.url" type="url" inputmode="url" value="${esc(v.url)}" placeholder="https://disk.yandex.ru/…" aria-label="Ссылка на видео" />
-              ${vs.length > 1 || v.url ? `<button class="c-tool" type="button" data-remove="videos" data-i="${i}" aria-label="Убрать"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.6" d="M6 6l12 12M18 6L6 18"/></svg></button>` : ''}
+              ${vs.length > 1 || v.url ? `<button class="c-tool" type="button" data-remove="videos" data-i="${i}" aria-label="Убрать">${X_ICON}</button>` : ''}
             </div>`).join('')}</div>
           <span class="a-field__note c-error" data-video-error hidden></span>
           ${vs.length < MAX_VIDEOS ? '<button class="c-link c-add-link" type="button" data-add="videos">Добавить ещё ссылку</button>' : ''}` };
@@ -781,7 +759,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         <img src="${fileUrl(rev, n, { thumb: '400x0', token })}" alt="" loading="lazy" draggable="false" />
         ${i === 0 ? '<span class="c-badge c-photo__tag">Обложка</span>' : ''}
         ${lock ? '' : `<div class="c-photo__tools">
-          <button type="button" data-premove="${i}" aria-label="Убрать"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.6" d="M6 6l12 12M18 6L6 18"/></svg></button>
+          <button type="button" data-premove="${i}" aria-label="Убрать">${X_ICON}</button>
         </div>`}
       </div>`).join('') + (lock || names.length >= MAX_PHOTOS ? '' : `
       <label class="c-photo c-photo--add">${icon('plus')}<span>Добавить фото</span>
@@ -804,7 +782,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     dlg.innerHTML = `
       <div class="c-viewer__track">${names.map((n, i) => `<figure class="c-viewer__slide"><img src="${fileUrl(rev, n, { token })}" alt="" ${Math.abs(i - start) > 1 ? 'loading="lazy"' : ''} draggable="false" /></figure>`).join('')}</div>
       <p class="c-viewer__count" aria-live="polite"></p>
-      <button class="c-viewer__close" type="button" aria-label="Закрыть"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.6" d="M6 6l12 12M18 6L6 18"/></svg></button>`;
+      <button class="c-viewer__close" type="button" aria-label="Закрыть">${X_ICON}</button>`;
     document.body.append(dlg);
     const track = dlg.querySelector<HTMLElement>('.c-viewer__track')!;
     const count = dlg.querySelector<HTMLElement>('.c-viewer__count')!;
@@ -851,7 +829,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         <span class="c-hint__touch"></span>
       </span>
       <span class="c-hint__text"><b>Зажмите фото и перетащите</b><span>Так меняется порядок. Первое фото — обложка в каталоге.</span></span>
-      <button class="c-hint__close" type="button" aria-label="Понятно"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.6" d="M6 6l12 12M18 6L6 18"/></svg></button>`;
+      <button class="c-hint__close" type="button" aria-label="Понятно">${X_ICON}</button>`;
     el.querySelector('.c-hint__close')!.addEventListener('click', hideDragHint);
     el.hidden = false;
   }
@@ -950,11 +928,12 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
    * закрыли — догрузка встала, уже забранное остаётся в карточке.
    */
   function openYadisk() {
-    const dlg = document.createElement('dialog');
-    dlg.className = 'c-sheet';
-    const x = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.6" d="M6 6l12 12M18 6L6 18"/></svg>';
-    dlg.innerHTML = `<div class="c-sheet__body">
-      <button class="c-sheet__x" type="button" data-close aria-label="Закрыть">${x}</button>
+    let busy = false;
+    const { dlg, close } = openDialog({
+      canClose: () => !busy, // пока забираем с диска — не закрываем
+      onClose: () => { renderPhotos(); savedLabel(); },
+      html: `<div class="c-dialog__body">
+      <button class="c-dialog__x" type="button" data-close aria-label="Закрыть">${X_ICON}</button>
       <h2 class="a-h2">Фото с Яндекс Диска</h2>
       <p class="a-lead">Вставьте ссылку на папку с доступом «всем, у кого есть ссылка» и отметьте кадры.</p>
       <div class="c-vrow">
@@ -969,14 +948,13 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         <button class="c-link" type="button" data-yd-all>Отметить все</button>
       </div>
       <p class="c-ok" data-yd-status hidden></p>
-    </div>`;
-    document.body.append(dlg);
+    </div>`,
+    });
     const $ = <T extends HTMLElement>(s: string) => dlg.querySelector<T>(s)!;
     const err = $('[data-yd-error]'), info = $('[data-yd-info]'), grid = $('[data-yd-grid]'), tools = $('[data-yd-tools]'), go = $<HTMLButtonElement>('[data-yd-go]'), status = $('[data-yd-status]');
     let link = '';
     let items: { path: string; name: string; preview: string }[] = [];
     const picked: string[] = [];
-    let busy = false;
     const room = () => MAX_PHOTOS - (rev.photos ?? []).length;
     const fail = (m: string) => { err.textContent = m; err.hidden = !m; };
     const sync = () => {
@@ -988,9 +966,6 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       go.textContent = picked.length ? `Добавить ${picked.length}` : 'Добавить';
       go.disabled = !picked.length || busy;
     };
-    const close = () => { if (busy) return; dlg.close(); dlg.remove(); renderPhotos(); savedLabel(); };
-    dlg.addEventListener('click', (e) => { if (e.target === dlg || (e.target as HTMLElement).closest('[data-close]')) close(); });
-    dlg.addEventListener('cancel', (e) => { e.preventDefault(); close(); });
 
     $('[data-yd-show]').addEventListener('click', async () => {
       link = $<HTMLInputElement>('[data-yd-url]').value.trim();
@@ -1069,7 +1044,6 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         sync();
       }
     });
-    dlg.showModal();
     $<HTMLInputElement>('[data-yd-url]').focus();
   }
 

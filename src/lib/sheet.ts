@@ -35,7 +35,7 @@ const phone = () => window.matchMedia('(max-width: 1023px)').matches;
 
 let lockedY = 0;
 
-function lockPage() {
+export function lockPage() {
   lockedY = window.scrollY;
   document.documentElement.style.overflow = 'hidden';
   if (!phone()) return;
@@ -45,7 +45,7 @@ function lockPage() {
   document.body.style.right = '0';
 }
 
-function unlockPage() {
+export function unlockPage() {
   document.documentElement.style.overflow = '';
   if (document.body.style.position !== 'fixed') return;
   document.body.style.position = '';

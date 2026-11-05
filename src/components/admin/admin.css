@@ -56,8 +56,8 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #5b7bff, #2556ff);
-  color: #fff;
+  background: var(--adm-logo-bg);
+  color: var(--adm-on-dark);
   font-size: 14px;
   font-weight: 600;
 }
@@ -133,14 +133,14 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
 }
 .adm-nav__item.is-active { background: var(--adm-card); }
 @media (min-width: 1024px) { .adm-nav__item--gap { margin-top: var(--s-4); } }
-@media (hover: hover) { .adm-nav__item:not(.is-active):hover { background: rgba(255, 255, 255, 0.6); } }
+@media (hover: hover) { .adm-nav__item:not(.is-active):hover { background: var(--adm-nav-hover); } }
 .adm-nav__label { flex: 1; }
 .adm-nav__ic { width: 20px !important; height: 20px !important; color: var(--adm-text-2); }
 .adm-nav__item.is-active .adm-nav__ic { color: var(--adm-primary); }
 .adm-nav__n { font-variant-numeric: tabular-nums; font-weight: 600; }
 .adm-nav__n--info { color: var(--adm-primary); }
-.adm-nav__n--ok { color: #1a8f43; }
-.adm-nav__n--bad { color: #d23a3a; }
+.adm-nav__n--ok { color: var(--st-ok-text); }
+.adm-nav__n--bad { color: var(--st-bad-text); }
 
 /* ---------- сводка: действия (Никита, 27.10) — «Проверить 3 анкеты · срок
    24 ч». Число внутри фразы: строки одной высоты, ничего не прыгает. ---------- */
@@ -227,12 +227,12 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
 @media (hover: hover) { .a-tabs__item:hover { color: var(--adm-text); } }
 .a-tabs__item.is-active::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--adm-text); }
 .a-tabs__n { font-variant-numeric: tabular-nums; color: var(--adm-text-2); font-weight: 400; }
-.a-tabs__n--bad { color: #d23a3a; font-weight: 600; }
+.a-tabs__n--bad { color: var(--st-bad-text); font-weight: 600; }
 
 /* Сегменты (Метрика: период; у нас — «Изменения / Было / Стало») */
 .a-seg { display: inline-flex; gap: 2px; max-width: 100%; padding: 4px; border-radius: var(--adm-radius-md); background: var(--adm-bg); overflow-x: auto; scrollbar-width: none; }
 .a-seg__btn { height: 32px; padding: 0 14px; border-radius: 8px; white-space: nowrap; }
-.a-seg__btn.is-active { background: var(--adm-card); box-shadow: 0 1px 2px rgba(15, 20, 30, 0.08); }
+.a-seg__btn.is-active { background: var(--adm-card); box-shadow: var(--adm-shadow-xs); }
 
 /* ---------- кнопки, поиск, выпадашка ---------- */
 .a-btn {
@@ -251,13 +251,13 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
   white-space: nowrap;
 }
 @media (hover: hover) { .a-btn:hover { background: var(--adm-hover); } }
-.a-btn--primary { background: var(--adm-primary); border-color: var(--adm-primary); color: #fff; border-radius: 999px; }
+.a-btn--primary { background: var(--adm-primary); border-color: var(--adm-primary); color: var(--adm-on-dark); border-radius: 999px; }
 @media (hover: hover) { .a-btn--primary:hover { background: var(--adm-primary-hover); } }
 .a-btn--soft { background: var(--adm-bg); border-color: transparent; }
 .a-btn--sm { height: 30px; padding: 0 10px; font-size: 13px; }
 .a-btn--lg { height: 44px; padding: 0 18px; font-size: 15px; }
 .a-btn--block { width: 100%; }
-.a-btn--danger { color: #c4314b; }
+.a-btn--danger { color: var(--st-bad-text); }
 
 .a-search { position: relative; display: inline-flex; align-items: center; }
 .a-search svg { position: absolute; right: 10px; color: var(--adm-text-2); pointer-events: none; }
@@ -313,26 +313,26 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
 .a-kpi__n { grid-row: span 2; font-size: 32px; line-height: 36px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
 .a-kpi__label { font-weight: 600; line-height: 18px; }
 .a-kpi__note { font-size: var(--adm-fs-sm); line-height: 16px; color: var(--adm-text-2); }
-.a-kpi--info { background: #e8efff; }
+.a-kpi--info { background: var(--st-info-bg); }
 .a-kpi--info .a-kpi__n { color: var(--adm-primary); }
-.a-kpi--ok { background: #e3f6e9; }
-.a-kpi--ok .a-kpi__n { color: #1a8f43; }
-.a-kpi--bad { background: #fde9e9; }
-.a-kpi--bad .a-kpi__n { color: #d23a3a; }
+.a-kpi--ok { background: var(--st-ok-bg); }
+.a-kpi--ok .a-kpi__n { color: var(--st-ok-text); }
+.a-kpi--bad { background: var(--st-bad-bg); }
+.a-kpi--bad .a-kpi__n { color: var(--st-bad-text); }
 @media (hover: hover) { a.a-kpi:hover { filter: brightness(0.97); } }
 
 /* Точка состояния (Директ «▶ Идут показы»): цвет — смысл */
 .a-dot { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
-.a-dot::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #b8bec8; flex: none; }
-.a-dot--ok::before { background: #22b04b; }
+.a-dot::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--st-muted-dot); flex: none; }
+.a-dot--ok::before { background: var(--st-ok-dot); }
 .a-dot--info::before { background: var(--adm-primary); }
-.a-dot--warn::before { background: #ff9d00; }
-.a-dot--bad::before { background: #e5484d; }
+.a-dot--warn::before { background: var(--st-warn-dot); }
+.a-dot--bad::before { background: var(--st-bad-dot); }
 
 /* Время ожидания — с часами */
 .a-time { display: inline-flex; align-items: center; gap: 6px; font-weight: 500; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .a-time svg { width: 16px; height: 16px; color: var(--adm-text-2); }
-.a-time--late { color: #c4314b; }
+.a-time--late { color: var(--st-bad-text); }
 .a-time--late svg { color: currentColor; }
 
 /* Что поменялось — короткий список «поле: значение» */
@@ -355,13 +355,13 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
   white-space: nowrap;
 }
 .a-chip b { font-weight: 400; color: var(--adm-text-2); }
-.a-chip--ok { background: #e3f6e9; color: #17703a; }
-.a-chip--bad { background: #fde9e9; color: #b3263e; }
+.a-chip--ok { background: var(--st-ok-bg); color: var(--st-ok-strong); }
+.a-chip--bad { background: var(--st-bad-bg); color: var(--st-bad-strong); }
 .a-chip--ok b, .a-chip--bad b { color: inherit; }
 
 /* Да / нет в таблице: галочка зелёным, «нет» — красным */
-.a-yes { color: #1a8f43; }
-.a-no { color: #d23a3a; font-weight: 500; }
+.a-yes { color: var(--st-ok-text); }
+.a-no { color: var(--st-bad-text); font-weight: 500; }
 
 /* ---------- таблица (Директ): шапка 44, строка 14/20, подстрока 12/16 ---------- */
 .a-table-wrap { overflow-x: auto; overflow-y: clip; }
@@ -374,7 +374,7 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
   color: var(--adm-text-2);
   white-space: nowrap;
   border-bottom: 1px solid var(--adm-line);
-  background: #fafbfc;
+  background: var(--adm-subtle);
 }
 .a-table th[data-sort] { cursor: pointer; user-select: none; }
 .a-table th[data-sort]:hover, .a-table th.is-sorted { color: var(--adm-text); }
@@ -384,9 +384,9 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
 .a-table tbody tr:last-child td { border-bottom: 0; }
 .a-table tr[data-href] { cursor: pointer; }
 @media (hover: hover) { .a-table tbody tr:hover td { background: var(--adm-hover); } }
-.a-table tr.is-picked td { background: #f0f4ff; }
+.a-table tr.is-picked td { background: var(--adm-picked); }
 .a-table .a-num { text-align: right; white-space: nowrap; }
-.a-table .a-total td { font-weight: 500; background: #fafbfc; }
+.a-table .a-total td { font-weight: 500; background: var(--adm-subtle); }
 .a-table :is(th, td):first-child { padding-left: var(--adm-pad); }
 .a-table :is(th, td):last-child { padding-right: var(--adm-pad); }
 .a-check {
@@ -396,7 +396,7 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
   width: 18px;
   height: 18px;
   margin: 1px 0 0;
-  border: 1.5px solid #c3c8d1;
+  border: 1.5px solid var(--adm-line-strong);
   border-radius: 5px;
   background: var(--adm-card);
   cursor: pointer;
@@ -404,7 +404,7 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
 }
 @media (hover: hover) { .a-check:hover { border-color: var(--adm-primary); } }
 .a-check:checked { background: var(--adm-primary); border-color: var(--adm-primary); }
-.a-check:checked::after { content: ''; width: 9px; height: 5px; margin-top: -2px; border-left: 2px solid #fff; border-bottom: 2px solid #fff; transform: rotate(-45deg); }
+.a-check:checked::after { content: ''; width: 9px; height: 5px; margin-top: -2px; border-left: 2px solid var(--adm-on-dark); border-bottom: 2px solid var(--adm-on-dark); transform: rotate(-45deg); }
 .a-check:focus-visible { outline: 2px solid var(--adm-primary); outline-offset: 2px; }
 .a-name { font-weight: 500; text-decoration: none; }
 @media (hover: hover) { tr:hover .a-name, a.a-name:hover { color: var(--adm-link); } }
@@ -444,7 +444,7 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
   padding: 6px;
   border-radius: 14px;
   background: var(--adm-dark);
-  color: #fff;
+  color: var(--adm-on-dark);
   transform: translateX(-50%);
   overflow-x: auto;
   scrollbar-width: none;
@@ -452,28 +452,9 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
 @media (min-width: 1024px) { .a-bulk { left: calc(50% + var(--adm-side-w) / 2); } }
 .a-bulk[hidden] { display: none; }
 .a-bulk__count { padding: 0 12px; font-weight: 500; white-space: nowrap; }
-.a-bulk__btn { height: 36px; padding: 0 14px; border-radius: 10px; background: rgba(255, 255, 255, 0.1); color: #fff; font-weight: 500; white-space: nowrap; }
-@media (hover: hover) { .a-bulk__btn:hover { background: rgba(255, 255, 255, 0.18); } }
+.a-bulk__btn { height: 36px; padding: 0 14px; border-radius: 10px; background: var(--adm-on-dark-soft); color: var(--adm-on-dark); font-weight: 500; white-space: nowrap; }
+@media (hover: hover) { .a-bulk__btn:hover { background: var(--adm-on-dark-hover); } }
 
-/* ---------- тост решения ---------- */
-.a-toast {
-  position: fixed;
-  left: 50%;
-  bottom: calc(84px + var(--safe-b, 0px));
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  gap: var(--s-4);
-  max-width: calc(100vw - 2 * var(--s-4));
-  padding: 12px 12px 12px 16px;
-  border-radius: 14px;
-  background: var(--adm-dark);
-  color: #fff;
-  transform: translateX(-50%);
-}
-@media (min-width: 1024px) { .a-toast { bottom: var(--s-6); left: calc(50% + var(--adm-side-w) / 2); } }
-.a-toast[hidden] { display: none; }
-.a-toast__undo { color: #8fb0ff; font-weight: 600; white-space: nowrap; }
 
 .adm kbd { padding: 0 5px; border: 1px solid currentColor; border-radius: 4px; font: inherit; font-size: 11px; line-height: 16px; }
 @media (hover: none) { .adm kbd { display: none; } }
@@ -482,14 +463,14 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
    по центру на ПК; вместо .sheet сайта — свой шрифт и плашки без обводки ---------- */
 .a-dialog { border: 0; padding: 0; margin: auto auto 0; width: 100%; max-width: 520px; max-height: 88vh; border-radius: var(--adm-radius) var(--adm-radius) 0 0; background: var(--adm-card); color: var(--adm-text); font-family: var(--adm-font); overflow-x: clip; overflow-y: auto; box-sizing: border-box; }
 @media (min-width: 640px) { .a-dialog { margin: auto; border-radius: var(--adm-radius); } }
-.a-dialog::backdrop { background: rgba(15, 20, 30, 0.45); }
+.a-dialog::backdrop { background: var(--adm-backdrop); }
 .a-dialog__body { display: grid; gap: var(--s-4); padding: var(--s-5) var(--s-4) calc(var(--s-4) + env(safe-area-inset-bottom)); }
 .a-dialog__head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); }
 .a-dialog__x { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--adm-bg); color: var(--adm-text); flex: none; }
 .a-dialog__x svg { width: 18px; height: 18px; }
 /* вариант на выбор — серая капсула, выбранный — почти-чёрный */
 .a-pick { height: 36px; padding: 0 14px; border-radius: 10px; background: var(--adm-bg); font: inherit; font-size: var(--adm-fs); color: var(--adm-text); white-space: nowrap; }
-.a-pick[aria-pressed="true"] { background: var(--adm-primary); color: #fff; }
+.a-pick[aria-pressed="true"] { background: var(--adm-primary); color: var(--adm-on-dark); }
 
 /* ---------- нижнее меню — общее у кабинета подрядчика и админки ----------
    (Никита, 02.11: админка — тем же видом, что кабинет). У админки пять
@@ -515,7 +496,7 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
 
 .c-tab__ic { position: relative; display: block; }
 .c-tab__ic svg { width: 26px !important; height: 26px !important; }
-.c-tab__n { position: absolute; top: -4px; right: -10px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--st-bad-text); color: #fff; font-size: 11px; line-height: 18px; font-weight: 600; text-align: center; }
+.c-tab__n { position: absolute; top: -4px; right: -10px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--st-bad-text); color: var(--adm-on-dark); font-size: 11px; line-height: 18px; font-weight: 600; text-align: center; }
 .c-tab__n--info { background: var(--adm-dark); }
 
 /* ---------- админка тем же видом, что кабинет (Никита, 02.11) ----------

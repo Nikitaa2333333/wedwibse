@@ -34,30 +34,6 @@
 .cab .c-head, .cab .a-title { padding: var(--s-3) var(--s-4) var(--s-2); }
 .cab .c-head .a-lead { color: var(--adm-text-2); }
 
-/* уведомление о сохранении: над нижним меню, само уходит */
-.c-toast {
-  position: fixed;
-  left: 50%;
-  bottom: calc(var(--cab-tabs-h) + env(safe-area-inset-bottom) + var(--s-3));
-  z-index: 7;
-  width: max-content;
-  max-width: calc(100% - 2 * var(--s-4));
-  margin: 0;
-  padding: 12px 20px;
-  line-height: 20px;
-  text-align: center;
-  border-radius: 22px;
-  background: var(--cab-ink);
-  color: #fff;
-  font-size: var(--adm-fs);
-  font-weight: 500;
-  opacity: 0;
-  transform: translate(-50%, 8px);
-  pointer-events: none;
-  transition: opacity var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
-}
-.c-toast.is-on { opacity: 1; transform: translate(-50%, 0); }
-.c-toast--bad { background: var(--st-bad-text); }
 .c-sheet-area { display: flex; flex-direction: column; gap: var(--cab-gap); --c-bar-bg: var(--adm-bg); }
 .c-sheet-area .a-card { padding: 0; border-radius: 0; background: none; }
 /* текст прямо на фоне (заголовок группы, счётчик знаков, ошибка) — в край текста плашек */
@@ -102,7 +78,7 @@
 
 /* переключатель (оповещения): чёрный — включено, серый — выключено */
 .c-switch { position: relative; width: 48px; height: 28px; flex: none; border-radius: 999px; background: var(--adm-line); transition: background var(--dur-fast) var(--ease-out); }
-.c-switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--adm-card); box-shadow: 0 1px 3px rgba(15, 20, 30, 0.25); transition: transform var(--dur-fast) var(--ease-out); }
+.c-switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--adm-card); box-shadow: var(--adm-shadow-sm); transition: transform var(--dur-fast) var(--ease-out); }
 .c-switch[aria-checked="true"] { background: var(--cab-ink); }
 .c-switch[aria-checked="true"]::after { transform: translateX(20px); }
 .c-switch:disabled { opacity: 0.4; }
@@ -178,7 +154,7 @@ details[open].c-row > summary .c-row__go { transform: rotate(90deg); }
 .c-row__ic svg { width: 20px; height: 20px; }
 /* белый знак сервиса (MAX) — на чернильной подложке, как на кнопке входа */
 .c-row__ic--ink { background: var(--cab-ink); }
-.c-row__ic--tg { background: var(--brand-telegram); color: #fff; }
+.c-row__ic--tg { background: var(--brand-telegram); color: var(--brand-fg); }
 .c-row__ic--tg svg { width: 22px; height: 22px; }
 .c-row__thumb { width: 44px; height: 55px; border-radius: 8px; object-fit: cover; background: var(--adm-bg); display: block; }
 /* «Мои карточки»: карточка крупно — кадр и имя видны сразу */
@@ -228,7 +204,7 @@ select.a-field__input { appearance: none; background-image: linear-gradient(45de
   font-size: var(--adm-fs) !important;
   white-space: nowrap;
 }
-.c-opt[aria-pressed="true"] { background: var(--adm-dark) !important; border-color: var(--adm-dark) !important; color: #fff; }
+.c-opt[aria-pressed="true"] { background: var(--adm-dark) !important; border-color: var(--adm-dark) !important; color: var(--adm-on-dark); }
 @media (hover: hover) { .c-opt[aria-pressed="false"]:hover { background: var(--adm-line) !important; } }
 
 /* ---------- блоки, которые добавляют (разделы текста, пакеты, залы) ---------- */
@@ -251,7 +227,7 @@ select.a-field__input { appearance: none; background-image: linear-gradient(45de
 @media (min-width: 640px) { .c-photos { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .c-photo { position: relative; aspect-ratio: 4 / 5; border-radius: 10px; overflow: hidden; background: var(--adm-bg); -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 /* перетаскивание (bindPhotoDrag): плитка над остальными, остальные стоят */
-.c-photo.is-drag { z-index: 3; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28); }
+.c-photo.is-drag { z-index: 3; box-shadow: var(--adm-shadow-lift); }
 .c-photos.is-sorting { cursor: grabbing; }
 @media (hover: hover) { .c-photos:not(.is-sorting) .c-photo[data-pi] { cursor: grab; } }
 .c-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -267,12 +243,12 @@ select.a-field__input { appearance: none; background-image: linear-gradient(45de
 .c-yd-pick__n:empty { display: none; }
 .c-yd-tools { display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: center; }
 
-.c-photo__tools button { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; background: rgba(255, 255, 255, 0.92); color: var(--adm-text); }
+.c-photo__tools button { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; background: var(--adm-glass); color: var(--adm-text); }
 .c-photo__tools svg { width: 16px; height: 16px; }
 .c-photo__tools .c-tool--up svg, .c-photo__tools .c-tool--down svg { transform: none; }
 .c-photo--add { display: grid; place-items: center; align-content: center; gap: 6px; background: var(--adm-bg); color: var(--adm-link); font-weight: 500; cursor: pointer; text-align: center; padding: 8px; }
 .c-photo--add svg { width: 22px; height: 22px; }
-.c-photo--busy::after { content: ''; position: absolute; inset: 0; background: rgba(255, 255, 255, 0.55); }
+.c-photo--busy::after { content: ''; position: absolute; inset: 0; background: var(--adm-veil); }
 
 /* ---------- нижняя полоса: действие экрана ----------
    Приём сайта (StickyCta): кнопка прибита к низу, а контент под ней
@@ -314,7 +290,7 @@ select.a-field__input { appearance: none; background-image: linear-gradient(45de
 .cc-code { min-width: 4.5ch; }
 .cc-chevron { width: 14px; height: 14px; color: var(--adm-text-2); flex: none; transition: transform var(--dur-fast) var(--ease-out); }
 .cc-picker.open .cc-chevron { transform: rotate(180deg); }
-.cc-list { position: absolute; top: calc(100% + 8px); left: 0; z-index: 30; width: max-content; min-width: 220px; max-width: min(280px, calc(100vw - 32px)); max-height: 320px; overflow-y: auto; overflow-x: clip; padding: 6px; display: grid; gap: 2px; background: var(--adm-card); border-radius: var(--adm-radius-md); box-shadow: 0 8px 28px rgba(15, 20, 30, 0.14); }
+.cc-list { position: absolute; top: calc(100% + 8px); left: 0; z-index: 30; width: max-content; min-width: 220px; max-width: min(280px, calc(100vw - 32px)); max-height: 320px; overflow-y: auto; overflow-x: clip; padding: 6px; display: grid; gap: 2px; background: var(--adm-card); border-radius: var(--adm-radius-md); box-shadow: var(--adm-shadow-lg); }
 .cc-list[hidden] { display: none; }
 .cc-option { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; border: 0; border-radius: 8px; background: none; cursor: pointer; font: inherit; color: var(--adm-text); text-align: left; }
 .cc-option:hover, .cc-option:focus-visible { background: var(--adm-hover); outline: none; }
@@ -349,10 +325,10 @@ select.a-field__input { appearance: none; background-image: linear-gradient(45de
 .c-ava__img svg { width: 28px; height: 28px; }
 
 /* ---------- превью «как на сайте»: шрифты и токены сайта ---------- */
-.c-pv { font-family: var(--font-sans); color: var(--ink); display: grid; gap: var(--s-3); }
+.c-pv { font-family: var(--font-sans); color: var(--ink); display: grid; gap: var(--s-3); } /* site-preview */
 .c-pv__cap { font-size: var(--adm-fs-sm); font-weight: 600; color: var(--adm-text-2); }
 .c-pv-tariffs { display: grid; gap: var(--s-3); }
-.c-pv-tariff { background: var(--surface); border-radius: var(--radius-card); padding: var(--s-5); display: grid; gap: var(--s-3); }
+.c-pv-tariff { background: var(--surface); border-radius: var(--radius-card); padding: var(--s-5); display: grid; gap: var(--s-3); } /* site-preview */
 .c-pv-tariff header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: var(--s-1) var(--s-4); }
 .c-pv-tariff h4 { font-family: var(--font-sans); letter-spacing: 0; font-size: var(--fs-body); font-weight: var(--w-head-lg); }
 .c-pv-tariff b { font-size: var(--fs-h3); font-weight: var(--w-head-lg); white-space: nowrap; }
@@ -360,51 +336,52 @@ select.a-field__input { appearance: none; background-image: linear-gradient(45de
 .c-pv-tariff li, .c-pv-story li { position: relative; font-size: var(--fs-small); }
 .c-pv-tariff li::before, .c-pv-story li::before { content: ''; position: absolute; left: calc(-1 * var(--bullet-indent)); top: 0.6em; width: var(--bullet-size); height: var(--bullet-size); background: currentColor; }
 .c-pv-card { width: min(240px, 100%); }
-.c-pv-card__img { aspect-ratio: 4 / 5; border-radius: var(--radius-card); overflow: hidden; background: var(--surface); }
+.c-pv-card__img { aspect-ratio: 4 / 5; border-radius: var(--radius-card); overflow: hidden; background: var(--surface); } /* site-preview */
 .c-pv-card__img img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .c-pv-card__name { font-weight: var(--w-head-lg); font-size: var(--fs-body); line-height: var(--lh-caption); }
 .c-pv-card__tag { font-size: var(--fs-small); line-height: var(--lh-body); margin-top: calc(-1 * var(--s-2)); }
 .c-pv-card__price { font-size: var(--fs-small); font-weight: var(--w-head-lg); margin-top: calc(-1 * var(--s-2)); }
 .c-pv-story { gap: var(--s-6); }
 .c-pv-story section { display: grid; gap: var(--s-3); }
-.c-pv-story h3 { font-family: var(--font-serif); font-size: clamp(26px, 6vw, 34px); font-weight: var(--w-head-lg); line-height: var(--lh-heading); }
+.c-pv-story h3 { font-family: var(--font-serif); font-size: clamp(26px, 6vw, 34px); font-weight: var(--w-head-lg); line-height: var(--lh-heading); } /* site-preview */
 .c-pv-story p { font-size: var(--fs-body); line-height: var(--lh-body); }
 
-/* всплывающая панель превью: снизу на телефоне, по центру на ПК */
-.c-sheet { border: 0; padding: 0; margin: auto auto 0; width: 100%; max-width: 560px; max-height: 88vh; border-radius: var(--adm-radius) var(--adm-radius) 0 0; background: var(--bg); color: var(--ink); overflow-x: clip; overflow-y: auto; }
+
+/* ПАНЕЛЬ ПРЕВЬЮ «как будет на сайте» — единственное окно кабинета в оформлении
+   витрины (бумага, чернила, антиква): она и показывает витрину. Больше нигде. */
+.c-sheet { border: 0; padding: 0; margin: auto auto 0; width: 100%; max-width: 560px; max-height: 88vh; border-radius: var(--adm-radius) var(--adm-radius) 0 0; background: var(--bg); color: var(--ink); overflow-x: clip; overflow-y: auto; } /* site-preview */
 @media (min-width: 640px) { .c-sheet { margin: auto; border-radius: var(--adm-radius); } }
-.c-sheet::backdrop { background: rgba(15, 20, 30, 0.45); }
+.c-sheet::backdrop { background: var(--adm-backdrop); }
 /* кадр во весь экран: лента со свайпом, кадр целиком (contain) на тёмном */
-.c-viewer { border: 0; padding: 0; margin: 0; width: 100vw; height: 100dvh; max-width: none; max-height: none; background: #000; color: #fff; overflow: hidden; }
-.c-viewer::backdrop { background: #000; }
+.c-viewer { border: 0; padding: 0; margin: 0; width: 100vw; height: 100dvh; max-width: none; max-height: none; background: var(--adm-viewer-bg); color: var(--adm-on-dark); overflow: hidden; }
+.c-viewer::backdrop { background: var(--adm-viewer-bg); }
 .c-viewer__track { display: flex; width: 100%; height: 100%; overflow-x: auto; overflow-y: clip; scroll-snap-type: x mandatory; overscroll-behavior: contain; scrollbar-width: none; }
 .c-viewer__track::-webkit-scrollbar { display: none; }
 .c-viewer__slide { flex: 0 0 100%; height: 100%; margin: 0; display: grid; place-items: center; scroll-snap-align: center; scroll-snap-stop: always; }
 .c-viewer__slide img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
 .c-viewer__count { position: absolute; left: 0; right: 0; bottom: calc(16px + env(safe-area-inset-bottom)); margin: 0; text-align: center; font-size: var(--adm-fs); font-variant-numeric: tabular-nums; }
-.c-viewer__close { position: absolute; right: 12px; top: calc(12px + env(safe-area-inset-top)); width: 40px; height: 40px; border-radius: 999px; display: grid; place-items: center; background: rgba(255, 255, 255, 0.16); color: #fff; }
+.c-viewer__close { position: absolute; right: 12px; top: calc(12px + env(safe-area-inset-top)); width: 40px; height: 40px; border-radius: 999px; display: grid; place-items: center; background: var(--adm-on-dark-soft); color: var(--adm-on-dark); }
 .c-viewer__close svg { width: 20px; height: 20px; }
 .c-sheet__body { display: grid; gap: var(--s-4); padding: var(--s-5) var(--s-4) calc(var(--s-4) + env(safe-area-inset-bottom)); }
-.c-sheet__close { border-radius: 999px; border: 0; background: var(--cab-ink); color: #fff; }
 
 /* кадрирование портрета: квадрат, круг поверх, фото двигается под ним */
 .c-crop { position: relative; width: min(320px, 100%); aspect-ratio: 1; justify-self: center; overflow: hidden; border-radius: var(--adm-radius-md); background: var(--adm-dark); touch-action: none; cursor: grab; user-select: none; }
 .c-crop img { position: absolute; left: 0; top: 0; max-width: none; transform-origin: 0 0; pointer-events: none; }
 /* затемнение вне круга — огромной тенью от самого круга */
-.c-crop__ring { position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 0 0 999px rgba(15, 20, 30, 0.55); pointer-events: none; }
+.c-crop__ring { position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 0 0 999px var(--adm-crop-veil); pointer-events: none; }
 
 /* ---------- превью, второй заход (27.10): кусок визитки без подписей ---------- */
 .c-title { display: flex; align-items: center; gap: 8px; }
 .c-title .c-help { width: 28px; height: 28px; line-height: 28px; font-size: 15px; margin: 0; flex: none; background: var(--adm-card); color: var(--cab-ink); }
-@media (hover: hover) { .c-title .c-help:hover { background: var(--cab-ink); color: #fff; } }
+@media (hover: hover) { .c-title .c-help:hover { background: var(--cab-ink); color: var(--adm-on-dark); } }
 /* длинное слово без пробелов не распирает панель вбок (CLAUDE.md, «панель ездит») */
 .c-sheet { box-sizing: border-box; }
 .c-sheet__body { position: relative; min-width: 0; overflow-wrap: anywhere; }
 .c-sheet--pv .c-sheet__body { padding-top: var(--s-6); }
-.c-sheet__x { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--surface); color: var(--ink); }
+.c-sheet__x { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--surface); color: var(--ink); } /* site-preview */
 .c-sheet__x svg { width: 18px; height: 18px; }
 .c-pv-head { display: grid; gap: var(--s-2); }
-.c-pv-head h2 { font-family: var(--font-serif); font-size: clamp(30px, 8vw, 40px); font-weight: var(--w-head-lg); line-height: var(--lh-heading); }
+.c-pv-head h2 { font-family: var(--font-serif); font-size: clamp(30px, 8vw, 40px); font-weight: var(--w-head-lg); line-height: var(--lh-heading); } /* site-preview */
 .c-pv-head__tag { font-size: var(--fs-body); line-height: var(--lh-body); }
 .c-pv-head__price { margin-top: var(--s-2); font-size: var(--fs-h3); font-weight: var(--w-head-lg); }
 .c-pv-head__note { font-size: var(--fs-small); margin-top: calc(-1 * var(--s-2)); }
@@ -413,13 +390,13 @@ select.a-field__input { appearance: none; background-image: linear-gradient(45de
 /* ---------- способ цены: три в ряд, сегментом ---------- */
 .c-seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 12px; background: var(--adm-bg); }
 .c-seg button { height: 36px; border-radius: 9px; font-weight: 500; font-size: var(--adm-fs); color: var(--adm-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 6px; }
-.c-seg button[aria-pressed="true"] { background: var(--cab-ink); color: #fff; }
+.c-seg button[aria-pressed="true"] { background: var(--cab-ink); color: var(--adm-on-dark); }
 
 /* ---------- тариф — сразу карточкой с визитки (StoryText .tariff):
    заполняют саму карточку, поля без рамок и подписей ---------- */
-.c-tcard { display: grid; gap: var(--s-3); padding: var(--s-5); border-radius: var(--radius-card); background: var(--surface); color: var(--ink); font-family: var(--font-sans); }
+.c-tcard { display: grid; gap: var(--s-3); padding: var(--s-5); border-radius: var(--radius-card); background: var(--surface); color: var(--ink); font-family: var(--font-sans); } /* site-preview */
 .c-tcard input, .c-tcard textarea { width: 100%; min-width: 0; border: 0; padding: 0; background: none; font: inherit; color: inherit; outline: none; }
-.c-tcard input::placeholder, .c-tcard textarea::placeholder { color: color-mix(in srgb, var(--ink) 45%, transparent); }
+.c-tcard input::placeholder, .c-tcard textarea::placeholder { color: color-mix(in srgb, var(--ink) 45%, transparent); } /* site-preview */
 .c-tcard__name { font-size: var(--fs-body); font-weight: var(--w-head-lg); }
 .c-tcard__price { display: flex; align-items: baseline; gap: var(--s-1); flex-wrap: wrap; }
 .c-tcard__price input:first-child { width: auto; max-width: 9ch; font-size: var(--fs-h3); font-weight: var(--w-head-lg); }
@@ -454,7 +431,7 @@ html:has(.cab), html:has(.cab) body { background: var(--adm-bg); }
 .c-tile__ava { width: 52px; height: 52px; margin-bottom: auto; border-radius: 50%; overflow: hidden; background: var(--adm-bg); }
 .c-tile__ava img, .c-tile__stack img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .c-tile__stack { position: relative; display: flex; height: 64px; margin-bottom: auto; }
-.c-tile__stack img { width: 48px; height: 64px; border-radius: 10px; border: 2px solid var(--adm-card); box-shadow: 0 2px 6px rgba(15, 20, 30, 0.12); }
+.c-tile__stack img { width: 48px; height: 64px; border-radius: 10px; border: 2px solid var(--adm-card); box-shadow: var(--adm-shadow-md); }
 .c-tile__stack img + img { margin-left: -18px; }
 .c-tile__stack img:nth-child(1) { transform: rotate(-6deg); }
 .c-tile__stack img:nth-child(3) { transform: rotate(6deg); }
@@ -488,15 +465,15 @@ body:has(.c-bar .a-btn) .c-toast { bottom: calc(var(--cab-tabs-h) + env(safe-are
 .c-hint__tile--1 { left: 0; animation: c-hint-shift 3.2s var(--ease-out) infinite; }
 .c-hint__tile--2 { left: 34px; animation: c-hint-shift 3.2s var(--ease-out) infinite; }
 .c-hint__tile--3 { left: 68px; z-index: 1; animation: c-hint-lift 3.2s var(--ease-out) infinite; }
-.c-hint__touch { position: absolute; left: 75px; top: 13px; z-index: 2; width: 16px; height: 16px; border-radius: 50%; background: rgba(15, 20, 30, 0.35); box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.85); animation: c-hint-touch 3.2s var(--ease-out) infinite; }
+.c-hint__touch { position: absolute; left: 75px; top: 13px; z-index: 2; width: 16px; height: 16px; border-radius: 50%; background: var(--adm-hint-dot); box-shadow: 0 0 0 3px var(--adm-hint-ring); animation: c-hint-touch 3.2s var(--ease-out) infinite; }
 .c-hint__text { display: grid; gap: 2px; font-size: var(--adm-fs); line-height: 18px; color: var(--adm-text-2); }
 .c-hint__text b { font-size: 15px; font-weight: 600; color: var(--adm-text); }
 .c-hint__close { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; color: var(--adm-text-2); align-self: start; }
 .c-hint__close svg { width: 18px; height: 18px; }
 @keyframes c-hint-lift {
   0%, 15% { transform: none; box-shadow: none; }
-  25% { transform: scale(1.12); box-shadow: 0 6px 14px rgba(15, 20, 30, 0.25); }
-  60% { transform: translateX(-68px) scale(1.12); box-shadow: 0 6px 14px rgba(15, 20, 30, 0.25); }
+  25% { transform: scale(1.12); box-shadow: var(--adm-shadow-drag); }
+  60% { transform: translateX(-68px) scale(1.12); box-shadow: var(--adm-shadow-drag); }
   70%, 88% { transform: translateX(-68px); box-shadow: none; opacity: 1; }
   96% { transform: translateX(-68px); opacity: 0; }
   100% { transform: none; opacity: 0; }

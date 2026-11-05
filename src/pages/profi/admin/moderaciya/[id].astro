@@ -212,10 +212,6 @@ const reasons = [
     </div>
   </div>
 
-  <div class="a-toast" data-toast hidden role="status">
-    <span data-toast-text></span>
-    <button class="a-toast__undo" type="button" data-undo>Отменить</button>
-  </div>
 
   <dialog class="a-dialog" data-return>
     <form method="dialog" class="a-dialog__body">
@@ -236,6 +232,7 @@ const reasons = [
   // ClientRouter: страница меняется без перезагрузки — привязки на каждый
   // `astro:page-load`; клавиши и тост — один обработчик на документ.
   import { navigate } from 'astro:transitions/client';
+  import { toast } from '../../../../lib/cab-ui';
 
   const RESULT: Record<string, string> = {
     approve: 'Одобрено — изменения на сайте через минуту',
@@ -268,16 +265,13 @@ const reasons = [
     );
 
     // Решение → «Отменить» 5 секунд → следующая правка
-    const toast = document.querySelector<HTMLElement>('[data-toast]');
     const decide = (act: string) => {
-      if (!toast || !RESULT[act]) return;
+      if (!RESULT[act]) return;
       if (act === 'return') dlg?.close();
-      toast.querySelector<HTMLElement>('[data-toast-text]')!.textContent = `${RESULT[act]}. Дальше — следующая правка`;
-      toast.hidden = false;
       clearTimeout(timer);
       timer = window.setTimeout(() => navigate(root.dataset.next ?? '/profi/admin/moderaciya/'), 5000);
+      toast(`${RESULT[act]}. Дальше — следующая правка`, false, 5000, () => clearTimeout(timer));
     };
-    document.querySelector('[data-undo]')?.addEventListener('click', () => { clearTimeout(timer); if (toast) toast.hidden = true; });
     document.querySelectorAll<HTMLElement>('[data-act]').forEach((btn) => btn.addEventListener('click', () => decide(btn.dataset.act!)));
   });
 
@@ -312,11 +306,11 @@ const reasons = [
   @media (min-width: 1024px) { .mr__side { position: sticky; top: calc(var(--adm-head-h) + var(--s-2)); } }
   .mr__sum { padding: 12px 14px; border-radius: var(--adm-radius-md); background: var(--adm-bg); }
   .mr__decided { display: grid; gap: 6px; }
-  .mr__reason { padding: 10px 12px; border-radius: var(--adm-radius-md); background: #fde9e9; }
+  .mr__reason { padding: 10px 12px; border-radius: var(--adm-radius-md); background: var(--st-bad-bg); }
   .mr__bar { display: grid; gap: var(--s-2); margin-top: var(--s-2); }
   .mr__keys { text-align: center; }
   /* горячие клавиши — только на ПК: на телефоне клавиатуры нет */
-  .mr__bar :global(kbd) { margin-left: 8px; padding: 0 5px; border-radius: 4px; background: rgba(255, 255, 255, 0.16); font: inherit; font-size: 12px; }
+  .mr__bar :global(kbd) { margin-left: 8px; padding: 0 5px; border-radius: 4px; background: var(--adm-on-dark-soft); font: inherit; font-size: 12px; }
   .mr__bar .a-btn:not(.a-btn--primary) :global(kbd) { background: var(--adm-bg); }
   @media (max-width: 1023px), (hover: none) { .mr__keys, .mr__bar :global(kbd) { display: none; } }
   @media (max-width: 1023px) {
@@ -336,7 +330,7 @@ const reasons = [
   .flags { list-style: none; margin: 0; padding: 0; }
   .flag { display: flex; gap: var(--s-3); padding-block: 12px; border-top: 1px solid var(--adm-line); }
   .flag:first-child { border-top: 0; padding-top: 0; }
-  .flag__rule { color: #c4314b; font-weight: 500; }
+  .flag__rule { color: var(--st-bad-text); font-weight: 500; }
   .flag__frag { margin-top: 6px; }
   .clean { display: flex; gap: 8px; align-items: center; }
 
@@ -357,8 +351,8 @@ const reasons = [
   @media (min-width: 1024px) { .ph__grid { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
   .ph__cell { position: relative; aspect-ratio: 4 / 5; border-radius: 10px; overflow: hidden; background: var(--adm-bg); }
   :global(.ph__img) { width: 100%; height: 100%; object-fit: cover; }
-  .ph__cell.is-flagged { outline: 3px solid #e5484d; outline-offset: -3px; }
-  .ph__tag { position: absolute; left: 4px; bottom: 4px; padding: 1px 6px; border-radius: 6px; background: #e5484d; color: #fff; font-size: 12px; font-weight: 600; }
+  .ph__cell.is-flagged { outline: 3px solid var(--st-bad-dot); outline-offset: -3px; }
+  .ph__tag { position: absolute; left: 4px; bottom: 4px; padding: 1px 6px; border-radius: 6px; background: var(--st-bad-dot); color: var(--adm-on-dark); font-size: 12px; font-weight: 600; }
 
   .rs__text { height: auto; padding: 12px 14px; line-height: 1.5; resize: vertical; }
 </style>
