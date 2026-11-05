@@ -813,6 +813,13 @@ window.MAP = {
      "note": "05.11 выложено: MAX_CHAT_ID=-80926289403953 (чат «Уведомления Wed Secrets»), подписка вебхука с bot_added/bot_stopped/dialog_removed",
      "src": "pb/pb_hooks/lib/max.js",
      "date": "05.11.2026"
+    },
+    {
+     "t": "Замечания модератора к кадрам (простой вариант)",
+     "s": "work",
+     "note": "05.11: сервер готов (revisions.remarkPhotos, номера кадров в сообщении), ветка claude/cabinet-server 7024be5; экраны — чату интерфейса (research/ui-brief-remarks.md)",
+     "src": "pb/pb_hooks/lib/cabinet.js",
+     "date": "05.11.2026"
     }
    ]
   },
