@@ -9,6 +9,8 @@ interface Props {
   ogImage?: string;
   /** страница не для поиска при любой сборке (превью анкеты до одобрения) */
   noindex?: boolean;
+  /** публичный путь страницы, если он отличается от адреса запроса (канон) */
+  path?: string;
 }
 
 const {
@@ -16,15 +18,23 @@ const {
   description = 'WED Secrets — свадебный онлайн-сервис',
   ogImage,
   noindex = false,
+  path,
 } = Astro.props;
 
-const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://wed-secrets.ru');
+// Канон всегда с косой чертой в конце (05.11.2026): страницы с сервера отвечают
+// и на /moskva/ploshchadki/river-loft без черты — без этого был дубль адреса
+// с собственным каноном. Файлы (robots.txt, .xml) не трогаем.
+const canonPath = (path ?? Astro.url.pathname).replace(/^([^.?#]*[^/.?#])$/, '$1/');
+const canonical = new URL(canonPath, Astro.site ?? 'https://wed-secrets.ru');
 
 // ВРЕМЕННО (снять перед запуском, см. docs/seo/SEO.md): сайт закрыт от поисковиков.
 // Пока идёт дизайн-фаза, сырые страницы не должны попасть в индекс —
 // выкатились бы в выдачу недоделанными и потом висели там месяцами.
 // Открыть индексацию — собрать с SITE_INDEXABLE=true (см. .github/workflows).
-const indexable = process.env.SITE_INDEXABLE === 'true' && !noindex;
+// Флаг читаем через import.meta.env: Vite вшивает его в код при сборке.
+// process.env читался в момент отрисовки, а у службы wedsecrets-ssr такой
+// переменной нет — весь каталог с сервера отдавал noindex (05.11.2026).
+const indexable = import.meta.env.SITE_INDEXABLE === 'true' && !noindex;
 ---
 
 <!doctype html>

@@ -35,6 +35,22 @@ const registry = new Map<string, ImageMetadata>(
  */
 const remote = new Map<string, ImageMetadata>();
 const REMOTE_MAX = 600;
+export const hasRemote = (key: string) => remote.has(key);
+
+/**
+ * Кадры каталога из базы (lib/live-data.ts) — СВОЙ реестр, без потолка
+ * (05.11.2026). Раньше они жили в общем `remote` с превью: дюжина открытых
+ * анкет вытесняла кадры каталога, и resolveImage ронял визитки в 500.
+ * Реестр не растёт: live-data собирает его заново на каждой загрузке
+ * (уже замеренные кадры переносит, снятые с публикации выпадают) и
+ * подменяет целиком.
+ */
+let catalog = new Map<string, ImageMetadata>();
+export const catalogImage = (key: string) => catalog.get(key);
+export const catalogEntries = () => catalog.entries();
+export function setCatalogImages(next: Map<string, ImageMetadata>) { catalog = next; }
+/** есть ли кадр в src/assets (собран в сборку) */
+export const hasLocalImage = (path: string) => registry.has(path);
 export function registerRemote(key: string, meta: ImageMetadata) {
   remote.delete(key);
   remote.set(key, meta);
@@ -87,7 +103,7 @@ export const IMG_WIDTHS = {
 
 /** path — тот же строковый путь, что лежит в данных, например '/venues/river-loft/gal/g4.webp' */
 export function resolveImage(path: string): ImageMetadata {
-  const image = registry.get(path) ?? remote.get(path);
+  const image = registry.get(path) ?? catalog.get(path) ?? remote.get(path);
   if (!image) {
     throw new Error(`resolveImage: нет файла в src/assets для пути "${path}" — проверь, что фото лежит в src/assets, а не только в public`);
   }

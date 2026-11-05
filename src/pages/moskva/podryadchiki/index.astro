@@ -9,6 +9,10 @@
 //
 // Разделы — из данных (SPECIALIST_GROUPS, источник правды), числа считаются
 // на сборке из SPECIALISTS_BY_CATEGORY: руками ничего не пишется.
+// САЙТ ИЗ БАЗЫ (этап 2, 05.11.2026): страницу рисует сервер из живых данных
+// (lib/live-data.ts) — новая карточка из кабинета и правка цены видны через
+// секунды, без пересборки сайта. nginx держит готовую страницу ~10 с.
+export const prerender = false;
 import Layout from '../../../layouts/Layout.astro';
 import SiteHeader from '../../../components/SiteHeader.astro';
 import BottomDock from '../../../components/BottomDock.astro';
@@ -21,6 +25,10 @@ import { withCount, type PluralForms } from '../../../lib/plural';
 import CoverTile from '../../../components/CoverTile.astro';
 import Icon from '../../../components/Icon.astro';
 import { IMG_WIDTHS } from '../../../lib/images';
+import { refreshLive, LIVE_CACHE } from '../../../lib/live-data';
+
+await refreshLive();
+Astro.response.headers.set('cache-control', LIVE_CACHE);
 
 // Описания «что внутри» с плиток сняты (18.09.2026): плитка — имя раздела
 // и счётчик, объяснять состав будет кадр, а не строка текста.

@@ -26,6 +26,8 @@ for (const file of walk(dist)) {
   const rel = relative(dist, file).split(sep).slice(0, -1).join('/');
   urls.push(`${site}/${rel ? rel + '/' : ''}`);
 }
+// Каталог (/moskva/podryadchiki/, /moskva/ploshchadki/) рисует сервер — его карта
+// /sitemap-katalog.xml (src/pages/sitemap-katalog.xml.ts), 05.11.2026.
 urls.sort();
 
 const xml =

@@ -315,93 +315,10 @@ export { VEDUSHCHIE_FILTERS, FOTOGRAFY_FILTERS, DEKORATORY_FILTERS } from './spe
 //   рейтинг и отзывы (ни одного собранного),
 //   сроки и формат выдачи, договор, предоплата, минимальный бюджет.
 // Спросить у подрядчика и заполнить — тогда карточка встанет в эти фильтры.
-const LSH = '/specialists/fotografy/leshakovy/gal';
-const AVA_F = '/specialists/fotografy/avatars';
 
-export const FOTOGRAFY: Specialist[] = [
-  {
-    slug: 'leshakovy',
-    categorySlug: 'fotografy',
-    category: 'Фотографы',
-    // снимают комплексом — карточка стоит и в «Видеографах», визитка одна
-    alsoCategories: ['videografy'],
-    name: 'Юлия и Леонид Лешаковы',
-    avatar: `${AVA_F}/leshakovy.webp`,
-    portrait: '/specialists/fotografy/leshakovy/portrait.webp',
-    photos: [
-      `${LSH}/p23.webp`, `${LSH}/p21.webp`, `${LSH}/p36.webp`, `${LSH}/p31.webp`,
-      `${LSH}/p16.webp`, `${LSH}/p17.webp`, `${LSH}/p18.webp`, `${LSH}/p19.webp`,
-      `${LSH}/p13.webp`, `${LSH}/p14.webp`, `${LSH}/p11.webp`, `${LSH}/p12.webp`,
-      `${LSH}/p09.webp`, `${LSH}/p05.webp`, `${LSH}/p06.webp`, `${LSH}/p24.webp`,
-      `${LSH}/p25.webp`, `${LSH}/p26.webp`, `${LSH}/p27.webp`, `${LSH}/p28.webp`,
-      `${LSH}/p30.webp`, `${LSH}/p34.webp`, `${LSH}/p37.webp`, `${LSH}/p38.webp`,
-      `${LSH}/p39.webp`, `${LSH}/p20.webp`, `${LSH}/p04.webp`, `${LSH}/p07.webp`,
-      `${LSH}/p08.webp`,
-      // горизонтальные — в конце: в доску главной они не идут (см. lib/gallery)
-      `${LSH}/p03.webp`, `${LSH}/p02.webp`, `${LSH}/p01.webp`, `${LSH}/p10.webp`,
-      `${LSH}/p15.webp`, `${LSH}/p22.webp`, `${LSH}/p29.webp`, `${LSH}/p32.webp`,
-      `${LSH}/p33.webp`, `${LSH}/p35.webp`,
-    ],
-    tagline: 'Фото и видео одним комплектом',
-    bio: 'Мы Юлия и Леонид — снимаем свадьбы пятнадцать лет и знаем в этой сфере каждую мелочь. Наши работы — яркие, искренние и стильные моменты, которые не потеряют актуальности через годы ни съёмкой, ни обработкой.\n\nРаботаем в паре и снимаем комплексом «фото + видео»: съёмка занимает минимум времени, а весь материал выходит в едином стиле. Действия отточены сотнями свадеб — от вас классное настроение, всё остальное берём на себя.',
-    gender: 'pair',
-    priceFrom: 150000,
-    priceNote: 'фото и видео; зависит от даты, времени года и количества часов',
-    age: '35–50',
-    experienceYears: 15,
-    aboutTitle: 'О нас',
-    filters: {
-      gender: 'pair',
-      city: ['цао', 'сао', 'свао', 'вао', 'юво', 'юао', 'юзао', 'зао', 'сзао', 'mo', 'вне-мо'],
-      experience: '15+',
-      minBudget: '150+',
-      style: ['reportage', 'staged', 'lifestyle'],
-      serviceType: ['full-day'],
-    },
-    packageIncludes: [
-      'Предварительная консультация по видеосвязи',
-      'Съёмка фото и видео одним комплектом',
-      'Авторская обработка 500–800 фотографий',
-      'Фильм на 20–40 минут в FullHD и тизер на минуту',
-      'Составление тайминга дня',
-      'Подбор локаций для утра и прогулки, цветовой гаммы и стилистики',
-      'Помощь с позированием',
-      'Обратная связь и советы на всех этапах',
-    ],
-    quote:
-      'Стоимость зависит от даты, времени года и количества часов — напишите нам, и мы посчитаем под ваш день. Сначала созвонимся по видеосвязи и обсудим всё до мелочей: это бесплатно и ни к чему не обязывает.',
-    offers: [
-      {
-        title: 'Работаем в паре',
-        text: 'Снимаем комплексом «фото + видео»: съёмка занимает минимум времени, а весь материал выходит в едином стиле. Действия отточены сотнями свадеб.',
-      },
-      {
-        title: 'Консультация до свадьбы',
-        text: 'Разбираем каждую деталь дня — включая те моменты, о которых вы сами ещё не думали.',
-      },
-      {
-        title: 'Помогаем с локациями',
-        text: 'Подскажем отель для сборов, места для съёмки и даже цвет костюма жениха — ждём ваши фото из примерочной.',
-      },
-      {
-        title: 'Ставим позы',
-        text: 'Вопрос «куда деть руки» просто не возникнет: позирование берём на себя, от вас — настроение.',
-      },
-      {
-        title: 'Топовая техника Nikon',
-        text: 'Объективы любой ширины, свой свет на банкете — всё, что нужно для съёмки в любых условиях.',
-      },
-      {
-        title: 'Приезжаем на своей машине',
-        text: 'В ней всегда есть печеньки и бутерброды.',
-      },
-      {
-        title: 'С нами ненапряжно',
-        text: 'Просто прикольные ребята, с которыми на съёмке комфортно и весело.',
-      },
-    ],
-  },
-];
+// Лешаковы (единственная карточка, записанная прямо в коде) переехали в
+// specialists/fotografy/leshakovy.json и в базу — 05.11.2026: база — единственный
+// источник карточек, правка в коде больше не нужна.
 
 // Пара снимает и фото, и видео — в обеих категориях стоит одна и та же
 // карточка, поэтому и массив здесь один. Ключ добавляется автоматически
@@ -420,17 +337,20 @@ export const FOTOGRAFY: Specialist[] = [
 // Карточка, которую владелец получил по приглашению и поправил в кабинете,
 // есть и в git (конвейер), и здесь: кабинет — источник правды (решение
 // 20.10), его версия заменяет файл из git, а не встаёт второй копией.
+const withLabel = (s: Specialist): Specialist => ({ ...s, category: SPECIALIST_CATEGORIES.find((c) => c.slug === s.categorySlug)?.label ?? s.categorySlug });
 const cabinetSpecialists = Object.values(
   import.meta.glob<Specialist>('./cabinet/specialists/*.json', { eager: true, import: 'default' })
-).map((s) => ({ ...s, category: SPECIALIST_CATEGORIES.find((c) => c.slug === s.categorySlug)?.label ?? s.categorySlug }));
+).map(withLabel);
 const fromCabinet = new Set(cabinetSpecialists.map((s) => `${s.categorySlug}/${s.slug}`));
+/** карточка из кабинета: визитку рисует сервер из базы (сайт из базы, этап 1) */
+export const isFromCabinet = (s: Pick<Specialist, 'categorySlug' | 'slug'>) => fromCabinet.has(`${s.categorySlug}/${s.slug}`);
 
 // Карточки «ведём мы» (пилот, 03.11, docs/cabinet/CABINET.md §24): визитка — наш JSON
 // из git, а цену и ответы на вопросы владелец правит сам в кабинете.
 // Одобренные правки кладёт scripts/pb-pull-cabinet.mjs (owner-edits.json,
 // в .gitignore); здесь они ложатся поверх JSON. Нет файла — JSON как есть.
 type OwnerEdits = { priceMode?: string; priceFrom?: number | null; priceNote?: string; filters?: Record<string, string | string[]> };
-const ownerEdits: Record<string, OwnerEdits> =
+let ownerEdits: Record<string, OwnerEdits> =
   Object.values(import.meta.glob<Record<string, OwnerEdits>>('./cabinet/owner-edits.json', { eager: true, import: 'default' }))[0] ?? {};
 
 /** ответы на вопросы дублируются плоскими полями (каталог, сравнение, «Похожие») — сводим их к новым ответам */
@@ -460,34 +380,37 @@ function withOwnerEdits(s: Specialist): Specialist {
   return out;
 }
 
-const jsonSpecialists = Object.values(
+// Наши карточки из git (конвейер specialist-page) — основа каталога.
+const GIT_SPECIALISTS = Object.values(
   import.meta.glob<Specialist>('./specialists/*/*.json', { eager: true, import: 'default' })
-)
-  .filter((s) => !fromCabinet.has(`${s.categorySlug}/${s.slug}`))
-  .map(withOwnerEdits)
-  .concat(cabinetSpecialists);
+);
 
-export const SPECIALISTS_BY_CATEGORY: Record<string, Specialist[]> = (() => {
+/** git + правки владельцев «ведём мы» + карточки из кабинета (кабинет главнее git) */
+function compose(cabinet: Specialist[]): Specialist[] {
+  return GIT_SPECIALISTS
+    .filter((s) => !fromCabinet.has(`${s.categorySlug}/${s.slug}`))
+    .map(withOwnerEdits)
+    .concat(cabinet);
+}
+
+function group(list: Specialist[]): Record<string, Specialist[]> {
   // Ведущие целиком из JSON: демо-набор на стоковых кадрах снят 18.09.2026,
   // в каталоге только реальные подрядчики.
-  const map: Record<string, Specialist[]> = {
-    fotografy: [...FOTOGRAFY],
-  };
-  for (const s of jsonSpecialists) (map[s.categorySlug] ??= []).push(s);
+  const map: Record<string, Specialist[]> = {};
+  for (const s of list) (map[s.categorySlug] ??= []).push(s);
 
   // снимок списков: пока своей категории не было, «Видеографы» собирались
   // только из alsoCategories; с первым JSON-видеографом цикл стал дописывать
   // в тот же массив, по которому идёт, и уходил в бесконечность
-  for (const list of Object.values(map).map((l) => [...l])) {
-    for (const s of list) {
+  for (const l of Object.values(map).map((x) => [...x])) {
+    for (const s of l) {
       for (const extra of s.alsoCategories ?? []) {
         (map[extra] ??= []).push(s);
       }
     }
   }
-
   return map;
-})();
+}
 
 /** ВСЕ ЖИВЫЕ КАРТОЧКИ ПОДРЯДЧИКОВ ОДНИМ СПИСКОМ — источник для общих
  *  потоков (доска главной). Дубли по slug сняты: карточка, стоящая в двух
@@ -495,20 +418,42 @@ export const SPECIALISTS_BY_CATEGORY: Record<string, Specialist[]> = (() => {
  *  должны попадать в ленту дважды. Демо-заглушки (demo: true) исключены
  *  намеренно: у них в photos стоковые кадры, и в ленте они выдавали бы
  *  чужую съёмку за работу конкретного подрядчика. */
-export const REAL_SPECIALISTS: Specialist[] = (() => {
+function realOf(map: Record<string, Specialist[]>): Specialist[] {
   const seen = new Set<string>();
   const out: Specialist[] = [];
-
-  for (const list of Object.values(SPECIALISTS_BY_CATEGORY)) {
-    for (const s of list) {
+  for (const l of Object.values(map)) {
+    for (const s of l) {
       if (s.demo || seen.has(s.slug)) continue;
       seen.add(s.slug);
       out.push(s);
     }
   }
-
   return out;
-})();
+}
+
+export const SPECIALISTS_BY_CATEGORY: Record<string, Specialist[]> = group(compose(cabinetSpecialists));
+export const REAL_SPECIALISTS: Specialist[] = realOf(SPECIALISTS_BY_CATEGORY);
+
+/**
+ * САЙТ ИЗ БАЗЫ (этап 2, 05.11.2026): страницы, которые рисует сервер, перед
+ * показом подставляют живые данные базы — карточки из кабинета и правки
+ * владельцев. Таблицы обновляются НА МЕСТЕ: их читают каталоги, «Похожие»,
+ * навигация, счётчики — и все они видят свежее без своей логики загрузки.
+ * Зовёт lib/live-data.ts (refreshLive), не страницы напрямую.
+ */
+export function applyLive(cards: Specialist[], edits: Record<string, OwnerEdits>, cabinetKeys: string[]) {
+  // этап 3 (05.11.2026): база — единственный источник карточек подрядчиков,
+  // git — только запасной вариант при старте службы (до первой загрузки)
+  ownerEdits = edits;
+  fromCabinet.clear();
+  for (const k of cabinetKeys) fromCabinet.add(k);
+  const map = group(cards.map(withLabel).map(withOwnerEdits));
+  for (const k of Object.keys(SPECIALISTS_BY_CATEGORY)) delete SPECIALISTS_BY_CATEGORY[k];
+  Object.assign(SPECIALISTS_BY_CATEGORY, map);
+  REAL_SPECIALISTS.length = 0;
+  REAL_SPECIALISTS.push(...realOf(map));
+}
+export type { OwnerEdits };
 
 // Остальные категории (и видеографы со своим набором) — из документов
 // заказчика «Основные фильтры для …», см. data/specialist-filters.ts.

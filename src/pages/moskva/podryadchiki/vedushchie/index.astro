@@ -6,6 +6,10 @@
 // Фильтр: полоса чипов над каталогом (FilterBar: иконка «все фильтры»,
 // сортировка, быстрые группы и популярные пункты) и шторка снизу
 // (FilterSheet) — одна механика на всех экранах, реф. Яндекс Путешествия.
+// САЙТ ИЗ БАЗЫ (этап 2, 05.11.2026): страницу рисует сервер из живых данных
+// (lib/live-data.ts) — новая карточка из кабинета и правка цены видны через
+// секунды, без пересборки сайта. nginx держит готовую страницу ~10 с.
+export const prerender = false;
 import Layout from '../../../../layouts/Layout.astro';
 import SiteHeader from '../../../../components/SiteHeader.astro';
 import BottomDock from '../../../../components/BottomDock.astro';
@@ -18,6 +22,10 @@ import { SPECIALISTS_BY_CATEGORY, VEDUSHCHIE_FILTERS, SPECIALIST_CATEGORIES, spe
 import { favoriteImage } from '../../../../lib/images';
 import { countOptions } from '../../../../lib/filter-counts';
 import { variantOf, type SpecialistCard } from '../../../../lib/specialist-card';
+import { refreshLive, LIVE_CACHE } from '../../../../lib/live-data';
+
+await refreshLive();
+Astro.response.headers.set('cache-control', LIVE_CACHE);
 
 // Бакеты для диапазонных фильтров — считаются на сборке, в разметку идёт
 // уже готовое значение бакета, JS на клиенте сравнивает строки.

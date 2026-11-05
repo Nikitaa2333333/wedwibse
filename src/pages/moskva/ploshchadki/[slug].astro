@@ -6,6 +6,9 @@
 // (lib/venue-blocks.ts): порядок и набор секций задают данные площадки,
 // а не этот файл. Новая площадка = объект в src/data/venues.ts или JSON
 // в src/data/venues/ (см. .claude/skills/venue-page).
+// САЙТ ИЗ БАЗЫ (этап 3, 05.11.2026): страницу рисует сервер из живых данных
+// базы (lib/live-data.ts) — правка площадки видна через секунды, без пересборки.
+export const prerender = false;
 import Layout from '../../../layouts/Layout.astro';
 import SiteHeader from '../../../components/SiteHeader.astro';
 import VenueHero from '../../../components/VenueHero.astro';
@@ -32,19 +35,13 @@ import { venueCard } from '../../../lib/similar-cards';
 import { venueReviews } from '../../../data/venue-reviews';
 import { reelsOfVenue } from '../../../data/reels';
 import { venueBlocks } from '../../../lib/venue-blocks';
+import { refreshLive, LIVE_CACHE } from '../../../lib/live-data';
 
-export function getStaticPaths() {
-  return VENUES.map((venue) => ({
-    params: { slug: venue.slug },
-    props: { venue },
-  }));
-}
-
-interface Props {
-  venue: Venue;
-}
-
-const { venue } = Astro.props;
+await refreshLive();
+const venue: Venue | undefined = VENUES.find((v) => v.slug === Astro.params.slug);
+// нет площадки — честная 404, а не пустая 200
+if (!venue) return new Response(null, { status: 404 });
+Astro.response.headers.set('cache-control', LIVE_CACHE);
 
 // Отзывы есть не у каждой площадки — блок и строка фактов в первом
 // экране появляются только там, где им есть что показать.

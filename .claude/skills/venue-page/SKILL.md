@@ -7,7 +7,8 @@ description: Конвейер «строка гугл-таблицы → гот�
 
 Цель: из строки таблицы (название, сайт, ссылка на материалы, Яндекс.Карты)
 получить `src/data/venues/<slug>.json` + фото в `src/assets/venues/<slug>/`,
-после чего страница `/moskva/ploshchadki/<slug>/` собирается сама.
+затем запись в базу (`pb-seed.mjs <slug> --publish`, фаза 4) — с 05.11.2026 сайт
+берёт площадки ТОЛЬКО из базы: JSON без записи в базе на сайт не выходит.
 
 Главный принцип: **нет единого шаблона страницы.** Тело карточки — список
 типизированных блоков `blocks` (тип `VenueBlock` в `src/data/venues.ts`),
@@ -268,8 +269,14 @@ phoneHref, email, hours, routes, links), seo`.
 ```
 node scripts/verify-venue.mjs <slug>   # структура, фото, цифры против сырья, типографика
 node scripts/place-photos.mjs <slug>   # кадры из JSON → src/assets (+og в public)
-npx astro build                        # 0 ошибок, страница /moskva/ploshchadki/<slug>/ есть
+bash scripts/pb-tunnel.sh              # туннель к базе на VPS
+node scripts/pb-seed.mjs <slug> --publish   # запись в базу — без неё площадки на сайте нет
 ```
+
+Полную `astro build` на ноутбуке не запускать (падает по памяти) — страницу
+рисует сервер из базы: после `pb-seed` она на сайте через ~30 с, проверять
+открытием `/moskva/ploshchadki/<slug>/`. Фото из `src/assets` попадут на сайт
+со следующей выкладкой кода; до неё сервер берёт их из базы по `photoIndex`.
 
 Haiku-проверка после скрипта: прочитать `venue.json` и `facts.json`,
 найти утверждения (не только цифры), которых нет в фактах, и отчёт списком.

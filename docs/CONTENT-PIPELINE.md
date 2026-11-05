@@ -195,7 +195,7 @@ bash scripts/research.sh ls      [слаг]                что уже выг�
 `.claude/skills/venue-page/SKILL.md`: материалы → исследование (Haiku) →
 факты (Haiku) → концепция и текст (Sonnet) → проверка скриптами и оркестратором.
 Итог — `src/data/venues/<slug>.json` + фото в `src/assets/venues/<slug>/`;
-JSON подхватывается автоматически. Сырьё лежит в `research/` (в `.gitignore`).
+на сайт она выходит только записью в базу (`pb-seed.mjs <slug> --publish`, с 05.11.2026). Сырьё лежит в `research/` (в `.gitignore`).
 Скрипты: `fetch-yadisk`, `fetch-urls`, `prep-photos`, `verify-venue`, `place-photos`
 в `scripts/`. Что сломалось в прогоне — дописывать в конец скилла, а не чинить молча.
 

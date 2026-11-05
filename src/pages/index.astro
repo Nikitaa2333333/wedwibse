@@ -5,15 +5,22 @@ import EntryRail from '../components/EntryRail.astro';
 import PhotoBoard from '../components/PhotoBoard.astro';
 import ThemeToggle from '../components/ThemeToggle.astro';
 import Icon from '../components/Icon.astro';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import creamFile from '../../public/logo-unicase.svg?raw';
+import { refreshLive, LIVE_CACHE } from '../lib/live-data';
+
+// САЙТ ИЗ БАЗЫ (этап 4, 05.11.2026): главную рисует сервер — доска собирает
+// кадры площадок и подрядчиков из живых данных базы (lib/gallery →
+// collectTiles), новая карточка попадает в ленту без пересборки сайта.
+export const prerender = false;
+await refreshLive();
+Astro.response.headers.set('cache-control', LIVE_CACHE);
 
 // ЛОГОТИП — встроенный <svg>, не CSS-маска (маской браузер растрирует
 // svg в родном размере и растягивает — знак выходил пиксельным).
 // Знак «крем» (06.10.2026): Cormorant Unicase + Tenor Sans в кривых,
 // цвет — currentColor, сам берёт --ink и тёмную тему. Прежний знак
 // с биркой лежит в public/logo-tag.svg.
-const creamFile = readFileSync(join(process.cwd(), 'public/logo-unicase.svg'), 'utf8');
+// файл знака встраивается при сборке (?raw): на сервере страниц public/ нет
 const creamViewBox = creamFile.match(/viewBox="([^"]+)"/)![1];
 const creamShapes = (creamFile.match(/<path\b[^>]*\/>/g) ?? []).join('');
 const logoCreamSvg = `<svg viewBox="${creamViewBox}" xmlns="http://www.w3.org/2000/svg" focusable="false">${creamShapes}</svg>`;
@@ -58,15 +65,8 @@ const logoCreamSvg = `<svg viewBox="${creamViewBox}" xmlns="http://www.w3.org/20
     <EntryRail />
 
     <!-- ДОСКА: все кадры каталога масонри-раскладкой, часть плиток
-         листается. Статьи лежат в том же потоке (см. PhotoBoard) —
-         отдельной секции «Журнал» на главной нет: она дублировала бы то,
-         что человек уже встретил, пока листал. Внизу остаётся только
-         вход в блог целиком. -->
+         листается. Блога пока нет (старый удалён 05.11.2026). -->
     <PhotoBoard />
-
-    {/* Вход в журнал снят вместе со статьями в доске (06.10.2026):
-        журнал пока не показываем. Вернуть — блок .journal-more
-        с пилюлей «Весь журнал» на /blog/ (стили ниже оставлены). */}
 
     <BottomDock active="feed" />
   </div>
@@ -169,14 +169,6 @@ const logoCreamSvg = `<svg viewBox="${creamViewBox}" xmlns="http://www.w3.org/20
   /* Кружок кабинета — .icon-btn из реестра. */
   .hero__account { grid-area: account; justify-self: end; }
 
-  /* ============ ВХОД В БЛОГ ============
-     Сами статьи попадаются в доске выше; тут только ссылка на журнал
-     целиком — по центру, без заголовка и без карточек. */
-  .journal-more {
-    display: flex;
-    justify-content: center;
-    padding-bottom: var(--s-8);
-  }
 </style>
 
 <script>

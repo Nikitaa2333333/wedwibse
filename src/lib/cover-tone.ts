@@ -13,6 +13,8 @@
 // тёмная плашка (25.09.2026).
 import sharp from 'sharp';
 import { join } from 'node:path';
+import { existsSync } from 'node:fs';
+import { resolveImage } from './images';
 
 export interface CoverTone {
   /** цвет плашки, #rrggbb */
@@ -32,8 +34,37 @@ export function coverTone(path: string): Promise<CoverTone> {
   return cache.get(path)!;
 }
 
+// Где лежит исходник кадра: при сборке и в dev — src/assets; на сервере,
+// который рисует страницы (сайт из базы, 05.11.2026), src/ нет, а оригиналы
+// лежат в client/_astro/ (ссылка на папку сайта) под именем из resolveImage.
+// Не нашли — спокойный тон по умолчанию: подпись не важнее всей страницы
+// (так хаб подрядчиков 05.11 обрывался на плитках).
+const FALLBACK: CoverTone = { bg: '#ece8e2', dark: false };
+function sourceFile(path: string): string | null {
+  const local = join(process.cwd(), 'src/assets', path);
+  if (existsSync(local)) return local;
+  try {
+    const src = resolveImage(path).src.split('?')[0];
+    const built = join(process.cwd(), 'client', src);
+    if (existsSync(built)) return built;
+  } catch {
+    /* кадра нет в реестре */
+  }
+  return null;
+}
+
 async function measure(path: string): Promise<CoverTone> {
-  const img = sharp(join(process.cwd(), 'src/assets', path));
+  const file = sourceFile(path);
+  if (!file) return FALLBACK;
+  try {
+    return await measureFile(file);
+  } catch {
+    return FALLBACK;
+  }
+}
+
+async function measureFile(file: string): Promise<CoverTone> {
+  const img = sharp(file);
   const { width = 1, height = 1 } = await img.metadata();
 
   // Мерим у нижнего края ВИДИМОЙ части: плитка показывает кадр в окне
@@ -43,7 +74,7 @@ async function measure(path: string): Promise<CoverTone> {
   const shown = Math.min(height, Math.round(width / FRAME_RATIO));
   const bottom = height - Math.round((height - shown) / 2);
   const h = Math.max(1, Math.round(shown * 0.04));
-  const strip = await sharp(join(process.cwd(), 'src/assets', path))
+  const strip = await sharp(file)
     .extract({ left: 0, top: bottom - h, width, height: h })
     .stats();
   const [r, g, b] = [0, 1, 2].map((c) => strip.channels[c].mean);

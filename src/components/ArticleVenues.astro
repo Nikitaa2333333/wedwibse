@@ -10,7 +10,8 @@
 import RelatedCards from './RelatedCards.astro';
 import { venueCard } from '../lib/similar-cards';
 import type { FeedVenue } from '../data/feed';
-import type { Collection } from '../data/articles';
+/** ссылка на подборку каталога: анкор — то, чем её называют в тексте */
+interface Collection { label: string; href: string }
 
 interface Props {
   title: string;

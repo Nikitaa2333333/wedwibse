@@ -366,10 +366,13 @@ function deploySite(why) {
 }
 
 /** карточка из кабинета сохранена (одобрение, снятие, правка в админке базы) — на сайт */
+// САЙТ ИЗ БАЗЫ, этап 2 (05.11.2026): раздел подрядчиков целиком рисует
+// сервер из живых данных (src/lib/live-data.ts) — каталоги, визитки,
+// «Похожие», карта раздела. Карточка из кабинета и правки владельцев видны
+// через секунды, ПЕРЕСБОРКА САЙТА НЕ НУЖНА. Хук больше ничего не запускает;
+// deploySite остаётся для площадок из кабинета (этап 3).
 function cardSaved(e) {
   e.next();
-  const page = jsonOf(e.record, 'page');
-  if (page.source === 'cabinet' || page.ownerEdits) deploySite(`${e.record.getString('categorySlug')}/${e.record.getString('slug')} → ${e.record.getString('status')}`);
 }
 
 function mailVendor(app, vendorId, subject, html) {
@@ -1321,9 +1324,9 @@ function modRemove(e) {
 
 /** карточку из кабинета удалили совсем — сайт пересобрать без неё */
 function cardDeleted(e) {
+  // раздел подрядчиков — с сервера из базы (этап 2): удалённая карточка
+  // исчезает с сайта сама, пересборка не нужна
   e.next();
-  const page = jsonOf(e.record, 'page');
-  if (page.source === 'cabinet') deploySite(`${e.record.getString('slug')} → удалена`);
 }
 
 module.exports = {

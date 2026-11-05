@@ -42,19 +42,11 @@ jobs:
       - name: Cabinet style guard
         run: node scripts/check-cabinet-style.mjs
 
-      # КАРТОЧКИ ИЗ КАБИНЕТА ПОДРЯДЧИКА: одобренные модератором лежат в базе,
-      # в git их нет. Скрипт кладёт их в src/data/cabinet/ и src/assets/cabinet/
-      # только на этом раннере (docs/archive/STAGE2-log.md, «Сквозная проверка»). Переменная
-      # PB_PUBLIC_URL (Settings → Variables) ставится, когда /api/ открыт через
-      # nginx; без неё сайт собирается как раньше.
-      # База не ответила — выкладка ОСТАНАВЛИВАЕТСЯ (05.11.2026): сборка без
-      # карточек кабинета + rsync --delete стёрла бы их с сайта. На сервере
-      # остаётся прежняя версия, о сбое пишет шаг уведомления.
-      - name: Cabinet cards from base
-        timeout-minutes: 10
-        env:
-          PB_PUBLIC_URL: ${{ vars.PB_PUBLIC_URL }}
-        run: node scripts/pb-pull-cabinet.mjs
+      # Шага «Cabinet cards from base» (pb-pull-cabinet) больше нет (05.11.2026):
+      # карточки подрядчиков и площадок рисует служба wedsecrets-ssr прямо из
+      # базы (src/lib/live-data.ts), в статике их страниц нет — выгружать их
+      # в сборку незачем, а сбой базы останавливал всю выкладку кода.
+      # Скрипт остался для scripts/e2e-cabinet.mjs.
 
       - name: Build
         env:
@@ -131,12 +123,13 @@ jobs:
           done
           exit 1
 
-      # СЕРВЕР ПРЕВЬЮ (03.11). Сайт — статика из dist/client (шаг выше), а одну
-      # страницу — превью анкеты до одобрения (/profi/prevyu/) — рисует Astro
-      # на самом VPS: служба wedsecrets-ssr (node dist/server/entry.mjs на
-      # 127.0.0.1:4321), nginx проксирует ей /profi/prevyu/ и /_image.
+      # СЕРВЕР СТРАНИЦ ИЗ БАЗЫ (03.11, с 05.11 — весь каталог). Статика —
+      # dist/client (шаг выше); главную, /moskva/podryadchiki/**, /moskva/ploshchadki/**,
+      # карту каталога, превью анкеты и /_image рисует служба wedsecrets-ssr
+      # (node dist/server/entry.mjs на 127.0.0.1:4321), docs/DEPLOY.md.
       # Зависимости ставятся на сервере, только когда поменялся package-lock.
-      # Падение здесь не трогает сайт: статика уже залита.
+      # Падение здесь ЛОМАЕТ каталог: новая статика уже залита, а служба на
+      # старом коде — перезапустить шаг (Re-run).
       - name: Preview server
         timeout-minutes: 15
         run: |
@@ -145,12 +138,37 @@ jobs:
           mkdir -p ssr && cp -r dist/server ssr/server && cp package.json package-lock.json ssr/
           rsync -az --checksum --delete --timeout=60 --exclude 'node_modules/' --exclude '.installed-lock' --exclude 'client/' \
             -e "$SSH" ssr/ "$TARGET:/srv/wedsecrets-ssr/"
-          $SSH "$TARGET" 'set -e; cd /srv/wedsecrets-ssr; mkdir -p client
+          # client → папка сайта (05.11.2026): там лежат оригиналы фото проекта
+          # (/_astro/*), и /_image сервера режет их на лету — без этого фото
+          # из src/assets на страницах, которые рисует сервер, отвечали 500.
+          $SSH "$TARGET" 'set -e; cd /srv/wedsecrets-ssr
+            [ -L client ] || { rm -rf client; ln -s /var/www/wedsecrets client; }
             if ! cmp -s package-lock.json .installed-lock; then
               npm ci --omit=dev --no-audit --no-fund && cp package-lock.json .installed-lock
             fi
             sudo /usr/bin/systemctl restart wedsecrets-ssr; sleep 3
             curl -s -o /dev/null -w "превью отвечает: %{http_code}\n" http://127.0.0.1:4321/profi/prevyu/'
+
+      # ПРОГРЕВ НАРЕЗКИ ФОТО (05.11.2026): кадры каталога режутся на сервере по
+      # первому запросу; на холодном кэше пачка нарезок 05.11 уронила службу
+      # по памяти. Скрипт режет их заранее и по одному — на самом сервере,
+      # в фоне (первый прогон — пара часов, дальше только новые кадры).
+      # flock: второй деплой не запускает второй прогрев поверх первого.
+      # ВЫКЛЮЧЕН (05.11.2026, первый прогон): служба падала по памяти даже при
+      # нарезке по одному кадру — память sharp растёт и не возвращается. Включать
+      # после настройки юнита (MALLOC_ARENA_MAX=2, VIPS_CONCURRENCY=1, лимит выше),
+      # docs/AUDIT-2026-11-06.md. Шаг не роняет выкладку (continue-on-error),
+      # ssh не ждёт фоновый процесс (setsid + ssh -f).
+      - name: Warm image cache
+        if: ${{ false }}
+        continue-on-error: true
+        timeout-minutes: 2
+        run: |
+          TARGET="${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}"
+          scp -i ~/.ssh/id_ed25519 -o BatchMode=yes scripts/warm-images.sh "$TARGET:/srv/wedsecrets-ssr/warm-images.sh"
+          ssh -f -i ~/.ssh/id_ed25519 -o BatchMode=yes -o ConnectTimeout=20 "$TARGET" \
+            'cd /srv/wedsecrets-ssr && setsid nohup flock -n .warm.lock bash warm-images.sh > warm.log 2>&1 < /dev/null &'
+          echo "прогрев запущен, журнал /srv/wedsecrets-ssr/warm.log"
 
       # Проверять по IP бессмысленно: nginx разбирает запросы по server_name,
       # и на голый адрес отвечает дефолтный сервер, а не наш сайт. Стучимся
@@ -160,6 +178,25 @@ jobs:
           code=$(curl -sL -o /dev/null -w '%{http_code}' https://wed-secrets.ru/)
           echo "Главная отдала $code"
           test "$code" = "200"
+          # 05.11.2026: страницы с сервера отдавали noindex — флаг индексации
+          # не доходил до службы, а проверка смотрела только код ответа. Теперь
+          # смотрим содержимое: нет noindex, есть заголовок и плитки.
+          # кэш nginx живёт 10 с и отдаёт устаревшую копию, пока обновляет её
+          # в фоне — первый проход только будит обновление, проверяем вторым
+          pages="/ /moskva/podryadchiki/ /moskva/ploshchadki/ /moskva/podryadchiki/fotografy/"
+          for p in $pages; do curl -s -o /dev/null "https://wed-secrets.ru$p"; done
+          sleep 15
+          bad=0
+          for p in $pages; do
+            html=$(curl -sL "https://wed-secrets.ru$p")
+            imgs=$(printf '%s' "$html" | grep -o '<img' | wc -l)
+            if printf '%s' "$html" | grep -q 'name="robots" content="noindex'; then echo "noindex на $p"; bad=1; fi
+            if ! printf '%s' "$html" | grep -q '<h1'; then echo "нет h1 на $p"; bad=1; fi
+            if ! printf '%s' "$html" | grep -q '</body>'; then echo "страница оборвана: $p"; bad=1; fi
+            echo "$p: картинок $imgs"
+            [ "$imgs" -ge 5 ] || { echo "мало плиток на $p"; bad=1; }
+          done
+          test "$bad" = "0"
 
       # РОЛИКИ НЕ В GIT (docs/VIDEO.md): они живут на сервере отдельно и заливаются
       # scripts/media-push.sh руками. 28.09 код с роликами Балашовой и
@@ -185,9 +222,9 @@ jobs:
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
           TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          WHY: ${{ github.event_name == 'workflow_dispatch' && 'после решения модератора' || 'после изменений в коде' }}
         run: |
           [ -n "$TG_BOT_TOKEN" ] && [ -n "$TG_CHAT_ID" ] || { echo "нет TG_BOT_TOKEN / TG_CHAT_ID в секретах"; exit 0; }
-          text="Сайт не обновился ($WHY). Одобренные карточки пока не на сайте — нужно перезапустить выкладку: Actions → Deploy → Re-run. $RUN_URL"
+          # карточки из базы на сайт идут без выкладки (05.11.2026) — упала только выкладка кода
+          text="Выкладка кода сайта не прошла — нужно перезапустить: Actions → Deploy → Re-run. Карточки из базы это не задерживает. $RUN_URL"
           curl -s -o /dev/null -w "telegram %{http_code}\n" -X POST "https://api.telegram.org/bot$TG_BOT_TOKEN/sendMessage" \
             -d chat_id="$TG_CHAT_ID" --data-urlencode text="$text" -d disable_web_page_preview=true

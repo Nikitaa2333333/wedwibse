@@ -2,27 +2,27 @@
 // СТРАНИЦА-ВИЗИТКА СПЕЦИАЛИСТА. Сама визитка — компонент SpecialistProfile:
 // тем же кодом рисуется превью анкеты до одобрения (/profi/prevyu/).
 //
-// Открывается визитка у тех, у кого есть материал для неё (quote/offers),
-// а не у всех карточек каталога: пустая страница-визитка хуже её отсутствия.
+// САЙТ ИЗ БАЗЫ (этап 2, 05.11.2026): страницу рисует сервер в момент открытия
+// из живых данных — наши карточки из git, правки владельцев и карточки из
+// кабинета (lib/live-data.ts). Правка в кабинете видна через секунды, без
+// пересборки сайта. nginx держит готовую страницу ~10 с.
 //
-// Карточка, стоящая в двух категориях (пара «фото + видео» — и в
-// «Фотографах», и в «Видеографах»), имеет РОВНО ОДИН адрес: путь строится
-// по родной categorySlug, дубля страницы под тем же текстом нет.
+// Открывается визитка у тех, у кого есть материал для неё (quote/offers/story),
+// а не у всех карточек каталога: пустая страница-визитка хуже её отсутствия.
+// Карточка в двух категориях (пара «фото + видео») имеет РОВНО ОДИН адрес —
+// по родной categorySlug, дубля под тем же текстом нет.
+export const prerender = false;
+
 import SpecialistProfile from '../../../../components/SpecialistProfile.astro';
-import { SPECIALISTS_BY_CATEGORY, hasProfile, type Specialist } from '../../../../data/specialists';
+import { SPECIALISTS_BY_CATEGORY, hasProfile } from '../../../../data/specialists';
+import { refreshLive, LIVE_CACHE } from '../../../../lib/live-data';
 
-export function getStaticPaths() {
-  const seen = new Set<string>();
-
-  return Object.values(SPECIALISTS_BY_CATEGORY)
-    .flat()
-    // визитка есть у тех, кто дал материал: предложение или список причин
-    .filter(hasProfile)
-    .filter((s) => !seen.has(s.slug) && seen.add(s.slug))
-    .map((s) => ({ params: { category: s.categorySlug, slug: s.slug }, props: { s } }));
-}
-
-const { s } = Astro.props as { s: Specialist };
+await refreshLive();
+const { category = '', slug = '' } = Astro.params;
+const s = (SPECIALISTS_BY_CATEGORY[category] ?? []).find((x) => x.slug === slug && x.categorySlug === category);
+// нет карточки (или визитки у неё нет) — честная 404, а не пустая 200
+if (!s || !hasProfile(s)) return new Response(null, { status: 404 });
+Astro.response.headers.set('cache-control', LIVE_CACHE);
 ---
 
 <SpecialistProfile s={s} />

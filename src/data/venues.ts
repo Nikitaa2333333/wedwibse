@@ -1555,3 +1555,10 @@ const jsonVenues = Object.values(
 );
 
 export const VENUES: Venue[] = [riverLoft, forestDew, sparkHall, ledOrangery, ...jsonVenues];
+
+/** САЙТ ИЗ БАЗЫ (этап 3, 05.11.2026): площадки из базы подставляются на место
+ *  — страницы, каталог и «Похожие» читают этот же массив (lib/live-data.ts). */
+export function applyLiveVenues(list: Venue[]) {
+  VENUES.length = 0;
+  VENUES.push(...list);
+}
