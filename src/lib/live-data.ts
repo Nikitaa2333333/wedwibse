@@ -13,7 +13,7 @@
 import type { ImageMetadata } from 'astro';
 import { inferRemoteSize } from 'astro:assets';
 import { cardFromPage, orderedPhotos } from './cabinet-card.mjs';
-import { registerRemote, hasRemote, hasLocalImage } from './images';
+import { catalogImage, catalogEntries, setCatalogImages, hasLocalImage } from './images';
 import { applyLive, type OwnerEdits, type Specialist } from '../data/specialists';
 import { applyLiveVenues, type Venue } from '../data/venues';
 import { applyLiveFeed, STATIC_FEED, type FeedVenue } from '../data/feed';
@@ -50,25 +50,52 @@ async function fetchPublished(collection = 'specialists'): Promise<PbRecord[]> {
   return out;
 }
 
+// Реестр кадров каталога собирается заново на каждой загрузке (images.ts,
+// setCatalogImages): замеренное раньше переносится без сети, снятое выпадает.
+type Reg = Map<string, ImageMetadata>;
+const MEASURE_MS = 5000;
+/** последняя удачная версия карточки: сбой замера фото не убирает её с сайта */
+const lastCards = new Map<string, Specialist>();
+const lastVenues = new Map<string, Venue>();
+/** был сбой замера в этой загрузке — повторить скоро, а не через 20 с */
+let measureFailed = false;
+
+/** перенести в новый реестр все кадры каталога, на которые ссылается объект */
+function carry(obj: unknown, next: Reg) {
+  for (const m of JSON.stringify(obj).matchAll(/"(https?:\/\/[^"]+\/api\/files\/[^"]+)"/g)) {
+    const meta = catalogImage(m[1]);
+    if (meta) next.set(m[1], meta);
+  }
+}
+
 /** размеры кадра узнаём один раз — дальше они в памяти службы */
-async function remoteKey(rec: PbRecord, name: string): Promise<string | null> {
-  const key = `${FILES}/api/files/${rec.collectionId}/${rec.id}/${encodeURIComponent(name)}`;
-  if (hasRemote(key)) return key;
+async function remoteKey(rec: PbRecord, name: string, next: Reg): Promise<string | null> {
+  const tail = `/api/files/${rec.collectionId}/${rec.id}/${encodeURIComponent(name)}`;
+  const key = `${FILES}${tail}`;
+  const known = next.get(key) ?? catalogImage(key);
+  if (known) { next.set(key, known); return key; }
   try {
-    const size = await inferRemoteSize(key);
-    registerRemote(key, { src: key, width: size.width, height: size.height, format: size.format } as ImageMetadata);
+    // не дольше 5 с: подвисшая отдача файлов не должна держать загрузку
+    // каталога (05.11.2026). Адрес — публичный: inferRemoteSize пускает
+    // только адреса из image.remotePatterns, внутренний 127.0.0.1 там нет.
+    const size = await Promise.race([
+      inferRemoteSize(key),
+      new Promise<never>((_, no) => setTimeout(() => no(new Error('замер дольше 5 с')), MEASURE_MS)),
+    ]);
+    next.set(key, { src: key, width: size.width, height: size.height, format: size.format } as ImageMetadata);
     return key;
   } catch {
+    measureFailed = true;
     return null; // битый кадр не роняет страницу — пропускаем, как сборка
   }
 }
 
-async function cabinetCard(rec: PbRecord): Promise<Specialist | null> {
+async function cabinetCard(rec: PbRecord, next: Reg): Promise<Specialist | null> {
   const names = orderedPhotos(rec.page, rec.photos ?? []);
   const photos: string[] = [];
   // по 4 кадра за раз: не забиваем базу и память службы
   for (let i = 0; i < names.length; i += 4) {
-    const keys = await Promise.all(names.slice(i, i + 4).map((n: string) => remoteKey(rec, n)));
+    const keys = await Promise.all(names.slice(i, i + 4).map((n: string) => remoteKey(rec, n, next)));
     photos.push(...(keys.filter(Boolean) as string[]));
   }
   if (!photos.length) return null;
@@ -81,7 +108,7 @@ async function cabinetCard(rec: PbRecord): Promise<Specialist | null> {
  * которого нет — берём файл из базы по photoIndex (новая карточка конвейера
  * видна на сайте сразу, без сборки).
  */
-async function ourCard(rec: PbRecord): Promise<Specialist | null> {
+async function ourCard(rec: PbRecord, next: Reg): Promise<Specialist | null> {
   const p = { ...(rec.page ?? {}) } as Specialist & { ownerEdits?: unknown };
   delete p.ownerEdits;
   const byPath: Record<string, string> = {};
@@ -89,7 +116,7 @@ async function ourCard(rec: PbRecord): Promise<Specialist | null> {
   const one = async (path: string): Promise<string | null> => {
     if (!path || hasLocalImage(path)) return path || null;
     const pbName = byPath[path];
-    return pbName ? remoteKey(rec, pbName) : null;
+    return pbName ? remoteKey(rec, pbName, next) : null;
   };
   const photos = (await Promise.all((p.photos ?? []).map(one))).filter(Boolean) as string[];
   if (!photos.length) return null;
@@ -104,13 +131,19 @@ async function ourCard(rec: PbRecord): Promise<Specialist | null> {
 // ---------- площадки (этап 3) ----------
 const priceFmt = new Intl.NumberFormat('ru-RU');
 /** все пути кадров внутри страницы площадки (блоки, залы, первый экран) */
-async function mapVenueImages(rec: PbRecord, node: unknown): Promise<unknown> {
+/** null — кадр из базы не замерился: сырой путь /venues/… уронил бы resolveImage */
+async function mapVenueImages(rec: PbRecord, node: unknown, next: Reg): Promise<unknown | null> {
   const byPath: Record<string, string> = {};
   for (const [pbName, src] of Object.entries(rec.photoIndex ?? {})) byPath[src] = pbName;
+  let broken = false;
   const walk = async (v: unknown): Promise<unknown> => {
     if (typeof v === 'string') {
       if (!/^\/venues\/.+\.(webp|jpe?g|png)$/i.test(v) || hasLocalImage(v)) return v;
-      return byPath[v] ? (await remoteKey(rec, byPath[v])) ?? v : v;
+      // пути вне photoIndex (логотип из public/) остаются как есть
+      if (!byPath[v]) return v;
+      const key = await remoteKey(rec, byPath[v], next);
+      if (!key) broken = true;
+      return key ?? v;
     }
     if (Array.isArray(v)) return Promise.all(v.map(walk));
     if (v && typeof v === 'object') {
@@ -120,7 +153,8 @@ async function mapVenueImages(rec: PbRecord, node: unknown): Promise<unknown> {
     }
     return v;
   };
-  return walk(node);
+  const out = await walk(node);
+  return broken ? null : out;
 }
 
 /** карточка каталога: записанная руками (feed.ts) или собранная из полей базы */
@@ -144,30 +178,39 @@ function feedOf(rec: PbRecord & Record<string, any>, venue: Venue): FeedVenue {
   } as FeedVenue;
 }
 
-async function loadVenues() {
+async function loadVenues(next: Reg) {
   const recs = await fetchPublished('venues');
   // в базе площадок ещё нет — остаёмся на данных сборки, каталог не обнуляем
-  if (!recs.length) return;
+  if (!recs.length) return null;
   const venues: Venue[] = [];
   const feed: FeedVenue[] = [];
   for (const rec of recs) {
     if (!rec.slug || !rec.page) continue;
-    const venue = (await mapVenueImages(rec, rec.page)) as Venue;
-    venues.push(venue);
-    feed.push(feedOf(rec as any, venue));
+    // одна битая запись не останавливает обновление всего каталога (05.11.2026)
+    try {
+      let venue = (await mapVenueImages(rec, rec.page, next)) as Venue | null;
+      if (venue) lastVenues.set(rec.slug, venue);
+      else {
+        // кадр не замерился — прошлая удачная версия площадки, а без неё площадку пропускаем
+        venue = lastVenues.get(rec.slug) ?? null;
+        if (!venue) { console.error(`live-data: площадка ${rec.slug} — нет кадров, пропущена`); continue; }
+        carry(venue, next);
+      }
+      venues.push(venue);
+      feed.push(feedOf(rec as any, venue));
+    } catch (err) {
+      console.error(`live-data: площадка ${rec.slug}:`, (err as Error).message);
+    }
   }
-  if (!venues.length) return;
+  if (!venues.length) return null;
   // порядок каталога — как в ленте feed.ts, новые площадки — следом
   const pos = (slug: string) => { const i = STATIC_FEED.findIndex((f) => f.slug === slug); return i < 0 ? 1e6 : i; };
   feed.sort((a, b) => pos(a.slug) - pos(b.slug));
   venues.sort((a, b) => pos(a.slug) - pos(b.slug));
-  applyLiveVenues(venues);
-  applyLiveFeed(feed);
+  return { venues, feed };
 }
 
-async function load() {
-  // площадки — своей загрузкой: сбой у них не трогает подрядчиков
-  await loadVenues().catch((err) => console.error('live-data, площадки:', (err as Error).message));
+async function loadSpecialists(next: Reg) {
   const recs = await fetchPublished();
   const cards: Specialist[] = [];
   const cabinetKeys: string[] = [];
@@ -176,13 +219,17 @@ async function load() {
     if (!rec.slug || !rec.categorySlug) continue;
     const p = rec.page ?? {};
     const key = `${rec.categorySlug}/${rec.slug}`;
-    if (p.source === 'cabinet') {
-      const card = await cabinetCard(rec);
-      if (card) { cards.push(card); cabinetKeys.push(key); }
-    } else {
-      const card = await ourCard(rec);
-      if (card) cards.push(card);
-      if (p.ownerEdits) edits[key] = p.ownerEdits;
+    try {
+      const fresh = p.source === 'cabinet' ? await cabinetCard(rec, next) : await ourCard(rec, next);
+      // ни один кадр не замерился (база моргнула) — прошлая удачная версия, а не 404
+      const card = fresh ?? lastCards.get(key) ?? null;
+      if (!card) continue;
+      if (fresh) lastCards.set(key, fresh); else carry(card, next);
+      cards.push(card);
+      if (p.source === 'cabinet') cabinetKeys.push(key);
+      else if (p.ownerEdits) edits[key] = p.ownerEdits;
+    } catch (err) {
+      console.error(`live-data: карточка ${key}:`, (err as Error).message);
     }
   }
   // пустой ответ базы не обнуляет каталог: это сбой, а не «подрядчиков нет»
@@ -192,21 +239,51 @@ async function load() {
   const isCab = (c: Specialist) => cabinetKeys.includes(`${c.categorySlug}/${c.slug}`);
   const byPath = (x: Specialist, y: Specialist) => `${x.categorySlug}/${x.slug}`.localeCompare(`${y.categorySlug}/${y.slug}`, 'en');
   cards.sort((x, y) => Number(isCab(x)) - Number(isCab(y)) || (isCab(x) ? 0 : byPath(x, y)));
-  applyLive(cards, edits, cabinetKeys);
-  freshAt = Date.now();
+  return { cards, edits, cabinetKeys };
 }
 
-/** подставить свежие данные базы (не чаще раза в 20 с; одна загрузка на всех) */
+async function load() {
+  measureFailed = false;
+  const next: Reg = new Map();
+  // площадки и подрядчики — раздельно: сбой одних не трогает других
+  const v = await loadVenues(next).catch((err) => { console.error('live-data, площадки:', (err as Error).message); return null; });
+  const s = await loadSpecialists(next).catch((err) => { console.error('live-data, подрядчики:', (err as Error).message); return null; });
+  // часть осталась на прежних данных — их кадры остаются в реестре
+  if (!v || !s) carryAll(next);
+  // подмена — синхронно, одним куском: запрос не видит половину обновления
+  setCatalogImages(next);
+  if (v) { applyLiveVenues(v.venues); applyLiveFeed(v.feed); }
+  if (s) applyLive(s.cards, s.edits, s.cabinetKeys);
+  if (!s) throw new Error('подрядчики не обновлены');
+  // кадр не замерился — повторить через 5 с, остальное как обычно
+  freshAt = measureFailed ? Date.now() - FRESH_MS + 5_000 : Date.now();
+}
+
+/** весь прежний реестр — в новый (часть каталога осталась на старых данных) */
+function carryAll(next: Reg) {
+  for (const [key, meta] of catalogEntries()) if (!next.has(key)) next.set(key, meta);
+}
+
+let everLoaded = false;
+/**
+ * Подставить свежие данные базы (не чаще раза в 20 с; одна загрузка на всех).
+ * Страница ждёт загрузку только самую первую после запуска службы (и не
+ * дольше 10 с — дальше отрисуется на снимке из git). Дальше — «отдать старое,
+ * обновить в фоне»: раньше каждый 20-секундный запрос ждал всю загрузку
+ * базы и замеры кадров (05.11.2026).
+ */
 export async function refreshLive(): Promise<void> {
   if (Date.now() - freshAt < FRESH_MS) return;
   inflight ??= load()
+    .then(() => { everLoaded = true; })
     .catch((err) => {
       // база недоступна: работаем на последнем удачном состоянии
       console.error('live-data:', (err as Error).message);
       freshAt = Date.now() - FRESH_MS + 5_000; // повторить через 5 с, а не на каждом запросе
     })
     .finally(() => { inflight = null; });
-  await inflight;
+  if (everLoaded) return;
+  await Promise.race([inflight, new Promise((ok) => setTimeout(ok, 10_000))]);
 }
 
 /** заголовок кэша для страниц с живыми данными: nginx держит их секунды */
