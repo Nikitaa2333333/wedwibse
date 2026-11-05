@@ -465,6 +465,18 @@ if (!MAX_SECRET) {
   await hook({ update_type: 'bot_stopped', timestamp: Date.now(), user: { user_id: Number(maxId) } });
   const stopped = (await call(SU, 'GET', `/api/collections/vendors/records/${A.id}`)).json;
   check('остановил бота — заявки в MAX выключены', stopped?.notify?.max === false && stopped?.maxId === maxId, JSON.stringify(stopped?.notify));
+
+  // бота добавили в чат модераторов — номер чата в журнал (MAX_CHAT_ID, scripts/max-chats.sh)
+  const chatId = -Math.floor(1e9 + Math.random() * 1e9);
+  await hook({ update_type: 'bot_added', timestamp: Date.now(), chat_id: chatId, user: { user_id: 1 }, is_channel: false });
+  // журнал база пишет пачками с задержкой — ждём до 10 с
+  let logs;
+  for (let i = 0; i < 20; i++) {
+    logs = await call(SU, 'GET', `/api/logs?perPage=5&filter=${encodeURIComponent(`message = "max: бот в чате" && data.chat_id = "${chatId}"`)}`);
+    if (logs.json?.items?.length) break;
+    await new Promise((ok) => setTimeout(ok, 500));
+  }
+  check('номер чата, куда добавили бота, — в журнале', logs.json?.items?.length === 1, logs.text);
 }
 
 // ---------- вход по почте ----------
