@@ -4,7 +4,7 @@
 // Запись карты: { out, src, ss, crop?, crf?, poster? } — crop по умолчанию 2:3 центром,
 // crf по умолчанию 30 (32 — если минута вышла тяжелее 8 МБ),
 // poster: true — заодно вырезать постер 1080×1620 из исходника на той же секунде.
-// Сама карта лежит в research/ (в .gitignore, как и исходники), см. VIDEO.md.
+// Сама карта лежит в research/ (в .gitignore, как и исходники), см. docs/VIDEO.md.
 import { spawnSync } from 'node:child_process';
 import { readFileSync, renameSync, statSync } from 'node:fs';
 

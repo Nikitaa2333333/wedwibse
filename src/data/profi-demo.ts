@@ -60,7 +60,7 @@ export const DEMO_CARDS: CabinetCard[] = [
 // Только честные цифры, у каждой — источник. Пока подсчёт не подключён,
 // показываем «нет данных», а не выдуманные числа (Никита, 24.10.2026).
 // Вживую: просмотры — API Яндекс Метрики по адресу страницы карточки;
-// избранное и открытия контактов — считает наш сервер (CABINET.md §18).
+// избранное и открытия контактов — считает наш сервер (docs/cabinet/CABINET.md §18).
 export interface InterestMetric {
   key: 'views' | 'saves' | 'contacts';
   label: string;
@@ -77,7 +77,7 @@ export const INTEREST_METRICS: InterestMetric[] = [
 ];
 
 // Разделы анкеты подрядчика и их состояние — то, что хаб анкеты показывает
-// строками (CABINET-UX.md §2 п.3). Вживую считается из данных ревизии.
+// строками (docs/cabinet/CABINET-UX.md §2 п.3). Вживую считается из данных ревизии.
 export interface FormSection {
   slug: string;
   label: string;

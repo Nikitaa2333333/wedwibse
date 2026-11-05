@@ -134,9 +134,9 @@ const QUESTIONS = Object.fromEntries(
         ].filter(Boolean);
         rows.push(`<dt>Условия</dt><dd>${esc(lines.join('\n'))}</dd>`);
       }
-      // ссылки на ролики: ролик готовим и ставим сами (VIDEO.md), на сайт ссылка не идёт
+      // ссылки на ролики: ролик готовим и ставим сами (docs/VIDEO.md), на сайт ссылка не идёт
       const videos = (d.videos ?? []).map((v: any) => String(v?.url ?? '').trim()).filter((u: string) => /^https?:\/\//.test(u));
-      if (videos.length) rows.push(`<dt>Видео — подготовить по VIDEO.md</dt><dd>${videos.map((u: string) => `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(u)}</a>`).join('\n')}</dd>`);
+      if (videos.length) rows.push(`<dt>Видео — подготовить по docs/VIDEO.md</dt><dd>${videos.map((u: string) => `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(u)}</a>`).join('\n')}</dd>`);
       const c = d.contacts ?? {};
       rows.push(`<dt>Контакты (скрыты, за кнопкой)</dt><dd>${esc([c.phone, c.telegram && `Telegram ${c.telegram}`, c.max && `MAX ${c.max}`, c.site, c.email].filter(Boolean).join(' · ')) || 'пусто'}</dd>`);
       // карточка «ведём мы» (пилот, 03.11): одобрение меняет только цену,

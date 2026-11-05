@@ -4,7 +4,7 @@
 // list — все .mp4/.mov по папке рекурсивно (путь, МБ). get — качает пути
 // из JSON-массива в research/specialists/<slug>/video/ (кириллица через
 // argv Git Bash ломается, поэтому файл). Гигабайтные исходники не брать:
-// в карточку идёт 8-секундный луп, хватает 2–3 лёгких файлов — см. VIDEO.md.
+// в карточку идёт 8-секундный луп, хватает 2–3 лёгких файлов — см. docs/VIDEO.md.
 import { writeFile, mkdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 

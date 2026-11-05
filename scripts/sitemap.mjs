@@ -2,7 +2,7 @@
 // dist/sitemap.xml. Собираем из HTML, а не из данных: так в карту попадает
 // ровно то, что реально лежит на сервере, и новая страница не потеряется.
 // Страницы с <meta name="robots" content="noindex"> (избранное и т.п.)
-// в карту не идут. Зависимостей нет — решение 20.10.2026 (SEO.md, раздел 5).
+// в карту не идут. Зависимостей нет — решение 20.10.2026 (docs/seo/SEO.md, раздел 5).
 //
 //   node scripts/sitemap.mjs [dist] [https://wed-secrets.ru]
 import { readdirSync, readFileSync, writeFileSync, statSync } from 'node:fs';

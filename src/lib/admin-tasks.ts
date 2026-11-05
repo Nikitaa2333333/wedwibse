@@ -4,7 +4,7 @@
 import { cardByKey } from './admin-catalog';
 import type { PartnerApp } from '../data/partner-demo';
 
-/** срок ответа — 24 часа с отправки (CABINET.md, STAGE2) */
+/** срок ответа — 24 часа с отправки (docs/cabinet/CABINET.md, STAGE2) */
 export const DEADLINE_MIN = 24 * 60;
 
 /** обложка — первый кадр карточки сайта, если анкета уже как у неё */

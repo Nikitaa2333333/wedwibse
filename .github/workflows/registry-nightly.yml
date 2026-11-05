@@ -169,8 +169,8 @@ jobs:
           github_token: ${{ github.token }}
           claude_args: '--max-turns 250 --allowedTools "Bash,Read,Write,Edit,Glob,Grep,WebFetch,WebSearch"'
           prompt: |
-            Ты в репозитории WED Secrets (свадебный каталог, Astro). Правила проекта — AGENTS.md
-            (он же CLAUDE.md), конвейеры — .claude/skills/specialist-page/SKILL.md и
+            Ты в репозитории WED Secrets (свадебный каталог, Astro). Правила проекта — CLAUDE.md
+            (AGENTS.md — заглушка со ссылкой на него), конвейеры — .claude/skills/specialist-page/SKILL.md и
             .claude/skills/venue-page/SKILL.md. Прочитай их до работы.
 
             Утренняя сверка Google-таблицы с сайтом дала отчёт: report.md в корне.
@@ -185,7 +185,7 @@ jobs:
                (research.sh и сервер отсюда недоступны), пережатие — scripts/prep-photos.mjs.
                Кадры отбирай по контактному листу (magick montage + Read).
             3. Ролики — можно: до 5 на подрядчика (Reels-мейкерам больше), пережатие
-               командой из VIDEO.md (ffmpeg есть), постер .webp, запись в src/data/reels.ts,
+               командой из docs/VIDEO.md (ffmpeg есть), постер .webp, запись в src/data/reels.ts,
                `node scripts/verify-video.mjs`, затем `bash scripts/media-push.sh` —
                SSH к серверу уже настроен переменными MEDIA_KEY/MEDIA_HOST. Ролики
                заливаются ДО открытия PR: деплой после слияния проверит, что они на месте.

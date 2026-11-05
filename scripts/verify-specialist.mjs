@@ -80,7 +80,7 @@ await slurp(base);
 const norm = (t) => t.replace(/[\s ]/g, '');
 const corpusN = norm(corpus) + '\n' + corpus.replace(/[^\d\n]/g, '');
 const strings = [];
-// story — слова самого подрядчика его же структурой (CHARACTER.md): штампы
+// story — слова самого подрядчика его же структурой (docs/CHARACTER.md): штампы
 // в них не правим, это его голос. Числа и типографику проверяем как везде.
 const own = new Set();
 // Значения фильтров и бакеты («35–50», «15+») — ключи закрытых списков,
