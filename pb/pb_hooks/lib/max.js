@@ -126,11 +126,18 @@ function webhook(e) {
         v.set('notify', n);
         e.app.save(v);
       }
+    } else if (body.update_type === 'bot_added') {
+      // бота добавили в чат — номер чата в журнал базы: списка чатов у Bot API
+      // больше нет (GET /chats отключён в 2026), MAX_CHAT_ID берём отсюда
+      // (scripts/max-chats.sh)
+      $app.logger().info('max: бот в чате', 'chat_id', String(body.chat_id || ''), 'is_channel', !!body.is_channel);
     } else if (body.update_type === 'message_created') {
       const m = body.message || {};
       const sender = m.sender || {};
-      // в диалоге отвечаем подсказкой; в группах бот молчит
-      if (!sender.is_bot && (!m.recipient || m.recipient.chat_type === 'dialog')) send(String(sender.user_id || ''), TEXT_HELP);
+      const r = m.recipient || {};
+      // в диалоге отвечаем подсказкой; в группах бот молчит, но номер чата пишет в журнал
+      if (r.chat_type && r.chat_type !== 'dialog') $app.logger().info('max: бот в чате', 'chat_id', String(r.chat_id || ''), 'is_channel', r.chat_type === 'channel');
+      else if (!sender.is_bot) send(String(sender.user_id || ''), TEXT_HELP);
     }
   } catch (err) {
     $app.logger().warn('max: вебхук не разобран', 'error', String(err));
