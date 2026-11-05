@@ -420,9 +420,10 @@ export const FOTOGRAFY: Specialist[] = [
 // Карточка, которую владелец получил по приглашению и поправил в кабинете,
 // есть и в git (конвейер), и здесь: кабинет — источник правды (решение
 // 20.10), его версия заменяет файл из git, а не встаёт второй копией.
+const withLabel = (s: Specialist): Specialist => ({ ...s, category: SPECIALIST_CATEGORIES.find((c) => c.slug === s.categorySlug)?.label ?? s.categorySlug });
 const cabinetSpecialists = Object.values(
   import.meta.glob<Specialist>('./cabinet/specialists/*.json', { eager: true, import: 'default' })
-).map((s) => ({ ...s, category: SPECIALIST_CATEGORIES.find((c) => c.slug === s.categorySlug)?.label ?? s.categorySlug }));
+).map(withLabel);
 const fromCabinet = new Set(cabinetSpecialists.map((s) => `${s.categorySlug}/${s.slug}`));
 /** карточка из кабинета: визитку рисует сервер из базы (сайт из базы, этап 1) */
 export const isFromCabinet = (s: Pick<Specialist, 'categorySlug' | 'slug'>) => fromCabinet.has(`${s.categorySlug}/${s.slug}`);
@@ -432,7 +433,7 @@ export const isFromCabinet = (s: Pick<Specialist, 'categorySlug' | 'slug'>) => f
 // Одобренные правки кладёт scripts/pb-pull-cabinet.mjs (owner-edits.json,
 // в .gitignore); здесь они ложатся поверх JSON. Нет файла — JSON как есть.
 type OwnerEdits = { priceMode?: string; priceFrom?: number | null; priceNote?: string; filters?: Record<string, string | string[]> };
-const ownerEdits: Record<string, OwnerEdits> =
+let ownerEdits: Record<string, OwnerEdits> =
   Object.values(import.meta.glob<Record<string, OwnerEdits>>('./cabinet/owner-edits.json', { eager: true, import: 'default' }))[0] ?? {};
 
 /** ответы на вопросы дублируются плоскими полями (каталог, сравнение, «Похожие») — сводим их к новым ответам */
@@ -462,34 +463,39 @@ function withOwnerEdits(s: Specialist): Specialist {
   return out;
 }
 
-const jsonSpecialists = Object.values(
+// Наши карточки из git (конвейер specialist-page) — основа каталога.
+const GIT_SPECIALISTS = Object.values(
   import.meta.glob<Specialist>('./specialists/*/*.json', { eager: true, import: 'default' })
-)
-  .filter((s) => !fromCabinet.has(`${s.categorySlug}/${s.slug}`))
-  .map(withOwnerEdits)
-  .concat(cabinetSpecialists);
+);
 
-export const SPECIALISTS_BY_CATEGORY: Record<string, Specialist[]> = (() => {
+/** git + правки владельцев «ведём мы» + карточки из кабинета (кабинет главнее git) */
+function compose(cabinet: Specialist[]): Specialist[] {
+  return GIT_SPECIALISTS
+    .filter((s) => !fromCabinet.has(`${s.categorySlug}/${s.slug}`))
+    .map(withOwnerEdits)
+    .concat(cabinet);
+}
+
+function group(list: Specialist[]): Record<string, Specialist[]> {
   // Ведущие целиком из JSON: демо-набор на стоковых кадрах снят 18.09.2026,
   // в каталоге только реальные подрядчики.
   const map: Record<string, Specialist[]> = {
     fotografy: [...FOTOGRAFY],
   };
-  for (const s of jsonSpecialists) (map[s.categorySlug] ??= []).push(s);
+  for (const s of list) (map[s.categorySlug] ??= []).push(s);
 
   // снимок списков: пока своей категории не было, «Видеографы» собирались
   // только из alsoCategories; с первым JSON-видеографом цикл стал дописывать
   // в тот же массив, по которому идёт, и уходил в бесконечность
-  for (const list of Object.values(map).map((l) => [...l])) {
-    for (const s of list) {
+  for (const l of Object.values(map).map((x) => [...x])) {
+    for (const s of l) {
       for (const extra of s.alsoCategories ?? []) {
         (map[extra] ??= []).push(s);
       }
     }
   }
-
   return map;
-})();
+}
 
 /** ВСЕ ЖИВЫЕ КАРТОЧКИ ПОДРЯДЧИКОВ ОДНИМ СПИСКОМ — источник для общих
  *  потоков (доска главной). Дубли по slug сняты: карточка, стоящая в двух
@@ -497,20 +503,40 @@ export const SPECIALISTS_BY_CATEGORY: Record<string, Specialist[]> = (() => {
  *  должны попадать в ленту дважды. Демо-заглушки (demo: true) исключены
  *  намеренно: у них в photos стоковые кадры, и в ленте они выдавали бы
  *  чужую съёмку за работу конкретного подрядчика. */
-export const REAL_SPECIALISTS: Specialist[] = (() => {
+function realOf(map: Record<string, Specialist[]>): Specialist[] {
   const seen = new Set<string>();
   const out: Specialist[] = [];
-
-  for (const list of Object.values(SPECIALISTS_BY_CATEGORY)) {
-    for (const s of list) {
+  for (const l of Object.values(map)) {
+    for (const s of l) {
       if (s.demo || seen.has(s.slug)) continue;
       seen.add(s.slug);
       out.push(s);
     }
   }
-
   return out;
-})();
+}
+
+export const SPECIALISTS_BY_CATEGORY: Record<string, Specialist[]> = group(compose(cabinetSpecialists));
+export const REAL_SPECIALISTS: Specialist[] = realOf(SPECIALISTS_BY_CATEGORY);
+
+/**
+ * САЙТ ИЗ БАЗЫ (этап 2, 05.11.2026): страницы, которые рисует сервер, перед
+ * показом подставляют живые данные базы — карточки из кабинета и правки
+ * владельцев. Таблицы обновляются НА МЕСТЕ: их читают каталоги, «Похожие»,
+ * навигация, счётчики — и все они видят свежее без своей логики загрузки.
+ * Зовёт lib/live-data.ts (refreshLive), не страницы напрямую.
+ */
+export function applyLive(cabinet: Specialist[], edits: Record<string, OwnerEdits>) {
+  ownerEdits = edits;
+  fromCabinet.clear();
+  for (const c of cabinet) fromCabinet.add(`${c.categorySlug}/${c.slug}`);
+  const map = group(compose(cabinet.map(withLabel)));
+  for (const k of Object.keys(SPECIALISTS_BY_CATEGORY)) delete SPECIALISTS_BY_CATEGORY[k];
+  Object.assign(SPECIALISTS_BY_CATEGORY, map);
+  REAL_SPECIALISTS.length = 0;
+  REAL_SPECIALISTS.push(...realOf(map));
+}
+export type { OwnerEdits };
 
 // Остальные категории (и видеографы со своим набором) — из документов
 // заказчика «Основные фильтры для …», см. data/specialist-filters.ts.

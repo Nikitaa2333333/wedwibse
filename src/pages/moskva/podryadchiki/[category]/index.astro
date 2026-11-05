@@ -6,6 +6,10 @@
 //   нет ничего     → одна строка «скоро».
 // Появились карточки категории в SPECIALISTS_BY_CATEGORY — каталог
 // поднимается сам, править вёрстку не нужно.
+// САЙТ ИЗ БАЗЫ (этап 2, 05.11.2026): страницу рисует сервер из живых данных
+// (lib/live-data.ts) — новая карточка из кабинета и правка цены видны через
+// секунды, без пересборки сайта. nginx держит готовую страницу ~10 с.
+export const prerender = false;
 import Layout from '../../../../layouts/Layout.astro';
 import SiteHeader from '../../../../components/SiteHeader.astro';
 import BottomDock from '../../../../components/BottomDock.astro';
@@ -23,15 +27,13 @@ import {
 import { favoriteImage } from '../../../../lib/images';
 import { countOptions } from '../../../../lib/filter-counts';
 import { variantOf, type SpecialistCard } from '../../../../lib/specialist-card';
+import { refreshLive, LIVE_CACHE } from '../../../../lib/live-data';
 
-export function getStaticPaths() {
-  return SPECIALIST_CATEGORIES.filter((c) => c.slug !== 'vedushchie').map((c) => ({
-    params: { category: c.slug },
-    props: { category: c },
-  }));
-}
-
-const { category } = Astro.props;
+const category = SPECIALIST_CATEGORIES.find((c) => c.slug === Astro.params.category && c.slug !== 'vedushchie');
+// нет такой категории — честная 404
+if (!category) return new Response(null, { status: 404 });
+await refreshLive();
+Astro.response.headers.set('cache-control', LIVE_CACHE);
 const filters = FILTERS_BY_CATEGORY[category.slug];
 const items = SPECIALISTS_BY_CATEGORY[category.slug] ?? [];
 

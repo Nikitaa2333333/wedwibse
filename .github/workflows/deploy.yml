@@ -145,7 +145,11 @@ jobs:
           mkdir -p ssr && cp -r dist/server ssr/server && cp package.json package-lock.json ssr/
           rsync -az --checksum --delete --timeout=60 --exclude 'node_modules/' --exclude '.installed-lock' --exclude 'client/' \
             -e "$SSH" ssr/ "$TARGET:/srv/wedsecrets-ssr/"
-          $SSH "$TARGET" 'set -e; cd /srv/wedsecrets-ssr; mkdir -p client
+          # client → папка сайта (05.11.2026): там лежат оригиналы фото проекта
+          # (/_astro/*), и /_image сервера режет их на лету — без этого фото
+          # из src/assets на страницах, которые рисует сервер, отвечали 500.
+          $SSH "$TARGET" 'set -e; cd /srv/wedsecrets-ssr
+            [ -L client ] || { rm -rf client; ln -s /var/www/wedsecrets client; }
             if ! cmp -s package-lock.json .installed-lock; then
               npm ci --omit=dev --no-audit --no-fund && cp package-lock.json .installed-lock
             fi

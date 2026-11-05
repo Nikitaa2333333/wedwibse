@@ -7,9 +7,10 @@ const indexable = process.env.SITE_INDEXABLE === 'true';
 
 const site = (process.env.SITE_URL || 'https://wed-secrets.ru').replace(/\/$/, '');
 
-// Карта сайта собирается после сборки скриптом scripts/sitemap.mjs (deploy.yml).
+// Карта сайта собирается после сборки скриптом scripts/sitemap.mjs (deploy.yml);
+// раздел подрядчиков рисует сервер — его карта /sitemap-podryadchiki.xml (05.11.2026).
 const body = indexable
-  ? `User-agent: *\nAllow: /\n\nSitemap: ${site}/sitemap.xml\n`
+  ? `User-agent: *\nAllow: /\n\nSitemap: ${site}/sitemap.xml\nSitemap: ${site}/sitemap-podryadchiki.xml\n`
   : 'User-agent: *\nDisallow: /\n';
 
 export const GET: APIRoute = () =>

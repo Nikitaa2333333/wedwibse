@@ -366,33 +366,13 @@ function deploySite(why) {
 }
 
 /** карточка из кабинета сохранена (одобрение, снятие, правка в админке базы) — на сайт */
-// САЙТ ИЗ БАЗЫ, этап 1 (05.11.2026): визитку карточки из кабинета рисует
-// сервер прямо из базы (src/pages/live/…) — правка видна через секунды.
-// Пересборка нужна, только когда меняется то, что лежит в КАТАЛОГЕ готовыми
-// файлами (этап 2 уберёт и это): карточка появилась или снята, сменились
-// имя, слоган, цена, обложка, фильтры. Правка текста, порядка фото, тарифов —
-// без пересборки. Карточки «ведём мы» (ownerEdits) пока статика из git — им
-// пересборка нужна всегда.
-const CATALOG_KEYS = ['name', 'tagline', 'priceFrom', 'priceNote', 'cover', 'filters'];
-function catalogChanged(rec) {
-  const orig = rec.original();
-  if (orig.getString('status') !== rec.getString('status')) return true;
-  if (orig.getString('slug') !== rec.getString('slug') || orig.getString('categorySlug') !== rec.getString('categorySlug')) return true;
-  const a = jsonOf(orig, 'page'), b = jsonOf(rec, 'page');
-  if (CATALOG_KEYS.some((k) => JSON.stringify(a[k] ?? null) !== JSON.stringify(b[k] ?? null))) return true;
-  // главный кадр каталога — первый по порядку показа
-  const first = (p, r) => { const n = (p.photos ?? r.getStringSlice('photos')); return n[p.cover ?? 0] ?? n[0] ?? ''; };
-  return first(a, orig) !== first(b, rec);
-}
-
-function cardSaved(e, created) {
+// САЙТ ИЗ БАЗЫ, этап 2 (05.11.2026): раздел подрядчиков целиком рисует
+// сервер из живых данных (src/lib/live-data.ts) — каталоги, визитки,
+// «Похожие», карта раздела. Карточка из кабинета и правки владельцев видны
+// через секунды, ПЕРЕСБОРКА САЙТА НЕ НУЖНА. Хук больше ничего не запускает;
+// deploySite остаётся для площадок из кабинета (этап 3).
+function cardSaved(e) {
   e.next();
-  const page = jsonOf(e.record, 'page');
-  const where = `${e.record.getString('categorySlug')}/${e.record.getString('slug')} → ${e.record.getString('status')}`;
-  if (page.ownerEdits) return deploySite(where);
-  if (page.source !== 'cabinet') return;
-  if (created || catalogChanged(e.record)) deploySite(where);
-  else e.app.logger().info('карточка из кабинета обновлена без пересборки — визитка с сервера', 'card', where);
 }
 
 function mailVendor(app, vendorId, subject, html) {
@@ -1344,9 +1324,9 @@ function modRemove(e) {
 
 /** карточку из кабинета удалили совсем — сайт пересобрать без неё */
 function cardDeleted(e) {
+  // раздел подрядчиков — с сервера из базы (этап 2): удалённая карточка
+  // исчезает с сайта сама, пересборка не нужна
   e.next();
-  const page = jsonOf(e.record, 'page');
-  if (page.source === 'cabinet') deploySite(`${e.record.getString('slug')} → удалена`);
 }
 
 module.exports = {
