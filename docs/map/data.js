@@ -802,63 +802,63 @@ window.MAP = {
     },
     {
      "t": "Админка без демо-данных: Сводка, Заявки, Модерация, счётчики меню — из базы (lib/admin-live.ts); Жалобы — пустое состояние",
-     "s": "work",
+     "s": "done",
      "src": "research/audit-2026-11-05/cabinet-ui-review.md, чат 05.11",
-     "note": "ветка claude/cabinet-ui, не выложено"
+     "note": "выложено 05.11"
     },
     {
      "t": "Ошибки базы по-человечески: humanError/errText в cabinet-api.ts на всех экранах",
-     "s": "work",
+     "s": "done",
      "src": "research/audit-2026-11-05/cabinet-ui-review.md, чат 05.11",
-     "note": "ветка claude/cabinet-ui, не выложено"
+     "note": "выложено 05.11"
     },
     {
      "t": "Отмена вместо «нажмите ещё раз»: later() с таймером (фото, разделы, решения модератора, снятие/удаление)",
-     "s": "work",
+     "s": "done",
      "src": "research/audit-2026-11-05/cabinet-ui-review.md, чат 05.11",
-     "note": "ветка claude/cabinet-ui, не выложено"
+     "note": "выложено 05.11"
     },
     {
      "t": "Удаление карточки — в «Профиле», окно с последствиями (lib/cabinet-delete.ts)",
-     "s": "work",
+     "s": "done",
      "src": "research/audit-2026-11-05/cabinet-ui-review.md, чат 05.11",
-     "note": "ветка claude/cabinet-ui, не выложено"
+     "note": "выложено 05.11"
     },
     {
      "t": "Один статус .status на светлой подложке, капсулой (слиты .c-badge/.c-state/.a-pill/.a-dot/.a-chip)",
-     "s": "work",
+     "s": "done",
      "src": "research/audit-2026-11-05/cabinet-ui-review.md, чат 05.11",
-     "note": "ветка claude/cabinet-ui, не выложено"
+     "note": "выложено 05.11"
     },
     {
      "t": "Ошибки облачком .tip как у Apple: поля, ответ сервера, ошибка формы (lib/form-check.ts); окна браузера нет",
-     "s": "work",
+     "s": "done",
      "src": "research/audit-2026-11-05/cabinet-ui-review.md, чат 05.11",
-     "note": "ветка claude/cabinet-ui, не выложено"
+     "note": "выложено 05.11"
     },
     {
      "t": "«Отправить на проверку»: замок + облачко «что осталось» с числами (sectionTodo), «Заполнено N из M»",
-     "s": "work",
+     "s": "done",
      "src": "research/audit-2026-11-05/cabinet-ui-review.md, чат 05.11",
-     "note": "ветка claude/cabinet-ui, не выложено"
+     "note": "выложено 05.11"
     },
     {
      "t": "Метка «Сохранено в 14:32» в шапке раздела вместо тоста; «Повторить» у ошибок",
-     "s": "work",
+     "s": "done",
      "src": "research/audit-2026-11-05/cabinet-ui-review.md, чат 05.11",
-     "note": "ветка claude/cabinet-ui, не выложено"
+     "note": "выложено 05.11"
     },
     {
      "t": "Анкета: одно «Добавить», суммы с разрядами, загрузка/Диск с процентом и «Прервать», зоны 44 px, тексты",
-     "s": "work",
+     "s": "done",
      "src": "research/audit-2026-11-05/cabinet-ui-review.md, чат 05.11",
-     "note": "ветка claude/cabinet-ui, не выложено"
+     "note": "выложено 05.11"
     },
     {
      "t": "Демо-режим кабинета без входа на дев-сервере (?demo, lib/cabinet-demo.ts)",
-     "s": "work",
+     "s": "done",
      "src": "research/audit-2026-11-05/cabinet-ui-review.md, чат 05.11",
-     "note": "ветка claude/cabinet-ui, не выложено"
+     "note": "выложено 05.11"
     },
     {
      "t": "Разбор Никиты по демо 05.11 (≈40 замечаний: профиль, заявки, помощь, отправка, цена, тарифы, поля, кнопки) — список в BACKLOG.md, правила в скилле",
