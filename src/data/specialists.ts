@@ -526,11 +526,13 @@ export const REAL_SPECIALISTS: Specialist[] = realOf(SPECIALISTS_BY_CATEGORY);
  * навигация, счётчики — и все они видят свежее без своей логики загрузки.
  * Зовёт lib/live-data.ts (refreshLive), не страницы напрямую.
  */
-export function applyLive(cabinet: Specialist[], edits: Record<string, OwnerEdits>) {
+export function applyLive(cards: Specialist[], edits: Record<string, OwnerEdits>, cabinetKeys: string[]) {
+  // этап 3 (05.11.2026): база — единственный источник карточек подрядчиков,
+  // git — только запасной вариант при старте службы (до первой загрузки)
   ownerEdits = edits;
   fromCabinet.clear();
-  for (const c of cabinet) fromCabinet.add(`${c.categorySlug}/${c.slug}`);
-  const map = group(compose(cabinet.map(withLabel)));
+  for (const k of cabinetKeys) fromCabinet.add(k);
+  const map = group(cards.map(withLabel).map(withOwnerEdits));
   for (const k of Object.keys(SPECIALISTS_BY_CATEGORY)) delete SPECIALISTS_BY_CATEGORY[k];
   Object.assign(SPECIALISTS_BY_CATEGORY, map);
   REAL_SPECIALISTS.length = 0;

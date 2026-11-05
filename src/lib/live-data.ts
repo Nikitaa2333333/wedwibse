@@ -1,7 +1,8 @@
-// САЙТ ИЗ БАЗЫ, этап 2 (05.11.2026): живые данные для страниц, которые рисует
-// сервер. Раз в FRESH_MS забираем из базы всё опубликованное — карточки из
-// кабинета и правки владельцев «ведём мы» — и подставляем в общие таблицы
-// data/specialists.ts (applyLive). Каталоги, визитки, «Похожие», счётчики
+// САЙТ ИЗ БАЗЫ, этапы 2–3 (05.11.2026): живые данные для страниц, которые
+// рисует сервер. Раз в FRESH_MS забираем из базы ВСЕХ опубликованных
+// подрядчиков — и наших (конвейер specialist-page пишет их в базу), и из
+// кабинета, с правками владельцев «ведём мы» — и подставляем в общие таблицы
+// data/specialists.ts (applyLive). База — единственный источник. Каталоги, визитки, «Похожие», счётчики
 // читают эти таблицы и видят свежее без пересборки сайта.
 //
 // Путь карточки тот же, что у сборки и превью: page (собрал хук при одобрении)
@@ -12,7 +13,7 @@
 import type { ImageMetadata } from 'astro';
 import { inferRemoteSize } from 'astro:assets';
 import { cardFromPage, orderedPhotos } from './cabinet-card.mjs';
-import { registerRemote, hasRemote } from './images';
+import { registerRemote, hasRemote, hasLocalImage } from './images';
 import { applyLive, type OwnerEdits, type Specialist } from '../data/specialists';
 
 const PB = (process.env.PB_INTERNAL_URL || 'http://127.0.0.1:8090').replace(/\/$/, '');
@@ -30,6 +31,8 @@ interface PbRecord {
   name: string;
   photos?: string[];
   page?: Record<string, any>;
+  /** имя файла в базе → исходный путь в src/assets (пишет pb-seed-specialists) */
+  photoIndex?: Record<string, string>;
 }
 
 async function fetchPublished(): Promise<PbRecord[]> {
@@ -70,20 +73,58 @@ async function cabinetCard(rec: PbRecord): Promise<Specialist | null> {
   return cardFromPage(rec.page, { slug: rec.slug, categorySlug: rec.categorySlug, name: rec.name, photos }) as Specialist;
 }
 
+/**
+ * Наша карточка из базы: page — полный объект карточки (тот же JSON, что в git).
+ * Кадр, который есть в src/assets, остаётся своим путём (нарезан при сборке);
+ * которого нет — берём файл из базы по photoIndex (новая карточка конвейера
+ * видна на сайте сразу, без сборки).
+ */
+async function ourCard(rec: PbRecord): Promise<Specialist | null> {
+  const p = { ...(rec.page ?? {}) } as Specialist & { ownerEdits?: unknown };
+  delete p.ownerEdits;
+  const byPath: Record<string, string> = {};
+  for (const [pbName, src] of Object.entries(rec.photoIndex ?? {})) byPath[src] = pbName;
+  const one = async (path: string): Promise<string | null> => {
+    if (!path || hasLocalImage(path)) return path || null;
+    const pbName = byPath[path];
+    return pbName ? remoteKey(rec, pbName) : null;
+  };
+  const photos = (await Promise.all((p.photos ?? []).map(one))).filter(Boolean) as string[];
+  if (!photos.length) return null;
+  const card = { ...p, photos } as Specialist;
+  if (p.avatar) {
+    const a = await one(p.avatar);
+    if (a) card.avatar = a; else delete card.avatar;
+  }
+  return card;
+}
+
 async function load() {
   const recs = await fetchPublished();
-  const cabinet: Specialist[] = [];
+  const cards: Specialist[] = [];
+  const cabinetKeys: string[] = [];
   const edits: Record<string, OwnerEdits> = {};
   for (const rec of recs) {
+    if (!rec.slug || !rec.categorySlug) continue;
     const p = rec.page ?? {};
-    if (p.source === 'cabinet' && rec.slug && rec.categorySlug) {
+    const key = `${rec.categorySlug}/${rec.slug}`;
+    if (p.source === 'cabinet') {
       const card = await cabinetCard(rec);
-      if (card) cabinet.push(card);
-    } else if (p.ownerEdits && rec.slug && rec.categorySlug) {
-      edits[`${rec.categorySlug}/${rec.slug}`] = p.ownerEdits;
+      if (card) { cards.push(card); cabinetKeys.push(key); }
+    } else {
+      const card = await ourCard(rec);
+      if (card) cards.push(card);
+      if (p.ownerEdits) edits[key] = p.ownerEdits;
     }
   }
-  applyLive(cabinet, edits);
+  // пустой ответ базы не обнуляет каталог: это сбой, а не «подрядчиков нет»
+  if (!cards.length) throw new Error('база вернула пустой список подрядчиков');
+  // порядок каталога — как был при сборке из git: наши по алфавиту адреса
+  // (как файлы specialists/<кат>/<slug>.json), карточки из кабинета — следом
+  const isCab = (c: Specialist) => cabinetKeys.includes(`${c.categorySlug}/${c.slug}`);
+  const byPath = (x: Specialist, y: Specialist) => `${x.categorySlug}/${x.slug}`.localeCompare(`${y.categorySlug}/${y.slug}`, 'en');
+  cards.sort((x, y) => Number(isCab(x)) - Number(isCab(y)) || (isCab(x) ? 0 : byPath(x, y)));
+  applyLive(cards, edits, cabinetKeys);
   freshAt = Date.now();
 }
 
