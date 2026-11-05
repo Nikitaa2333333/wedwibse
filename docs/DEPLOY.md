@@ -19,6 +19,8 @@ reg.ru, NS остались регруйными). На своём домене 
 | Конфиг nginx | `/etc/nginx/sites-available/wedsecrets` |
 | Ролики (не в git) | `/var/www/wedsecrets-media`, заливка `bash scripts/media-push.sh` |
 | Превью анкеты (SSR) | служба `wedsecrets-ssr`: `node /srv/wedsecrets-ssr/server/entry.mjs` на 127.0.0.1:4321, пользователь `deploy`, `MemoryMax=400M`; nginx отдаёт ей только `/profi/prevyu/` и `/_image`, остальное — статика. Ставит деплой (шаг «Preview server»), `deploy` может только `sudo systemctl restart wedsecrets-ssr`. Подпись ссылок — `PREVIEW_SECRET` в `.env` базы. Без `ASTRO_NODE_LOGGING=disabled` служба падает на старте (astro 7.2 + @astrojs/node 11.1, `app.getLogger is not a function`) |
+| Резервная копия базы | **уровень 1 (с 05.11.2026)**: `wedsecrets-backup.timer` каждую ночь 03:30 МСК → `/usr/local/bin/wedsecrets-backup.sh` → `/srv/backups/wedsecrets-pb/<дата>/` (база `data.db.gz`, `auxiliary.db.gz` через `sqlite3 .backup` с проверкой целостности + `storage/` жёсткими ссылками на прошлый снимок), хранятся 14, журнал `backup.log`, папка только для root. До 05.11 копии не было вовсе. **Уровня 2 (вне сервера) пока нет** — ROADMAP. Восстановление: `systemctl stop wedsecrets-pb`, распаковать `*.db.gz` в `pb_data/`, вернуть `storage/`, `chown -R deploy:deploy`, запустить |
+| Журналы | `journald` ограничен 200 МБ (`/etc/systemd/journald.conf.d/size.conf`) |
 | Админский вход | `ssh -i ~/.ssh/timeweb_wed root@193.124.47.78` |
 | Деплой-пользователь | `deploy` — доступ только к каталогу сайта |
 | Root-пароль | в `.env` проекта (в `.gitignore`), в чат и в код не попадает |
