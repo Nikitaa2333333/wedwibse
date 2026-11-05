@@ -11,13 +11,10 @@
 // - look="promo" — промо-страница: шапка со знаком и «Войти», подвал.
 // - look="auth" — вход, регистрация, пароль: только знак, без кнопки
 //   в шапке (раньше она прыгала «Войти» ↔ «Регистрация») и без подвала.
-// - look="tech" — кабинет: рабочий инструмент, внизу меню разделов
-//   (та же полоса BottomDock, что у сайта, со своими ссылками).
-// Во всех видах, кроме промо, заголовки без антиквы.
+// Живой кабинет (/profi/moi/) и админка — на своей оболочке CabinetShell;
+// вид «tech» с меню прототипа /profi/kabinet/ удалён вместе с прототипом (05.11.2026).
+// Во входе заголовки без антиквы.
 import Layout from '../../layouts/Layout.astro';
-import BottomDock from '../BottomDock.astro';
-
-type Section = 'cards' | 'interest' | 'profile';
 
 interface Props {
   title: string;
@@ -26,13 +23,9 @@ interface Props {
   action?: { href: string; label: string };
   /** прототип: закрыт от поиска (по умолчанию да) */
   prototype?: boolean;
-  look?: 'promo' | 'auth' | 'tech';
-  /** раздел кабинета, подсвеченный в меню */
-  section?: Section;
+  look?: 'promo' | 'auth';
   /** свой знак в шапке вместо «WED Secrets для профи» (экран входа) */
   brand?: string;
-  /** меню разделов внизу (у живых экранов /profi/moi/ своего меню пока нет) */
-  dock?: boolean;
 }
 
 const {
@@ -40,19 +33,10 @@ const {
   description = 'Wed Secrets для подрядчиков и площадок: карточка в свадебном каталоге Москвы.',
   action,
   prototype = true,
-  look = 'tech',
-  section,
+  look = 'auth',
   brand,
-  dock = true,
 } = Astro.props;
 
-// Разделы кабинета. «Интерес» — журнал: кто открыл контакты, сколько раз
-// карточку сохранили (второй этап, без денег — STAGE2.md §1).
-const menu = [
-  { key: 'cards', href: '/profi/kabinet/', label: 'Карточки', icon: 'list' },
-  { key: 'interest', href: '/profi/kabinet/interes/', label: 'Интерес', icon: 'heart' },
-  { key: 'profile', href: '/profi/kabinet/profil/', label: 'Профиль', icon: 'account' },
-] as const;
 ---
 
 <Layout title={`${title} — Wed Secrets для профи`} description={description}>
@@ -82,7 +66,6 @@ const menu = [
       </footer>
     )}
 
-    {look === 'tech' && dock && <BottomDock items={menu} active={section} label="Разделы кабинета" />}
   </div>
 </Layout>
 
@@ -126,22 +109,19 @@ const menu = [
 
   .pfoot a { color: inherit; }
 
-  /* Место под меню кабинета внизу (на ПК меню слева, --dock-space сам
-     схлопывается до обычного отступа). */
-  .profi--tech { padding-bottom: var(--dock-space); }
 </style>
 
 <style is:global>
   /* Кабинет и вход — рабочий инструмент: антиквы образа «крем» здесь нет
      (Никита, 20.10.2026). Селектор тяжелее правила образа в global.css. */
-  html[data-look] :is(.profi--tech, .profi--auth) :is(h1, h2, h3, h4, .t-display, .t-h1, .t-h2) {
+  html[data-look] .profi--auth :is(h1, h2, h3, h4, .t-display, .t-h1, .t-h2) {
     font-family: var(--font-sans);
     font-weight: var(--w-head-lg);
     letter-spacing: -0.01em;
   }
-  html[data-look] :is(.profi--tech, .profi--auth) :is(h1, .t-h1) { font-size: var(--fs-h2); }
-  html[data-look] :is(.profi--tech, .profi--auth) :is(h2, .t-h2) { font-size: var(--fs-h3); }
-  html[data-look] :is(.profi--tech, .profi--auth) h3 { font-size: var(--fs-body); }
+  html[data-look] .profi--auth :is(h1, .t-h1) { font-size: var(--fs-h2); }
+  html[data-look] .profi--auth :is(h2, .t-h2) { font-size: var(--fs-h3); }
+  html[data-look] .profi--auth h3 { font-size: var(--fs-body); }
 
   /* Промо: заголовки тоже Onest (Никита, 20.10.2026), антиква остаётся
      только у заголовка первого экрана (.hero__title). */
