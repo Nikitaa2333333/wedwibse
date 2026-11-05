@@ -1,5 +1,5 @@
 // Сверка: какие предложения исходников не легли в данные карточки.
-// node scripts/text-coverage.mjs  → сводка в консоль, детали в research/text-coverage.md (CHARACTER.md, 08.10.2026)
+// node scripts/text-coverage.mjs  → сводка в консоль, детали в research/text-coverage.md (docs/CHARACTER.md, 08.10.2026)
 // Предложение «не легло», если меньше 60 % его слов (по основам) есть в данных карточки.
 // Шум ожидаем: меню, навигация и отзывы с сайтов — отбирать глазами.
 import { readFileSync, readdirSync, existsSync, writeFileSync, statSync } from 'node:fs';

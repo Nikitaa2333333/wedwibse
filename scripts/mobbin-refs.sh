@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Референсы интерфейсов с Mobbin для кабинета подрядчика (CABINET-UX.md §4).
+# Референсы интерфейсов с Mobbin для кабинета подрядчика (docs/cabinet/CABINET-UX.md §4).
 # Mobbin отдаёт страницы разделов без входа, а картинки экранов лежат на
 # bytescale.mobbin.com — скрипт собирает их в листы по 14 экранов.
 #   bash scripts/mobbin-refs.sh [раздел ...]

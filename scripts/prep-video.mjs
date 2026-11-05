@@ -1,4 +1,4 @@
-// Ролики площадки/подрядчика по правилам VIDEO.md — одной командой:
+// Ролики площадки/подрядчика по правилам docs/VIDEO.md — одной командой:
 //   node scripts/prep-video.mjs <slug> <out_dir_public> <out_dir_assets> <src1>[@ss] [<src2>[@ss] ...]
 // Пример:
 //   node scripts/prep-video.mjs due-to-love public/venues/due-to-love src/assets/venues/due-to-love research/due-to-love/raw2/IMG_0527.mov@1

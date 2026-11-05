@@ -79,7 +79,7 @@ const entries = Object.entries(MAP).map(([key, name]) => {
 
 // Внешний спрайт (public/icons.svg): каждая иконка — свой <symbol>,
 // Icon.astro подключает её через <use href="/icons.svg?v=<hash>#i-key">
-// вместо инлайна полного контура на каждое место использования (см. AUDIT.md —
+// вместо инлайна полного контура на каждое место использования (см. docs/archive/AUDIT.md —
 // на карточке площадки с несколькими роликами повторяющиеся sound/soundOff/play
 // раздували HTML на десятки КБ).
 // icons.ts со старым набором {viewBox, body} остаётся: src/pages/izbrannoe/index.astro

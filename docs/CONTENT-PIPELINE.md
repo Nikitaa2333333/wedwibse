@@ -42,7 +42,7 @@
 
 Каталог **вне** `/var/www/wedsecrets` сознательно: деплой делает `rsync --delete`
 и стёр бы всё, лежи оно внутри сайта. Та же причина, по которой ролики живут
-в `/var/www/wedsecrets-media` (см. `VIDEO.md`).
+в `/var/www/wedsecrets-media` (см. `docs/VIDEO.md`).
 
 ## Инструмент: scripts/fetch-yadisk.mjs
 
@@ -182,3 +182,28 @@ bash scripts/research.sh ls      [слаг]                что уже выг�
    на 06.10, не источник правды.
 3. **Сохранить уникальное** — `ВЫБОРКА ФД`. (`pb_data` теперь на сервере; исходники,
    которых больше нет на дисках-источниках, — в `/srv/wed-research/archive/`.)
+
+## Заведение площадок и подрядчиков (перенесено из CLAUDE.md 05.11.2026)
+
+Страница площадки — не шаблон, а **список типизированных блоков** (`VenueBlock`
+в `src/data/venues.ts`, реестр — `lib/venue-blocks.ts`): порядок и набор секций
+задают данные площадки, чтобы ресторан с депозитом, оранжерея и лофт с открытым
+прайсом не выглядели одной страницей с подменённым текстом. Новых типов блоков
+в данных не бывает — только новый компонент + тип + строка в скилле.
+
+Новая площадка из таблицы заказчика заводится скиллом
+`.claude/skills/venue-page/SKILL.md`: материалы → исследование (Haiku) →
+факты (Haiku) → концепция и текст (Sonnet) → проверка скриптами и оркестратором.
+Итог — `src/data/venues/<slug>.json` + фото в `src/assets/venues/<slug>/`;
+JSON подхватывается автоматически. Сырьё лежит в `research/` (в `.gitignore`).
+Скрипты: `fetch-yadisk`, `fetch-urls`, `prep-photos`, `verify-venue`, `place-photos`
+в `scripts/`. Что сломалось в прогоне — дописывать в конец скилла, а не чинить молча.
+
+Подрядчики — тем же путём, скилл `.claude/skills/specialist-page/SKILL.md`:
+один заход оркестратора без субагентов, JSON в `src/data/specialists/<категория>/<slug>.json`,
+материалы с диска — через сервер: `research.sh list` → `preview` → `pick` (диск целиком не качаем,
+см. `docs/CONTENT-PIPELINE.md`),
+проверка `verify-specialist`, раскладка `place-specialist-photos`, ролики по docs/VIDEO.md,
+и обязательно запись в базу — `pb-seed-specialists` через `bash scripts/pb-tunnel.sh`
+(база на VPS с 06.10.2026, не на ноутбуке; карточка без записи
+в PocketBase не считается заведённой).

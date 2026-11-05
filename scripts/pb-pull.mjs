@@ -24,7 +24,7 @@ console.log(`записей: ${res.items.length}`);
 for (const rec of res.items) {
   const v = rec.page;
   if (!v?.slug) { console.error(`  ${rec.slug}: пустое page, пропуск`); continue; }
-  // Карточки из кабинета подрядчика рисует сервер прямо из базы (CABINET.md,
+  // Карточки из кабинета подрядчика рисует сервер прямо из базы (docs/cabinet/CABINET.md,
   // раздел 11): в git их нет, иначе снятая с публикации карточка жила бы
   // дальше в src/ — два источника правды.
   if (v.source === 'cabinet') { console.log(`  ${v.slug}: из кабинета, в src/ не пишу`); continue; }

@@ -4,7 +4,7 @@
  * по нашим запросам. Из него считается доля голоса доменов (share of voice)
  * с весом по частотности запроса — это и есть список конкурентов по данным.
  *
- * Тот же Yandex Cloud Search API, что и Wordstat (SEO.md §6): ключи и
+ * Тот же Yandex Cloud Search API, что и Wordstat (docs/seo/SEO.md §6): ключи и
  * folderId из .env — WORDSTAT_API_KEY / WORDSTAT_FOLDER_ID (+ _2, _3 …).
  *
  *   node scripts/serp.mjs pick  core-msk 15      — собрать список запросов: топ-N

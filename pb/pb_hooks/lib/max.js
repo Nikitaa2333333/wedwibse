@@ -1,6 +1,6 @@
 /// <reference path="../../pb_data/types.d.ts" />
 // ============================================================
-// ВХОД ЧЕРЕЗ MAX — бот и его вебхук (CABINET.md §23).
+// ВХОД ЧЕРЕЗ MAX — бот и его вебхук (docs/cabinet/CABINET.md §23).
 // https://dev.max.ru/docs-api — Bot API: ключ в заголовке Authorization,
 // вебхук приходит с секретом в X-Max-Bot-Api-Secret.
 //

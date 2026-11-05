@@ -99,7 +99,7 @@ export interface Specialist {
   quote?: string;
   /** предложения от специалиста — короткие карточки на странице-визитке */
   offers?: { title: string; text: string }[];
-  /** РАЗДЕЛЫ ИСХОДНИКА (CHARACTER.md, 08.10.2026): текст подрядчика его же
+  /** РАЗДЕЛЫ ИСХОДНИКА (docs/CHARACTER.md, 08.10.2026): текст подрядчика его же
       структурой — какие разделы прислал, в каком порядке и каким голосом.
       Есть story — визитка выводит его вместо шаблона «О подрядчике /
       Почему выбирают / Что входит / Предложение»: раскладка по нашим
@@ -425,7 +425,7 @@ const cabinetSpecialists = Object.values(
 ).map((s) => ({ ...s, category: SPECIALIST_CATEGORIES.find((c) => c.slug === s.categorySlug)?.label ?? s.categorySlug }));
 const fromCabinet = new Set(cabinetSpecialists.map((s) => `${s.categorySlug}/${s.slug}`));
 
-// Карточки «ведём мы» (пилот, 03.11, CABINET.md §24): визитка — наш JSON
+// Карточки «ведём мы» (пилот, 03.11, docs/cabinet/CABINET.md §24): визитка — наш JSON
 // из git, а цену и ответы на вопросы владелец правит сам в кабинете.
 // Одобренные правки кладёт scripts/pb-pull-cabinet.mjs (owner-edits.json,
 // в .gitignore); здесь они ложатся поверх JSON. Нет файла — JSON как есть.

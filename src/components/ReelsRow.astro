@@ -208,7 +208,7 @@ const { reels, title = 'Видео', section = false } = Astro.props;
     tile.addEventListener('click', () => {
       // Нажали play — ролик сразу со звуком, если дорожка есть: жест
       // человека это разрешает, и ничего лишнего не качается — звук уже
-      // внутри того же mp4 (VIDEO.md). Выключить — кнопкой в углу.
+      // внутри того же mp4 (docs/VIDEO.md). Выключить — кнопкой в углу.
       if (tile.getAttribute('aria-pressed') === 'true') stop(cell);
       else play(cell, 'reelHasSound' in tile.dataset);
     });

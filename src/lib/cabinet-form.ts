@@ -4,7 +4,7 @@
 // (pb_hooks/lib/cabinet.js, submitProblems) — здесь только подсказки
 // человеку «что ещё не заполнено», без обещаний, которых сервер не держит.
 //
-// Данные карточки (revisions.data) — схема CABINET-UX.md §3:
+// Данные карточки (revisions.data) — схема docs/cabinet/CABINET-UX.md §3:
 //   firstName, lastName → name, tagline    — основное (подрядчик; name собирается сам)
 //   address, rentFrom, checkFrom           — основное (площадка)
 //   sections: [{ title, body }]            — текст разделами, как написан
@@ -14,7 +14,7 @@
 //   tariffs: [{ name, price, unit, includes }] — тарифы
 //   halls: [{ name, area, banquet, buffet, priceFrom, note }] — залы (площадка)
 //   terms: { kitchen, alcohol, until, parking } — условия (площадка)
-//   videos: [{ url }]                      — ссылки на ролики (диск, YouTube…), ролик готовим мы (VIDEO.md)
+//   videos: [{ url }]                      — ссылки на ролики (диск, YouTube…), ролик готовим мы (docs/VIDEO.md)
 //   contacts: { phone (E.164), phoneCountry, telegram, max, site, email } — за кнопкой «Показать контакты»
 
 export type Kind = 'venue' | 'specialist';
