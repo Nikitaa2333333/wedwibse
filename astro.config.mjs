@@ -25,6 +25,12 @@ export default defineConfig({
       hostname: previewFiles.hostname,
       ...(previewFiles.port ? { port: previewFiles.port } : {}),
       pathname: '/api/files/**',
+    }, {
+      // кадры превью анкеты (pb_hooks: previewFile) — без ключа подрядчика в адресе
+      protocol: previewFiles.protocol.replace(':', ''),
+      hostname: previewFiles.hostname,
+      ...(previewFiles.port ? { port: previewFiles.port } : {}),
+      pathname: '/api/wed/preview-file',
     }],
   },
 

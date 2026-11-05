@@ -40,10 +40,11 @@ try {
   if (!names.length) throw new Error('В анкете пока нет фото — добавьте их, и превью покажет страницу целиком.');
 
   const photos = await Promise.all(names.map(async (name: string) => {
+    // кадр отдаёт база по той же 15-минутной ссылке и только кадры этой анкеты
+    // (ключа подрядчика в адресах больше нет — аудит 05.11)
     const key = `${FILES}${res.files}${encodeURIComponent(name)}`;
-    const src = `${key}?token=${encodeURIComponent(res.fileToken)}`;
-    const size = await inferRemoteSize(src);
-    registerRemote(key, { src, width: size.width, height: size.height, format: size.format } as ImageMetadata);
+    const size = await inferRemoteSize(key);
+    registerRemote(key, { src: key, width: size.width, height: size.height, format: size.format } as ImageMetadata);
     return key;
   }));
 

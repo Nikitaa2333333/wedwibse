@@ -839,29 +839,53 @@ function previewLink(e) {
   return e.json(200, { url: `/profi/prevyu/?t=${encodeURIComponent(t)}` });
 }
 
-/** GET /api/wed/preview?t= — тело страницы для превью (как page у карточки) */
-function previewData(e) {
+/** ревизия по подписанной 15-минутной ссылке превью (?t=) */
+function previewRevision(e) {
+  const t = str(e.request.url.query().get('t'), 2000);
   let claims;
-  try { claims = $security.parseJWT(str(e.request.url.query().get('t'), 2000), previewSecret()); } catch (err) {
+  try { claims = $security.parseJWT(t, previewSecret()); } catch (err) {
     if (err instanceof BadRequestError) throw err;
     throw new BadRequestError('Ссылка на превью устарела — откройте её из кабинета ещё раз.');
   }
-  let rev;
-  try { rev = e.app.findRecordById('revisions', str(claims.rev, 40)); } catch (_) {
+  try { return { rev: e.app.findRecordById('revisions', str(claims.rev, 40)), t }; } catch (_) {
     throw new NotFoundError('Анкета не найдена — возможно, её удалили.');
   }
+}
+
+/** GET /api/wed/preview?t= — тело страницы для превью (как page у карточки) */
+function previewData(e) {
+  const { rev, t } = previewRevision(e);
   const data = jsonOf(rev, 'data');
   const names = photosOf(rev);
   // revision подставляется вместо карточки: slug, категория и портрет у неё свои
   const page = buildPage('specialist', rev, data, names, Math.max(0, names.indexOf(rev.getString('cover'))));
-  // файлы ревизии закрыты — короткий ключ владельца на их чтение
-  const owner = e.app.findRecordById('vendors', rev.getString('owner'));
+  // Файлы ревизии закрыты. Раньше здесь выдавался ключ владельца на чтение
+  // файлов — он уходил в адреса картинок страницы и открывал ВСЕ закрытые
+  // файлы подрядчика (аудит 05.11). Теперь кадры отдаёт previewFile по той же
+  // 15-минутной ссылке и только кадры этой анкеты; ключа наружу нет.
   return e.json(200, {
     page,
     status: rev.getString('status'),
-    files: `/api/files/${rev.collection().id}/${rev.id}/`,
-    fileToken: owner.newFileToken(),
+    files: `/api/wed/preview-file?t=${encodeURIComponent(t)}&n=`,
   });
+}
+
+/** GET /api/wed/preview-file?t=&n= — кадр анкеты для превью (только фото и портрет этой ревизии) */
+function previewFile(e) {
+  const { rev } = previewRevision(e);
+  const n = str(e.request.url.query().get('n'), 300);
+  if (!n || (!photosOf(rev).includes(n) && rev.getString('avatar') !== n)) throw new NotFoundError('Кадр не найден.');
+  const type = /\.png$/i.test(n) ? 'image/png' : /\.webp$/i.test(n) ? 'image/webp' : 'image/jpeg';
+  const fsys = e.app.newFilesystem();
+  let reader = null;
+  try {
+    reader = fsys.getReader(rev.baseFilesPath() + '/' + n);
+    e.response.header().set('Cache-Control', 'private, max-age=900');
+    e.stream(200, type, reader);
+  } finally {
+    if (reader) reader.close();
+    fsys.close();
+  }
 }
 
 // ---------- маршруты /api/wed ----------
@@ -1317,6 +1341,7 @@ module.exports = {
   maxAuth,
   previewLink,
   previewData,
+  previewFile,
   emailRegister,
   confirmCode,
   passwordReset,

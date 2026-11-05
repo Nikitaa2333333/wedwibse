@@ -26,14 +26,19 @@ const registry = new Map<string, ImageMetadata>(
 
 /**
  * Кадр не из src/assets, а из базы по ссылке — только для превью анкеты
- * (/profi/prevyu/, серверный рендер). Ключ — постоянный адрес файла, а src —
- * тот же адрес с ключом доступа (файлы анкеты закрыты): повторное открытие
- * превью просто обновляет запись, реестр не растёт. Размеры даёт
- * inferRemoteSize — по ним isPortrait и первый экран ведут себя как с
- * обычным кадром, а <Image> пережимает его на лету через /_image.
+ * (/profi/prevyu/, серверный рендер). Ключ — адрес кадра превью (база отдаёт
+ * его по 15-минутной ссылке, ключа подрядчика в адресе нет — аудит 05.11).
+ * Размеры даёт inferRemoteSize — по ним isPortrait и первый экран ведут себя
+ * как с обычным кадром, а <Image> пережимает его на лету через /_image.
+ * Свой реестр, отдельно от фото каталога, с потолком: служба превью живёт
+ * неделями, каждая открытая анкета добавляет кадры — старейшие уходят.
  */
+const remote = new Map<string, ImageMetadata>();
+const REMOTE_MAX = 600;
 export function registerRemote(key: string, meta: ImageMetadata) {
-  registry.set(key, meta);
+  remote.delete(key);
+  remote.set(key, meta);
+  while (remote.size > REMOTE_MAX) remote.delete(remote.keys().next().value!);
 }
 
 // ============================================================
@@ -82,7 +87,7 @@ export const IMG_WIDTHS = {
 
 /** path — тот же строковый путь, что лежит в данных, например '/venues/river-loft/gal/g4.webp' */
 export function resolveImage(path: string): ImageMetadata {
-  const image = registry.get(path);
+  const image = registry.get(path) ?? remote.get(path);
   if (!image) {
     throw new Error(`resolveImage: нет файла в src/assets для пути "${path}" — проверь, что фото лежит в src/assets, а не только в public`);
   }
