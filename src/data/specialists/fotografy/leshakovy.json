@@ -1,0 +1,127 @@
+{
+  "slug": "leshakovy",
+  "categorySlug": "fotografy",
+  "category": "Фотографы",
+  "alsoCategories": [
+    "videografy"
+  ],
+  "name": "Юлия и Леонид Лешаковы",
+  "avatar": "/specialists/fotografy/avatars/leshakovy.webp",
+  "portrait": "/specialists/fotografy/leshakovy/portrait.webp",
+  "photos": [
+    "/specialists/fotografy/leshakovy/gal/p23.webp",
+    "/specialists/fotografy/leshakovy/gal/p21.webp",
+    "/specialists/fotografy/leshakovy/gal/p36.webp",
+    "/specialists/fotografy/leshakovy/gal/p31.webp",
+    "/specialists/fotografy/leshakovy/gal/p16.webp",
+    "/specialists/fotografy/leshakovy/gal/p17.webp",
+    "/specialists/fotografy/leshakovy/gal/p18.webp",
+    "/specialists/fotografy/leshakovy/gal/p19.webp",
+    "/specialists/fotografy/leshakovy/gal/p13.webp",
+    "/specialists/fotografy/leshakovy/gal/p14.webp",
+    "/specialists/fotografy/leshakovy/gal/p11.webp",
+    "/specialists/fotografy/leshakovy/gal/p12.webp",
+    "/specialists/fotografy/leshakovy/gal/p09.webp",
+    "/specialists/fotografy/leshakovy/gal/p05.webp",
+    "/specialists/fotografy/leshakovy/gal/p06.webp",
+    "/specialists/fotografy/leshakovy/gal/p24.webp",
+    "/specialists/fotografy/leshakovy/gal/p25.webp",
+    "/specialists/fotografy/leshakovy/gal/p26.webp",
+    "/specialists/fotografy/leshakovy/gal/p27.webp",
+    "/specialists/fotografy/leshakovy/gal/p28.webp",
+    "/specialists/fotografy/leshakovy/gal/p30.webp",
+    "/specialists/fotografy/leshakovy/gal/p34.webp",
+    "/specialists/fotografy/leshakovy/gal/p37.webp",
+    "/specialists/fotografy/leshakovy/gal/p38.webp",
+    "/specialists/fotografy/leshakovy/gal/p39.webp",
+    "/specialists/fotografy/leshakovy/gal/p20.webp",
+    "/specialists/fotografy/leshakovy/gal/p04.webp",
+    "/specialists/fotografy/leshakovy/gal/p07.webp",
+    "/specialists/fotografy/leshakovy/gal/p08.webp",
+    "/specialists/fotografy/leshakovy/gal/p03.webp",
+    "/specialists/fotografy/leshakovy/gal/p02.webp",
+    "/specialists/fotografy/leshakovy/gal/p01.webp",
+    "/specialists/fotografy/leshakovy/gal/p10.webp",
+    "/specialists/fotografy/leshakovy/gal/p15.webp",
+    "/specialists/fotografy/leshakovy/gal/p22.webp",
+    "/specialists/fotografy/leshakovy/gal/p29.webp",
+    "/specialists/fotografy/leshakovy/gal/p32.webp",
+    "/specialists/fotografy/leshakovy/gal/p33.webp",
+    "/specialists/fotografy/leshakovy/gal/p35.webp"
+  ],
+  "tagline": "Фото и видео одним комплектом",
+  "bio": "Мы Юлия и Леонид — снимаем свадьбы пятнадцать лет и знаем в этой сфере каждую мелочь. Наши работы — яркие, искренние и стильные моменты, которые не потеряют актуальности через годы ни съёмкой, ни обработкой.\n\nРаботаем в паре и снимаем комплексом «фото + видео»: съёмка занимает минимум времени, а весь материал выходит в едином стиле. Действия отточены сотнями свадеб — от вас классное настроение, всё остальное берём на себя.",
+  "gender": "pair",
+  "priceFrom": 150000,
+  "priceNote": "фото и видео; зависит от даты, времени года и количества часов",
+  "age": "35–50",
+  "experienceYears": 15,
+  "aboutTitle": "О нас",
+  "filters": {
+    "gender": "pair",
+    "city": [
+      "цао",
+      "сао",
+      "свао",
+      "вао",
+      "юво",
+      "юао",
+      "юзао",
+      "зао",
+      "сзао",
+      "mo",
+      "вне-мо"
+    ],
+    "experience": "15+",
+    "minBudget": "150+",
+    "style": [
+      "reportage",
+      "staged",
+      "lifestyle"
+    ],
+    "serviceType": [
+      "full-day"
+    ]
+  },
+  "packageIncludes": [
+    "Предварительная консультация по видеосвязи",
+    "Съёмка фото и видео одним комплектом",
+    "Авторская обработка 500–800 фотографий",
+    "Фильм на 20–40 минут в FullHD и тизер на минуту",
+    "Составление тайминга дня",
+    "Подбор локаций для утра и прогулки, цветовой гаммы и стилистики",
+    "Помощь с позированием",
+    "Обратная связь и советы на всех этапах"
+  ],
+  "quote": "Стоимость зависит от даты, времени года и количества часов — напишите нам, и мы посчитаем под ваш день. Сначала созвонимся по видеосвязи и обсудим всё до мелочей: это бесплатно и ни к чему не обязывает.",
+  "offers": [
+    {
+      "title": "Работаем в паре",
+      "text": "Снимаем комплексом «фото + видео»: съёмка занимает минимум времени, а весь материал выходит в едином стиле. Действия отточены сотнями свадеб."
+    },
+    {
+      "title": "Консультация до свадьбы",
+      "text": "Разбираем каждую деталь дня — включая те моменты, о которых вы сами ещё не думали."
+    },
+    {
+      "title": "Помогаем с локациями",
+      "text": "Подскажем отель для сборов, места для съёмки и даже цвет костюма жениха — ждём ваши фото из примерочной."
+    },
+    {
+      "title": "Ставим позы",
+      "text": "Вопрос «куда деть руки» просто не возникнет: позирование берём на себя, от вас — настроение."
+    },
+    {
+      "title": "Топовая техника Nikon",
+      "text": "Объективы любой ширины, свой свет на банкете — всё, что нужно для съёмки в любых условиях."
+    },
+    {
+      "title": "Приезжаем на своей машине",
+      "text": "В ней всегда есть печеньки и бутерброды."
+    },
+    {
+      "title": "С нами ненапряжно",
+      "text": "Просто прикольные ребята, с которыми на съёмке комфортно и весело."
+    }
+  ]
+}
