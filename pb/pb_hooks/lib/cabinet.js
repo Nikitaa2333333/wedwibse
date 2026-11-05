@@ -407,15 +407,17 @@ function vendorChannels(vendor) {
 }
 
 /** личное сообщение подрядчику ботом Telegram (бот пишет, раз человек входил через него с правом писать) */
-function telegramTo(chatId, text) {
+function telegramTo(chatId, text, button) {
   const token = $os.getenv('TG_BOT_TOKEN');
   if (!token || !chatId) return;
+  const msg = { chat_id: chatId, text, link_preview_options: { is_disabled: true } };
+  if (button) msg.reply_markup = { inline_keyboard: [[{ text: button.text, url: button.url }]] };
   try {
     const res = $http.send({
       url: `https://api.telegram.org/bot${token}/sendMessage`,
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text, link_preview_options: { is_disabled: true } }),
+      body: JSON.stringify(msg),
       timeout: 5,
     });
     if (res.statusCode !== 200) $app.logger().warn('cabinet: telegram подрядчику отказал', 'status', res.statusCode, 'body', toString(res.body).slice(0, 300));
@@ -434,11 +436,13 @@ function telegramTo(chatId, text) {
 function notifyVendor(app, vendorId, subject, html, text) {
   mailVendor(app, vendorId, subject, html);
   if ($os.getenv('VENDOR_MESSENGER_NOTIFY') !== '1' || !text) return;
+  // кнопка под сообщением (Никита 05.11: «включай с правками»)
+  const button = { text: 'Открыть кабинет', url: `${SITE_URL}/profi/moi/` };
   try {
     const vendor = app.findRecordById('vendors', vendorId);
     const ch = vendorChannels(vendor);
-    if (ch.telegram) telegramTo(vendor.getString('telegramId'), text);
-    if (ch.max) require(`${__hooks}/lib/max.js`).send(vendor.getString('maxId'), text);
+    if (ch.telegram) telegramTo(vendor.getString('telegramId'), text, button);
+    if (ch.max) require(`${__hooks}/lib/max.js`).send(vendor.getString('maxId'), text, button);
   } catch (err) {
     app.logger().warn('cabinet: уведомление подрядчику не ушло', 'vendor', vendorId, 'error', String(err));
   }
@@ -681,7 +685,7 @@ function vendorUpdateRevision(e) {
     telegram(`На проверку: ${str(data.name, 120)} (${r.getString('kind') === 'venue' ? 'площадка' : r.getString('categorySlug')})` +
       `${isNewCard ? ', новая карточка' : managed ? ', правка (ведём мы)' : ', правка'}\n${SITE_URL}/profi/admin/moderaciya/pravka/?id=${r.id}` +
       (managed && requestsText(data) ? `\nПросит поправить —\n${requestsText(data)}` : ''));
-    // тексты для мессенджеров — ЧЕРНОВИК на согласование Никите (до VENDOR_MESSENGER_NOTIFY=1 не уходят)
+    // тексты для мессенджеров согласованы Никитой 05.11 («включай с правками»); менять — с его согласия
     notifyVendor(e.app, r.getString('owner'), 'Карточка отправлена на проверку — WED Secrets',
       `<p>Получили вашу карточку «${str(data.name, 120)}» и проверим её в ближайшее время.</p>` +
       `<p>Когда она появится на сайте, пришлём письмо со ссылкой.</p>`,
@@ -722,9 +726,9 @@ function moderateRevision(e) {
     const kind = r.getString('kind');
     const url = cardUrl(kind, r.getString('categorySlug'), r.getString('slug'));
     notifyVendor(app, r.getString('owner'), 'Карточка опубликована — WED Secrets',
-      `<p>Карточку «${str(data.name, 120)}» одобрили — через несколько минут она появится на сайте:<a href="${url}">${url}</a>.</p>` +
+      `<p>Карточку «${str(data.name, 120)}» одобрили — она уже на сайте: <a href="${url}">${url}</a></p>` +
       `<p>Теперь в кабинете можно добавить видео — пришлите ссылку на Яндекс.Диск, ролики мы обработаем сами.</p>`,
-      `Карточку «${str(data.name, 120)}» одобрили — через несколько минут она появится на сайте: ${url}
+      `Карточку «${str(data.name, 120)}» одобрили — она уже на сайте: ${url}
 Теперь в кабинете можно добавить видео.`);
     return;
   }

@@ -24,8 +24,8 @@ const TEXT_STALE = 'Эта ссылка для входа устарела. На
 const TEXT_HELP = 'Это бот входа в кабинет подрядчика WED Secrets. Чтобы войти, нажмите «Войти через MAX» на странице входа в кабинет.';
 
 /** сообщение пользователю в диалог с ботом; отказ MAX только в лог */
-function send(userId, text) {
-  post(`user_id=${encodeURIComponent(userId)}`, userId, text);
+function send(userId, text, button) {
+  post(`user_id=${encodeURIComponent(userId)}`, userId, text, button);
 }
 
 /** сообщение в групповой чат, куда добавлен бот (чат модераторов, MAX_CHAT_ID) */
@@ -33,7 +33,8 @@ function sendChat(chatId, text) {
   post(`chat_id=${encodeURIComponent(chatId)}`, chatId, text);
 }
 
-function post(target, id, text) {
+/** button — { text, url }: кнопка-ссылка под сообщением (inline_keyboard, тип link) */
+function post(target, id, text, button) {
   const token = $os.getenv('MAX_BOT_TOKEN');
   if (!token || !id) return;
   try {
@@ -41,7 +42,9 @@ function post(target, id, text) {
       url: `${API}/messages?${target}`,
       method: 'POST',
       headers: { Authorization: token, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text }),
+      body: JSON.stringify(button
+        ? { text, attachments: [{ type: 'inline_keyboard', payload: { buttons: [[{ type: 'link', text: button.text, url: button.url }]] } }] }
+        : { text }),
       timeout: 10,
     });
     if (res.statusCode !== 200) {

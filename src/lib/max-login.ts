@@ -22,7 +22,7 @@
 //
 // PUBLIC_MAX_BOT (никнейм бота) в сборке; без него кнопка остаётся ссылкой
 // прототипа.
-import { api, ApiError, errText } from './cabinet-api';
+import { api, ApiError } from './cabinet-api';
 import { signIn, type Pending } from './tg-login';
 
 export const MAX_BOT = import.meta.env.PUBLIC_MAX_BOT || '';
@@ -93,7 +93,7 @@ export function prepareMaxLink(a: HTMLAnchorElement, onError: (m: string) => voi
       a.target = '_blank';
       a.rel = 'noopener';
     } catch (err) {
-      onError(errText(err));
+      onError((err as Error).message);
     }
   };
   load();
