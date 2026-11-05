@@ -3928,8 +3928,8 @@ window.MAP = {
    "sev": "high",
    "area": "Кабинет/UI",
    "where": "AdminShell, admin/index, zayavki, zhaloby, katalog",
-   "fix": "Демо удалено, данные из revisions (lib/admin-live.ts) — в ветке claude/cabinet-ui",
-   "s": "work",
+   "fix": "Демо удалено, данные из revisions (lib/admin-live.ts) — выложено 05.11",
+   "s": "done",
    "src": "cabinet-ui-review топ-1"
   },
   {
@@ -3937,8 +3937,8 @@ window.MAP = {
    "sev": "high",
    "area": "Кабинет/UI",
    "where": "lib/cabinet-api.ts",
-   "fix": "Словарь humanError + errText на всех экранах — в ветке claude/cabinet-ui",
-   "s": "work",
+   "fix": "Словарь humanError + errText на всех экранах — выложено 05.11",
+   "s": "done",
    "src": "cabinet-ui-review топ-2"
   }
  ],
@@ -6132,6 +6132,10 @@ window.MAP = {
   }
  ],
  "recent": [
+  {
+   "date": "05.11.2026",
+   "t": "Выложено: интерфейс кабинета и админки (разбор Никиты, Apple HIG), демо без входа на дев, окно Диска с ходом загрузки, хуки — счёт роликов и текст отказа привязки"
+  },
   {
    "date": "05.11.2026",
    "t": "Кабинет и админка по сверке cabinet-ui: демо снято, ошибки по-русски и облачком, отмена с таймером, один статус, Apple HIG — эталон (ветка claude/cabinet-ui, не выложено)"
