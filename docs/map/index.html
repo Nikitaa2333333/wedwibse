@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Карта WED Secrets</title>
+<style>
+  /* Внутренний инструмент, не витрина: правила кабинета (цвет несёт смысл). */
+  :root {
+    --bg: #f4f5f7; --card: #fff; --ink: #14171c; --line: #dfe2e7;
+    --done: #1a8f43; --done-bg: #e3f6e9;
+    --work: #1f6fd1; --work-bg: #e4efff;
+    --todo: #6b7280; --todo-bg: #eef0f3;
+    --bad: #d23a3a;  --bad-bg: #fde8e8;
+    --block: #b26a00; --block-bg: #fff2dc;
+    --gap: 12px; --radius: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #111317; --card: #1b1e24; --ink: #fff; --line: #2c3038;
+      --done-bg: #12321e; --work-bg: #132a4a; --todo-bg: #23262d; --bad-bg: #3d1717; --block-bg: #3a2a10;
+      --done: #4fd17c; --work: #6aa8ff; --todo: #b5bac3; --bad: #ff7070; --block: #f0b04a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.4 Onest, system-ui, -apple-system, Segoe UI, sans-serif; }
+  .wrap { max-width: 1400px; margin: 0 auto; padding: 20px 16px 60px; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 20px; margin-bottom: 16px; }
+  h1 { font-size: 24px; margin: 0; }
+  .upd { font-size: 13px; }
+  .tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+  .tabs button { font: inherit; border: 0; padding: 8px 14px; border-radius: 999px;
+    background: var(--card); color: var(--ink); cursor: pointer; }
+  .tabs button[aria-selected="true"] { background: var(--ink); color: var(--bg); }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; margin-bottom: 16px; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+
+  /* Путь: дорожки колонками, шаги — цепочкой со связкой */
+  .total { background: var(--card); border-radius: var(--radius); padding: 14px 16px; margin-bottom: var(--gap); }
+  .bar { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: var(--todo-bg); margin-top: 8px; }
+  .bar span { display: block; }
+  .tracks { display: grid; gap: var(--gap); grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+  .track { background: var(--card); border-radius: var(--radius); padding: 14px; }
+  .track h2 { font-size: 17px; margin: 0; }
+  .track .note { font-size: 13px; margin: 2px 0 8px; }
+  .steps { list-style: none; margin: 10px 0 0; padding: 0; }
+  .step { position: relative; padding: 0 0 12px 22px; }
+  .step::before { content: ''; position: absolute; left: 5px; top: 14px; bottom: -2px; width: 2px; background: var(--line); }
+  .step:last-child::before { display: none; }
+  .step i { position: absolute; left: 0; top: 4px; width: 12px; height: 12px; border-radius: 50%;
+    border: 2px solid var(--c); background: var(--bgc); }
+  .step.done i { background: var(--c); }
+  .step small { display: inline-block; font-size: 12px; margin-top: 2px; padding: 1px 6px;
+    border-radius: 6px; background: var(--bgc); color: var(--c); }
+  .s-done { --c: var(--done); --bgc: var(--done-bg); }
+  .s-work { --c: var(--work); --bgc: var(--work-bg); }
+  .s-todo { --c: var(--todo); --bgc: var(--todo-bg); }
+  .s-bad  { --c: var(--bad);  --bgc: var(--bad-bg); }
+  .s-block{ --c: var(--block);--bgc: var(--block-bg); }
+  .step.work span { font-weight: 600; }
+
+  .blockers { background: var(--block-bg); border-radius: var(--radius); padding: 14px 16px; margin-top: var(--gap); }
+  .blockers h2 { font-size: 17px; margin: 0 0 6px; }
+  .blockers ul { margin: 0; padding-left: 18px; }
+
+  .graph { background: var(--card); border-radius: var(--radius); padding: 16px; overflow-x: auto; }
+  .graph svg { max-width: 100%; height: auto; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Карта WED Secrets</h1>
+    <span class="upd" id="upd"></span>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button role="tab" aria-selected="true" data-tab="path">Путь</button>
+    <button role="tab" aria-selected="false" data-tab="system">Система</button>
+  </div>
+
+  <div class="legend" id="legend"></div>
+
+  <section id="path">
+    <div class="total" id="total"></div>
+    <div class="tracks" id="tracks"></div>
+    <div class="blockers" id="blockers"></div>
+  </section>
+
+  <section id="system" hidden>
+    <div class="graph"><pre class="mermaid" id="mm"></pre></div>
+  </section>
+</div>
+
+<script src="data.js"></script>
+<script type="module">
+  const M = window.MAP;
+  const NAMES = { done: 'сделано', work: 'в работе', todo: 'впереди', bad: 'сломано / долг', block: 'ждёт внешнего' };
+  const COLOR = s => getComputedStyle(document.documentElement).getPropertyValue('--' + s).trim();
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  document.getElementById('upd').textContent = 'обновлено ' + M.updated;
+  document.getElementById('legend').innerHTML = Object.entries(NAMES)
+    .map(([k, v]) => `<span><span class="dot" style="background:var(--${k})"></span>${v}</span>`).join('');
+
+  // ── Путь
+  const all = M.tracks.flatMap(t => t.steps);
+  const count = s => all.filter(x => x[1] === s).length;
+  document.getElementById('total').innerHTML =
+    `Всего шагов: ${all.length} · сделано ${count('done')} · в работе ${count('work')} · сломано ${count('bad')} · ждёт ${count('block')}` +
+    `<div class="bar">${Object.keys(NAMES).map(s => `<span style="flex:${count(s)};background:var(--${s})"></span>`).join('')}</div>`;
+
+  document.getElementById('tracks').innerHTML = M.tracks.map(t => {
+    const done = t.steps.filter(s => s[1] === 'done').length;
+    return `<article class="track">
+      <h2>${esc(t.title)}</h2>
+      <p class="note">${esc(t.note)} · ${done} из ${t.steps.length}</p>
+      <div class="bar">${Object.keys(NAMES).map(s => `<span style="flex:${t.steps.filter(x => x[1] === s).length};background:var(--${s})"></span>`).join('')}</div>
+      <ol class="steps">${t.steps.map(([name, st, why]) =>
+        `<li class="step ${st} s-${st}"><i></i><span>${esc(name)}</span>${why ? `<br><small>${esc(why)}</small>` : ''}</li>`).join('')}</ol>
+    </article>`;
+  }).join('');
+
+  document.getElementById('blockers').innerHTML =
+    `<h2>Ждём снаружи</h2><ul>${M.blockers.map(b => `<li>${esc(b)}</li>`).join('')}</ul>`;
+
+  // ── Система: Mermaid-граф из тех же данных
+  const lines = ['flowchart LR'];
+  for (const g of M.groups) {
+    lines.push(`subgraph ${g.id}["${g.title}"]`);
+    for (const [id, label] of g.nodes) lines.push(`  ${id}["${label}"]`);
+    lines.push('end');
+  }
+  M.links.forEach(([a, b, label, st]) => {
+    const arrow = st === 'todo' ? '-.->' : '-->';
+    lines.push(label ? `${a} ${arrow}|"${label}"| ${b}` : `${a} ${arrow} ${b}`);
+  });
+  M.links.forEach(([, , , st], i) => {
+    const w = st === 'bad' ? 3 : 1.5;
+    lines.push(`linkStyle ${i} stroke:${COLOR(st)},stroke-width:${w}px`);
+  });
+  document.getElementById('mm').textContent = lines.join('\n');
+
+  let drawn = false;
+  async function drawGraph() {
+    if (drawn) return; drawn = true;
+    const { default: mermaid } = await import('https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs');
+    const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+    mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', flowchart: { curve: 'basis' } });
+    await mermaid.run({ nodes: [document.getElementById('mm')] });
+  }
+
+  // ── Вкладки (запоминаем последнюю в адресе)
+  function show(tab) {
+    document.querySelectorAll('[data-tab]').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === tab));
+    document.getElementById('path').hidden = tab !== 'path';
+    document.getElementById('system').hidden = tab !== 'system';
+    if (tab === 'system') drawGraph();
+    history.replaceState(null, '', '#' + tab);
+  }
+  document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => show(b.dataset.tab)));
+  show(location.hash === '#system' ? 'system' : 'path');
+</script>
+</body>
+</html>
