@@ -1194,7 +1194,7 @@ function linkMessenger(e) {
     const busy = cardCount(e.app, other.id) > 0
       || !!findOne(e.app, 'revisions', 'owner = {:v}', { v: other.id })
       || !!other.getString('email');
-    if (busy) throw new BadRequestError(`Этот ${name} уже входит в другую учётку с карточками. Напишите нам — объединим учётки.`);
+    if (busy) throw new BadRequestError(`Этот ${name} уже подключён к другой учётке с карточками. Войдите через ${name}, чтобы работать с ними, или напишите в поддержку из раздела «Помощь» — объединим учётки.`);
   }
   e.app.runInTransaction((tx) => {
     if (other) {

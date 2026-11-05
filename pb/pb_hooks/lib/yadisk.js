@@ -50,6 +50,7 @@ function api(params, timeout, suffix) {
 function list(e) {
   const key = publicKey(e.requestInfo().query.url);
   const items = [];
+  let videos = 0; // ролики в папке — только счёт, чтобы экран сказал «в папке только видео»
   let title = '';
   const walk = (path, depth) => {
     for (let offset = 0; items.length < MAX_ITEMS; offset += 200) {
@@ -66,6 +67,7 @@ function list(e) {
       const dirs = [];
       for (const it of page) {
         if (it.type === 'dir') dirs.push(it.path);
+        else if (it.media_type === 'video') videos++;
         else if (it.media_type === 'image' || IMAGE.test(it.name)) {
           items.push({ path: it.path, name: it.name, preview: it.preview || '', size: it.size || 0, folder: path ? path.split('/').pop() : '' });
         }
@@ -76,7 +78,7 @@ function list(e) {
     }
   };
   walk('', 0);
-  return e.json(200, { title, items, capped: items.length >= MAX_ITEMS });
+  return e.json(200, { title, items, videos, capped: items.length >= MAX_ITEMS });
 }
 
 /** файл с диска: оригинал, если влезает в поле photos, иначе копия до 3000 px */

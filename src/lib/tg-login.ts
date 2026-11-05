@@ -97,7 +97,8 @@ export function linkVia(): 'telegram' | 'max' | null {
 export const PROFILE_URL = '/profi/moi/profil/';
 
 export function afterLogin(next?: string) {
-  if (linkVia()) { location.href = PROFILE_URL; return; }
+  // после «Подключить» — в профиль с отметкой, профиль скажет «MAX подключён»
+  if (linkVia()) { location.href = `${PROFILE_URL}?linked=${linkVia()}`; return; }
   // только свои адреса: ?next= не уводит на чужой сайт
   location.href = next && next.startsWith('/profi/') ? next : '/profi/moi/';
 }

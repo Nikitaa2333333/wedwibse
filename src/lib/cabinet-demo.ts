@@ -7,7 +7,7 @@
 // import.meta.env.DEV, и Vite выбрасывает эту ветку из боевого кода.
 import { ApiError } from './cabinet-api';
 
-const KEY = 'wed-cab-demo-state';
+const KEY = 'wed-cab-demo-state-2'; // -2: «Описание» Анны пустое — видно пример-плейсхолдер (05.11)
 
 interface State { vendor: any; revisions: any[]; cards: any[]; others?: any[]; seq: number }
 
@@ -27,7 +27,7 @@ function seed(): State {
         photos: ['demo-1.jpg', 'demo-2.jpg', 'demo-3.jpg'],
         data: {
           name: 'Анна Дремина', firstName: 'Анна', lastName: 'Дремина', tagline: 'Репортаж без постановки',
-          sections: [{ title: '', body: 'Снимаю свадьбы как кино: без постановки, на живых эмоциях.' }],
+          sections: [], // пусто: в «Описании» виден серый пример под категорию
           contacts: { phone: '+7900123', phoneCountry: 'RU' }, filters: {},
         },
       },
@@ -107,7 +107,24 @@ export async function demoApi(method: string, path: string, body?: unknown): Pro
   if (p.startsWith('/api/collections/legal_docs/')) return { items: [{ kind: 'vendor-offer', title: 'Оферта для подрядчиков (демо)', text: '<p>Текст оферты появится здесь.</p>' }] };
   if (p === '/api/wed/slug') return { suggestion: 'demo-' + s.seq };
   if (p === '/api/wed/preview-link') throw new ApiError(400, 'В демо-режиме превью нет — оно открывается на настоящей карточке');
-  if (p.startsWith('/api/wed/yadisk/')) throw new ApiError(400, 'В демо-режиме Яндекс Диск не подключён');
+  // Яндекс Диск в демо: в ссылке «video» — папка только с роликами, «obryv» — связь рвётся на второй пачке
+  if (p === '/api/wed/yadisk/list') {
+    const link = url.searchParams.get('url') ?? '';
+    if (/video/i.test(link)) return { title: 'Ролики со свадьбы', items: [], videos: 3, capped: false };
+    const items = Array.from({ length: 14 }, (_, i) => ({ path: `/kadr-${i + 1}.jpg`, name: `kadr-${i + 1}.jpg`, preview: demoImage(`yd-${i}`), size: 3_000_000 }));
+    return { title: 'Свадьба Анны и Ильи', items, videos: 2, capped: false };
+  }
+  if (p === '/api/wed/yadisk/import') {
+    const b = body as any;
+    const r = revById(b.revision);
+    s.seq++;
+    if (/obryv/i.test(b.url) && (s as any).ydBatches === 1) { (s as any).ydBatches = 0; save(s); throw new ApiError(0, 'Нет связи с сервером. Проверьте интернет и повторите'); }
+    (s as any).ydBatches = ((s as any).ydBatches ?? 0) + 1;
+    await wait(900);
+    const names = b.paths.map((x: string) => `demo-yd-${x.replace(/\W/g, '')}-${s.seq}.jpg`);
+    r.photos = [...(r.photos ?? []), ...names];
+    return done({ record: r, added: names.length, already: 0, skipped: [] });
+  }
 
   if (p === '/api/wed/edit') {
     const b = body as any;

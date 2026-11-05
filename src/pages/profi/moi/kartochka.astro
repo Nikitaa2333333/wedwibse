@@ -1018,6 +1018,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       <p class="a-lead">Вставьте ссылку на папку с доступом «всем, у кого есть ссылка» — кадры появятся сами</p>
       <input class="a-field__input c-yd-url" type="url" inputmode="url" placeholder="https://disk.yandex.ru/d/…" aria-label="Ссылка на папку" data-yd-url />
       <p class="c-error" data-yd-error hidden></p>
+      <p class="a-field__note" data-yd-have></p>
       <p class="a-field__note" data-yd-info hidden></p>
       <div class="c-photos c-yd-grid" data-yd-grid></div>
       <div class="c-yd-tools" data-yd-tools hidden>
@@ -1032,10 +1033,21 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     let link = '';
     let items: { path: string; name: string; preview: string }[] = [];
     const picked: string[] = [];
+    // уже забранное в этом окне: после обрыва связи отметки с них снимаем,
+    // плитки помечаем «уже в карточке» и повторно не предлагаем (задача 05.11)
+    const imported = new Set<string>();
+    const haveLine = () => {
+      const n = (rev.photos ?? []).length;
+      $('[data-yd-have]').textContent = n ? `В карточке уже ${n} из ${MAX_PHOTOS} фото — можно добавить ещё ${room()}` : `В карточке пока нет фото — можно добавить до ${MAX_PHOTOS}`;
+    };
     const room = () => MAX_PHOTOS - (rev.photos ?? []).length;
     const fail = (m: string) => { err.textContent = m; err.hidden = !m; };
     const sync = () => {
+      haveLine();
       grid.querySelectorAll<HTMLElement>('[data-yd-path]').forEach((b) => {
+        const done = imported.has(b.dataset.ydPath!);
+        b.classList.toggle('c-yd-pick--done', done);
+        b.toggleAttribute('disabled', done);
         const i = picked.indexOf(b.dataset.ydPath!);
         b.setAttribute('aria-pressed', String(i !== -1));
         b.querySelector('.c-yd-pick__n')!.textContent = i === -1 ? '' : String(i + 1);
@@ -1069,12 +1081,17 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       try {
         const r = await api('vendor', 'GET', `/api/wed/yadisk/list?url=${encodeURIComponent(link)}`);
         items = r.items ?? [];
-        if (!items.length) { info.hidden = true; fail('В папке нет фотографий — проверьте ссылку.'); return; }
-        info.textContent = `${r.title ? `«${r.title}» · ` : ''}${items.length} фото${r.capped ? ' (показаны первые)' : ''} · можно добавить ещё ${room()}`;
+        if (!items.length) {
+          info.hidden = true;
+          // папка только с роликами — отдельно: ролики идут ссылкой в разделе «Видео»
+          fail(r.videos ? `В папке только видео (${r.videos}) — фото нет. Ролики пришлите ссылкой в разделе «Видео», мы подготовим их сами` : 'В папке нет фотографий — проверьте ссылку');
+          return;
+        }
+        info.textContent = `${r.title ? `«${r.title}», ` : ''}${items.length} фото${r.capped ? ' (показаны первые)' : ''}${r.videos ? `, видео ${r.videos} — их пришлите в разделе «Видео»` : ''}`;
         grid.innerHTML = items.map((it) => `
           <button class="c-photo c-yd-pick" type="button" aria-pressed="false" data-yd-path="${esc(it.path)}" title="${esc(it.name)}">
             ${it.preview ? `<img src="${esc(it.preview)}" alt="" loading="lazy" referrerpolicy="no-referrer" />` : ''}
-            <span class="c-yd-pick__n"></span>
+            <span class="c-yd-pick__n"></span><span class="c-yd-pick__done">в карточке</span>
           </button>`).join('');
         tools.hidden = false;
         sync();
@@ -1095,7 +1112,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       sync();
     });
     $('[data-yd-all]').addEventListener('click', () => {
-      for (const it of items) if (!picked.includes(it.path) && picked.length < room()) picked.push(it.path);
+      for (const it of items) if (!picked.includes(it.path) && !imported.has(it.path) && picked.length < room()) picked.push(it.path);
       sync();
     });
 
@@ -1114,9 +1131,12 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       try {
         for (let i = 0; i < todo.length && !stop; i += 5) {
           bar.update(`Забираем с Диска: ${done} из ${todo.length},`, done, todo.length);
-          const r = await api('vendor', 'POST', '/api/wed/yadisk/import', { revision: rev.id, url: link, paths: todo.slice(i, i + 5) });
+          const part = todo.slice(i, i + 5);
+          const r = await api('vendor', 'POST', '/api/wed/yadisk/import', { revision: rev.id, url: link, paths: part });
           rev = r.record;
           done += r.added;
+          const bad = new Set((r.skipped ?? []).map((x: any) => x.path));
+          for (const p of part) if (!bad.has(p)) imported.add(p);
           for (const s of r.skipped ?? []) skipped.push(items.find((it) => it.path === s.path)?.name ?? s.path);
           refresh();
         }
@@ -1139,11 +1159,15 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         bar.done();
         busy = false;
         status.hidden = true;
-        fail(`${done ? `Добавлено ${done}. ` : ''}${errText(x)}`);
+        // обрыв: забранное уже в карточке — отметки с него снимаем, остальное остаётся отмеченным
+        for (const p of imported) { const k = picked.indexOf(p); if (k !== -1) picked.splice(k, 1); }
+        refresh();
+        fail(`${done ? `Добавлено ${done}. ` : ''}${errText(x)}${picked.length ? ` Осталось отмечено ${picked.length} — нажмите «Добавить», чтобы дозабрать` : ''}`);
         if (!dlg.open) toast(`${done ? `Добавлено ${done}. ` : ''}${errText(x)}`, true);
         sync();
       }
     });
+    haveLine();
     $<HTMLInputElement>('[data-yd-url]').focus();
   }
 

@@ -68,6 +68,7 @@ import maxMark from '../../../assets/profi/max-mark.webp';
 <script>
   import { api, esc, requireSession, saveSession, errText } from '../../../lib/cabinet-api';
   import { confirmDelete } from '../../../lib/cabinet-delete';
+  import { toast } from '../../../lib/cab-ui';
   import { fieldError, clearFieldError } from '../../../lib/form-check';
   import { ADMIN_ICONS } from '../../../lib/admin-icons';
   const docIcon = `<svg viewBox="0 0 24 24" aria-hidden="true">${ADMIN_ICONS.text}</svg>`;
@@ -86,10 +87,12 @@ import maxMark from '../../../assets/profi/max-mark.webp';
       const emailTo = box.querySelector<HTMLInputElement>('[data-email-to]')!;
       type Ch = 'telegram' | 'max' | 'email';
       const linked: Record<Ch, boolean> = { telegram: !!me.telegramId, max: !!me.maxId, email: true };
+      const linked_ = linked;
       // по умолчанию (настройки ещё не трогали) — заявки идут в мессенджер входа
       const n = { telegram: linked.telegram, max: linked.max, email: false, emailTo: '', ...(me.notify ?? {}) };
       if (!n.emailTo) n.emailTo = String(me.email ?? '');
       emailTo.value = n.emailTo;
+      const linkedOk = (c: Ch) => linked_[c];
       const NAME: Record<Ch, string> = { telegram: 'Telegram', max: 'MAX', email: 'почту' };
       const paint = () => box.querySelectorAll<HTMLElement>('[data-ch]').forEach((row) => {
         const ch = row.dataset.ch as Ch;
@@ -113,6 +116,12 @@ import maxMark from '../../../assets/profi/max-mark.webp';
           Object.assign(n, me.notify);
         } catch (x) { err.textContent = errText(x); err.hidden = false; }
         paint();
+      // вернулись после «Подключить» (tg-login → afterLogin): сказать, что вышло
+      const linked = new URLSearchParams(location.search).get('linked') as Ch | null;
+      if (linked && (linked === 'telegram' || linked === 'max')) {
+        toast(linked && linkedOk(linked) ? `${linked === 'max' ? 'MAX' : 'Telegram'} подключён — заявки придут и туда` : 'Не получилось подключить — попробуйте ещё раз', !linkedOk(linked));
+        history.replaceState(null, '', location.pathname);
+      }
       };
       box.addEventListener('click', (e) => {
         const sw = (e.target as HTMLElement).closest<HTMLButtonElement>('.c-switch');

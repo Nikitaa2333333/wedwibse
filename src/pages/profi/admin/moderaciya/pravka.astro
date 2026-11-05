@@ -71,6 +71,7 @@ const QUESTIONS = Object.fromEntries(
   import { api, esc, fileToken, fileUrl, requireSession, REV_STATUS, errText } from '../../../../lib/cabinet-api';
   import { VENUE_QUESTIONS, VENUE_TERMS, priceFrom, rub } from '../../../../lib/cabinet-form';
   import { later } from '../../../../lib/cab-ui';
+  import { fieldError, clearFieldError } from '../../../../lib/form-check';
 
   const LABELS: [string, string][] = [
     ['name', 'Название'], ['tagline', 'Коротко о себе'], ['address', 'Адрес'], ['rentFrom', 'Аренда от'],
@@ -196,10 +197,12 @@ const QUESTIONS = Object.fromEntries(
       });
     }
 
+    $('[data-pr-reason]').addEventListener('input', (e) => clearFieldError(e.target as HTMLInputElement));
     $('[data-pr-approve]').addEventListener('click', () => act({ status: 'approved' }, 'Одобрено'));
     $('[data-pr-reject]').addEventListener('click', () => {
       const reason = $<HTMLTextAreaElement>('[data-pr-reason]').value.trim();
-      if (!reason) return fail('Напишите, что исправить — без этого подрядчик не поймёт, что делать');
+      // ошибка поля — облачком у поля, не строкой под кнопкой (правило «где какая ошибка»)
+      if (!reason) return fieldError($<HTMLTextAreaElement>('[data-pr-reason]') as unknown as HTMLInputElement, 'Напишите, что исправить — без этого подрядчик не поймёт, что делать');
       act({ status: 'rejected', rejectReason: reason }, 'Вернули с причиной');
     });
 

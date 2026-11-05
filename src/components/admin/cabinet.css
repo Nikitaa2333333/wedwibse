@@ -228,7 +228,7 @@ select.a-field__input { appearance: none; background-image: var(--adm-chevron-do
 .c-photo__tools { justify-content: flex-end; }
 
 /* отбор кадров с Яндекс Диска: та же плитка, нажатие отмечает, номер — порядок добавления */
-.c-yd-grid { max-height: 56vh; overflow-y: auto; overflow-x: clip; margin-block: var(--s-3); }
+.c-yd-grid { max-height: 56vh; overflow-y: auto; overflow-x: clip; margin-block: var(--s-3); grid-auto-rows: max-content; align-content: start; } /* ряды не сжимаются под высоту окна — иначе плитки наезжали друг на друга */
 .c-yd-pick { padding: 0; border: 0; cursor: pointer; }
 .c-yd-pick[aria-pressed="true"] { outline: 3px solid var(--st-ok-text); outline-offset: -3px; }
 .c-yd-pick__n { position: absolute; right: 6px; top: 6px; min-width: 24px; height: 24px; padding-inline: 6px; border-radius: 12px; display: grid; place-items: center; background: var(--st-ok); color: var(--st-ok-ink); font-size: var(--fs-small); font-weight: var(--w-semibold); }
@@ -656,6 +656,8 @@ body:has(.c-bar .a-btn) .c-toast { bottom: calc(var(--cab-tabs-h) + env(safe-are
 /* пример под категорию — плейсхолдер, виден только пока поле пустое */
 .c-notes__ph { position: absolute; inset: 18px var(--s-4) auto; color: var(--adm-placeholder); pointer-events: none; display: none; }
 .c-notes:has(.c-notes__ed.is-empty) .c-notes__ph { display: block; }
+/* нажали в поле — пример сразу уходит, остаётся курсор в пустом заголовке (Никита 05.11) */
+.c-notes:focus-within .c-notes__ph { display: none !important; }
 .c-notes:focus-within { box-shadow: var(--adm-shadow-tip); }
 
 /* капсула над клавиатурой */
@@ -686,3 +688,8 @@ body:has(.c-bar .a-btn) .c-toast { bottom: calc(var(--cab-tabs-h) + env(safe-are
 }
 /* пока пишут «Описание» — нижнего меню нет, капсула встаёт на его место (как внутри заметки) */
 @media (max-width: 1023px) { html.is-writing .cab .c-tabs { display: none; } }
+
+/* окно Диска: уже забранный кадр — приглушён и с подписью, нажать нельзя */
+.c-yd-pick__done { display: none; position: absolute; left: 6px; right: 6px; bottom: 6px; padding: 3px 8px; border-radius: 999px; background: var(--adm-card); font-size: 12px; font-weight: 600; text-align: center; }
+.c-yd-pick--done img { opacity: 0.45; }
+.c-yd-pick--done .c-yd-pick__done { display: block; }
