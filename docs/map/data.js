@@ -697,9 +697,9 @@ window.MAP = {
     },
     {
      "t": "Уведомления о заявках по vendors.notify (Telegram/MAX/почта)",
-     "s": "work",
+     "s": "done",
      "src": "audit/code-review.md 2.2",
-     "note": "05.11 выложено выключенным: notifyVendor на сервере, мессенджеры ждут VENDOR_MESSENGER_NOTIFY=1 после согласия Никиты на тексты; заявки подрядчику — OPEN-QUESTIONS №14",
+     "note": "05.11 включено: VENDOR_MESSENGER_NOTIFY=1, тексты согласованы Никитой (уже на сайте, кнопка «Открыть кабинет»); заявки подрядчику — отдельно, OPEN-QUESTIONS №14",
      "date": "05.11.2026"
     },
     {
