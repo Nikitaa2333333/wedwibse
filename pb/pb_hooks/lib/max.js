@@ -25,11 +25,20 @@ const TEXT_HELP = 'Это бот входа в кабинет подрядчик
 
 /** сообщение пользователю в диалог с ботом; отказ MAX только в лог */
 function send(userId, text) {
+  post(`user_id=${encodeURIComponent(userId)}`, userId, text);
+}
+
+/** сообщение в групповой чат, куда добавлен бот (чат модераторов, MAX_CHAT_ID) */
+function sendChat(chatId, text) {
+  post(`chat_id=${encodeURIComponent(chatId)}`, chatId, text);
+}
+
+function post(target, id, text) {
   const token = $os.getenv('MAX_BOT_TOKEN');
-  if (!token || !userId) return;
+  if (!token || !id) return;
   try {
     const res = $http.send({
-      url: `${API}/messages?user_id=${encodeURIComponent(userId)}`,
+      url: `${API}/messages?${target}`,
       method: 'POST',
       headers: { Authorization: token, 'Content-Type': 'application/json' },
       body: JSON.stringify({ text }),
@@ -140,4 +149,4 @@ function confirmed(app, code) {
   return id ? { login, id, name: login.getString('name') } : null;
 }
 
-module.exports = { start, webhook, confirmed, send, CODE_RE };
+module.exports = { start, webhook, confirmed, send, sendChat, CODE_RE };
