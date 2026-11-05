@@ -6,6 +6,9 @@
 // большой кадр). Первые два ряда всегда обычные: крупные карточки идут
 // дальше по ленте (см. PLAIN_HEAD ниже). Внутри карточки кадры листаются
 // свайпом — мобильный способ смотреть несколько фото.
+// САЙТ ИЗ БАЗЫ (этап 3, 05.11.2026): страницу рисует сервер из живых данных
+// базы (lib/live-data.ts) — правка площадки видна через секунды, без пересборки.
+export const prerender = false;
 import Layout from '../../../layouts/Layout.astro';
 import SiteHeader from '../../../components/SiteHeader.astro';
 import BottomDock from '../../../components/BottomDock.astro';
@@ -20,6 +23,10 @@ import { IMG_WIDTHS, favoriteImage } from '../../../lib/images';
 import { VENUES } from '../../../data/venues';
 import { venueFavorite } from '../../../lib/favorite-snapshot';
 import { countOptions } from '../../../lib/filter-counts';
+import { refreshLive, LIVE_CACHE } from '../../../lib/live-data';
+
+await refreshLive();
+Astro.response.headers.set('cache-control', LIVE_CACHE);
 import { venueMapPoints } from '../../../lib/map-points';
 
 // Бакеты для диапазонных фильтров — считаются на сборке (см. тот же приём

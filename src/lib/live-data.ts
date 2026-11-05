@@ -15,6 +15,8 @@ import { inferRemoteSize } from 'astro:assets';
 import { cardFromPage, orderedPhotos } from './cabinet-card.mjs';
 import { registerRemote, hasRemote, hasLocalImage } from './images';
 import { applyLive, type OwnerEdits, type Specialist } from '../data/specialists';
+import { applyLiveVenues, type Venue } from '../data/venues';
+import { applyLiveFeed, STATIC_FEED, type FeedVenue } from '../data/feed';
 
 const PB = (process.env.PB_INTERNAL_URL || 'http://127.0.0.1:8090').replace(/\/$/, '');
 const FILES = (process.env.PREVIEW_FILES_URL || 'https://wed-secrets.ru').replace(/\/$/, '');
@@ -35,11 +37,11 @@ interface PbRecord {
   photoIndex?: Record<string, string>;
 }
 
-async function fetchPublished(): Promise<PbRecord[]> {
+async function fetchPublished(collection = 'specialists'): Promise<PbRecord[]> {
   const filter = encodeURIComponent('status = "published"');
   const out: PbRecord[] = [];
   for (let page = 1; ; page++) {
-    const r = await fetch(`${PB}/api/collections/specialists/records?perPage=200&page=${page}&filter=${filter}`, { signal: AbortSignal.timeout(8000) });
+    const r = await fetch(`${PB}/api/collections/${collection}/records?perPage=200&page=${page}&filter=${filter}`, { signal: AbortSignal.timeout(8000) });
     if (!r.ok) throw new Error(`база не ответила: ${r.status}`);
     const res = await r.json();
     out.push(...res.items);
@@ -99,7 +101,73 @@ async function ourCard(rec: PbRecord): Promise<Specialist | null> {
   return card;
 }
 
+// ---------- площадки (этап 3) ----------
+const priceFmt = new Intl.NumberFormat('ru-RU');
+/** все пути кадров внутри страницы площадки (блоки, залы, первый экран) */
+async function mapVenueImages(rec: PbRecord, node: unknown): Promise<unknown> {
+  const byPath: Record<string, string> = {};
+  for (const [pbName, src] of Object.entries(rec.photoIndex ?? {})) byPath[src] = pbName;
+  const walk = async (v: unknown): Promise<unknown> => {
+    if (typeof v === 'string') {
+      if (!/^\/venues\/.+\.(webp|jpe?g|png)$/i.test(v) || hasLocalImage(v)) return v;
+      return byPath[v] ? (await remoteKey(rec, byPath[v])) ?? v : v;
+    }
+    if (Array.isArray(v)) return Promise.all(v.map(walk));
+    if (v && typeof v === 'object') {
+      const out: Record<string, unknown> = {};
+      for (const [k, x] of Object.entries(v)) out[k] = await walk(x);
+      return out;
+    }
+    return v;
+  };
+  return walk(node);
+}
+
+/** карточка каталога: записанная руками (feed.ts) или собранная из полей базы */
+function feedOf(rec: PbRecord & Record<string, any>, venue: Venue): FeedVenue {
+  const hand = STATIC_FEED.find((f) => f.slug === rec.slug);
+  if (hand) return hand;
+  const cap = Number(rec.capacityBanquet) || 0;
+  const check = Number(rec.checkFrom) || 0;
+  const photos = JSON.stringify(venue).match(/"(\/venues\/[^"]+\.(?:webp|jpe?g|png)|https?:\/\/[^"]+\/api\/files\/[^"]+)"/gi)?.map((x) => x.slice(1, -1)) ?? [];
+  return {
+    kind: 'venue',
+    slug: rec.slug,
+    name: rec.name || venue.name,
+    city: rec.city || (venue as any).city || 'Москва',
+    type: (venue as any).kicker || 'Площадка',
+    capacityMax: cap,
+    capacity: cap ? `до ${cap} гостей` : 'вместимость по запросу',
+    ...(check ? { checkFrom: check } : {}),
+    avgCheck: check ? `от ${priceFmt.format(check)} ₽` : 'чек по запросу',
+    media: [...new Set(photos)].slice(0, 4),
+  } as FeedVenue;
+}
+
+async function loadVenues() {
+  const recs = await fetchPublished('venues');
+  // в базе площадок ещё нет — остаёмся на данных сборки, каталог не обнуляем
+  if (!recs.length) return;
+  const venues: Venue[] = [];
+  const feed: FeedVenue[] = [];
+  for (const rec of recs) {
+    if (!rec.slug || !rec.page) continue;
+    const venue = (await mapVenueImages(rec, rec.page)) as Venue;
+    venues.push(venue);
+    feed.push(feedOf(rec as any, venue));
+  }
+  if (!venues.length) return;
+  // порядок каталога — как в ленте feed.ts, новые площадки — следом
+  const pos = (slug: string) => { const i = STATIC_FEED.findIndex((f) => f.slug === slug); return i < 0 ? 1e6 : i; };
+  feed.sort((a, b) => pos(a.slug) - pos(b.slug));
+  venues.sort((a, b) => pos(a.slug) - pos(b.slug));
+  applyLiveVenues(venues);
+  applyLiveFeed(feed);
+}
+
 async function load() {
+  // площадки — своей загрузкой: сбой у них не трогает подрядчиков
+  await loadVenues().catch((err) => console.error('live-data, площадки:', (err as Error).message));
   const recs = await fetchPublished();
   const cards: Specialist[] = [];
   const cabinetKeys: string[] = [];

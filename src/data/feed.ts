@@ -211,7 +211,9 @@ const ad: FeedAd = {
 // venues.flatMap((v, i) => ((i + 1) % 5 === 0 ? [v, ad] : [v])).
 // Разметка и стили .vcard--ad в pages/moskva/ploshchadki/index.astro на месте.
 void ad;
-export const FEED: FeedItem[] = venues;
+export const FEED: FeedItem[] = [...venues];
+/** карточки каталога, записанные руками (по slug) — основа для площадок из базы */
+export const STATIC_FEED: readonly FeedVenue[] = venues;
 
 // Фильтры собираются из самих карточек — руками ничего не дублируем.
 const uniq = (list: string[]) => [...new Set(list)];
@@ -255,3 +257,14 @@ export const VENUE_FILTERS: FilterGroup[] = [
     ],
   },
 ];
+
+/** САЙТ ИЗ БАЗЫ (этап 3, 05.11.2026): лента каталога из площадок базы —
+ *  подставляется на место, фильтры «тип» и «локация» пересчитываются по ней. */
+export function applyLiveFeed(items: FeedVenue[]) {
+  FEED.length = 0;
+  FEED.push(...items);
+  const type = VENUE_FILTERS.find((g) => g.key === 'type');
+  if (type) type.options = toOptions(items.map((v) => v.type)).map((o) => ({ ...o, popular: true }));
+  const city = VENUE_FILTERS.find((g) => g.key === 'city');
+  if (city) city.options = toOptions(items.map((v) => v.city));
+}
