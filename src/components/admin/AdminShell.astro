@@ -2,8 +2,9 @@
 // Оболочка админки WED Secrets (/profi/admin/) — устройство Яндекс Директа
 // и Метрики: шапка, левое меню текстом (значков нет, как в Директе) со
 // счётчиками того, что ждёт действия, рабочая область на сером поле.
-// Значки — Solar Bold Duotone (AdminIcon). Карточки — настоящие, заявки,
-// правки и жалобы — примеры до подключения базы (помечено в данных).
+// Значки — AdminIcon. Всё — настоящее: карточки из каталога, заявки и правки
+// из базы (lib/admin-live.ts), счётчики меню считает браузер после входа.
+// Демо-данных нет (05.11.2026): выдуманные цифры в меню сняты.
 // Переходы между разделами без перезагрузки — ClientRouter Astro: страница
 // не мигает, ссылки меню подгружаются заранее. Поэтому скрипты страниц
 // вешаются на `astro:page-load`, а не выполняются один раз.
@@ -13,9 +14,6 @@
 import { ClientRouter } from 'astro:transitions';
 import Layout from '../../layouts/Layout.astro';
 import AdminIcon from './AdminIcon.astro';
-import { DEMO_REVISIONS } from '../../data/moderation-demo';
-import { COMPLAINTS } from '../../data/admin-demo';
-import { PARTNER_APPS } from '../../data/partner-demo';
 import './base.css';
 import './admin.css';
 
@@ -29,13 +27,14 @@ interface Props {
 }
 const { title, section, bare = false } = Astro.props;
 
-const items: { key: AdminSection; href: string; label: string; n?: number; tone?: 'info' | 'ok' | 'bad'; gap?: boolean }[] = [
+// счётчик (`count`) — сколько ждёт действия; число ставит скрипт из базы
+const items: { key: AdminSection; href: string; label: string; count?: boolean; tone?: 'info' | 'ok' | 'bad'; gap?: boolean }[] = [
   { key: 'overview', href: '/profi/admin/', label: 'Сводка' },
-  { key: 'partners', href: '/profi/admin/zayavki/', label: 'Заявки', n: PARTNER_APPS.filter((a) => a.status === 'review').length, tone: 'bad' },
-  { key: 'moderation', href: '/profi/admin/moderaciya/', label: 'Модерация', n: DEMO_REVISIONS.filter((r) => r.state === 'review').length, tone: 'info' },
+  { key: 'partners', href: '/profi/admin/zayavki/', label: 'Заявки', count: true, tone: 'bad' },
+  { key: 'moderation', href: '/profi/admin/moderaciya/', label: 'Модерация', count: true, tone: 'info' },
   { key: 'catalog', href: '/profi/admin/katalog/', label: 'Карточки' },
-  // Жалобы важны меньше — отдельно, внизу меню
-  { key: 'complaints', href: '/profi/admin/zhaloby/', label: 'Жалобы', n: COMPLAINTS.filter((c) => c.status === 'new').length, tone: 'info', gap: true },
+  // Жалобы важны меньше — отдельно, внизу меню; в базе их пока нет — без счётчика
+  { key: 'complaints', href: '/profi/admin/zhaloby/', label: 'Жалобы', gap: true },
 ];
 ---
 
@@ -73,7 +72,7 @@ const items: { key: AdminSection; href: string; label: string; n?: number; tone?
           <a class:list={['adm-nav__item', { 'is-active': it.key === section, 'adm-nav__item--gap': it.gap }]} href={it.href} aria-current={it.key === section ? 'page' : undefined}>
             <AdminIcon name={it.key} class="adm-nav__ic" />
             <span class="adm-nav__label">{it.label}</span>
-            {it.n ? <span class={`adm-nav__n adm-nav__n--${it.tone}`}>{it.n}</span> : null}
+            {it.count && <span class={`adm-nav__n adm-nav__n--${it.tone}`} data-nav-n={it.key} hidden></span>}
           </a>
         ))}
       </nav>
@@ -86,7 +85,7 @@ const items: { key: AdminSection; href: string; label: string; n?: number; tone?
       <nav class="c-tabs" aria-label="Разделы админки">
         {items.map((it) => (
           <a class="c-tab" href={it.href} aria-current={it.key === section ? 'page' : undefined}>
-            <span class="c-tab__ic"><AdminIcon name={it.key} />{it.n ? <span class={`c-tab__n${it.tone === 'info' ? ' c-tab__n--info' : ''}`}>{it.n}</span> : null}</span>
+            <span class="c-tab__ic"><AdminIcon name={it.key} />{it.count && <span class={`c-tab__n${it.tone === 'info' ? ' c-tab__n--info' : ''}`} data-nav-n={it.key} hidden></span>}</span>
             <span>{it.label}</span>
           </a>
         ))}
@@ -99,9 +98,16 @@ const items: { key: AdminSection; href: string; label: string; n?: number; tone?
   import { bindAdminTables } from '../../lib/admin-table';
   // ClientRouter меняет страницу без перезагрузки — привязки заново на каждой
   import { session, saveSession } from '../../lib/cabinet-api';
+  import { loadRevisions, counts, setNavCount } from '../../lib/admin-live';
   document.addEventListener('astro:page-load', () => {
     if (document.querySelector('.adm')) bindAdminTables();
     const s = session('moderator');
+    // счётчики меню — из базы; не загрузилось — просто без чисел
+    if (s) loadRevisions().then((revs) => {
+      const c = counts(revs);
+      setNavCount('partners', c.newReview.length);
+      setNavCount('moderation', c.editReview.length);
+    }).catch(() => {});
     const user = document.querySelector<HTMLAnchorElement>('[data-adm-user]');
     if (!user || !s) return;
     const name = s.record.name || s.record.email || 'Модератор';

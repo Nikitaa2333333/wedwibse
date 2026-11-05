@@ -2,21 +2,20 @@
 // КАРТОЧКИ — весь каталог одной таблицей, как «Кампании» Директа. Данные
 // НАСТОЯЩИЕ (lib/admin-catalog.ts): фото из 50, есть ли текст, цена,
 // контакты — без выдуманных процентов и просмотров (просмотры — в Яндекс
-// Метрике). Колонка «Владелец»: ведём мы → ссылка выдана → вошёл → ведёт
-// сам; ссылку для входа модератор копирует и отправляет владельцу сам
-// (решение 20.10) — отдельного раздела «Пилот» не нужно. Владельцы —
-// пример (OWNERS), вживую — `owner` у карточки в базе.
+// Метрике). Колонка «Владелец» — из базы: есть ли у карточки `owner`
+// (вход владельца). Демо-статусы «ссылка выдана / вошёл» и кнопка «Выдать
+// ссылку» с ненастоящим токеном сняты 05.11.2026 — ссылки-приглашения
+// выдаются конвейером пилота (card-to-form), не отсюда.
 import { Image } from 'astro:assets';
 import AdminShell from '../../../components/admin/AdminShell.astro';
 import AdminIcon from '../../../components/admin/AdminIcon.astro';
 import { resolveImage, IMG_WIDTHS } from '../../../lib/images';
 import { CATALOG, GAPS, PHOTOS_LOW, PHOTOS_MAX } from '../../../lib/admin-catalog';
-import { OWNERS, OWNER_STEP } from '../../../data/admin-demo';
 import { SPECIALIST_CATEGORIES } from '../../../data/specialists';
 
 const ROLES = Object.fromEntries(SPECIALIST_CATEGORIES.map((c) => [c.slug, c.role]));
 
-const rows = CATALOG.map((c) => ({ ...c, owner: OWNERS[c.key] ?? { step: 'none' as const } }));
+const rows = CATALOG;
 const venues = rows.filter((r) => r.kind === 'venue').length;
 const tabs = [
   { v: 'all', label: 'Все', n: rows.length },
@@ -25,8 +24,6 @@ const tabs = [
   { v: 'fewphotos', label: `Меньше ${PHOTOS_LOW} фото`, n: GAPS.fewPhotos.length, bad: true },
   { v: 'noprice', label: 'Без цены', n: GAPS.noPrice.length, bad: true },
 ];
-// ЗАГЛУШКА токена: вживую — одноразовый, из базы
-const token = (key: string) => [...key].reduce((h, ch) => (h * 33 + ch.charCodeAt(0)) >>> 0, 5381).toString(36);
 // чего не хватает — одной строкой; всё есть — так и пишем
 const gaps = (r: (typeof rows)[number]) => [
   r.photos < PHOTOS_LOW && `${r.photos} фото из ${PHOTOS_MAX}`,
@@ -43,7 +40,8 @@ const gaps = (r: (typeof rows)[number]) => [
   {/* ИЗ КАБИНЕТА — живые карточки из базы (Никита, 02.11: «нужно удалять»).
       Новая (ещё не на сайте) — «Удалить»; опубликованная — «Снять с сайта»
       (archived, сайт пересоберётся сам); снятая — «Удалить совсем».
-      Нажатие дважды: первое спрашивает. Маршрут — POST /api/wed/mod/remove. */}
+      Действие сразу, с «Отменить» на 6 секунд (lib/cab-ui.ts → later), запрос
+      уходит потом. Маршрут — POST /api/wed/mod/remove. */}
   <section class="a-card a-card--flush" data-cab-cards data-roles={JSON.stringify(ROLES)} hidden>
     <div class="a-card__head"><h2 class="a-h2">Из кабинета</h2></div>
     <div class="a-tasks" data-cab-list></div>
@@ -69,11 +67,9 @@ const gaps = (r: (typeof rows)[number]) => [
         <tbody>
           {rows.map((r) => {
             const tab = [r.kind, r.photos < PHOTOS_LOW && 'fewphotos', !r.hasPrice && 'noprice'].filter(Boolean).join(' ');
-            const st = OWNER_STEP[r.owner.step];
-            const link = `https://profi.wed-secrets.ru/v/${token(r.key)}`;
             const miss = gaps(r);
             return (
-              <tr data-tab={tab} data-text={`${r.name} ${r.category}`.toLowerCase()}>
+              <tr data-tab={tab} data-key={r.key} data-text={`${r.name} ${r.category}`.toLowerCase()}>
                 <td class="cat__card" data-v={r.name}>
                   {r.cover ? <Image src={resolveImage(r.cover)} alt="" widths={[...IMG_WIDTHS.thumb]} sizes="56px" class="cat__img" /> : <span class="cat__img"></span>}
                   <span class="cat__body">
@@ -82,12 +78,8 @@ const gaps = (r: (typeof rows)[number]) => [
                     <span class:list={['cat__gaps', { 'cat__gaps--ok': !miss }]}>{miss || 'всё на месте'}</span>
                   </span>
                 </td>
-                <td class="cat__owner">
-                  <span class={`a-dot ${st.dot ? `a-dot--${st.dot}` : ''}`}>{st.label}</span>
-                  {r.owner.step !== 'own' && (
-                    <button class="cat__link" type="button" data-copy={link}>{r.owner.step === 'none' ? 'Выдать ссылку' : 'Скопировать ссылку'}</button>
-                  )}
-                </td>
+                {/* владелец — из базы скриптом ниже; до загрузки и без входа — «ведём мы» */}
+                <td class="cat__owner"><span class="status" data-owner>Ведём мы</span></td>
               </tr>
             );
           })}
@@ -99,26 +91,6 @@ const gaps = (r: (typeof rows)[number]) => [
 
 </AdminShell>
 
-<script>
-  import { toast } from '../../../lib/cab-ui';
-  // ПРОТОТИП: «Выдать ссылку» создаёт ссылку (вживую — одноразовый токен
-  // в базе) и копирует её; владельцу её отправляет модератор сам, сайт
-  // никому ничего не шлёт.
-  document.addEventListener('click', async (e) => {
-    const b = (e.target as HTMLElement).closest<HTMLElement>('[data-copy]');
-    if (!b) return;
-    const link = b.dataset.copy!;
-    const cell = b.closest('td');
-    if (cell && b.textContent?.includes('Выдать')) {
-      cell.querySelector('.a-dot')!.className = 'a-dot a-dot--info';
-      cell.querySelector('.a-dot')!.textContent = 'Ссылка выдана';
-      b.textContent = 'Скопировать ссылку';
-    }
-    let msg = `Ссылка скопирована: ${link}`;
-    try { await navigator.clipboard.writeText(link); } catch { msg = link; }
-    toast(msg, false, 3500);
-  });
-</script>
 
 <style>
   /* Строка карточки — как «Мои карточки» кабинета (Никита, 27.10: таблица
@@ -134,14 +106,16 @@ const gaps = (r: (typeof rows)[number]) => [
   .cat__name { font-size: 16px; line-height: 22px; font-weight: 600; color: inherit; text-decoration: none; overflow-wrap: anywhere; }
   .cat__gaps { font-size: var(--adm-fs); color: var(--st-bad-text); }
   .cat__gaps--ok { color: var(--st-ok-text); }
-  .cat__owner { display: flex; flex-wrap: wrap; align-items: center; gap: 4px var(--s-3); }
-  @media (min-width: 768px) { .cat__owner { display: grid; justify-items: start; } }
-  /* действие в строке — ссылкой, не кнопкой */
-  .cat__link { color: var(--adm-link); font-size: var(--adm-fs); font-weight: 500; }
+  /* владелец — плашкой справа в строке (на телефоне — под названием, слева), а не голой строкой под карточкой */
+  .cat__owner { display: flex; align-items: center; }
+  @media (min-width: 768px) { .cat__owner { justify-content: flex-end; } }
+  .cat :global(tr) { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
 </style>
 
 <script>
-  import { api, esc, session } from '../../../lib/cabinet-api';
+  import { api, esc, session, errText } from '../../../lib/cabinet-api';
+  import { later, toast } from '../../../lib/cab-ui';
+  import { failBox } from '../../../lib/admin-live';
 
   const REV: Record<string, string> = { draft: 'черновик', review: 'на проверке', rejected: 'вернули' };
   document.addEventListener('astro:page-load', async () => {
@@ -159,7 +133,7 @@ const gaps = (r: (typeof rows)[number]) => [
         <span class="a-cabrow__act">${actions}</span>
       </div>`;
     const btn = (label: string, what: string, id: string, mode = '', danger = true) =>
-      `<button type="button" class="a-link${danger ? ' a-link--danger' : ''}" data-rm="${what}" data-id="${id}" data-mode="${mode}">${label}</button>`;
+      `<button type="button" class="c-chipbtn${danger ? ' c-chipbtn--danger' : ''}" data-rm="${what}" data-id="${id}" data-mode="${mode}">${label}</button>`;
     const load = async () => {
       try {
         const [revs, specs, vens] = await Promise.all([
@@ -167,33 +141,46 @@ const gaps = (r: (typeof rows)[number]) => [
           api('moderator', 'GET', `/api/collections/specialists/records?perPage=200&sort=-updated&filter=${encodeURIComponent('owner != ""')}`),
           api('moderator', 'GET', `/api/collections/venues/records?perPage=200&sort=-updated&filter=${encodeURIComponent('owner != ""')}`),
         ]);
+        // колонка «Владелец» в общей таблице: у карточки есть вход владельца
+        const owned = new Set([...specs.items.map((x: any) => `specialist:${x.slug}`), ...vens.items.map((x: any) => `venue:${x.slug}`)]);
+        document.querySelectorAll<HTMLElement>('#cat tr[data-key]').forEach((tr) => {
+          if (owned.has(tr.dataset.key!)) { const o = tr.querySelector<HTMLElement>('[data-owner]')!; o.textContent = 'Ведёт владелец'; o.className = 'status status--info'; }
+        });
         const rows: string[] = [];
         for (const c of [...specs.items.map((x: any) => ({ ...x, kind: 'specialist' })), ...vens.items.map((x: any) => ({ ...x, kind: 'venue' }))]) {
           const on = c.status === 'published';
-          rows.push(row(c.name || 'Без названия', `${esc(role(c.kind, c.categorySlug))} · ${on ? 'на сайте' : c.status === 'archived' ? 'снята с сайта' : esc(c.status)}`,
+          rows.push(row(c.name || 'Без названия', `${esc(role(c.kind, c.categorySlug))}, ${on ? 'на сайте' : c.status === 'archived' ? 'снята с сайта' : esc(c.status)}`,
             on ? btn('Снять с сайта', c.kind, c.id, 'archive') : c.status === 'archived' ? btn('Удалить совсем', c.kind, c.id, 'delete') : ''));
         }
         for (const r of revs.items) {
           const who = r.expand?.owner?.name || r.expand?.owner?.email || '';
-          rows.push(row(r.data?.name || 'Без названия', `${esc(role(r.kind, r.categorySlug))} · новая, ${REV[r.status] ?? esc(r.status)}${who ? ` · ${esc(who)}` : ''}`, btn('Удалить', 'revision', r.id)));
+          rows.push(row(r.data?.name || 'Без названия', `${esc(role(r.kind, r.categorySlug))}, новая, ${REV[r.status] ?? esc(r.status)}`, btn('Удалить', 'revision', r.id)));
         }
-        list.innerHTML = rows.join('') || '<p class="a-task a-task__fill">Карточек из кабинета пока нет.</p>';
+        list.innerHTML = rows.join('') || '<p class="a-empty">Карточек из кабинета пока нет. Они появятся, когда подрядчик заведёт карточку сам</p>';
       } catch (err) {
-        list.innerHTML = `<p class="a-task a-login__error">Не загрузилось: ${esc((err as Error).message)}</p>`;
+        list.innerHTML = failBox(`Не загрузилось. ${errText(err)}`);
       }
     };
-    list.addEventListener('click', async (e) => {
+    const DONE: Record<string, string> = { archive: 'Карточка снята с сайта', delete: 'Карточка удалена', '': 'Черновик удалён' };
+    list.addEventListener('click', (e) => {
+      if ((e.target as HTMLElement).closest('[data-retry]')) { load(); return; }
       const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-rm]');
       if (!b) return;
-      if (!b.dataset.sure) { b.dataset.sure = '1'; b.textContent = 'Точно? Нажмите ещё раз'; return; }
-      b.disabled = true;
-      try {
-        await api('moderator', 'POST', '/api/wed/mod/remove', { what: b.dataset.rm, id: b.dataset.id, mode: b.dataset.mode });
-        await load();
-      } catch (err) {
-        b.disabled = false;
-        b.textContent = (err as Error).message;
-      }
+      // убираем строку сразу, запрос — через 6 секунд, если не отменили
+      const rowEl = b.closest<HTMLElement>('.a-cabrow')!;
+      rowEl.hidden = true;
+      later({
+        text: DONE[b.dataset.mode ?? ''] ?? 'Готово',
+        undo: () => { rowEl.hidden = false; },
+        run: async () => {
+          try {
+            await api('moderator', 'POST', '/api/wed/mod/remove', { what: b.dataset.rm, id: b.dataset.id, mode: b.dataset.mode }, { keepalive: true });
+          } catch (err) {
+            toast(`Не получилось. ${errText(err)}`, true);
+          }
+          load();
+        },
+      });
     });
     load();
   });

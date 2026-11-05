@@ -35,10 +35,13 @@ import '../../components/profi/auth.css';
 </ProfiShell>
 
 <script>
+  import { checkForm } from '../../lib/form-check';
   import { sendCode, saveCodeStep } from '../../lib/email-login';
+  import { errText } from '../../lib/cabinet-api';
 
   const q = new URLSearchParams(location.search);
   const form = document.querySelector<HTMLFormElement>('[data-reset-form]')!;
+  checkForm(form);
   const error = form.querySelector<HTMLElement>('[data-error]')!;
   document.querySelectorAll<HTMLAnchorElement>('[data-keep-query]').forEach((a) => { a.search = location.search; });
 
@@ -52,7 +55,7 @@ import '../../components/profi/auth.css';
       saveCodeStep({ email, otpId: await sendCode(email), next: q.get('next') || undefined });
       location.href = '/profi/parol/kod/';
     } catch (err) {
-      error.textContent = (err as Error).message;
+      error.textContent = errText(err);
       error.hidden = false;
       btn.disabled = false;
     }

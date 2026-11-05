@@ -1,7 +1,13 @@
 ---
-// ЗАЯВКИ — раздел нижнего меню кабинета (Никита, 02.11). Заявки от пар
-// идут через нас (STAGE2.md: «заявки через нас») — коллекции и маршрута
-// для подрядчика ещё нет. ЗАГЛУШКА: пустое состояние до этого шага.
+// ЗАЯВКИ — раздел нижнего меню кабинета (Никита, 02.11). Заявка одного вида:
+// пара оставила имя, телефон, дату и число гостей и увидела контакты
+// подрядчика (CABINET.md §18, «Показать контакты»). Передача данных пары
+// подрядчику во втором этапе НЕ входит (DECISIONS.md) — раздел пока пустой.
+// В демо-режиме дев-сервера (?demo) — макет на будущее (Никита, 05.11):
+// главное подрядчику — быстро связаться, поэтому сверху имя, крупно дата
+// и гости, сразу кнопки «Позвонить» / «Написать», внизу — когда пришла.
+// Отступы по правилу внутреннего и внешнего (Бюро Горбунова): внутри
+// группы меньше, чем между группами и между заявками.
 import CabinetShell from '../../../components/admin/CabinetShell.astro';
 ---
 
@@ -10,17 +16,59 @@ import CabinetShell from '../../../components/admin/CabinetShell.astro';
     <div class="c-head">
       <h1 class="a-h1">Заявки</h1>
     </div>
-    <div class="c-sheet-area">
-      <p class="c-empty">Заявок пока нет. Когда пара захочет связаться с вами через карточку, заявка появится здесь.</p>
+    <div class="c-sheet-area" data-leads>
+      <p class="c-empty">Заявок пока нет. Когда пара оставит заявку на вашей карточке, она появится здесь с телефоном и датой свадьбы</p>
     </div>
   </div>
 </CabinetShell>
 
 <style>
-  .c-empty { margin: var(--s-6) auto 0; max-width: 32ch; text-align: center; color: var(--adm-text-2); }
+  /* пустое состояние — по левому краю */
+  .c-empty { margin-top: var(--s-4); max-width: 40ch; padding-inline: var(--s-4); }
+  /* заявка — своя плашка; между заявками 8 px, внутри плашки поля 18 px */
+  :global(.c-leads) { display: grid; gap: 8px; }
+  :global(.c-lead) { display: grid; gap: 14px; padding: 18px; border-radius: var(--cab-sheet-radius); background: var(--adm-card); }
+  /* группа «кто и когда»: строки вплотную (4 px) — меньше, чем до кнопок (14 px) */
+  :global(.c-lead__who) { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 12px; }
+  :global(.c-lead__name) { font-size: 18px; line-height: 24px; font-weight: 600; }
+  :global(.c-lead__date) { grid-column: 1 / -1; font-size: 16px; line-height: 22px; font-weight: 500; }
+  :global(.c-lead__acts) { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  :global(.c-lead__acts .a-btn) { height: 48px; font-size: 16px; }
+  :global(.c-lead__when) { font-size: var(--adm-fs-sm); }
+  /* Новая — точка у имени и зелёная плашка. Просмотренная — вся заявка приглушена,
+     как у Профи.ру (Никита 05.11). Исключение из правила «текст только контрастный»:
+     здесь приглушение несёт смысл «уже видели», цвет — токен --adm-text-seen. */
+  :global(.c-lead__name) { display: inline-flex; align-items: center; gap: 8px; }
+  :global(.c-lead:not(.c-lead--seen) .c-lead__name::before) { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--st-ok-dot); flex: none; }
+  :global(.c-lead--seen), :global(.c-lead--seen .c-lead__when) { color: var(--adm-text-seen); }
+  :global(.c-lead--seen .a-btn) { background: var(--adm-bg); color: var(--adm-text-seen); }
+  :global(.c-lead--seen .status) { color: var(--adm-text-seen); }
 </style>
 
 <script>
   import { requireSession } from '../../../lib/cabinet-api';
   requireSession('vendor');
+
+  // демо (только дев): макет будущих заявок
+  if (import.meta.env.DEV && sessionStorage.getItem('wed-cab-demo') === '1') {
+    const box = document.querySelector<HTMLElement>('[data-leads]')!;
+    const leads = [
+      { name: 'Мария', date: '14 июня 2027, 80 гостей', phone: '+79001234567', tg: 'maria_w', when: 'сегодня в 14:20', st: 'status--ok', label: 'Новая', seen: false },
+      { name: 'Ольга', date: '2 августа 2027, 40 гостей', phone: '+79007654321', tg: '', when: '3 нояб. в 19:05', st: '', label: 'Просмотрена', seen: true },
+    ];
+    box.innerHTML = `<div class="c-leads">${leads.map((l) => `
+      <article class="c-lead${l.seen ? ' c-lead--seen' : ''}">
+        <div class="c-lead__who">
+          <span class="c-lead__name">${l.name}</span>
+          <span class="status ${l.st}">${l.label}</span>
+          <span class="c-lead__date">${l.date}</span>
+        </div>
+        <div class="c-lead__acts">
+          <a class="a-btn a-btn--primary" href="tel:${l.phone}">Позвонить</a>
+          ${l.tg ? `<a class="a-btn" href="https://t.me/${l.tg}" target="_blank" rel="noopener">Написать</a>` : `<a class="a-btn" href="sms:${l.phone}">Написать</a>`}
+        </div>
+        <span class="c-lead__when">Заявка пришла ${l.when}</span>
+      </article>`).join('')}</div>
+      <p class="c-empty">Макет для демо: заявки придут, когда запустим форму невесты</p>`;
+  }
 </script>

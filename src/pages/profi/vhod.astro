@@ -33,7 +33,8 @@ import '../../components/profi/auth.css';
 </ProfiShell>
 
 <script>
-  import { api, session } from '../../lib/cabinet-api';
+  import { checkForm, fieldError } from '../../lib/form-check';
+  import { api, session, errText } from '../../lib/cabinet-api';
   import { afterLogin } from '../../lib/tg-login';
   import { loginWithPassword } from '../../lib/email-login';
 
@@ -48,7 +49,7 @@ import '../../components/profi/auth.css';
       .then(() => afterLogin(q.get('next') || undefined))
       .catch((err) => {
         const box = document.querySelector<HTMLElement>('[data-mail-error]')!;
-        box.textContent = `${(err as Error).message} Можно войти другой учёткой ниже.`;
+        box.textContent = `${errText(err)} Можно войти другой учёткой ниже.`;
         box.hidden = false;
       });
   }
@@ -56,6 +57,7 @@ import '../../components/profi/auth.css';
   document.querySelectorAll<HTMLAnchorElement>('[data-keep-query]').forEach((a) => { a.search = location.search; });
 
   const form = document.querySelector<HTMLFormElement>('[data-mail-login]')!;
+  checkForm(form);
   const error = form.querySelector<HTMLElement>('[data-mail-error]')!;
   form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
@@ -70,8 +72,10 @@ import '../../components/profi/auth.css';
       if (invite) await api('vendor', 'POST', '/api/wed/invite', { invite });
       afterLogin(q.get('next') || undefined);
     } catch (err) {
-      error.textContent = (err as Error).message;
-      error.hidden = false;
+      // неверный пароль — на само поле; связь, лимит попыток — строкой над кнопкой
+      const text = errText(err);
+      if (/Неверная почта или пароль/.test(text)) fieldError(form.querySelector<HTMLInputElement>('[name=password]')!, 'Неверная почта или пароль');
+      else { error.textContent = text; error.hidden = false; }
     } finally {
       btn.disabled = false;
     }

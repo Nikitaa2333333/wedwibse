@@ -31,7 +31,7 @@ import CabinetShell from '../../components/admin/CabinetShell.astro';
 </style>
 
 <script>
-  import { api, esc } from '../../lib/cabinet-api';
+  import { api, esc, errText } from '../../lib/cabinet-api';
   import { pending, signIn, afterLogin } from '../../lib/tg-login';
 
   const root = document.querySelector<HTMLElement>('[data-terms]')!;
@@ -64,7 +64,7 @@ import CabinetShell from '../../components/admin/CabinetShell.astro';
         boxes.forEach((b) => b.addEventListener('change', () => { btn.disabled = !boxes.every((x) => x.checked); }));
       }
     } catch (err) {
-      fail((err as Error).message);
+      fail(errText(err));
     }
 
     btn.addEventListener('click', async () => {
@@ -74,7 +74,7 @@ import CabinetShell from '../../components/admin/CabinetShell.astro';
         await signIn({ ...p, accept: true });
         afterLogin(p.next);
       } catch (err) {
-        fail((err as Error).message + '\nЕсли вход устарел — вернитесь ко входу и войдите ещё раз.');
+        fail(errText(err) + '\nЕсли вход устарел — вернитесь ко входу и войдите ещё раз.');
         btn.disabled = false;
       }
     });

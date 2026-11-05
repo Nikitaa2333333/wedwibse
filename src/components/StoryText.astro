@@ -287,17 +287,17 @@ sections.forEach((s, i) => {
   .tariff {
     background: var(--surface);
     border-radius: var(--radius-card);
-    padding: var(--s-5);
+    padding: var(--s-6) var(--s-5);
     display: flex;
     flex-direction: column;
   }
 
+  /* название сверху, цена под ним — одна схема у всех карточек */
   .tariff__head {
     display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: var(--s-1) var(--s-4);
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--s-1);
   }
 
   /* Голые тарифы (только «название — цена», как депозит по дням недели):
@@ -309,18 +309,19 @@ sections.forEach((s, i) => {
     align-items: flex-start;
   }
 
-  /* Название тарифа — гротеском, как имена пунктов; цена — крупнее,
-     она и есть причина открыть карточку. */
+  /* Название тарифа — главное в карточке, крупно гротеском; цена — под ним,
+     набором, но жирно (Никита 05.11: было тонкое мелкое название и огромная
+     цена — «не понятно, как это разбивается»). Раньше цена была крупнее. */
   .story .tariff__name {
     font-family: var(--font-sans);
-    font-size: var(--fs-body);
+    font-size: var(--fs-h3);
     font-weight: var(--w-head-lg);
     letter-spacing: 0;
     line-height: var(--lh-heading);
   }
 
   .tariff__price {
-    font-size: var(--fs-h3);
+    font-size: var(--fs-body);
     font-weight: var(--w-head-lg);
     line-height: var(--lh-heading);
     white-space: nowrap;

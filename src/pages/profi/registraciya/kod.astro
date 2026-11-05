@@ -28,12 +28,14 @@ import '../../../components/profi/auth.css';
 </ProfiShell>
 
 <script>
-  import { api } from '../../../lib/cabinet-api';
+  import { checkForm } from '../../../lib/form-check';
+  import { api, errText } from '../../../lib/cabinet-api';
   import { codeStep, saveCodeStep, sendCode, keep } from '../../../lib/email-login';
   import { afterLogin } from '../../../lib/tg-login';
 
   const step = codeStep();
   const form = document.querySelector<HTMLFormElement>('[data-code-form]')!;
+  checkForm(form);
   const error = form.querySelector<HTMLElement>('[data-error]')!;
   const resend = document.querySelector<HTMLAnchorElement>('[data-resend]')!;
   const fail = (m: string) => { error.textContent = m; error.hidden = false; };
@@ -53,7 +55,7 @@ import '../../../components/profi/auth.css';
         keep(await api(null, 'POST', '/api/wed/confirm', { otpId: step.otpId, code }));
         afterLogin(step.next);
       } catch (err) {
-        fail((err as Error).message);
+        fail(errText(err));
         btn.disabled = false;
       }
     });
@@ -66,7 +68,7 @@ import '../../../components/profi/auth.css';
         saveCodeStep(step);
         resend.replaceWith(document.createTextNode('отправили ещё раз'));
       } catch (err) {
-        fail((err as Error).message);
+        fail(errText(err));
       }
     });
   }

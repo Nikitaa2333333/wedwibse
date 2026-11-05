@@ -31,7 +31,9 @@
   --adm-bg: #eff2f7;                    /* поле страницы (Метрика) */
   --adm-card: #ffffff;                  /* карточка, таблица, активный пункт меню */
   --adm-text: #1e242e;                  /* основной текст */
-  --adm-text-2: #4f5a6e;                /* вторичный: подписи, подстроки — темнее Метрики, читается (Никита 24.10) */
+  --adm-text-seen: #8a93a3;             /* ТОЛЬКО «уже просмотрено» (заявки): приглушение со смыслом, исключение из правила контраста (Никита 05.11) */
+  --adm-placeholder: #9aa1ad;            /* плейсхолдер-пример в пустом поле — единственная законная приглушённость (правило 17) */
+  --adm-text-2: var(--adm-text);        /* вторичный: подписи, подстроки. С 05.11.2026 — тот же чёрный (вариант «Б»): иерархию держат кегль и вес, не серый */
   --adm-line: #e6e9ef;                  /* линии таблиц */
   --adm-hover: #f5f7fa;                 /* строка под курсором */
   /* основная кнопка, ссылка, активный пункт: эппловский почти-чёрный вместо
@@ -46,7 +48,7 @@
   --adm-fs-h1: 24px;                    /* заголовок экрана — 24/32, вес 500 */
   --adm-fs-h2: 20px;                    /* заголовок карточки — 20/28 */
   --adm-fs-num: 24px;                   /* цифра показателя — 24/32 */
-  --adm-radius: 20px;                   /* карточка (Метрика) */
+  --adm-radius: 28px;                   /* карточка; 05.11 — 28 (вариант «Б»: мягче, ближе к Apple) */
   --adm-radius-md: 12px;                /* пункт меню, блок периода */
   --adm-radius-btn: 10px;               /* кнопка (Директ) */
   --adm-pad: clamp(16px, 2.4vw, 28px);  /* поля карточки: 28 на ПК, 16 на телефоне */
@@ -67,7 +69,7 @@
      были одного кегля и сливались; мелкая серая подпись — «сделай больше») */
   --cab-fs-label: 17px;
   --cab-fs-input: 16px;
-  --radius-status: 8px;     /* плашка статуса */
+  --radius-status: 999px;   /* плашка статуса — капсула (05.11, вариант «Б») */
 
   /* Подложки и оттенки статусов — одна шкала вместо россыпи hex (аудит 05.11):
      раньше красный был четырьмя разными (#d23a3a, #c4314b, #b3263e, #e5484d). */
@@ -78,6 +80,9 @@
   --st-bad-strong: #b3263e; /* красный текст на красной подложке */
   --st-bad-dot: #e5484d;    /* точка, обводка, бирка «нарушение» */
   --st-info-bg: #e8efff;    /* светло-голубая подложка: на проверке, справка */
+  --st-info-strong: #1f4fa8; /* синий текст на голубой подложке */
+  --st-warn-bg: #fff3c9;    /* светло-жёлтая подложка: не закончено, проверить после */
+  --st-warn-strong: #7a5200; /* тёмно-жёлтый текст на жёлтой подложке */
   --st-warn-dot: #ff9d00;   /* точка «проверить» */
   --st-muted-dot: #b8bec8;  /* точка «пусто, нет данных» */
 
@@ -98,6 +103,8 @@
   --adm-shadow-sm: 0 1px 3px rgba(15, 20, 30, 0.25);
   --adm-shadow-md: 0 2px 6px rgba(15, 20, 30, 0.12);
   --adm-shadow-lg: 0 8px 28px rgba(15, 20, 30, 0.14);
+  --adm-chevron-down: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='%231e242e' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' d='M6 9.5l6 6 6-6'/%3E%3C/svg%3E"); /* стрелка списка — тонкий шеврон 1.6, цвет --adm-text */
+  --adm-shadow-tip: 0 10px 30px rgba(15, 20, 30, 0.10), 0 2px 8px rgba(15, 20, 30, 0.06); /* облачко: мягкая тень без обводки, как у Apple */
   --adm-shadow-lift: 0 12px 32px rgba(0, 0, 0, 0.28); /* фото, которое тащат */
   --adm-shadow-drag: 0 6px 14px rgba(15, 20, 30, 0.25); /* кадр в подсказке «перетащите» */
   --adm-hint-dot: rgba(15, 20, 30, 0.35);    /* палец в подсказке */
@@ -105,24 +112,37 @@
   --adm-viewer-bg: #000;                     /* просмотр фото во весь экран */
   --adm-logo-bg: linear-gradient(135deg, #5b7bff, #2556ff); /* кружок-аватар в шапке админки */
 }
-/* ============ ПЛАШКА СТАТУСА (кабинет) ============
-   Статус карточки или раздела одним-двумя словами: зелёная — порядок,
-   красная — вернули, голубая — на проверке, серая — черновик/пусто. */
+/* ============ ПЛАШКА СТАТУСА — ОДНА на кабинет и админку ============
+   Решение 05.11.2026 (вариант «Б» со страницы спорных мест): светлая
+   подложка и тёмный текст того же цвета. Слиты пять видов — .c-badge,
+   .c-state, .a-pill, .a-dot, .a-chip; своих статусов не заводить.
+   Цвет — смысл: ok зелёный (порядок, на сайте), bad красный (вернули,
+   срок вышел), info голубой (на проверке), warn жёлтый (не закончено),
+   без модификатора серый (черновик, пусто). Число внутри — .status__n. */
 .status {
   display: inline-flex;
   align-items: center;
-  padding: 3px 10px;
+  gap: 6px;
+  height: 24px;
+  padding: 0 10px;
   border-radius: var(--radius-status);
-  background: var(--st-muted);
-  color: var(--fg);
-  font-size: var(--fs-caption);
-  font-weight: var(--w-medium);
-  line-height: 1.3;
+  background: var(--adm-bg);
+  color: var(--adm-text);
+  font-size: var(--adm-fs-sm);
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  flex: none;
+  /* в сетке плашка не растягивается на колонку — только по тексту (05.11: «Новая» на всю строку) */
+  justify-self: start;
+  align-self: center;
 }
-.status--ok { background: var(--st-ok); color: var(--st-ok-ink); }
-.status--bad { background: var(--st-bad); color: var(--st-bad-fg); }
-.status--info { background: var(--st-info); color: var(--st-info-ink); }
-.status--warn { background: var(--st-warn); color: var(--st-warn-ink); }
+.status--ok { background: var(--st-ok-bg); color: var(--st-ok-strong); }
+.status--bad { background: var(--st-bad-bg); color: var(--st-bad-strong); }
+.status--info { background: var(--st-info-bg); color: var(--st-info-strong); }
+.status--warn { background: var(--st-warn-bg); color: var(--st-warn-strong); }
+.status__n { font-weight: 500; }
+.status svg { width: 14px; height: 14px; flex: none; }
 
 /* ОКНО КАБИНЕТА — одно на все окна (Яндекс Диск, кадрирование портрета, дальше
    любые новые): lib/cab-ui.ts → openDialog(). Белая плашка кабинета на сером
@@ -159,8 +179,140 @@
 }
 .c-toast.is-on { opacity: 1; transform: translate(-50%, 0); }
 .c-toast--bad { background: var(--st-bad-text); }
-.c-toast:has(.c-toast__undo) { display: flex; align-items: center; gap: var(--s-4); padding: 10px 12px 10px 20px; text-align: left; pointer-events: auto; }
+/* поля одинаковые со всех сторон: от края до текста = от края до кнопки (Никита 05.11) */
+.c-toast:has(.c-toast__undo) { display: flex; align-items: center; gap: 12px; padding: 10px; text-align: left; pointer-events: auto; border-radius: 18px; } /* 18, не капсула: текст в 2–3 строки капсулой режется (Никита 05.11) */
+.c-toast__text { flex: 1; min-width: 0; padding-left: 4px; }
+/* кружок-таймер «Отменить» — как в Телеграме: обводка убывает, внутри секунды */
+.c-toast__timer { position: relative; flex: none; width: 26px; height: 26px; display: grid; place-items: center; }
+.c-toast__timer svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+/* бледная полная окружность (дорожка) + яркая убывающая дуга, как в Телеграме */
+.c-toast__timer circle { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-dasharray: 62.9; stroke-dashoffset: 0; }
+.c-toast__timer circle.track { stroke: var(--adm-on-dark-soft); stroke-dasharray: none; animation: none !important; }
+/* linear здесь — ход времени, а не движение: кружок убывает равномерно, как часы */
+.c-toast.is-on .c-toast__timer circle { animation: toast-timer var(--ms) linear forwards; }
+.c-toast__timer b { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+@keyframes toast-timer { to { stroke-dashoffset: 62.9; } }
 .c-toast:not(.is-on) { pointer-events: none; }
-.c-toast__undo { color: var(--adm-toast-link); font-weight: 600; white-space: nowrap; }
+/* действие в тосте — капсулой; «Повторить» со значком круговой стрелки.
+   Тост живёт вне .adm — браузерную рамку кнопки снимаем явно (было «2px outset») */
+.c-toast button, .c-progress-pill button { border: 0; font: inherit; cursor: pointer; }
+.c-toast__undo { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 999px; background: var(--adm-on-dark-soft); color: var(--adm-on-dark); font-weight: 600; white-space: nowrap; }
+.c-toast__undo svg { width: 16px; height: 16px; }
 /* в админке на ПК слева меню — уведомление по центру рабочей области */
 @media (min-width: 1024px) { body:has(.adm-nav) .c-toast { left: calc(50% + var(--adm-side-w) / 2); bottom: var(--s-6); } }
+
+/* ЗОНА НАЖАТИЯ НЕ МЕНЬШЕ 44×44 (правило 22 скилла cabinet-ui, 05.11.2026).
+   Мелкие кнопки остаются того же вида — вокруг них невидимое поле до 44 px:
+   стрелки и крестик в списках (.c-tool 32), крестик на фото (30), «?» (20–28),
+   переключатель (28 в высоту), крестики подсказки и окна (32–36). */
+.c-tool, .c-photo__tools button, .c-help, .c-switch, .c-hint__close { position: relative; }
+.c-tool::before, .c-photo__tools button::before, .c-help::before, .c-switch::before, .c-hint__close::before, .c-dialog__x::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+}
+/* мелкая кнопка админки на телефоне — в полную высоту касания */
+@media (pointer: coarse) { .a-btn--sm { min-height: 44px; } }
+
+/* ============ ОБЛАЧКО (.tip) — подсказка и ошибка как у Apple ============
+   05.11.2026, по образцу всплывающей подсказки iOS («Введите адрес e-mail»):
+   светлое облачко с тенью и хвостиком к тому, о чём речь. Лежит ПОВЕРХ
+   вёрстки — ничего не сдвигает. Где: ошибка поля (над полем, хвост вниз),
+   ошибка формы (над кнопкой), «что осталось» под «Отправить» (хвост вверх).
+   Пара: .tip--up (хвост вверх, облачко под объектом), .tip--center. */
+.tip {
+  position: absolute;
+  z-index: 5;
+  left: 0;
+  bottom: calc(100% + 10px);
+  max-width: min(100%, 340px);
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--adm-card);
+  color: var(--adm-text);
+  box-shadow: var(--adm-shadow-tip);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.3;
+  text-align: left;
+}
+.tip::after {
+  content: '';
+  position: absolute;
+  left: 24px;
+  top: 100%;
+  border: 8px solid transparent;
+  border-top-color: var(--adm-card);
+}
+.tip--center { left: 50%; transform: translateX(-50%); width: max-content; max-width: 100%; }
+.tip--center::after { left: 50%; margin-left: -8px; }
+/* облачко в потоке над объектом, хвост вниз к нему (список «что осталось» над кнопкой) */
+.tip--flow { position: relative; bottom: auto; left: auto; transform: none; max-width: none; margin-bottom: 12px; }
+.tip--flow::after { left: 50%; margin-left: -8px; }
+/* облачко в потоке под объектом, хвост вверх */
+.tip--up { position: relative; bottom: auto; left: auto; transform: none; max-width: none; margin-top: 10px; }
+.tip--up::after { top: auto; bottom: 100%; left: 50%; margin-left: -8px; border-top-color: transparent; border-bottom-color: var(--adm-card); filter: none; }
+.tip--bad { color: var(--st-bad-strong); }
+.tip--bad::before { content: ''; display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 50%; background: var(--st-bad-dot); vertical-align: 1px; }
+@media (prefers-reduced-motion: no-preference) {
+  .tip:not(.tip--up) { animation: tip-in var(--dur-fast, 0.18s) var(--ease-out, ease-out); }
+}
+@keyframes tip-in { from { opacity: 0; translate: 0 4px; } }
+
+/* маленькая кнопка-капсула для действия в сообщении: «Повторить»,
+   раздел в списке «что осталось». Не подчёркнутая ссылка (Никита, 05.11) */
+.c-chipbtn { position: relative; display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 12px; border-radius: 999px; background: var(--adm-bg); color: var(--adm-text); font: inherit; font-size: 14px; font-weight: 600; text-decoration: none; white-space: nowrap; cursor: pointer; border: 0; }
+.c-chipbtn::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); }
+.c-chipbtn svg { width: 14px; height: 14px; }
+@media (hover: hover) { .c-chipbtn:hover { background: var(--adm-line); } }
+/* опасное действие в строке (Удалить) — та же капсула, красный текст на светло-красном */
+.c-chipbtn--danger { background: var(--st-bad-bg); color: var(--st-bad-strong); margin-left: auto; }
+@media (hover: hover) { .c-chipbtn--danger:hover { background: color-mix(in srgb, var(--st-bad-bg) 70%, var(--st-bad-dot)); } }
+
+/* капсула долгой операции: текст с процентом, полоска, «Прервать» (cab-ui → progress) */
+.c-progress-pill { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--cab-tabs-h) + env(safe-area-inset-bottom) + var(--s-3)); z-index: 7; width: min(420px, calc(100% - 2 * var(--s-4))); display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px 12px; padding: 10px 10px 12px 18px; border-radius: 22px; background: var(--cab-ink); color: var(--adm-on-dark); font-size: var(--adm-fs); font-weight: 500; box-shadow: var(--adm-shadow-tip); }
+.c-progress-pill__bar { grid-column: 1; grid-row: 2; height: 4px; border-radius: 2px; background: var(--adm-on-dark-soft); overflow: hidden; }
+.c-progress-pill__bar i { display: block; height: 100%; width: 0; border-radius: 2px; background: var(--adm-on-dark); transition: width var(--dur-fast) var(--ease-out); }
+.c-progress-pill__stop { grid-column: 2; grid-row: 1 / span 2; height: 32px; padding: 0 12px; border-radius: 999px; background: var(--adm-on-dark-soft); color: var(--adm-on-dark); font-weight: 600; white-space: nowrap; }
+@media (min-width: 1024px) { body:has(.adm-nav) .c-progress-pill { left: calc(50% + var(--adm-side-w) / 2); bottom: var(--s-6); } }
+
+/* ============ СКЕЛЕТ ЗАГРУЗКИ (05.11.2026, HIG: Loading; правило 4 скилла) ============
+   Пока данные идут, на месте строк и плиток — серые плашки той же формы,
+   экран не прыгает, когда приходят данные. Пульс только прозрачностью
+   (моушн-бюджет мобилки), reduced-motion глушит глобально. Слово «Загружаем…»
+   не используем. Разметка — статикой в HTML страницы, видна сразу. */
+.sk { display: block; border-radius: 8px; background: var(--adm-line); animation: sk-pulse 1.4s var(--ease-inout, ease-in-out) infinite; }
+.sk--line { height: 14px; width: 60%; }
+.sk--title { height: 24px; width: 50%; border-radius: 10px; }
+.sk--short { width: 35%; }
+.sk--pill { height: 24px; width: 72px; border-radius: 999px; }
+.sk--thumb { width: 48px; height: 60px; border-radius: 10px; flex: none; }
+.sk--ic { width: 52px; height: 52px; border-radius: 16px; margin-block: 6px; }
+.sk--bar { height: 10px; width: 100%; border-radius: 5px; }
+.sk-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 14px var(--s-4); }
+.sk-row + .sk-row { border-top: 1px solid var(--adm-line); }
+.sk-row__body { display: grid; gap: 8px; }
+.sk-card { background: var(--adm-card); border-radius: var(--cab-sheet-radius, var(--adm-radius)); overflow: hidden; }
+.sk-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--cab-gap, 4px); }
+.sk-tile { background: var(--adm-card); border-radius: var(--cab-sheet-radius, 24px); padding: var(--s-4); min-height: 148px; display: grid; align-content: start; gap: 8px; }
+.sk-head { display: grid; gap: 12px; padding: var(--s-2) 0 var(--s-4); }
+@keyframes sk-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+
+/* предупреждение (alertBox): узкое окно по центру, текст и кнопки столбиком одной ширины */
+/* По HIG (Alerts): узкое окно ~300 px, поля 20 px со всех сторон, заголовок и текст
+   по центру (исключение из «текст по левому краю» — так устроен Alert у Apple),
+   кнопки одной ширины столбиком. */
+.c-dialog.c-alert { width: min(300px, calc(100% - 48px)); max-width: none; margin: auto; border-radius: 22px; }
+.c-alert .c-dialog__body { display: grid; gap: 8px; padding: 20px; text-align: center; }
+.c-alert .a-h2 { font-size: 17px; line-height: 22px; font-weight: 600; }
+.c-alert p { font-size: 14px; line-height: 19px; }
+.c-alert__acts { display: grid; gap: 8px; margin-top: 12px; }
+.c-alert__acts .a-btn { width: 100%; height: 44px; font-size: 16px; }
+/* где внизу прибита панель с кнопкой (анкета) — короткие уведомления сверху,
+   как баннеры iOS, чтобы не закрывать кнопку (Никита 05.11) */
+body:has(.c-bar) .c-toast { bottom: auto; top: calc(env(safe-area-inset-top) + var(--s-3)); transform: translate(-50%, -8px); }
+body:has(.c-bar) .c-toast.is-on { transform: translate(-50%, 0); }

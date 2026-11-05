@@ -22,6 +22,7 @@ const { href = '/profi/moi/', label = 'Войти через Telegram' } = Astro
 
 <script>
   import { TG_BOT_ID, telegramPopup, signIn, afterLogin } from '../../lib/tg-login';
+  import { errText } from '../../lib/cabinet-api';
 
   if (TG_BOT_ID) {
     document.querySelectorAll<HTMLAnchorElement>('[data-tg-login]').forEach((btn) => {
@@ -40,7 +41,7 @@ const { href = '/profi/moi/', label = 'Войти через Telegram' } = Astro
           else afterLogin(p.next);
         } catch (err) {
           if (error) {
-            error.textContent = (err as Error).message;
+            error.textContent = errText(err);
             error.hidden = false;
           }
         }

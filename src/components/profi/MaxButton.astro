@@ -28,6 +28,7 @@ const { href = '/profi/moi/', label = 'Войти через' } = Astro.props;
 <script>
   import { MAX_BOT, prepareMaxLink, waitMaxSignIn } from '../../lib/max-login';
   import { afterLogin } from '../../lib/tg-login';
+  import { errText } from '../../lib/cabinet-api';
 
   if (MAX_BOT) {
     document.querySelectorAll<HTMLAnchorElement>('[data-max-login]').forEach((btn) => {
@@ -52,7 +53,7 @@ const { href = '/profi/moi/', label = 'Войти через' } = Astro.props;
           if ((await waitMaxSignIn(c.code, p)) === 'needs-accept') location.href = '/profi/usloviya/';
           else afterLogin(p.next);
         } catch (err) {
-          fail((err as Error).message);
+          fail(errText(err));
         } finally {
           waiting = '';
         }

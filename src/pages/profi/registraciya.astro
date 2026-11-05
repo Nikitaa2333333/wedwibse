@@ -36,13 +36,15 @@ import '../../components/profi/auth.css';
 </ProfiShell>
 
 <script>
-  import { api } from '../../lib/cabinet-api';
+  import { checkForm } from '../../lib/form-check';
+  import { api, errText } from '../../lib/cabinet-api';
   import { renderTerms, sendCode, saveCodeStep } from '../../lib/email-login';
 
   const q = new URLSearchParams(location.search);
   const root = document.querySelector<HTMLElement>('[data-consent]')!;
   const docs = root.querySelector<HTMLElement>('[data-docs]')!;
   const form = root.querySelector<HTMLFormElement>('[data-reg-form]')!;
+  checkForm(form);
   const error = form.querySelector<HTMLElement>('[data-error]')!;
   const gates = [...root.querySelectorAll<HTMLElement>('[data-consent-gate]')];
   const fail = (m: string) => { error.textContent = m; error.hidden = false; };
@@ -62,7 +64,7 @@ import '../../components/profi/auth.css';
     }
   } catch (err) {
     docs.innerHTML = '';
-    fail((err as Error).message);
+    fail(errText(err));
   }
 
   form.addEventListener('submit', async (ev) => {
@@ -80,7 +82,7 @@ import '../../components/profi/auth.css';
       saveCodeStep({ email, otpId: await sendCode(email), invite, next: q.get('next') || undefined });
       location.href = '/profi/registraciya/kod/';
     } catch (err) {
-      fail((err as Error).message);
+      fail(errText(err));
       btn.disabled = false;
     }
   });

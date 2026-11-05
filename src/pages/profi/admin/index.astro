@@ -1,54 +1,23 @@
 ---
 // СВОДКА — первый экран админки: что сделать (действия со сроком), под
 // ними новые заявки задачами, внизу строкой — сколько карточек на сайте.
-// Только то, что будет настоящим: заявки, правки и жалобы придут из базы
-// (сейчас — примеры), цифры по карточкам — по настоящему каталогу.
+// Всё настоящее (05.11.2026): действия и заявки — из базы (lib/admin-live.ts),
+// цифры по карточкам — по каталогу сайта. Демо-примеров нет: пусто — так
+// и пишем «Задач нет».
 import AdminShell from '../../../components/admin/AdminShell.astro';
-import AdminIcon from '../../../components/admin/AdminIcon.astro';
 import { CATALOG } from '../../../lib/admin-catalog';
-import { plural } from '../../../lib/moderation';
-import { DEMO_REVISIONS } from '../../../data/moderation-demo';
-import { COMPLAINTS } from '../../../data/admin-demo';
-import { PARTNER_APPS } from '../../../data/partner-demo';
-import AdminTask from '../../../components/admin/AdminTask.astro';
-import type { AdminIconName } from '../../../lib/admin-icons';
-import { appCover, appFill, appLeft, waitedMin, soonest, leftLabel, DEADLINE_MIN } from '../../../lib/admin-tasks';
+import { plural } from '../../../lib/plural';
 
-// горящий срок — первым
-const review = PARTNER_APPS.filter((a) => a.status === 'review').sort((a, b) => (appLeft(a) ?? 0) - (appLeft(b) ?? 0));
-const drafts = PARTNER_APPS.filter((a) => a.status === 'draft');
-const fresh = [...review, ...drafts];
-const editsList = DEMO_REVISIONS.filter((r) => r.state === 'review');
-const edits = editsList.length;
-const complaints = COMPLAINTS.filter((c) => c.status === 'new').length;
-
-// Сводка — список ДЕЙСТВИЙ (Никита, 27.10): что сделать и сколько. Срок —
-// не общее «24 ч», а ближайший по этому действию; мало времени — красным.
-const URGENT = 4 * 60;
-const nextApp = soonest(review.map(appLeft));
-const nextEdit = soonest(editsList.map((r) => DEADLINE_MIN - waitedMin(r.waiting)));
-const due = (m?: number) => (m === undefined ? '' : m <= 0 ? 'срок вышел' : `ближайший срок через ${leftLabel(m)}`);
-const actions: { n: number; text: string; note: string; urgent?: boolean; href: string; icon: AdminIconName; tone: string }[] = [
-  { n: review.length, text: `Проверить ${review.length} ${plural(review.length, 'анкету', 'анкеты', 'анкет')}`, note: due(nextApp), urgent: (nextApp ?? DEADLINE_MIN) < URGENT, href: '/profi/admin/zayavki/#review', icon: 'partners', tone: 'info' },
-  { n: drafts.length, text: `Связаться: ${drafts.length} не ${plural(drafts.length, 'закончил', 'закончили', 'закончили')} анкету`, note: 'перезвонить или написать', href: '/profi/admin/zayavki/#draft', icon: 'phone', tone: 'warn' },
-  { n: edits, text: `Проверить ${edits} ${plural(edits, 'правку', 'правки', 'правок')}`, note: due(nextEdit), urgent: (nextEdit ?? DEADLINE_MIN) < URGENT, href: '/profi/admin/moderaciya/', icon: 'moderation', tone: 'info' },
-  { n: complaints, text: `Разобрать ${complaints} ${plural(complaints, 'жалобу', 'жалобы', 'жалоб')}`, note: '', href: '/profi/admin/zhaloby/', icon: 'complaints', tone: 'bad' },
-].filter((a) => a.n > 0);
 const venues = CATALOG.filter((c) => c.kind === 'venue').length;
 ---
 
 <AdminShell title="Сводка" section="overview">
-  <div class="a-title"><h1 class="a-h1">Сводка</h1></div>
+  {/* учётка — кружком справа в шапке (телефон), выход — внутри окна учётки,
+      как у Apple; кнопки «Выйти» на главном экране нет (Никита 05.11) */}
+  <div class="a-title a-title--acc"><h1 class="a-h1">Сводка</h1><button class="a-acc" type="button" data-adm-account aria-label="Учётка" hidden></button></div>
 
-  <section class="a-acts" aria-label="Что сделать">
-    {actions.map((a) => (
-      <a class={`a-act a-act--${a.tone}`} href={a.href}>
-        <span class="a-act__ic"><AdminIcon name={a.icon} /></span>
-        <span class="a-act__text">{a.text}</span>
-        {a.note && <span class:list={['a-act__note', { 'a-pill a-pill--bad': a.urgent }]}>{a.note}</span>}
-        <AdminIcon name="next" class="a-act__go" />
-      </a>
-    ))}
+  <section class="a-acts" aria-label="Что сделать" data-ov-acts>
+    <div class="sk-card a-card a-card--flush" aria-busy="true" aria-label="Загружаем"><div class="sk-row"><span class="sk sk--thumb"></span><span class="sk-row__body"><span class="sk sk--line"></span><span class="sk sk--line sk--short"></span></span><span class="sk sk--pill"></span></div><div class="sk-row"><span class="sk sk--thumb"></span><span class="sk-row__body"><span class="sk sk--line"></span><span class="sk sk--line sk--short"></span></span><span class="sk sk--pill"></span></div><div class="sk-row"><span class="sk sk--thumb"></span><span class="sk-row__body"><span class="sk sk--line"></span><span class="sk sk--line sk--short"></span></span><span class="sk sk--pill"></span></div></div>
   </section>
 
   <section class="a-card a-card--flush">
@@ -56,23 +25,80 @@ const venues = CATALOG.filter((c) => c.kind === 'venue').length;
       <h2 class="a-h2">Новые заявки</h2>
       <a class="a-more" href="/profi/admin/zayavki/">Все</a>
     </div>
-    <div class="a-tasks">
-      {fresh.map((a) => (
-        <AdminTask
-          href={`/profi/admin/zayavki/${a.id}/`}
-          name={a.name}
-          cover={appCover(a)}
-          task={a.status === 'review' ? 'Проверить анкету' : 'Не закончил анкету'}
-          tone={a.status === 'review' ? 'check' : 'wait'}
-          fill={a.status === 'draft' ? appFill(a) : undefined}
-          left={appLeft(a)}
-          when={a.lastEdit}
-        />
-      ))}
-    </div>
+    <div class="a-tasks" data-ov-fresh></div>
   </section>
 
-  <p class="a-total">На сайте {CATALOG.length} {plural(CATALOG.length, 'карточка', 'карточки', 'карточек')}: {venues} {plural(venues, 'площадка', 'площадки', 'площадок')}, {CATALOG.length - venues} {plural(CATALOG.length - venues, 'подрядчик', 'подрядчика', 'подрядчиков')}. <a class="a-more" href="/profi/admin/katalog/">Все карточки</a></p>
-  {/* на телефоне шапки нет — выход здесь (на ПК он ещё и в шапке) */}
-  <a class="a-logout" href="#" data-adm-logout hidden>Выйти из админки</a>
+  <p class="a-total">На сайте {CATALOG.length} {plural(CATALOG.length, ['карточка', 'карточки', 'карточек'])}: {venues} {plural(venues, ['площадка', 'площадки', 'площадок'])}, {CATALOG.length - venues} {plural(CATALOG.length - venues, ['подрядчик', 'подрядчика', 'подрядчиков'])}. </p>
+  <a class="c-chipbtn a-total__go" href="/profi/admin/katalog/">Все карточки</a>
 </AdminShell>
+
+<script>
+  import { requireSession, errText, esc, saveSession } from '../../../lib/cabinet-api';
+  import { openDialog } from '../../../lib/cab-ui';
+  import { loadRevisions, counts, leftMin, leftText, taskRow, failBox, URGENT_MIN, DEADLINE_MIN } from '../../../lib/admin-live';
+  import { ADMIN_ICONS } from '../../../lib/admin-icons';
+  import { plural } from '../../../lib/plural';
+
+  const ic = (name: keyof typeof ADMIN_ICONS, cls: string) => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${ADMIN_ICONS[name]}</svg>`;
+
+  // Сводка — список ДЕЙСТВИЙ (Никита, 27.10): что сделать и сколько. Срок —
+  // ближайший по этому действию; мало времени — красным.
+  async function render(force = false) {
+    const acts = document.querySelector<HTMLElement>('[data-ov-acts]');
+    const fresh = document.querySelector<HTMLElement>('[data-ov-fresh]');
+    if (!acts || !fresh) return;
+    try {
+      const c = counts(await loadRevisions(force));
+      const soon = (rs: any[]) => {
+        const xs = rs.map(leftMin).filter((x): x is number => x !== undefined);
+        return xs.length ? Math.min(...xs) : undefined;
+      };
+      const due = (m?: number) => (m === undefined ? '' : m <= 0 ? 'срок вышел' : `ближайший срок: ${leftText(m).replace('осталось ', 'через ')}`);
+      const nNew = c.newReview.length, nEdit = c.editReview.length, nDraft = c.drafts.length;
+      const list = [
+        { n: nNew, text: `Проверить ${nNew} ${plural(nNew, ['новую карточку', 'новые карточки', 'новых карточек'])}`, left: soon(c.newReview), href: '/profi/admin/zayavki/#review', icon: 'partners', tone: 'info' },
+        { n: nEdit, text: `Проверить ${nEdit} ${plural(nEdit, ['правку', 'правки', 'правок'])}`, left: soon(c.editReview), href: '/profi/admin/moderaciya/', icon: 'moderation', tone: 'info' },
+        { n: nDraft, text: `Связаться: ${nDraft} ${plural(nDraft, ['анкета не закончена', 'анкеты не закончены', 'анкет не закончено'])}`, note: 'перезвонить или написать', href: '/profi/admin/zayavki/#draft', icon: 'phone', tone: 'warn' },
+      ].filter((a) => a.n > 0) as { n: number; text: string; left?: number; note?: string; href: string; icon: keyof typeof ADMIN_ICONS; tone: string }[];
+      acts.innerHTML = list.length
+        ? list.map((a) => {
+            const note = a.note ?? due(a.left);
+            const urgent = (a.left ?? DEADLINE_MIN) < URGENT_MIN;
+            return `<a class="a-act a-act--${a.tone}" href="${a.href}"><span class="a-act__ic">${ic(a.icon, '')}</span><span class="a-act__text">${a.text}</span>${note ? `<span class="a-act__note${urgent ? ' a-act__note--urgent' : ''}">${note}</span>` : ''}${ic('next', 'a-act__go')}</a>`;
+          }).join('')
+        : '<p class="a-empty a-empty--card">Задач нет: новых карточек и правок на проверке сейчас нет</p>';
+      const rows = [
+        ...c.newReview.sort((a, b) => (leftMin(a) ?? 0) - (leftMin(b) ?? 0)).map((r) => taskRow(r, { task: 'Проверить', tone: 'check' })),
+        ...c.drafts.map((r) => taskRow(r, { task: 'Не закончена', tone: 'wait', fill: true })),
+      ];
+      fresh.innerHTML = rows.join('') || '<p class="a-empty">Новых заявок нет. Они появятся, когда подрядчик заведёт карточку в кабинете</p>';
+    } catch (err) {
+      acts.innerHTML = failBox(`Не загрузилось. ${errText(err)}`);
+      fresh.innerHTML = '';
+    }
+  }
+
+  document.addEventListener('astro:page-load', () => {
+    const acts = document.querySelector<HTMLElement>('[data-ov-acts]');
+    const s = acts ? requireSession('moderator') : null;
+    if (!acts || !s) return;
+    // кружок учётки → окно: имя, почта, «Выйти из админки»
+    const acc = document.querySelector<HTMLButtonElement>('[data-adm-account]');
+    if (acc) {
+      const name = String(s.record.name || s.record.email || 'Модератор');
+      acc.textContent = name.slice(0, 1).toUpperCase();
+      acc.hidden = false;
+      acc.onclick = () => {
+        const { dlg } = openDialog({ cls: 'c-alert', html: `<div class="c-dialog__body">
+          <span class="a-acc a-acc--lg" aria-hidden="true">${esc(name.slice(0, 1).toUpperCase())}</span>
+          <h2 class="a-h2">${esc(name)}</h2>
+          ${s.record.email ? `<p>${esc(s.record.email)}</p>` : ''}
+          <div class="c-alert__acts"><button class="a-btn a-btn--lg a-btn--logout" type="button" data-out>Выйти из админки</button><button class="a-btn a-btn--lg" type="button" data-close>Закрыть</button></div>
+        </div>` });
+        dlg.querySelector('[data-out]')!.addEventListener('click', () => { saveSession('moderator', null); location.href = '/profi/admin/vhod/'; });
+      };
+    }
+    acts.onclick = (e) => { if ((e.target as HTMLElement).closest('[data-retry]')) render(true); };
+    render();
+  });
+</script>

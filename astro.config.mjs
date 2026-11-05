@@ -12,6 +12,8 @@ const previewFiles = new URL(process.env.PREVIEW_FILES_URL || 'https://wed-secre
 export default defineConfig({
   site: process.env.SITE_URL || undefined,
   base: process.env.SITE_BASE || '/',
+  // панель разработчика Astro внизу экрана путалась с меню кабинета и капсулой «Описания» (05.11)
+  devToolbar: { enabled: false },
 
   // Сайт остаётся статикой (output по умолчанию): все страницы собираются
   // заранее. Адаптер нужен ровно одной странице — превью карточки до
@@ -39,8 +41,8 @@ export default defineConfig({
   // с него в первый каталог быть не должно: он перекрывает страницу.
 
   // Модерация переехала в админку (24.10.2026) — первые ссылки уже ушли заказчику.
+  // Демо-разборы /moderaciya/<id>/ удалены 05.11.2026 вместе со своим редиректом.
   redirects: {
     '/profi/moderaciya': '/profi/admin/moderaciya',
-    '/profi/moderaciya/[id]': '/profi/admin/moderaciya/[id]',
   },
 });

@@ -67,3 +67,16 @@
 /* Кнопка ждёт обеих галочек согласия */
 .auth__gate { transition: opacity var(--dur-fast) var(--ease-out); }
 .auth__gate[aria-disabled='true'] { opacity: 0.35; pointer-events: none; }
+
+/* ОШИБКА — ОБЛАЧКОМ, как у Apple (lib/form-check.ts, 05.11.2026).
+   Рамка поля цветом ошибки, над полем светлое облачко с хвостиком.
+   Лежит поверх вёрстки — форма не прыгает. Общая ошибка формы — таким же
+   облачком над кнопкой; строка .auth__error не видна (её читает скрипт). */
+.fieldbox { position: relative; display: block; min-width: 0; }
+.input[aria-invalid="true"] { border-color: var(--error-text); }
+.form-line-hidden { display: none !important; }
+.tip { position: absolute; z-index: 5; left: 0; bottom: calc(100% + 10px); max-width: min(100%, 340px); padding: 10px 16px; border-radius: 14px; background: var(--paper); color: var(--fg); box-shadow: 0 10px 30px color-mix(in srgb, var(--ink) 10%, transparent), 0 2px 8px color-mix(in srgb, var(--ink) 6%, transparent); font-size: var(--fs-small); line-height: var(--lh-snug); text-align: left; }
+.tip::after { content: ''; position: absolute; left: 28px; top: 100%; border: 8px solid transparent; border-top-color: var(--paper); }
+.tip--center { left: 50%; transform: translateX(-50%); width: max-content; max-width: 100%; }
+.tip--center::after { left: 50%; margin-left: -8px; }
+.tip--bad { color: var(--error-text); }

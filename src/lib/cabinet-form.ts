@@ -29,11 +29,15 @@ export interface Question {
 
 /** ссылок на видео в одной карточке */
 export const MAX_VIDEOS = 5;
+/** тарифов в разделе «Цена» — не больше (Никита 05.11: больше пара не сравнит) */
+export const MAX_TARIFFS = 5;
 
 /** на проверку — от 8 фото, текст от 150 знаков (те же числа, что в хуке) */
 export const MIN_PHOTOS = 8;
 export const MAX_PHOTOS = 50;
 export const MIN_TEXT = 150;
+/** карточек на одну учётку — то же число в хуке (pb/pb_hooks/lib/cabinet.js, MAX_CARDS) */
+export const MAX_CARDS = 3;
 
 /** optional — раздел по желанию: пустым не краснеет и в полосу заполненности не входит */
 export const SECTIONS: Record<Kind, { key: SectionKey; title: string; icon: string; optional?: boolean }[]> = {
@@ -125,7 +129,15 @@ export function priceFrom(data: any): number | null {
   return own > 0 ? own : null;
 }
 
-export const rub = (n: number) => `${n.toLocaleString('ru-RU').replace(/ /g, ' ')} ₽`;
+/**
+ * Число с разрядами и единицей — ОДНА функция на кабинет и админку (правило 24
+ * скилла cabinet-ui). Все пробелы неразрывные: и между разрядами, и перед
+ * единицей, иначе «12 000 ₽» рвётся посреди числа на узком экране. Раньше здесь
+ * неразрывный пробел меняли на обычный, а в модерации жили ещё две копии.
+ */
+export const NBSP = ' ';
+export const num = (n: number) => n.toLocaleString('ru-RU').replace(/\s/g, NBSP);
+export const rub = (n: number) => `${num(n)}${NBSP}₽`;
 
 /** состояние раздела для строки списка: заполнен ли и что показать под названием */
 export function sectionState(key: SectionKey, rev: any, questions: Question[]): { done: boolean; sub: string; empty?: boolean } {
@@ -133,11 +145,11 @@ export function sectionState(key: SectionKey, rev: any, questions: Question[]): 
   const photos = (rev?.photos ?? []).length;
   switch (key) {
     case 'osnovnoe': {
-      const done = filled(d.name) && (rev.kind === 'venue' ? filled(d.address) : true);
-      return { done, sub: done ? [d.name, d.tagline || d.address].filter(Boolean).join(' · ') : 'пусто', empty: !done };
+      const done = meaningfulName(d.name) && (rev.kind === 'venue' ? filled(d.address) : true);
+      return { done, sub: done ? [d.name, d.tagline || d.address].filter(Boolean).join(', ') : 'пусто', empty: !done };
     }
     case 'foto':
-      return { done: photos >= MIN_PHOTOS, sub: photos ? `${photos} из ${MAX_PHOTOS}${photos < MIN_PHOTOS ? ` · нужно от ${MIN_PHOTOS}` : ''}` : 'пусто · нужно от 8', empty: photos < MIN_PHOTOS };
+      return { done: photos >= MIN_PHOTOS, sub: photos ? `${photos}${NBSP}из ${MAX_PHOTOS}${photos < MIN_PHOTOS ? `, нужно от${NBSP}${MIN_PHOTOS}` : ''}` : `пусто, нужно от${NBSP}${MIN_PHOTOS}`, empty: photos < MIN_PHOTOS };
     case 'video': {
       const n = (d.videos ?? []).filter((v: any) => str(v?.url)).length;
       return { done: n > 0, sub: n ? `${n} ${n === 1 ? 'ссылка' : n < 5 ? 'ссылки' : 'ссылок'}` : 'по желанию' };
@@ -145,7 +157,7 @@ export function sectionState(key: SectionKey, rev: any, questions: Question[]): 
     case 'tekst': {
       const n = (d.sections ?? []).filter((x: any) => str(x?.body)).length;
       const len = textLength(d);
-      return { done: len >= MIN_TEXT, sub: n ? `${n} ${n === 1 ? 'раздел' : n < 5 ? 'раздела' : 'разделов'} · ${len} знаков` : 'пусто', empty: len < MIN_TEXT };
+      return { done: len >= MIN_TEXT, sub: n ? `${n} ${n === 1 ? 'раздел' : n < 5 ? 'раздела' : 'разделов'}, ${num(len)}${NBSP}знаков` : 'пусто', empty: len < MIN_TEXT };
     }
     case 'voprosy': {
       if (!questions.length) return { done: true, sub: 'для этой категории вопросов нет' };
@@ -159,14 +171,14 @@ export function sectionState(key: SectionKey, rev: any, questions: Question[]): 
       if (mode === 'request') return { done: true, sub: 'по запросу' };
       if (mode === 'tariffs') {
         const n = (d.tariffs ?? []).filter((t: any) => str(t?.name) && Number(t?.price) > 0).length;
-        return { done: n > 0, sub: n ? `${n} ${n === 1 ? 'тариф' : n < 5 ? 'тарифа' : 'тарифов'} · от ${rub(p!)}` : 'нет тарифа с ценой', empty: !n };
+        return { done: n > 0, sub: n ? `${n} ${n === 1 ? 'тариф' : n < 5 ? 'тарифа' : 'тарифов'}, от ${rub(p!)}` : 'нет тарифа с ценой', empty: !n };
       }
       return { done: !!p, sub: p ? `от ${rub(p)}${str(d.priceNote) ? ` ${str(d.priceNote)}` : ''}` : 'пусто', empty: !p };
     }
     case 'zaly': {
       const halls = (d.halls ?? []).filter((h: any) => str(h?.name));
       const max = Math.max(0, ...halls.map((h: any) => Number(h?.banquet) || 0));
-      return { done: halls.length > 0, sub: halls.length ? `${halls.length} ${halls.length === 1 ? 'зал' : halls.length < 5 ? 'зала' : 'залов'}${max ? ` · до ${max} гостей` : ''}` : 'пусто', empty: !halls.length };
+      return { done: halls.length > 0, sub: halls.length ? `${halls.length} ${halls.length === 1 ? 'зал' : halls.length < 5 ? 'зала' : 'залов'}${max ? `, до ${max} гостей` : ''}` : 'пусто', empty: !halls.length };
     }
     case 'usloviya': {
       const t = d.terms ?? {};
@@ -176,17 +188,82 @@ export function sectionState(key: SectionKey, rev: any, questions: Question[]): 
     case 'kontakty': {
       const c = d.contacts ?? {};
       const list = [c.phone && 'телефон', c.telegram && 'Telegram', c.max && 'MAX', c.site && 'сайт', c.email && 'почта'].filter(Boolean);
-      return { done: filled(c.phone), sub: list.length ? list.join(', ') : 'пусто · нужен телефон', empty: !filled(c.phone) };
+      return { done: filled(c.phone), sub: list.length ? list.join(', ') : 'пусто, нужен телефон', empty: !filled(c.phone) };
     }
   }
 }
 
+/**
+ * Что сделать, чтобы раздел засчитался, — конкретно, с числами (Никита,
+ * 05.11: «осталось два раздела: фото и цена» — неинформативно). Строка
+ * продолжает название раздела: «Фото — добавьте ещё 5, сейчас 3 из 8».
+ */
+export function sectionTodo(key: SectionKey, rev: any, questions: Question[]): string {
+  const d = rev?.data ?? {};
+  switch (key) {
+    case 'osnovnoe':
+      return [!filled(d.name) ? 'впишите имя или название' : !meaningfulName(d.name) && 'проверьте имя — похоже на случайные буквы', rev.kind === 'venue' && !filled(d.address) && 'укажите адрес'].filter(Boolean).join(' и ');
+    case 'foto': {
+      const n = (rev?.photos ?? []).length;
+      return `добавьте ещё ${MIN_PHOTOS - n}, сейчас ${n}${NBSP}из ${MIN_PHOTOS}`;
+    }
+    case 'tekst': {
+      const len = textLength(d);
+      return len ? `допишите ещё ${num(MIN_TEXT - len)}${NBSP}знаков, нужно от${NBSP}${MIN_TEXT}` : `расскажите о себе, от${NBSP}${MIN_TEXT} знаков`;
+    }
+    case 'voprosy': {
+      const left = questions.filter((q) => !filled(d.filters?.[q.key])).length;
+      return `ответьте ещё на ${left} из ${questions.length}`;
+    }
+    case 'prays':
+      return (d.priceMode ?? ((d.tariffs ?? []).length ? 'tariffs' : 'one')) === 'tariffs'
+        ? 'у тарифа нет названия или цены — впишите сумму'
+        : 'впишите цену «от» — или выберите «по запросу»';
+    case 'zaly':
+      return 'добавьте хотя бы один зал с названием';
+    case 'usloviya':
+      return 'ответьте про кухню и свой алкоголь';
+    case 'kontakty':
+      return 'укажите телефон — без него пара не свяжется';
+    default:
+      return 'заполните раздел';
+  }
+}
+
+/**
+ * «Цена за …» — варианты под категорию (Никита 05.11: фотографу предлагали
+ * «за кг»). Нет категории в списке — общий набор.
+ */
+const UNITS_TIME = ['за час', 'за 6 часов', 'за день', 'за проект'];
+export const PRICE_UNITS_BY_CAT: Record<string, string[]> = {
+  fotografy: UNITS_TIME, videografy: UNITS_TIME, 'rils-meikery': ['за час', 'за день', 'за ролик'],
+  vedushchie: ['за вечер', 'за час', 'за проект'], dj: ['за вечер', 'за час'], 'kaver-gruppy': ['за вечер', 'за сет', 'за час'],
+  vokalisty: ['за вечер', 'за сет', 'за песню'], muzykanty: ['за вечер', 'за сет', 'за час'],
+  organizatory: ['за проект', 'за день'], koordinatory: ['за день', 'за проект'], dekoratory: ['за проект', 'за гостя'],
+  keitering: ['за гостя', 'за проект'], konditery: ['за кг', 'за торт'], stilisty: ['за образ', 'за выезд', 'за час'],
+  speceffekty: ['за шоу', 'за проект'], 'arenda-zvuka': ['за день', 'за вечер'], 'arenda-sveta': ['за день', 'за вечер'],
+  horeografy: ['за урок', 'за постановку'], animatory: ['за час', 'за программу'], shou: ['за шоу', 'за номер'],
+  fokusniki: ['за выступление', 'за час'], avto: ['за час', 'за день', 'за трансфер'],
+  _venue: ['за гостя', 'за день', 'за час'], _default: ['за час', 'за день', 'за проект'],
+};
+export const priceUnits = (kind: string, cat: string) => PRICE_UNITS_BY_CAT[kind === 'venue' ? '_venue' : cat] ?? PRICE_UNITS_BY_CAT._default;
+
+/**
+ * Осмысленное имя: каждое слово от 2 букв и не из одной повторённой буквы
+ * (Никита 05.11: «Ааа ббб» получало галочку).
+ */
+export function meaningfulName(v: unknown): boolean {
+  const words = String(v ?? '').trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return false;
+  return words.every((w) => w.length >= 2 && !/^(.)\1+$/i.test(w));
+}
+
 /** статус карточки одним словом и цветом (CLAUDE.md, «Кабинет — это не сайт») */
 export function cardState(revStatus: string | undefined, live: boolean): { label: string; cls: string; note: string } {
-  if (revStatus === 'rejected') return { label: 'Вернули', cls: 'c-badge--bad', note: 'нужно исправить' };
-  if (revStatus === 'review') return { label: 'На проверке', cls: 'c-badge--info', note: live ? 'правка на проверке, на сайте прежняя версия' : 'проверим в течение 24 часов' };
+  if (revStatus === 'rejected') return { label: 'Вернули', cls: 'status--bad', note: 'нужно исправить' };
+  if (revStatus === 'review') return { label: 'На проверке', cls: 'status--info', note: live ? 'правка на проверке, на сайте прежняя версия' : 'проверим в течение 24 часов' };
   if (revStatus === 'draft') return { label: 'Черновик', cls: '', note: live ? 'есть неотправленная правка' : 'заполняется' };
-  if (live) return { label: 'На сайте', cls: 'c-badge--ok', note: 'опубликована' };
+  if (live) return { label: 'На сайте', cls: 'status--ok', note: 'опубликована' };
   return { label: 'Снята с сайта', cls: '', note: 'сейчас её нет на сайте — напишите нам' };
 }
 

@@ -1,18 +1,19 @@
 ---
-// ЗАЯВКИ ПАРТНЁРОВ — подрядчики и площадки, которые хотят на сайт: завели
-// учётку и заполняют анкету новой карточки. Вкладки: «Проверить» —
+// ЗАЯВКИ — НОВЫЕ карточки из кабинета: подрядчик или площадка завели учётку
+// и заполняют анкету (ревизия без venue/specialist). Вкладки: «На проверке» —
 // отправили, ждут решения (срок 24 ч); «Не закончили» — звоним или пишем;
-// «Вернули», «Опубликованы», «Отклонены». В строке — кто, сколько
-// заполнено и срок справа; что именно пусто — на экране заявки (27.10). Сейчас — примеры (partner-demo.ts);
-// вживую — `vendors` + `revisions` первой публикации.
+// «Вернули» — ждём исправления. Правки уже опубликованных — в «Модерации».
+// Данные из базы (lib/admin-live.ts, 05.11.2026); демо-примеров больше нет.
+// Строка ведёт на разбор /moderaciya/pravka/?id= — экран один на оба случая.
 import AdminShell from '../../../../components/admin/AdminShell.astro';
 import AdminIcon from '../../../../components/admin/AdminIcon.astro';
-import { APP_STATUS, PARTNER_APPS, type AppStatus } from '../../../../data/partner-demo';
-import AdminTask from '../../../../components/admin/AdminTask.astro';
-import { appCover, appFill, appLeft } from '../../../../lib/admin-tasks';
 
-const tabs: AppStatus[] = ['review', 'draft', 'returned', 'approved', 'rejected'];
-const count = (s: AppStatus) => PARTNER_APPS.filter((a) => a.status === s).length;
+const tabs = [
+  { v: 'review', label: 'На проверке' },
+  { v: 'draft', label: 'Не закончили' },
+  { v: 'rejected', label: 'Вернули' },
+  { v: 'all', label: 'Все' },
+];
 ---
 
 <AdminShell title="Заявки" section="partners">
@@ -23,37 +24,70 @@ const count = (s: AppStatus) => PARTNER_APPS.filter((a) => a.status === s).lengt
   <section class="a-card a-card--flush">
     <nav class="a-tabs" aria-label="Статус заявки">
       {tabs.map((t) => (
-        <a class:list={['a-tabs__item', { 'is-active': t === 'review' }]} href={`#${t}`} data-filter-tab="ap" data-value={t}>
-          {APP_STATUS[t].tab} <span class:list={['a-tabs__n', { 'a-tabs__n--bad': t === 'review' && count(t) > 0 }]}>{count(t)}</span>
+        <a class:list={['a-tabs__item', { 'is-active': t.v === 'review' }]} href={`#${t.v}`} data-filter-tab="ap" data-value={t.v}>
+          {t.label} <span class="a-tabs__n" data-ap-n={t.v}></span>
         </a>
       ))}
-      <a class="a-tabs__item" href="#all" data-filter-tab="ap" data-value="all">Все <span class="a-tabs__n">{PARTNER_APPS.length}</span></a>
     </nav>
     <div class="a-tools">
       <label class="a-search">
         <span class="visually-hidden">Поиск</span>
-        <input class="a-input" type="search" placeholder="Имя или категория" data-filter-search="ap" />
+        <input class="a-input" type="search" placeholder="Название или имя" data-filter-search="ap" />
         <AdminIcon name="search" />
       </label>
     </div>
     <div class="a-table-wrap">
-      <table class="a-table a-table--cards" id="ap" data-atable data-tab-default="review">
-        <tbody>
-          {[...PARTNER_APPS].sort((a, b) => (appLeft(a) ?? Infinity) - (appLeft(b) ?? Infinity)).map((a) => {
-            const st = APP_STATUS[a.status];
-            const tone = a.status === 'review' ? 'check' : a.status === 'draft' ? 'wait' : 'none';
-            return (
-              <tr data-href={`/profi/admin/zayavki/${a.id}/`} data-tab={a.status} data-text={`${a.name} ${a.category}`.toLowerCase()}>
-                <td class="a-task-cell" data-v={a.name}>
-                  <AdminTask href={`/profi/admin/zayavki/${a.id}/`} name={a.name} cover={appCover(a)} task={st.label} tone={tone} fill={a.status === 'draft' ? appFill(a) : undefined} left={appLeft(a)} when={a.lastEdit} />
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
+      <table class="a-table a-table--cards" id="ap" data-atable data-pending data-tab-default="review">
+        <tbody data-ap-rows></tbody>
       </table>
-      <div class="a-empty" data-empty="ap" hidden>В этой вкладке пусто</div>
+      <div class="a-empty" data-empty="ap" hidden>В этой вкладке пусто. Новые карточки появятся здесь, когда подрядчик заведёт их в кабинете</div>
+      <div data-ap-state><div class="sk-row"><span class="sk sk--thumb"></span><span class="sk-row__body"><span class="sk sk--line"></span><span class="sk sk--line sk--short"></span></span><span class="sk sk--pill"></span></div><div class="sk-row"><span class="sk sk--thumb"></span><span class="sk-row__body"><span class="sk sk--line"></span><span class="sk sk--line sk--short"></span></span><span class="sk sk--pill"></span></div><div class="sk-row"><span class="sk sk--thumb"></span><span class="sk-row__body"><span class="sk sk--line"></span><span class="sk sk--line sk--short"></span></span><span class="sk sk--pill"></span></div></div>
     </div>
   </section>
 </AdminShell>
 
+<script>
+  import { requireSession, errText, esc } from '../../../../lib/cabinet-api';
+  import { loadRevisions, isNew, leftMin, taskRow, failBox } from '../../../../lib/admin-live';
+
+  const TASK: Record<string, { task: string; tone: 'check' | 'wait' | 'bad' }> = {
+    review: { task: 'Проверить', tone: 'check' },
+    draft: { task: 'Не закончена', tone: 'wait' },
+    rejected: { task: 'Вернули', tone: 'bad' },
+  };
+
+  async function render(force = false) {
+    const body = document.querySelector<HTMLElement>('[data-ap-rows]');
+    const state = document.querySelector<HTMLElement>('[data-ap-state]');
+    if (!body || !state) return;
+    try {
+      const revs = (await loadRevisions(force)).filter((r) => isNew(r) && TASK[r.status]);
+      // горящий срок — первым, черновики — по свежести
+      revs.sort((a, b) => (leftMin(a) ?? Infinity) - (leftMin(b) ?? Infinity));
+      body.innerHTML = revs.map((r) => {
+        const t = TASK[r.status];
+        const text = `${r.data?.name ?? ''} ${r.expand?.owner?.name ?? ''} ${r.expand?.owner?.email ?? ''}`.toLowerCase();
+        return `<tr data-tab="${r.status}" data-text="${esc(text)}"><td class="a-task-cell">${taskRow(r, { ...t, fill: r.status === 'draft' })}</td></tr>`;
+      }).join('');
+      for (const v of ['review', 'draft', 'rejected', 'all']) {
+        const n = v === 'all' ? revs.length : revs.filter((r) => r.status === v).length;
+        const el = document.querySelector<HTMLElement>(`[data-ap-n="${v}"]`);
+        if (el) { el.textContent = String(n); el.classList.toggle('a-tabs__n--bad', v === 'review' && n > 0); }
+      }
+      state.innerHTML = '';
+      const table = document.querySelector('#ap')!;
+      table.removeAttribute('data-pending');
+      table.dispatchEvent(new Event('atable:refresh'));
+    } catch (err) {
+      body.innerHTML = '';
+      state.innerHTML = failBox(`Не загрузилось. ${errText(err)}`);
+    }
+  }
+
+  document.addEventListener('astro:page-load', () => {
+    const state = document.querySelector<HTMLElement>('[data-ap-state]');
+    if (!state || !requireSession('moderator')) return;
+    state.onclick = (e) => { if ((e.target as HTMLElement).closest('[data-retry]')) render(true); };
+    render();
+  });
+</script>

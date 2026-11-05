@@ -1,12 +1,12 @@
 ---
 // ПОМОЩЬ — раздел нижнего меню кабинета (Никита, 02.11). Короткие ответы
 // на то, о чём подрядчики спрашивают при заполнении (цифры — те же, что
-// в cabinet-form.ts и хуке), и «Написать нам».
-// ЗАГЛУШКА: адрес поддержки не выбран (Никита, 02.11: «пока без адреса») —
-// кнопка стоит, SUPPORT_HREF пустой; вписать t.me/…, max.ru/… или mailto:.
+// в cabinet-form.ts и хуке).
+// «Написать в поддержку» стоит всегда (Никита 05.11), адрес не выбран —
+// без href, никуда не ведёт. Решим — вписать SUPPORT_HREF (t.me/…, max.ru/…).
 import CabinetShell from '../../../components/admin/CabinetShell.astro';
 import AdminIcon from '../../../components/admin/AdminIcon.astro';
-import { MIN_PHOTOS, MAX_PHOTOS, MIN_TEXT, MAX_VIDEOS } from '../../../lib/cabinet-form';
+import { MIN_PHOTOS, MAX_PHOTOS, MIN_TEXT, MAX_VIDEOS, MAX_CARDS } from '../../../lib/cabinet-form';
 
 /** куда писать подрядчику — одна строка, когда решим */
 const SUPPORT_HREF = '';
@@ -17,8 +17,8 @@ const FAQ: { q: string; a: string }[] = [
   { q: 'Как сменить обложку или порядок фото', a: 'Зажмите фото и перетащите — на место обложки или между другими. Нажмите на фото, чтобы открыть его во весь экран.' },
   { q: 'Можно ли добавить видео', a: `Да, до ${MAX_VIDEOS} ссылок в разделе «Видео»: Яндекс Диск, Google Диск, YouTube, VK Видео или Rutube. Ролик подготовим и поставим на карточку сами.` },
   { q: 'Почему не принимается описание', a: `Описание — от ${MIN_TEXT} знаков, настоящим текстом. Телефон, почту и ссылки на соцсети в описание не пишите — для них есть раздел «Контакты», пара откроет их кнопкой.` },
-  { q: 'Сколько карточек можно завести', a: 'До 3 на одну учётку, и один номер телефона — не больше чем в 3 карточках.' },
-  { q: 'Как удалить карточку', a: 'Новую карточку, ещё не опубликованную, можно удалить: внизу её анкеты — «Удалить карточку». Чтобы снять опубликованную, напишите нам.' },
+  { q: 'Сколько карточек можно завести', a: `До ${MAX_CARDS} на один вход, и один номер телефона — не больше чем в ${MAX_CARDS} карточках.` },
+  { q: 'Как удалить карточку', a: 'Новую карточку, ещё не опубликованную, можно удалить в «Профиле» — внизу, «Удалить карточку». Опубликованную снимает модератор.' },
 ];
 ---
 
@@ -43,7 +43,8 @@ const FAQ: { q: string; a: string }[] = [
         </div>
       </section>
       {/* Никита, 02.11: кнопка — под вопросами: сперва ответ, потом письмо */}
-      <a class="a-btn a-btn--primary a-btn--lg c-support" href={SUPPORT_HREF || '#'} target={SUPPORT_HREF ? '_blank' : undefined} rel="noopener">
+      {/* Никита 05.11: кнопка стоит всегда; адреса пока нет — никуда не ведёт */}
+      <a class="a-btn a-btn--primary a-btn--lg c-support" href={SUPPORT_HREF || undefined} target={SUPPORT_HREF ? '_blank' : undefined} rel="noopener" aria-disabled={SUPPORT_HREF ? undefined : 'true'}>
         <AdminIcon name="tgLogo" /> Написать в поддержку
       </a>
     </div>
@@ -53,6 +54,10 @@ const FAQ: { q: string; a: string }[] = [
 <style>
   .c-support { width: 100%; height: 52px; font-size: 16px; gap: 10px; margin-top: var(--s-2); }
   .c-support :global(svg) { width: 22px; height: 22px; }
+  /* вопрос — заголовком строки, ответ — отдельным абзацем с отбивкой (как раскрывающиеся строки iOS) */
+  details.c-row :global(.c-row__title) { font-weight: 600; }
+  details.c-row[open] summary { margin-bottom: var(--s-2); }
+  .c-details__text { line-height: 1.45; padding-bottom: var(--s-2); }
 </style>
 
 <script>

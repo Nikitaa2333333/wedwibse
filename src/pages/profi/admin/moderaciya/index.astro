@@ -1,18 +1,12 @@
 ---
-// МОДЕРАЦИЯ — правки, которые подрядчики и площадки прислали из кабинета
-// (docs/cabinet/CABINET.md §12). Вкладки: «На проверке» — на сайте прежняя версия, пока
-// не одобрим; «Проверено» — история решений. Порядок — по сроку (ответ до
-// 24 ч, дольше ждущий выше). Вживую — коллекция `revisions` в PocketBase;
-// сейчас — примеры поверх настоящих карточек (moderation-demo.ts).
+// МОДЕРАЦИЯ — правки ОПУБЛИКОВАННЫХ карточек, присланные из кабинета
+// (docs/cabinet/CABINET.md §12). Вкладки: «На проверке» — на сайте прежняя
+// версия, пока не одобрим; «Проверено» — решения за 30 дней. Порядок — по
+// сроку (ответ до 24 ч, дольше ждущий выше). Новые карточки — в «Заявках».
+// Данные — коллекция `revisions` (lib/admin-live.ts). Демо-примеры поверх
+// настоящих карточек сняты 05.11.2026: модератор не отличал их от живых.
 import AdminShell from '../../../../components/admin/AdminShell.astro';
 import AdminIcon from '../../../../components/admin/AdminIcon.astro';
-import { buildReview } from '../../../../lib/moderation';
-import AdminTask from '../../../../components/admin/AdminTask.astro';
-import { waitedMin, DEADLINE_MIN } from '../../../../lib/admin-tasks';
-import { QUEUE, STATE } from '../../../../data/moderation-demo';
-
-const reviews = QUEUE.map(buildReview);
-const onReview = reviews.filter((r) => r.rev.state === 'review').length;
 ---
 
 <AdminShell title="Модерация" section="moderation">
@@ -22,9 +16,9 @@ const onReview = reviews.filter((r) => r.rev.state === 'review').length;
 
   <section class="a-card a-card--flush">
     <nav class="a-tabs" aria-label="Состояние правки">
-      <a class="a-tabs__item is-active" href="#" data-filter-tab="mq" data-value="review">На проверке <span class="a-tabs__n" data-mq-n>{onReview}</span></a>
-      <a class="a-tabs__item" href="#" data-filter-tab="mq" data-value="done">Проверено <span class="a-tabs__n">{reviews.length - onReview}</span></a>
-      <a class="a-tabs__item" href="#" data-filter-tab="mq" data-value="all">Все <span class="a-tabs__n">{reviews.length}</span></a>
+      <a class="a-tabs__item is-active" href="#review" data-filter-tab="mq" data-value="review">На проверке <span class="a-tabs__n" data-mq-n="review"></span></a>
+      <a class="a-tabs__item" href="#done" data-filter-tab="mq" data-value="done">Проверено <span class="a-tabs__n" data-mq-n="done"></span></a>
+      <a class="a-tabs__item" href="#all" data-filter-tab="mq" data-value="all">Все <span class="a-tabs__n" data-mq-n="all"></span></a>
     </nav>
     <div class="a-tools">
       <label class="a-search">
@@ -34,68 +28,52 @@ const onReview = reviews.filter((r) => r.rev.state === 'review').length;
       </label>
     </div>
     <div class="a-table-wrap">
-      <table class="a-table a-table--cards" id="mq" data-atable data-tab-default="review">
-        <tbody data-live-rows>
-          {reviews.map((r) => {
-            const href = `/profi/admin/moderaciya/${r.rev.id}/`;
-            const done = r.rev.state !== 'review';
-            return (
-              <tr data-href={href} data-tab={done ? 'done' : 'review'} data-text={r.card.name.toLowerCase()}>
-                <td class="a-task-cell" data-v={waitedMin(r.rev.waiting)}>
-                  <AdminTask
-                    href={href}
-                    name={r.card.name}
-                    cover={r.photos.after[0]}
-                    task={done ? (r.rev.decided ?? STATE[r.rev.state].label) : r.rev.first ? 'Проверить новую карточку' : 'Проверить правку'}
-                    tone={done ? 'none' : 'check'}
-                    left={done ? undefined : DEADLINE_MIN - waitedMin(r.rev.waiting)}
-                  />
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
+      <table class="a-table a-table--cards" id="mq" data-atable data-pending data-tab-default="review">
+        <tbody data-mq-rows></tbody>
       </table>
-      <div class="a-empty" data-empty="mq" hidden>Ничего не нашлось</div>
+      <div class="a-empty" data-empty="mq" hidden>Правок здесь нет. Они появятся, когда владелец опубликованной карточки отправит изменения</div>
+      <div data-mq-state><div class="sk-row"><span class="sk sk--thumb"></span><span class="sk-row__body"><span class="sk sk--line"></span><span class="sk sk--line sk--short"></span></span><span class="sk sk--pill"></span></div><div class="sk-row"><span class="sk sk--thumb"></span><span class="sk-row__body"><span class="sk sk--line"></span><span class="sk sk--line sk--short"></span></span><span class="sk sk--pill"></span></div><div class="sk-row"><span class="sk sk--thumb"></span><span class="sk-row__body"><span class="sk sk--line"></span><span class="sk sk--line sk--short"></span></span><span class="sk sk--pill"></span></div></div>
     </div>
   </section>
 </AdminShell>
 
-
 <script>
-  import { api, esc, session } from '../../../../lib/cabinet-api';
-  import { ADMIN_ICONS } from '../../../../lib/admin-icons';
+  import { requireSession, errText, esc } from '../../../../lib/cabinet-api';
+  import { loadRevisions, isNew, leftMin, taskRow, failBox } from '../../../../lib/admin-live';
 
-
-  // Живые правки из базы (revisions, status = review) встают в общий список
-  // первыми, той же строкой, что примеры; блока «Из базы» нет (Никита, 27.10).
-  document.addEventListener('astro:page-load', async () => {
-    const rows = document.querySelector<HTMLElement>('[data-live-rows]');
-    if (!rows || rows.dataset.live) return;
-    const s = session('moderator');
-    if (!s) return;
-    rows.dataset.live = '1';
+  async function render(force = false) {
+    const body = document.querySelector<HTMLElement>('[data-mq-rows]');
+    const state = document.querySelector<HTMLElement>('[data-mq-state]');
+    if (!body || !state) return;
     try {
-      const res = await api('moderator', 'GET', `/api/collections/revisions/records?perPage=100&sort=submittedAt&expand=owner&filter=${encodeURIComponent('status = "review"')}`);
-      const hourglass = '<svg viewBox="0 0 24 24" aria-hidden="true">' + ADMIN_ICONS.clock + '</svg>';
-      const html = res.items.map((r: any) => {
-        const href = `/profi/admin/moderaciya/pravka/?id=${r.id}`;
-        const name = r.data?.name || 'Без названия';
-        const task = r.venue || r.specialist ? 'Проверить правку' : 'Проверить новую карточку';
-        const left = 24 * 60 - Math.round((Date.now() - new Date(String(r.submittedAt).replace(' ', 'T')).getTime()) / 60000);
-        const leftText = left <= 0 ? 'срок вышел' : left < 60 ? `осталось ${left} мин` : `осталось ${Math.floor(left / 60)} ч`;
-        // data-astro-reload: переходом ClientRouter разбор не запускался (26.10)
-        return `<tr data-href="${href}" data-tab="review" data-text="${esc(name.toLowerCase())}"><td class="a-task-cell"><a class="a-task" href="${href}" data-astro-reload>`
-          + `<span class="a-task__cover a-task__cover--empty" aria-hidden="true">${esc(name.slice(0, 1))}</span>`
-          + `<span class="a-task__body"><span class="a-task__name">${esc(name)}</span><span class="a-task__meta"><span class="a-pill a-pill--check">${task}</span></span></span>`
-          + `<span class="a-task__when${left < 4 * 60 ? ' a-pill a-pill--bad' : ''}">${hourglass}${leftText}</span></a></td></tr>`;
+      const revs = (await loadRevisions(force)).filter((r) => !isNew(r) && r.status !== 'draft');
+      revs.sort((a, b) => (leftMin(a) ?? Infinity) - (leftMin(b) ?? Infinity));
+      body.innerHTML = revs.map((r) => {
+        const done = r.status !== 'review';
+        const task = r.status === 'review' ? 'Проверить' : r.status === 'approved' ? 'Одобрили' : 'Вернули';
+        const text = `${r.data?.name ?? ''} ${r.expand?.owner?.name ?? ''}`.toLowerCase();
+        return `<tr data-tab="${done ? 'done' : 'review'}" data-text="${esc(text)}"><td class="a-task-cell">${taskRow(r, { task, tone: r.status === 'review' ? 'check' : r.status === 'approved' ? 'ok' : 'bad' })}</td></tr>`;
       }).join('');
-      rows.insertAdjacentHTML('afterbegin', html);
-      const n = document.querySelector<HTMLElement>('[data-mq-n]');
-      if (n) n.textContent = String(Number(n.textContent) + res.items.length);
+      const n = { review: revs.filter((r) => r.status === 'review').length, all: revs.length } as Record<string, number>;
+      n.done = n.all - n.review;
+      for (const k of Object.keys(n)) {
+        const el = document.querySelector<HTMLElement>(`[data-mq-n="${k}"]`);
+        if (el) el.textContent = String(n[k]);
+      }
+      state.innerHTML = '';
+      const table = document.querySelector('#mq')!;
+      table.removeAttribute('data-pending');
+      table.dispatchEvent(new Event('atable:refresh'));
     } catch (err) {
-      // раньше ошибка глушилась молча, и живые анкеты просто не появлялись (31.10)
-      rows.insertAdjacentHTML('afterbegin', `<tr><td class="a-task-cell"><p class="a-login__error">Анкеты из базы не загрузились: ${esc((err as Error).message)}. Обновите страницу или войдите заново.</p></td></tr>`);
+      body.innerHTML = '';
+      state.innerHTML = failBox(`Правки не загрузились. ${errText(err)}`);
     }
+  }
+
+  document.addEventListener('astro:page-load', () => {
+    const state = document.querySelector<HTMLElement>('[data-mq-state]');
+    if (!state || !requireSession('moderator')) return;
+    state.onclick = (e) => { if ((e.target as HTMLElement).closest('[data-retry]')) render(true); };
+    render();
   });
 </script>

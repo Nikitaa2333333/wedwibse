@@ -20,25 +20,26 @@ const ROLES = Object.fromEntries(SPECIALIST_CATEGORIES.map((c) => [c.slug, c.rol
       </div>
     </div>
     <div class="c-sheet-area">
-      <div class="c-rows" data-list><p class="c-row c-row__sub">Загружаем…</p></div>
-      <p class="c-error" data-error hidden></p>
+      <div class="c-rows" data-list><div class="sk-card" aria-busy="true" aria-label="Загружаем"><div class="sk-row"><span class="sk sk--thumb"></span><span class="sk-row__body"><span class="sk sk--line"></span><span class="sk sk--line sk--short"></span></span><span class="sk sk--pill"></span></div><div class="sk-row"><span class="sk sk--thumb"></span><span class="sk-row__body"><span class="sk sk--line"></span><span class="sk sk--line sk--short"></span></span><span class="sk sk--pill"></span></div><div class="sk-row"><span class="sk sk--thumb"></span><span class="sk-row__body"><span class="sk sk--line"></span><span class="sk sk--line sk--short"></span></span><span class="sk sk--pill"></span></div></div></div>
+      <div class="c-fail" data-error hidden><p data-error-text></p><button class="c-chipbtn" type="button" data-retry>Повторить</button></div>
     </div>
   </div>
 </CabinetShell>
 
 <script>
-  import { api, esc, fileToken, fileUrl, requireSession } from '../../../lib/cabinet-api';
-  import { cardState } from '../../../lib/cabinet-form';
+  import { api, esc, fileToken, fileUrl, requireSession, errText } from '../../../lib/cabinet-api';
+  import { cardState, MAX_CARDS } from '../../../lib/cabinet-form';
 
-  const MAX_CARDS = 3;
   const root = document.querySelector<HTMLElement>('[data-mine]')!;
   const roles: Record<string, string> = JSON.parse(root.dataset.roles!);
   const list = root.querySelector<HTMLElement>('[data-list]')!;
   const error = root.querySelector<HTMLElement>('[data-error]')!;
   const go = '<svg class="c-row__go" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M9 5l6 7-6 7"/></svg>';
 
-  const s = requireSession('vendor');
-  if (s) {
+  // ошибка загрузки — что случилось и «Повторить» (правило 4 скилла)
+  error.querySelector('[data-retry]')!.addEventListener('click', () => { error.hidden = true; list.innerHTML = '<div class="sk-card" aria-busy="true" aria-label="Загружаем"><div class="sk-row"><span class="sk sk--thumb"></span><span class="sk-row__body"><span class="sk sk--line"></span><span class="sk sk--line sk--short"></span></span><span class="sk sk--pill"></span></div><div class="sk-row"><span class="sk sk--thumb"></span><span class="sk-row__body"><span class="sk sk--line"></span><span class="sk sk--line sk--short"></span></span><span class="sk sk--pill"></span></div><div class="sk-row"><span class="sk sk--thumb"></span><span class="sk-row__body"><span class="sk sk--line"></span><span class="sk sk--line sk--short"></span></span><span class="sk sk--pill"></span></div></div>'; load(); });
+
+  async function load() {
     try {
       const [cards, revs] = await Promise.all([
         api('vendor', 'GET', '/api/wed/my-cards'),
@@ -53,29 +54,31 @@ const ROLES = Object.fromEntries(SPECIALIST_CATEGORIES.map((c) => [c.slug, c.rol
             <span class="c-row__title">${esc(title)}</span>
             <span class="c-row__sub${bad ? ' c-row__sub--bad' : ''}">${sub}</span>
           </span>
-          <span class="c-badge ${st.cls}">${st.label}</span>
+          <span class="status ${st.cls}">${st.label}</span>
           ${go}
         </a>`;
       const rows: string[] = [];
       for (const c of cards.items) {
         const r = c.revision;
         const st = cardState(r?.status, c.status === 'published');
-        const sub = r?.status === 'rejected' ? `Вернули: ${esc(r.rejectReason)}` : `${role(c.kind, c.categorySlug)} · ${st.note}`;
+        const sub = role(c.kind, c.categorySlug);
         const href = r ? `/profi/moi/kartochka/?id=${r.id}` : `/profi/moi/kartochka/?card=${c.id}&kind=${c.kind}`;
         rows.push(row(href, '', c.name, sub, st, r?.status === 'rejected'));
       }
       for (const r of revs.items) {
         const st = cardState(r.status, false);
-        const sub = r.status === 'rejected' ? `Вернули: ${esc(r.rejectReason)}` : `${role(r.kind, r.categorySlug)} · ${st.note}`;
+        const sub = role(r.kind, r.categorySlug);
         const thumb = r.photos?.[0] ? fileUrl(r, r.photos[0], { thumb: '400x0', token }) : '';
         rows.push(row(`/profi/moi/kartochka/?id=${r.id}`, thumb, r.data?.name || 'Без названия', sub, st, r.status === 'rejected'));
       }
-      list.innerHTML = rows.join('') || '<p class="c-row c-row__sub">Карточек пока нет. Нажмите «Новая карточка» — площадка или подрядчик.</p>';
+      list.innerHTML = rows.join('') || '<p class="c-row c-row__sub">Карточек пока нет. <a class="c-link" href="/profi/moi/novaya/">Завести карточку</a> — площадки или подрядчика</p>';
       root.querySelector<HTMLElement>('[data-add]')!.hidden = cards.items.length + revs.items.length >= MAX_CARDS;
     } catch (err) {
       list.innerHTML = '';
-      error.textContent = (err as Error).message;
+      error.querySelector('[data-error-text]')!.textContent = `Карточки не загрузились. ${errText(err)}`;
       error.hidden = false;
     }
   }
+
+  if (requireSession('vendor')) load();
 </script>

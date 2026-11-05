@@ -4,7 +4,8 @@
 // - [data-filter-tab="<id>"][data-value] — вкладки-фильтры по tr[data-tab];
 // - .a-check в строках + [data-bulk="<id>"] — выбор и тёмная панель действий;
 // - tr[data-href] — вся строка ведёт на экран объекта.
-// ПРОТОТИП: всё на клиенте; вживую сортировка и фильтры — запросом к базе.
+// Всё на клиенте. Строки, вставленные позже (из базы), — событие
+// `atable:refresh` на таблице пересчитывает вкладки и пустое состояние.
 
 export function bindAdminTables(): void {
   document.querySelectorAll<HTMLTableElement>('table[data-atable]').forEach((table) => {
@@ -26,7 +27,8 @@ export function bindAdminTables(): void {
         r.hidden = !(okTab && okText);
       }
       const empty = document.querySelector<HTMLElement>(`[data-empty="${id}"]`);
-      if (empty) empty.hidden = rows().some((r) => !r.hidden);
+      // data-pending — строки ещё грузятся из базы, «пусто» не показываем
+      if (empty) empty.hidden = table.hasAttribute('data-pending') || rows().some((r) => !r.hidden);
     };
 
     document.querySelectorAll<HTMLInputElement>(`[data-filter-search="${id}"]`).forEach((inp) =>
@@ -101,6 +103,9 @@ export function bindAdminTables(): void {
       }),
     );
     bulk?.querySelector('[data-bulk-clear]')?.addEventListener('click', () => { boxes().forEach((b) => (b.checked = false)); sync(); });
+
+    // строки из базы приходят после привязки — экран зовёт пересчёт
+    table.addEventListener('atable:refresh', apply);
 
     // вся строка — переход
     body.addEventListener('click', (e) => {

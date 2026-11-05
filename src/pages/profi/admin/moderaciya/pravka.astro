@@ -3,8 +3,9 @@
 // Поля «было → стало», фото черновика (закрыты, открываются токеном
 // модератора), одобрить / вернуть с причиной. Одобрение переносит
 // правку в карточку одной транзакцией (хук moderateRevision); на сайт
-// карточка выходит со следующей выкладкой. Полный экран разбора
-// по словам — /profi/admin/moderaciya/<demo>/, он ляжет сюда же.
+// карточка выходит со следующей выкладкой. Решение — с «Отменить» на
+// 6 секунд (lib/cab-ui.ts → later): экран меняется сразу, запрос уходит потом.
+// Сюда ведут и «Заявки» (новая карточка), и «Модерация» (правка).
 import AdminShell from '../../../../components/admin/AdminShell.astro';
 import AdminIcon from '../../../../components/admin/AdminIcon.astro';
 import { SPECIALIST_CATEGORIES, FILTERS_BY_CATEGORY } from '../../../../data/specialists';
@@ -17,8 +18,8 @@ const QUESTIONS = Object.fromEntries(
 ---
 
 <AdminShell title="Разбор правки" section="moderation">
+  <a class="a-back" href="/profi/admin/moderaciya/" data-pr-back><AdminIcon name="back" /><span data-pr-back-label>Модерация</span></a>
   <div class="a-title">
-    <a class="a-btn a-btn--soft" href="/profi/admin/moderaciya/"><AdminIcon name="back" /> Модерация</a>
     <h1 class="a-h1" data-pr-title>Правка</h1>
     <p class="a-lead" data-pr-lead></p>
   </div>
@@ -27,10 +28,10 @@ const QUESTIONS = Object.fromEntries(
     <div class="pr__main">
       <section class="a-card">
         <h2 class="a-h2">Что прислали</h2>
-        <dl class="pr__fields" data-pr-fields><dd class="a-sub">Загружаем…</dd></dl>
+        <dl class="pr__fields" data-pr-fields aria-busy="true"><dd class="sk-head"><span class="sk sk--line sk--short"></span><span class="sk sk--line"></span><span class="sk sk--line sk--short"></span><span class="sk sk--line"></span><span class="sk sk--line" style="width:80%"></span></dd></dl>
       </section>
       <section class="a-card">
-        <h2 class="a-h2">Фото · <span data-pr-photo-n></span></h2>
+        <h2 class="a-h2">Фото <span class="pr__n" data-pr-photo-n></span></h2>
         <ul class="pr__photos" data-pr-photos></ul>
       </section>
     </div>
@@ -38,7 +39,8 @@ const QUESTIONS = Object.fromEntries(
       <p class="pr__state" data-pr-state></p>
       <div class="pr__acts" data-pr-acts hidden>
         <button class="a-btn a-btn--primary a-btn--lg a-btn--block" type="button" data-pr-approve>Одобрить</button>
-        <textarea class="a-input pr__reason" rows="4" placeholder="Что исправить — уйдёт подрядчику" data-pr-reason></textarea>
+        <label class="pr__label" for="pr-reason">Что исправить</label>
+        <textarea class="a-input pr__reason" id="pr-reason" rows="4" placeholder="Что не так и что сделать: на двух кадрах чужой логотип — уберите их" data-pr-reason></textarea>
         <button class="a-btn a-btn--lg a-btn--block" type="button" data-pr-reject>Вернуть с причиной</button>
       </div>
       <p class="pr__error" data-pr-error hidden></p>
@@ -59,19 +61,23 @@ const QUESTIONS = Object.fromEntries(
   .pr__side { display: grid; gap: var(--s-3); align-content: start; }
   .pr__acts { display: grid; gap: var(--s-3); }
   .pr__acts[hidden], .pr__error[hidden] { display: none; }
-  .pr__reason { resize: vertical; min-height: 96px; height: auto; padding-block: var(--s-2); }
+  .pr__label { font-weight: 500; margin-bottom: calc(-1 * var(--s-2)); }
+  .pr__n { font-weight: var(--w-body); }
+  .pr__reason { width: 100%; resize: vertical; min-height: 96px; height: auto; padding-block: var(--s-2); }
   .pr__error { color: var(--st-bad-text); font-size: var(--fs-small); white-space: pre-line; }
 </style>
 
 <script>
-  import { api, esc, fileToken, fileUrl, requireSession, REV_STATUS } from '../../../../lib/cabinet-api';
+  import { api, esc, fileToken, fileUrl, requireSession, REV_STATUS, errText } from '../../../../lib/cabinet-api';
   import { VENUE_QUESTIONS, VENUE_TERMS, priceFrom, rub } from '../../../../lib/cabinet-form';
+  import { later } from '../../../../lib/cab-ui';
 
   const LABELS: [string, string][] = [
-    ['name', 'Название'], ['tagline', 'Коротко о себе'], ['address', 'Адрес'], ['rentFrom', 'Аренда от, ₽'],
-    ['checkFrom', 'Средний чек от, ₽'], ['capacityBanquet', 'Гостей до'], ['about', 'О себе'], ['priceFrom', 'Цена от, ₽'], ['priceNote', 'Про цену'],
+    ['name', 'Название'], ['tagline', 'Коротко о себе'], ['address', 'Адрес'], ['rentFrom', 'Аренда от'],
+    ['checkFrom', 'Средний чек от'], ['capacityBanquet', 'Гостей до'], ['about', 'О себе'], ['priceFrom', 'Цена от'], ['priceNote', 'Цена указана за'],
   ];
   /** ответ на вопрос словами: значения фильтра → подписи вариантов */
+  const MONEY_KEYS = ['rentFrom', 'checkFrom', 'priceFrom'];
   const answer = (qs: any[], key: string, v: unknown) => {
     const q = qs.find((x) => x.key === key);
     const vals = ([] as unknown[]).concat(v ?? []).map(String).filter(Boolean);
@@ -103,13 +109,20 @@ const QUESTIONS = Object.fromEntries(
       const d = rev.data ?? {};
       const role = rev.kind === 'venue' ? 'Площадка' : roles[rev.categorySlug] ?? rev.categorySlug;
       $('[data-pr-title]').textContent = d.name || 'Без названия';
-      $('[data-pr-lead]').textContent = `${role} · ${cardId ? 'правка опубликованной' : 'новая карточка'} · прислал ${rev.expand?.owner?.name || 'без имени'} · адрес /${rev.slug}/`;
+      if (!cardId) {
+        $<HTMLAnchorElement>('[data-pr-back]').href = '/profi/admin/zayavki/';
+        $('[data-pr-back-label]').textContent = 'Заявки';
+      }
+      // без точек-разделителей (Никита 05.11): что это — первой строкой, кто прислал — второй
+      $('[data-pr-lead]').innerHTML = `${esc(role)}, ${cardId ? 'правка опубликованной карточки' : 'новая карточка'}<br>Прислал(а): ${esc(rev.expand?.owner?.name || rev.expand?.owner?.email || 'без имени')}`;
 
       const rows = LABELS.filter(([k]) => (d[k] ?? '') !== '' || (was && (was[k] ?? '') !== '')).map(([k, label]) => {
         const now = String(d[k] ?? '');
         const before = was ? String(was[k] ?? '') : null;
         const changed = before !== null && before !== now;
-        return `<dt>${label}</dt><dd>${changed ? `<span class="pr__was">${esc(before) || 'пусто'}</span><span class="pr__now">${esc(now) || 'пусто'}</span>` : esc(now) || 'пусто'}</dd>`;
+        // суммы — с разрядами и ₽ (правило 24)
+        const fmt = (v: string) => (MONEY_KEYS.includes(k) && Number(v) > 0 ? rub(Number(v)) : esc(v));
+        return `<dt>${label}</dt><dd>${changed ? `<span class="pr__was">${fmt(before!) || 'пусто'}</span><span class="pr__now">${fmt(now) || 'пусто'}</span>` : fmt(now) || 'пусто'}</dd>`;
       });
       // текст разделами — как написал подрядчик
       for (const sec of d.sections ?? []) {
@@ -118,7 +131,7 @@ const QUESTIONS = Object.fromEntries(
       }
       const qs = rev.kind === 'venue' ? VENUE_QUESTIONS : JSON.parse(root.dataset.questions!)[rev.categorySlug] ?? [];
       const answered = qs.filter((q: any) => answer(qs, q.key, d.filters?.[q.key]));
-      if (qs.length) rows.push(`<dt>Вопросы · ${answered.length} из ${qs.length}</dt><dd>${answered.map((q: any) => `${esc(q.label)}: <b>${esc(answer(qs, q.key, d.filters[q.key]))}</b>`).join('<br>') || 'пусто'}</dd>`);
+      if (qs.length) rows.push(`<dt>Вопросы: ${answered.length} из ${qs.length}</dt><dd>${answered.map((q: any) => `${esc(q.label)}: <b>${esc(answer(qs, q.key, d.filters[q.key]))}</b>`).join('<br>') || 'пусто'}</dd>`);
       const tariffs = (d.tariffs ?? []).filter((t: any) => t?.name || t?.price);
       if (tariffs.length) {
         const p = priceFrom(d);
@@ -158,23 +171,38 @@ const QUESTIONS = Object.fromEntries(
       $('[data-pr-acts]').hidden = rev.status !== 'review';
     }
 
-    async function act(body: Record<string, string>) {
+    // Решение видно сразу, в базу уходит через 6 секунд — успеваете «Отменить»
+    // (как отмена отправки в почте). Подрядчику уведомление уходит из хука
+    // только после записи — отменённое решение до него не доходит.
+    function act(body: Record<string, string>, text: string) {
       error.hidden = true;
-      try {
-        await api('moderator', 'PATCH', `/api/collections/revisions/records/${rev.id}`, body);
-        await render();
-      } catch (err) {
-        fail((err as Error).message);
-      }
+      const acts = $('[data-pr-acts]');
+      const state = $('[data-pr-state]');
+      const before = state.innerHTML;
+      const st = REV_STATUS[body.status];
+      acts.hidden = true;
+      state.innerHTML = `<span class="status ${st.cls}">${st.label}</span>`;
+      later({
+        text,
+        undo: () => { state.innerHTML = before; acts.hidden = false; },
+        run: async () => {
+          try {
+            await api('moderator', 'PATCH', `/api/collections/revisions/records/${rev.id}`, body, { keepalive: true });
+          } catch (err) {
+            fail(errText(err));
+          }
+          try { await render(); } catch {}
+        },
+      });
     }
 
-    $('[data-pr-approve]').addEventListener('click', () => act({ status: 'approved' }));
+    $('[data-pr-approve]').addEventListener('click', () => act({ status: 'approved' }, 'Одобрено'));
     $('[data-pr-reject]').addEventListener('click', () => {
       const reason = $<HTMLTextAreaElement>('[data-pr-reason]').value.trim();
-      if (!reason) return fail('Напишите причину — без неё подрядчик не поймёт, что исправить.');
-      act({ status: 'rejected', rejectReason: reason });
+      if (!reason) return fail('Напишите, что исправить — без этого подрядчик не поймёт, что делать');
+      act({ status: 'rejected', rejectReason: reason }, 'Вернули с причиной');
     });
 
-    try { await render(); } catch (err) { fail((err as Error).message); }
+    try { await render(); } catch (err) { fail(errText(err)); }
   });
 </script>

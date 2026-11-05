@@ -92,7 +92,9 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
 .a-field__input:focus-visible { outline: 2px solid var(--adm-primary); outline-offset: -1px; border-color: transparent; }
 .a-field__input[aria-invalid="true"] { border-color: var(--st-bad-text); }
 .a-login__error { color: var(--st-bad-text); font-size: var(--adm-fs); line-height: var(--adm-lh); }
-.a-login__error[hidden] { display: none; }
+/* ошибки входа — облачком .tip (base.css, lib/form-check.ts), форма не прыгает */
+.fieldbox { position: relative; display: block; min-width: 0; }
+.form-line-hidden { display: none !important; }
 .a-login__note { font-size: var(--adm-fs-sm); line-height: 16px; color: var(--adm-text-2); }
 /* Главная кнопка экрана прибита к низу телефона (Никита, 27.10) — приём
    сайта (StickyCta) и кабинета (.c-bar): капсула на растворении в цвет поля,
@@ -144,7 +146,7 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
 
 /* ---------- сводка: действия (Никита, 27.10) — «Проверить 3 анкеты · срок
    24 ч». Число внутри фразы: строки одной высоты, ничего не прыгает. ---------- */
-.a-acts { display: grid; gap: var(--s-2); }
+.a-acts { display: grid; gap: var(--cab-gap); } /* один зазор между всеми плашками экрана (Никита 05.11) */
 @media (min-width: 768px) { .a-acts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .a-act { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; gap: 4px var(--s-3); min-height: 76px; padding: 14px 18px; border-radius: var(--adm-radius); background: var(--adm-card); text-decoration: none; color: inherit; }
 /* значок без подложки — просто знак (27.10) */
@@ -152,52 +154,32 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
 .a-act__ic svg { width: 24px !important; height: 24px !important; }
 .a-act__text { font-size: 17px; line-height: 1.2; font-weight: 600; }
 .a-act__note { grid-column: 2; font-size: var(--adm-fs); color: var(--adm-text-2); justify-self: start; }
-.a-act__note.a-pill { color: var(--st-bad-fg); }
 .a-act__go { grid-row: 1 / span 2; grid-column: 3; width: 18px !important; height: 18px !important; color: var(--adm-text-2); }
 @media (hover: hover) { .a-act:hover { background: var(--adm-hover); } }
 
-/* ---------- задача строкой (AdminTask): обложка, имя крупно, задача
-   плашкой, заполненность цветом, срок справа с песочными часами ---------- */
+/* ---------- задача строкой (.a-task, lib/admin-live.ts → taskRow) ----------
+   05.11.2026 (Никита: «две плашки спорят, на разных уровнях, с отступом»):
+   одна строка — один смысл справа. Обложка | имя и под ним текстом срок
+   и владелец | ОДНА плашка «что сделать». Всё по центру строки. Срок —
+   текстом (красным, если горит), а не второй плашкой. */
 .a-tasks { display: grid; }
-/* телефон: обложка | имя, задача, срок — столбиком; с 640px срок колонкой справа */
-.a-task { display: grid; grid-template-columns: 48px minmax(0, 1fr); align-items: center; gap: var(--s-1) var(--s-3); padding: 12px var(--adm-pad); border-top: 1px solid var(--adm-line); text-decoration: none; color: inherit; }
+.a-task { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; align-items: center; gap: var(--s-3); padding: 12px var(--adm-pad); border-top: 1px solid var(--adm-line); text-decoration: none; color: inherit; }
 @media (hover: hover) {
   .a-task:hover { background: var(--adm-hover); }
-  /* на подсвеченной строке серая плашка задачи растворялась — белой */
-  .a-task:hover .a-pill--none { background: var(--adm-card); }
+  .a-task:hover .status:not([class*='status--']) { background: var(--adm-card); }
 }
 .a-task__cover { width: 48px; height: 60px; border-radius: 10px; object-fit: cover; display: block; background: var(--adm-bg); }
-.a-task__cover--empty { display: grid; place-items: center; font-size: 18px; font-weight: 600; color: var(--adm-text-2); }
-.a-task__body { display: grid; gap: 6px; min-width: 0; }
+.a-task__cover--empty { display: grid; place-items: center; font-size: 18px; font-weight: 600; }
+.a-task__body { display: grid; gap: 2px; min-width: 0; }
 .a-task__name { font-size: 16px; line-height: 22px; font-weight: 600; overflow-wrap: anywhere; }
-/* задача и процент — всегда одной строкой, не третьим слоем */
-.a-task__meta { display: flex; flex-wrap: nowrap; align-items: center; gap: var(--s-2); min-width: 0; }
-.a-task__meta .a-pill { flex: none; }
-.a-task__fill { font-size: var(--adm-fs-sm); color: var(--adm-text-2); white-space: nowrap; }
-.a-task__cover { grid-row: span 2; }
-.a-task__when { grid-column: 2; justify-self: start; }
-@media (min-width: 640px) {
-  .a-task { grid-template-columns: 48px minmax(0, 1fr) auto; }
-  .a-task__cover { grid-row: auto; }
-  .a-task__when { grid-column: 3; justify-self: end; }
-}
-.a-task__when { display: inline-flex; align-items: center; gap: 6px; font-size: var(--adm-fs-sm); color: var(--adm-text-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.a-task__when svg { width: 16px !important; height: 16px !important; flex: none; }
+.a-task__sub { font-size: var(--adm-fs-sm); line-height: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.a-task__urgent { color: var(--st-bad-text); font-weight: 600; }
+.a-task > .status { justify-self: end; }
+.a-task__fill { font-size: var(--adm-fs-sm); white-space: nowrap; }
 /* у задачи в таблице (заявки, модерация) ячейка без своих полей */
 .a-table td.a-task-cell { padding: 0; }
 .a-task-cell .a-task { border-top: 0; }
 
-/* плашка смысла: голубой — проверить, жёлтый — связаться, красный — срок / вернули */
-.a-pill { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 8px; font-size: var(--adm-fs-sm); font-weight: 600; white-space: nowrap; background: var(--adm-bg); color: var(--adm-text); }
-.a-pill--info { background: var(--st-info); color: var(--st-info-ink); }
-.a-pill--warn { background: var(--st-warn); color: var(--st-warn-ink); }
-.a-pill--bad { background: var(--st-bad); color: var(--st-bad-fg); }
-.a-pill--ok { background: var(--st-ok); color: var(--st-ok-ink); }
-/* задачи: светлые тона, чтобы не кричали — проверить / не закончил */
-.a-pill--check { background: color-mix(in srgb, var(--st-ok) 32%, var(--adm-card)); }
-.a-pill--wait { background: color-mix(in srgb, var(--st-warn) 45%, var(--adm-card)); }
-.a-pill__n { margin-left: 4px; font-weight: 500; }
-.a-task__when.a-pill { height: 28px; color: var(--st-bad-fg); }
 
 /* общая строка без плашки: сколько всего на сайте */
 .a-total { color: var(--adm-text-2); padding-inline: 4px; }
@@ -242,16 +224,17 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
   gap: 8px;
   height: 36px;
   padding: 0 14px;
-  border-radius: var(--adm-radius-btn);
-  background: var(--adm-card);
-  border: 1px solid var(--adm-line);
+  /* одна форма кнопки на весь кабинет и админку — капсула, без обводки (Никита, 05.11) */
+  border-radius: 999px;
+  background: var(--adm-bg);
+  border: 0;
   color: var(--adm-text);
   font-weight: 500;
   text-decoration: none;
   white-space: nowrap;
 }
 @media (hover: hover) { .a-btn:hover { background: var(--adm-hover); } }
-.a-btn--primary { background: var(--adm-primary); border-color: var(--adm-primary); color: var(--adm-on-dark); border-radius: 999px; }
+.a-btn--primary { background: var(--adm-primary); color: var(--adm-on-dark); }
 @media (hover: hover) { .a-btn--primary:hover { background: var(--adm-primary-hover); } }
 .a-btn--soft { background: var(--adm-bg); border-color: transparent; }
 .a-btn--sm { height: 30px; padding: 0 10px; font-size: 13px; }
@@ -322,12 +305,6 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
 @media (hover: hover) { a.a-kpi:hover { filter: brightness(0.97); } }
 
 /* Точка состояния (Директ «▶ Идут показы»): цвет — смысл */
-.a-dot { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
-.a-dot::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--st-muted-dot); flex: none; }
-.a-dot--ok::before { background: var(--st-ok-dot); }
-.a-dot--info::before { background: var(--adm-primary); }
-.a-dot--warn::before { background: var(--st-warn-dot); }
-.a-dot--bad::before { background: var(--st-bad-dot); }
 
 /* Время ожидания — с часами */
 .a-time { display: inline-flex; align-items: center; gap: 6px; font-weight: 500; white-space: nowrap; font-variant-numeric: tabular-nums; }
@@ -341,23 +318,6 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
 .a-changes b { font-weight: 400; color: var(--adm-text-2); white-space: nowrap; }
 
 /* Чипы — короткие факты плашками (что поменялось, что заполнено) */
-.a-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.a-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  min-height: 26px;
-  padding: 2px 9px;
-  border-radius: 7px;
-  background: var(--adm-bg);
-  font-size: 13px;
-  line-height: 18px;
-  white-space: nowrap;
-}
-.a-chip b { font-weight: 400; color: var(--adm-text-2); }
-.a-chip--ok { background: var(--st-ok-bg); color: var(--st-ok-strong); }
-.a-chip--bad { background: var(--st-bad-bg); color: var(--st-bad-strong); }
-.a-chip--ok b, .a-chip--bad b { color: inherit; }
 
 /* Да / нет в таблице: галочка зелёным, «нет» — красным */
 .a-yes { color: var(--st-ok-text); }
@@ -423,7 +383,7 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
   .a-table--cards td[data-l]::before { content: attr(data-l) ': '; color: var(--adm-text-2); }
   .a-table--cards td:empty { display: none; }
   .a-table--cards .a-total { display: none; }
-  /* строка-задача (AdminTask) сама держит поля — у таблицы свои не добавляем */
+  /* строка-задача (.a-task) сама держит поля — у таблицы свои не добавляем */
   .a-table--cards tr:has(> .a-task-cell) { padding: 0; }
   .a-table--cards td.a-task-cell { padding: 0 !important; }
 }
@@ -503,7 +463,7 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
    Телефон: шапки и полосы разделов нет — нижнее меню; плашки через
    --cab-gap от края и друг от друга, скругление --cab-sheet-radius,
    заголовок экрана — на фоне, в край текста плашек. ПК: шапка и левое меню. */
-.adm:not(.cab) .a-card { border-radius: var(--cab-sheet-radius); }
+.adm:not(.cab) .a-card { border-radius: var(--adm-radius); } /* 28 — вариант «Б», 05.11 */
 .adm:not(.cab) .adm-main { gap: var(--cab-gap); }
 .adm:not(.cab) .adm-main > .a-title, .adm:not(.cab) .adm-main > .a-h1, .adm:not(.cab) .adm-main > .a-lead { padding: var(--s-3) var(--s-4) var(--s-2); }
 @media (max-width: 1023px) {
@@ -514,10 +474,44 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
   .adm:not(.cab) .c-tabs { display: none; }
 }
 html:has(.adm), html:has(.adm) body { background: var(--adm-bg); }
-.a-logout { justify-self: center; padding: var(--s-3); color: var(--st-bad-text); font-weight: 500; text-decoration: none; }
+/* «Выйти из админки» — светло-красной плашкой-строкой, как «Выйти из кабинета» (Никита 05.11) */
+.a-logout { justify-self: stretch; display: flex; align-items: center; min-height: 52px; padding: 0 var(--s-4); border-radius: var(--adm-radius); background: var(--st-bad-bg); color: var(--st-bad-strong); font-weight: 500; text-decoration: none; }
+.a-logout[hidden] { display: none; }
+@media (hover: hover) { .a-logout:hover { background: color-mix(in srgb, var(--st-bad-bg) 70%, var(--st-bad-dot)); } }
 .a-total { padding-inline: var(--s-4); }
 .a-cabrow { grid-template-columns: 48px minmax(0, 1fr) auto; }
 .a-cabrow__act { grid-row: 1 / span 2; grid-column: 3; align-self: center; }
 .a-link { border: 0; padding: 4px 0; background: none; font: inherit; font-weight: 500; color: var(--adm-link); cursor: pointer; text-align: right; }
 .a-link--danger { color: var(--st-bad-text); }
 .a-cabrow .a-task__fill { white-space: normal; }
+
+/* ---------- 05.11.2026, сверка cabinet-ui ---------- */
+/* «Назад» — тонкая стрелка с названием раздела отдельной строкой над
+   заголовком, как .c-back в кабинете; не плашка-кнопка (было a-btn--soft).
+   Своей строкой ВНЕ .a-title и шириной по тексту (Никита, 05.11: «почему
+   растягивается, а не по тексту») */
+.adm:not(.cab) .adm-main > .a-back { margin: var(--s-2) 0 calc(-1 * var(--s-3)) calc(var(--s-4) - 6px); }
+.a-back { width: fit-content; display: flex; align-items: center; gap: 4px; min-height: 44px; margin-left: -6px; color: var(--adm-text); text-decoration: none; font-weight: 500; }
+.a-back svg { width: 22px; height: 22px; flex: none; }
+@media (hover: hover) { .a-back:hover { color: var(--adm-primary-hover); } }
+/* ошибка загрузки: что случилось + «Повторить» (правило 4 скилла) */
+.a-fail { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-3); padding: var(--s-5) var(--adm-pad); color: var(--st-bad-strong); font-weight: 600; line-height: 1.25; }
+/* пустое состояние: по левому краю (цвет подписей — спорный вопрос, пока не трогаем) */
+.a-empty { text-align: left; }
+.a-empty--card { padding: var(--s-4) 0; }
+/* счётчик меню из базы: пока не пришёл — не виден */
+[data-nav-n][hidden] { display: none !important; }
+
+.a-total__go { justify-self: start; margin-inline: var(--s-4); background: var(--adm-card); }
+
+/* кружок учётки в шапке «Сводки» (телефон; на ПК учётка и «Выйти» — в верхней шапке) */
+.a-title--acc { align-items: center; justify-content: space-between; flex-wrap: nowrap; }
+.a-acc { position: relative; width: 36px; height: 36px; flex: none; display: grid; place-items: center; border-radius: 50%; background: var(--adm-line); color: var(--adm-text); font-weight: 600; font-size: 15px; }
+.a-acc::before { content: ''; position: absolute; inset: -4px; }
+.a-acc--lg { width: 56px; height: 56px; font-size: 22px; justify-self: center; margin-bottom: 4px; }
+.a-acc[hidden] { display: none; }
+@media (min-width: 1024px) { .a-title--acc .a-acc { display: none; } }
+.a-btn--logout { background: var(--st-bad-bg); color: var(--st-bad-strong); }
+
+/* срочный срок в карточке действия — красным текстом, как в строках заявок, не капсулой: высоты карточек одинаковые */
+.a-act__note--urgent { color: var(--st-bad-strong); font-weight: 600; }

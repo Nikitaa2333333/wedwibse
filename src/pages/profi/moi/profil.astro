@@ -1,6 +1,7 @@
 ---
 // ПРОФИЛЬ — раздел нижнего меню кабинета (Никита, 02.11). Учётка:
-// вход и уведомления о заявках одной группой, документы, выход.
+// вход и уведомления о заявках одной группой, документы, удаление
+// карточек (05.11: перенесено из анкеты, чтобы не нажать случайно), выход.
 // Никита, 02.11: «Способы входа» и «Куда присылать заявки» дублировали друг
 // друга. Теперь один ряд на канал: вошёл через Telegram или MAX — заявки
 // туда и приходят (по умолчанию включено, выключается переключателем);
@@ -19,9 +20,12 @@ import maxMark from '../../../assets/profi/max-mark.webp';
       <h1 class="a-h1" data-name>Профиль</h1>
     </div>
     <div class="c-sheet-area">
+      {/* Вход и уведомления — ОДНА группа (Никита 05.11): канал один и тот же —
+          вошли через MAX, туда и приходят заявки (так включено по умолчанию,
+          выключается тумблером). Колокольчик качнётся при открытии экрана. */}
       <section class="c-cat" data-notify>
-        <h2 class="c-cat__h">Вход и уведомления</h2>
-        <p class="c-cat__lead">Куда приходят заявки: в мессенджер, через который вы входите, и на почту.</p>
+        <h2 class="c-cat__h c-cat__h--ic"><span class="c-cat__ic c-bell"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5a6.5 6.5 0 0 0-6.5 6.5v4.6l-1.6 2.6a.9.9 0 0 0 .8 1.3h14.6a.9.9 0 0 0 .8-1.3l-1.6-2.6V9A6.5 6.5 0 0 0 12 2.5Zm-2.6 16.5a2.7 2.7 0 0 0 5.2 0Z"/></svg></span>Вход и уведомления</h2>
+        <p class="c-cat__lead">Подключённый вход — это и канал для заявок. Переключателем решаете, присылать ли туда заявки</p>
         <div class="c-rows">
           <div class="c-row" data-ch="telegram">
             <span class="c-row__ic c-row__ic--tg"><AdminIcon name="tgLogo" /></span>
@@ -46,10 +50,15 @@ import maxMark from '../../../assets/profi/max-mark.webp';
       </section>
       <section class="c-cat">
         <h2 class="c-cat__h">Документы</h2>
-        <div class="c-rows" data-docs></div>
+        <div class="c-rows" data-docs><div class="sk-row" style="grid-template-columns:minmax(0,1fr)"><span class="sk sk--line"></span></div></div>
+      </section>
+      <section class="c-cat c-cat--far" data-del-box hidden>
+        <h2 class="c-cat__h">Удалить карточку</h2>
+        <p class="c-cat__lead">Только новую, ещё не опубликованную. Опубликованную снимает модератор</p>
+        <div class="c-rows" data-del-list></div>
       </section>
       <p class="c-error" data-error hidden></p>
-      <a class="c-link c-link--danger" href="#" data-cab-logout>Выйти из кабинета</a>
+      <section class="c-cat c-cat--far"><a class="c-row c-row--action" href="#" data-cab-logout><span class="c-row__title">Выйти из кабинета</span></a></section>
     </div>
   </div>
 </CabinetShell>
@@ -57,7 +66,9 @@ import maxMark from '../../../assets/profi/max-mark.webp';
 
 
 <script>
-  import { api, esc, requireSession, saveSession } from '../../../lib/cabinet-api';
+  import { api, esc, requireSession, saveSession, errText } from '../../../lib/cabinet-api';
+  import { confirmDelete } from '../../../lib/cabinet-delete';
+  import { fieldError, clearFieldError } from '../../../lib/form-check';
   import { ADMIN_ICONS } from '../../../lib/admin-icons';
   const docIcon = `<svg viewBox="0 0 24 24" aria-hidden="true">${ADMIN_ICONS.text}</svg>`;
 
@@ -85,19 +96,22 @@ import maxMark from '../../../assets/profi/max-mark.webp';
         const ctl = row.querySelector<HTMLElement>('[data-ctl]')!;
         const sub = row.querySelector<HTMLElement>('[data-sub]');
         if (!linked[ch]) {
-          ctl.innerHTML = '<span class="c-badge">не подключён</span>';
-          if (sub) sub.textContent = `войдите через ${NAME[ch]} — заявки будут приходить сюда`;
+          // вход через этот мессенджер не подключён — капсула «Подключить»
+          ctl.innerHTML = `<a class="c-chipbtn" href="/profi/vhod/?via=${ch}">Подключить</a>`;
+          if (sub) sub.textContent = 'вход не подключён';
           return;
         }
         ctl.innerHTML = `<button class="c-switch" type="button" role="switch" aria-checked="${!!n[ch]}" aria-label="Присылать заявки в ${NAME[ch]}" ${ch === 'email' && !n.emailTo ? 'disabled' : ''}></button>`;
-        if (sub) sub.textContent = n[ch] ? 'вход подключён · заявки приходят сюда' : 'вход подключён · заявки сюда не приходят';
+        // подпись постоянная — при переключении строка не меняет высоту (Никита 05.11);
+        // присылать ли заявки, говорит сам тумблер
+        if (sub) sub.textContent = 'вход подключён';
       });
       const saveNotify = async () => {
         err.hidden = true;
         try {
           me.notify = (await api('vendor', 'PATCH', `/api/collections/vendors/records/${me.id}`, { notify: n })).notify;
           Object.assign(n, me.notify);
-        } catch (x) { err.textContent = (x as Error).message; err.hidden = false; }
+        } catch (x) { err.textContent = errText(x); err.hidden = false; }
         paint();
       };
       box.addEventListener('click', (e) => {
@@ -109,12 +123,19 @@ import maxMark from '../../../assets/profi/max-mark.webp';
         saveNotify();
       });
       let t = 0;
+      // почта: формат проверяем при уходе из поля (правило 18), ошибка — облачком;
+      // с ошибкой в адресе не сохраняем
+      const emailOk = () => !emailTo.value.trim() || emailTo.checkValidity();
       emailTo.addEventListener('input', () => {
+        clearFieldError(emailTo);
         n.emailTo = emailTo.value.trim();
         if (!n.emailTo) n.email = false;
         paint();
         clearTimeout(t);
-        t = window.setTimeout(saveNotify, 900);
+        if (emailOk()) t = window.setTimeout(saveNotify, 900);
+      });
+      emailTo.addEventListener('blur', () => {
+        if (!emailOk()) fieldError(emailTo, 'В адресе ошибка, пример: name@mail.ru', emailTo.closest<HTMLElement>('.c-row') ?? undefined);
       });
       paint();
       const docs = await api(null, 'GET', `/api/collections/legal_docs/records?sort=-created&perPage=50&filter=${encodeURIComponent('kind = "vendor-offer" || kind = "vendor-pdn"')}`);
@@ -126,8 +147,30 @@ import maxMark from '../../../assets/profi/max-mark.webp';
           <div class="c-details__text">${d.text}</div>
         </details>`).join('') || '<p class="c-row c-row__sub">пусто</p>';
     } catch (err) {
-      error.textContent = (err as Error).message;
+      error.textContent = errText(err);
       error.hidden = false;
+    }
+    loadDeletable();
+  }
+
+  // карточки, которые можно удалить: свои новые, ещё не опубликованные
+  async function loadDeletable() {
+    const box = root.querySelector<HTMLElement>('[data-del-box]')!;
+    const list = box.querySelector<HTMLElement>('[data-del-list]')!;
+    try {
+      const res = await api('vendor', 'GET', `/api/collections/revisions/records?perPage=50&sort=-updated&filter=${encodeURIComponent('venue = "" && specialist = "" && status != "approved"')}`);
+      box.hidden = !res.items.length;
+      list.innerHTML = res.items.map((r: any, i: number) => `
+        <div class="c-row">
+          <span class="c-row__body"><span class="c-row__title">${esc(r.data?.name || 'Без названия')}</span><span class="c-row__sub">${(r.photos ?? []).length} фото</span></span>
+          <button class="c-chipbtn c-chipbtn--danger" type="button" data-del="${i}">Удалить</button>
+        </div>`).join('');
+      list.onclick = (e) => {
+        const b = (e.target as HTMLElement).closest<HTMLElement>('[data-del]');
+        if (b) confirmDelete(res.items[Number(b.dataset.del)], loadDeletable);
+      };
+    } catch {
+      box.hidden = true;
     }
   }
 </script>

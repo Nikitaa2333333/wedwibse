@@ -58,7 +58,7 @@ const go = '<svg class="c-row__go" viewBox="0 0 24 24" aria-hidden="true"><path 
 </style>
 
 <script>
-  import { api, requireSession } from '../../../lib/cabinet-api';
+  import { api, requireSession, errText } from '../../../lib/cabinet-api';
 
   const s = requireSession('vendor');
   const root = document.querySelector<HTMLElement>('[data-new]')!;
@@ -68,14 +68,19 @@ const go = '<svg class="c-row__go" viewBox="0 0 24 24" aria-hidden="true"><path 
       if (!s) return;
       error.hidden = true;
       root.querySelectorAll<HTMLButtonElement>('[data-kind]').forEach((x) => (x.disabled = true));
+      // отклик на нажатие сразу: на медленной сети строка молчала (правило 5)
+      const title = b.querySelector<HTMLElement>('.c-row__title');
+      const was = title?.textContent ?? '';
+      if (title) title.textContent = 'Создаём…';
       try {
         const rev = await api('vendor', 'POST', '/api/collections/revisions/records', {
           owner: s.record.id, kind: b.dataset.kind, categorySlug: b.dataset.cat, status: 'draft', data: {},
         });
         location.href = `/profi/moi/kartochka/?id=${rev.id}`;
       } catch (err) {
-        error.textContent = (err as Error).message;
+        error.textContent = errText(err);
         error.hidden = false;
+        if (title) title.textContent = was;
         root.querySelectorAll<HTMLButtonElement>('[data-kind]').forEach((x) => (x.disabled = false));
       }
     }),
