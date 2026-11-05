@@ -62,8 +62,6 @@
 .c-form .a-field__input, .c-card .a-field__input { height: 32px; padding: 0; border-radius: 0; background: none; }
 .c-form textarea.a-field__input, .c-card textarea.a-field__input { height: auto; min-height: 120px; padding: 0; }
 .c-form .a-field__input:focus-visible, .c-card .a-field__input:focus-visible { outline: none; }
-/* фокус — без толстой чёрной рамки вокруг плашки (Никита 05.11, как у Apple): плашка чуть приподнимается мягкой тенью */
-.c-form > .a-field:focus-within, .c-form > .c-grid2 > .a-field:focus-within, .c-card:focus-within { box-shadow: var(--adm-shadow-tip); }
 .c-form .c-phone, .c-card .c-phone { height: 32px; background: none; border-radius: 0; }
 .c-form .c-phone:focus-within { outline: none; }
 .c-form .cc-toggle { padding-left: 0; }
@@ -330,8 +328,8 @@ select.a-field__input { appearance: none; background-image: var(--adm-chevron-do
 .c-pv-card__name { font-weight: var(--w-head-lg); font-size: var(--fs-body); line-height: var(--lh-caption); }
 .c-pv-card__tag { font-size: var(--fs-small); line-height: var(--lh-body); margin-top: calc(-1 * var(--s-2)); }
 .c-pv-card__price { font-size: var(--fs-small); font-weight: var(--w-head-lg); margin-top: calc(-1 * var(--s-2)); }
-.c-pv-story { gap: var(--s-6); }
-.c-pv-story section { display: grid; gap: var(--s-3); }
+.c-pv-story { gap: var(--section-gap); } /* site-preview */
+.c-pv-story section { display: grid; gap: var(--s-4); } /* site-preview: ритм StoryText — внутри --s-4, между разделами --section-gap */
 .c-pv-story h3 { font-family: var(--font-serif); font-size: clamp(26px, 6vw, 34px); font-weight: var(--w-head-lg); line-height: var(--lh-heading); } /* site-preview */
 .c-pv-story p { font-size: var(--fs-body); line-height: var(--lh-body); }
 .c-pv-story p.c-pv-lead { font-family: var(--font-serif); font-size: var(--fs-lead); line-height: var(--lh-heading); } /* site-preview */
@@ -395,7 +393,6 @@ select.a-field__input { appearance: none; background-image: var(--adm-chevron-do
 .c-tcard .c-tcard__price span { font-size: 16px; font-weight: 500; }
 .c-tcard__unit { flex: 1 1 140px; width: auto; margin-left: var(--s-2); font-size: var(--fs-small) !important; }
 .c-tcard__inc { resize: vertical; font-size: var(--fs-small); line-height: var(--lh-body); }
-.c-tcard:focus-within { box-shadow: var(--adm-shadow-tip); }
 .c-tcard .c-item__tools { margin-top: calc(-1 * var(--s-2)); }
 
 /* между плашками-полями в сетке (аренда / чек у площадки) — тот же шаг */
@@ -578,7 +575,10 @@ body:has(.c-bar .a-btn) .c-toast { bottom: calc(var(--cab-tabs-h) + env(safe-are
    свой цвет, до попытки отправить — янтарный, после — красный */
 /* подсказка «что сделать» — спокойный комментарий, не ошибка (Никита 05.11): без значка и без красного,
    янтарным текстом. Красным со значком — только замечание модератора (.c-tile__todo--remark) */
-.c-tile__todo { display: flex; align-items: flex-start; gap: 6px; font-size: var(--adm-fs); line-height: 1.3; font-weight: 500; color: var(--st-warn-strong); }
+/* 05.11 вечер: подсказка чёрным, а не янтарным; от данных отличает тонкий пустой кружок
+   перед ней — как невыполненное дело в Напоминаниях Apple (заполненный раздел — галочка справа) */
+.c-tile__todo { display: flex; align-items: flex-start; gap: 6px; font-size: var(--adm-fs); line-height: 1.3; font-weight: 500; color: var(--adm-text); }
+.c-tile__todo:not(.c-tile__todo--remark)::before { content: ''; flex: none; width: 12px; height: 12px; margin-top: 3px; border-radius: 50%; border: 1.5px solid var(--adm-line-strong); }
 .c-tile__todo svg { width: 16px; height: 16px; flex: none; margin-top: 1px; }
 .c-tile__todo--remark { color: var(--st-bad-strong); }
 /* превью в прибитой панели — наша капсула-ссылка (без тени: тень у кнопок не делаем), по центру под главной кнопкой */
@@ -661,7 +661,6 @@ body:has(.c-bar .a-btn) .c-toast { bottom: calc(var(--cab-tabs-h) + env(safe-are
 .c-notes:has(.c-notes__ed.is-empty) .c-notes__ph { display: block; }
 /* нажали в поле — пример сразу уходит, остаётся курсор в пустом заголовке (Никита 05.11) */
 .c-notes:focus-within .c-notes__ph { display: none !important; }
-.c-notes:focus-within { box-shadow: var(--adm-shadow-tip); }
 
 /* капсула над клавиатурой */
 .c-notes-bar { position: fixed; z-index: 30; left: 8px; right: 8px; bottom: calc(var(--kb, 0px) + 8px); display: none; flex-direction: column; align-items: stretch; gap: 8px; pointer-events: none; }
@@ -701,3 +700,11 @@ body:has(.c-bar .a-btn) .c-toast { bottom: calc(var(--cab-tabs-h) + env(safe-are
 /* подсказка в окне Диска (не та ссылка, только ролики) — тёмным, не красным: это не ошибка (как у Apple) */
 .c-error.c-yd-note { color: var(--adm-text); }
 .c-yd-status { margin-top: var(--s-2); padding: 10px 14px; border-radius: 14px; background: var(--adm-bg); font-weight: 500; } /* ход забора — в окне над кадрами */
+/* капсула «Aa» — без тени, выделена цветом (Никита 05.11: «тень не хочу, инструмент
+   выделить»): тёмная, как наши кнопки, знаки белые; выбранное — белая капсула внутри */
+.c-notes-bar__main, .c-notes-bar__styles { background: var(--cab-ink); box-shadow: none; }
+.c-notes-bar button { color: var(--adm-on-dark); }
+.c-notes-bar__styles button { background: color-mix(in srgb, var(--adm-on-dark) 14%, transparent); }
+.c-notes-bar [aria-pressed="true"], .c-notes-bar [aria-expanded="true"] { background: var(--adm-on-dark); color: var(--cab-ink); }
+.c-notes-bar button:disabled { color: color-mix(in srgb, var(--adm-on-dark) 40%, transparent); }
+@media (hover: hover) { .c-notes-bar button:hover:not([aria-pressed="true"]):not([aria-expanded="true"]):not(:disabled) { background: color-mix(in srgb, var(--adm-on-dark) 18%, transparent); } }
