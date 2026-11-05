@@ -26,39 +26,56 @@ const { href = '/profi/moi/', label = 'Войти через' } = Astro.props;
 <p class="mx__error" role="alert" data-max-error hidden></p>
 
 <script>
-  import { MAX_BOT, prepareMaxLink, waitMaxSignIn } from '../../lib/max-login';
+  import { MAX_BOT, prepareMaxLink, waitMaxSignIn, pendingMax } from '../../lib/max-login';
   import { afterLogin } from '../../lib/tg-login';
   import { errText } from '../../lib/cabinet-api';
 
   if (MAX_BOT) {
-    document.querySelectorAll<HTMLAnchorElement>('[data-max-login]').forEach((btn) => {
-      const note = btn.parentElement!.querySelector<HTMLElement>('[data-max-note]')!;
-      const error = btn.parentElement!.querySelector<HTMLElement>('[data-max-error]')!;
-      const fail = (m: string) => { note.hidden = true; error.textContent = m; error.hidden = false; };
-      const current = prepareMaxLink(btn, fail);
-      let waiting = '';
-      btn.addEventListener('click', async (ev) => {
+    // одно ожидание на страницу, сколько бы кнопок MAX на ней ни стояло
+    let waiting = '';
+    const buttons = [...document.querySelectorAll<HTMLAnchorElement>('[data-max-login]')];
+    const parts = (btn: HTMLAnchorElement) => ({
+      note: btn.parentElement!.querySelector<HTMLElement>('[data-max-note]')!,
+      error: btn.parentElement!.querySelector<HTMLElement>('[data-max-error]')!,
+    });
+    const fail = (btn: HTMLAnchorElement, m: string) => {
+      const { note, error } = parts(btn);
+      note.hidden = true; error.textContent = m; error.hidden = false;
+    };
+    const wait = async (btn: HTMLAnchorElement, code: string, p: { invite?: string; next?: string }, at?: number) => {
+      if (waiting === code) return;
+      waiting = code;
+      const { note, error } = parts(btn);
+      error.hidden = true;
+      note.hidden = false;
+      try {
+        if ((await waitMaxSignIn(code, p, at)) === 'needs-accept') location.href = '/profi/usloviya/';
+        else afterLogin(p.next);
+      } catch (err) {
+        fail(btn, errText(err));
+      } finally {
+        waiting = '';
+      }
+    };
+    buttons.forEach((btn) => {
+      const current = prepareMaxLink(btn, (m) => fail(btn, m));
+      btn.addEventListener('click', (ev) => {
         const c = current();
         // кнопка за галочками согласия (регистрация) не живёт, пока они не стоят;
         // код ещё не пришёл — ссылка пока ведёт на заглушку, не пускаем
         if (btn.closest('[aria-disabled="true"]') || !c) { ev.preventDefault(); return; }
         // переход по ссылке (новая вкладка / приложение MAX) — браузер делает сам
-        if (waiting === c.code) return;
-        waiting = c.code;
-        error.hidden = true;
-        note.hidden = false;
-        try {
-          const q = new URLSearchParams(location.search);
-          const p = { invite: q.get('invite') || undefined, next: q.get('next') || undefined };
-          if ((await waitMaxSignIn(c.code, p)) === 'needs-accept') location.href = '/profi/usloviya/';
-          else afterLogin(p.next);
-        } catch (err) {
-          fail(errText(err));
-        } finally {
-          waiting = '';
-        }
+        const q = new URLSearchParams(location.search);
+        wait(btn, c.code, { invite: q.get('invite') || undefined, next: q.get('next') || undefined });
       });
     });
+    // ушли в MAX, а вкладка перезагрузилась или вернулась «назад» — ждём дальше
+    const resume = () => {
+      const w = pendingMax();
+      if (w && buttons[0]) wait(buttons[0], w.code, { invite: w.invite, next: w.next }, w.at);
+    };
+    resume();
+    window.addEventListener('pageshow', (e) => { if (e.persisted) resume(); });
   }
 </script>
 

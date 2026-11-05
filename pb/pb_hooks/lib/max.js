@@ -25,11 +25,20 @@ const TEXT_HELP = 'Это бот входа в кабинет подрядчик
 
 /** сообщение пользователю в диалог с ботом; отказ MAX только в лог */
 function send(userId, text) {
+  post(`user_id=${encodeURIComponent(userId)}`, userId, text);
+}
+
+/** сообщение в групповой чат, куда добавлен бот (чат модераторов, MAX_CHAT_ID) */
+function sendChat(chatId, text) {
+  post(`chat_id=${encodeURIComponent(chatId)}`, chatId, text);
+}
+
+function post(target, id, text) {
   const token = $os.getenv('MAX_BOT_TOKEN');
-  if (!token || !userId) return;
+  if (!token || !id) return;
   try {
     const res = $http.send({
-      url: `${API}/messages?user_id=${encodeURIComponent(userId)}`,
+      url: `${API}/messages?${target}`,
       method: 'POST',
       headers: { Authorization: token, 'Content-Type': 'application/json' },
       body: JSON.stringify({ text }),
@@ -103,11 +112,32 @@ function webhook(e) {
         e.app.save(login);
         send(id, TEXT_DONE);
       }
+    } else if (body.update_type === 'bot_stopped' || body.update_type === 'dialog_removed') {
+      // остановил или удалил бота — писать ему некуда: выключаем уведомления
+      // в MAX, профиль покажет «заявки сюда не приходят»; «Начать» снова — включит тумблер
+      const id = String((body.user && body.user.user_id) || '');
+      let v = null;
+      try { v = e.app.findFirstRecordByFilter('vendors', 'maxId = {:id}', { id }); } catch (_) {}
+      if (v) {
+        let n = {};
+        try { n = JSON.parse(v.getString('notify') || '{}') || {}; } catch (_) {}
+        if (!Object.keys(n).length) n = { telegram: !!v.getString('telegramId'), email: false, emailTo: '' };
+        n.max = false;
+        v.set('notify', n);
+        e.app.save(v);
+      }
+    } else if (body.update_type === 'bot_added') {
+      // бота добавили в чат — номер чата в журнал базы: списка чатов у Bot API
+      // больше нет (GET /chats отключён в 2026), MAX_CHAT_ID берём отсюда
+      // (scripts/max-chats.sh)
+      $app.logger().info('max: бот в чате', 'chat_id', String(body.chat_id || ''), 'is_channel', !!body.is_channel);
     } else if (body.update_type === 'message_created') {
       const m = body.message || {};
       const sender = m.sender || {};
-      // в диалоге отвечаем подсказкой; в группах бот молчит
-      if (!sender.is_bot && (!m.recipient || m.recipient.chat_type === 'dialog')) send(String(sender.user_id || ''), TEXT_HELP);
+      const r = m.recipient || {};
+      // в диалоге отвечаем подсказкой; в группах бот молчит, но номер чата пишет в журнал
+      if (r.chat_type && r.chat_type !== 'dialog') $app.logger().info('max: бот в чате', 'chat_id', String(r.chat_id || ''), 'is_channel', r.chat_type === 'channel');
+      else if (!sender.is_bot) send(String(sender.user_id || ''), TEXT_HELP);
     }
   } catch (err) {
     $app.logger().warn('max: вебхук не разобран', 'error', String(err));
@@ -126,4 +156,4 @@ function confirmed(app, code) {
   return id ? { login, id, name: login.getString('name') } : null;
 }
 
-module.exports = { start, webhook, confirmed, send, CODE_RE };
+module.exports = { start, webhook, confirmed, send, sendChat, CODE_RE };

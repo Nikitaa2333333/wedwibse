@@ -68,6 +68,8 @@ routerAdd('GET', '/api/wed/preview-file', (e) => require(`${__hooks}/lib/cabinet
 routerAdd('POST', '/api/wed/max/start', (e) => require(`${__hooks}/lib/max.js`).start(e));
 routerAdd('POST', '/api/wed/max/webhook', (e) => require(`${__hooks}/lib/max.js`).webhook(e));
 routerAdd('POST', '/api/wed/max', (e) => require(`${__hooks}/lib/cabinet.js`).maxAuth(e));
+// «Подключить» из профиля: второй мессенджер к той же учётке
+routerAdd('POST', '/api/wed/link', (e) => require(`${__hooks}/lib/cabinet.js`).linkMessenger(e), $apis.requireAuth('vendors'));
 
 // вход по почте: регистрация с условиями, сброс пароля кодом из письма
 // (сам код — штатный request-otp / auth-with-otp)

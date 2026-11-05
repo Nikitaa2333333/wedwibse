@@ -19,6 +19,11 @@ export const RETRY_ICON =
 /** Крестик «закрыть» — тонкая линия 1.6, как у остальных знаков кабинета. */
 export const X_ICON =
   '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.6" d="M6 6l12 12M18 6L6 18"/></svg>';
+/** «Назад» / «Вперёд» по правкам текста — изогнутая стрелка, как в Заметках */
+export const UNDO_ICON =
+  '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M9 14 4.5 9.5 9 5M4.5 9.5H14a5.5 5.5 0 0 1 0 11h-3"/></svg>';
+export const REDO_ICON =
+  '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M15 14l4.5-4.5L15 5M19.5 9.5H10a5.5 5.5 0 0 0 0 11h3"/></svg>';
 /** список с точками — кнопка «Список» в «Описании» (как в Заметках; в Solar такого нет) */
 export const LIST_ICON =
   '<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="currentColor"><circle cx="5" cy="7" r="1.4"/><circle cx="5" cy="12" r="1.4"/><circle cx="5" cy="17" r="1.4"/></g><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.6" d="M9.5 7H20M9.5 12H20M9.5 17H20"/></svg>';

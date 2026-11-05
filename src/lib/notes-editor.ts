@@ -12,7 +12,7 @@
 // в разделы базы — lib/notes-model.ts.
 import type { Block, BlockKind } from './notes-model';
 import { plainToBlocks, looksLikeHeading } from './notes-model';
-import { later as undoable, LIST_ICON } from './cab-ui';
+import { later as undoable, LIST_ICON, UNDO_ICON, REDO_ICON } from './cab-ui';
 
 const TAG: Record<BlockKind, string> = { h: 'h3', p: 'p', li: 'li' };
 const BLOCK_TAGS = /^(P|DIV|H[1-6]|LI|UL|OL|BLOCKQUOTE|SECTION|ARTICLE|HEADER|FOOTER|MAIN|ASIDE|TABLE|TBODY|THEAD|TR|TD|TH|DL|DT|DD|FIGURE|FIGCAPTION|PRE|ADDRESS|NAV)$/;
@@ -169,9 +169,38 @@ export function mountNotes(o: NotesOptions) {
   function set(blocks: Block[], a?: Pos, b?: Pos) {
     ed.innerHTML = blocksHtml(blocks.length ? blocks : [{ t: 'h', text: '' }]);
     if (a) place(a, b ?? a);
-    changed();
+    changed(true);
   }
-  function changed() {
+  function changed(op = false) {
+    ed.classList.toggle('is-empty', empty());
+    record(op);
+    syncBar();
+    o.onChange(read());
+  }
+
+  // ---------- «Назад» / «Вперёд» ----------
+  // Своя история: после пересборки поля из модели браузерная отмена
+  // теряется. Набор подряд — один шаг (пауза 800 мс), действие — отдельный.
+  type Snap = { html: string; pos: Pos | null };
+  const hist: Snap[] = [];
+  let at = -1, lastType = 0;
+  function record(op: boolean) {
+    const snap: Snap = { html: blocksHtml(read()), pos: selection()?.a ?? null };
+    if (at >= 0 && hist[at].html === snap.html) { hist[at].pos = snap.pos; return; }
+    const now = Date.now();
+    const merge = !op && at > 0 && now - lastType < 800;
+    lastType = op ? 0 : now;
+    hist.length = at + 1;
+    if (merge) hist[at] = snap; else { hist.push(snap); at++; }
+    if (hist.length > 200) { hist.shift(); at--; }
+  }
+  function go(d: -1 | 1) {
+    const k = at + d;
+    if (k < 0 || k >= hist.length) return;
+    at = k;
+    lastType = 0;
+    ed.innerHTML = hist[k].html;
+    if (hist[k].pos) place(hist[k].pos!);
     ed.classList.toggle('is-empty', empty());
     syncBar();
     o.onChange(read());
@@ -191,6 +220,12 @@ export function mountNotes(o: NotesOptions) {
       const cur = blocks[i];
       // Enter в пустом пункте — выход из списка (как в Заметках)
       if (cur.t === 'li' && !cur.text.trim()) { cur.t = 'p'; set(blocks, { i, off: 0 }); return; }
+      // пустых строк не бывает (Никита 05.11): на сайте отступы всё равно
+      // одни и те же, лишний Enter давал бы ложное ощущение вёрстки.
+      // Пустой заголовок + Enter — строка становится текстом
+      if (!cur.text.trim()) { if (cur.t === 'h') { cur.t = 'p'; set(blocks, { i, off: 0 }); } return; }
+      // Enter в начале строки вставил бы пустую над ней
+      if (!cur.text.slice(0, off).trim()) return;
       const next: Block = { t: cur.t === 'li' ? 'li' : 'p', text: cur.text.slice(off) };
       cur.text = cur.text.slice(0, off);
       blocks.splice(i + 1, 0, next);
@@ -213,7 +248,15 @@ export function mountNotes(o: NotesOptions) {
       set(blocks, { i: i - 1, off });
       return;
     }
-    if (t === 'insertFromPaste' || t === 'insertFromDrop') return; // своя вставка ниже
+    // отмена жестом айфона и из меню браузера — по своей истории
+    if (t === 'historyUndo' || t === 'historyRedo') { e.preventDefault(); go(t === 'historyUndo' ? -1 : 1); }
+  });
+
+  ed.addEventListener('keydown', (e) => {
+    if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+    const k = e.code;
+    if (k === 'KeyZ') { e.preventDefault(); go(e.shiftKey ? 1 : -1); }
+    else if (k === 'KeyY') { e.preventDefault(); go(1); }
   });
 
   ed.addEventListener('input', () => {
@@ -300,6 +343,9 @@ export function mountNotes(o: NotesOptions) {
     <div class="c-notes-bar__main">
       <button type="button" data-aa aria-expanded="false" aria-label="Стиль строки">Aa</button>
       <button type="button" data-list aria-pressed="false" aria-label="Список">${LIST_ICON}</button>
+      <span class="c-notes-bar__gap"></span>
+      <button type="button" data-undo aria-label="Отменить" disabled>${UNDO_ICON}</button>
+      <button type="button" data-redo aria-label="Повторить" disabled>${REDO_ICON}</button>
     </div>`;
   const styles = bar.querySelector<HTMLElement>('.c-notes-bar__styles')!;
   const aa = bar.querySelector<HTMLElement>('[data-aa]')!;
@@ -323,6 +369,8 @@ export function mountNotes(o: NotesOptions) {
     const kinds = s ? read().slice(s.a.i, s.b.i + 1).map((x) => x.t) : [];
     const one = kinds.length && kinds.every((x) => x === kinds[0]) ? kinds[0] : null;
     listBtn.setAttribute('aria-pressed', String(one === 'li'));
+    (bar.querySelector('[data-undo]') as HTMLButtonElement).disabled = at <= 0;
+    (bar.querySelector('[data-redo]') as HTMLButtonElement).disabled = at >= hist.length - 1;
     styles.querySelectorAll<HTMLElement>('[data-style]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.style === one)));
   }
   const showStyles = (on: boolean) => { styles.hidden = !on; aa.setAttribute('aria-expanded', String(on)); };
@@ -334,6 +382,8 @@ export function mountNotes(o: NotesOptions) {
     if (!b) return;
     if (b.hasAttribute('data-aa')) { showStyles(styles.hidden); syncBar(); return; }
     if (b.hasAttribute('data-list')) { setKind('toggle-li'); return; }
+    if (b.hasAttribute('data-undo')) { go(-1); return; }
+    if (b.hasAttribute('data-redo')) { go(1); return; }
     if (b.dataset.style) { setKind(b.dataset.style as BlockKind); showStyles(false); }
     if (document.activeElement !== ed) ed.focus();
   });
@@ -357,8 +407,14 @@ export function mountNotes(o: NotesOptions) {
     // на ПК капсула стоит над полем всегда; на телефоне уходит вместе с клавиатурой
     if (touch.matches) { bar.classList.remove('is-on'); showStyles(false); }
     writing(false);
+    // вышли из поля — пустые строки, оставленные по пути, убираем
+    const bs = read();
+    const full = bs.filter((x) => x.text.trim());
+    if (full.length && full.length < bs.length) set(full);
   });
   document.addEventListener('astro:before-swap', () => writing(false), { once: true });
   ed.classList.toggle('is-empty', empty());
+  record(true); // исходный текст — первая точка истории
+  syncBar();
   return { read };
 }

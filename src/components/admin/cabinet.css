@@ -667,6 +667,9 @@ body:has(.c-bar .a-btn) .c-toast { bottom: calc(var(--cab-tabs-h) + env(safe-are
 .c-notes-bar button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-width: 52px; height: 44px; padding: 0 14px; border-radius: 999px; background: none; color: var(--adm-text); font: inherit; font-size: 17px; font-weight: 500; }
 .c-notes-bar [data-aa] { font-size: 22px; font-weight: 500; }
 .c-notes-bar svg { width: 24px; height: 24px; flex: none; }
+.c-notes-bar__gap { flex: 1 1 auto; min-width: 12px; }
+/* «Назад»/«Вперёд», когда идти некуда: значок светлее — приглушённость функциональна, как у выключенной кнопки iOS */
+.c-notes-bar button:disabled { color: var(--adm-placeholder); }
 .c-notes-bar__styles button { flex: 1 1 0; padding: 0 10px; background: var(--adm-bg); }
 .c-notes-bar__styles svg { width: 18px; height: 18px; }
 .c-notes-bar .c-notes-bar__h { font-size: 19px; font-weight: 600; }
