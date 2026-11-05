@@ -60,8 +60,15 @@ const { cards } = Astro.props;
         {variant === 'scard--duo' && photosOnly(s.photos).length >= 2 ? (
           <div class="scard__media">
             <div class="scard__strip">
+              {/* Кадр — ссылка на визитку, как у PhotoRail в обычной карточке
+                  (05.11.2026: кадры дуо были голыми <div>, открывало только имя).
+                  Второй кадр вне табуляции — та же ссылка дважды не нужна. */}
               {photosOnly(s.photos).slice(0, 2).map((src, n) => (
-                <div class="scard__frame media">
+                <a
+                  class="scard__frame media"
+                  href={href}
+                  tabindex={n > 0 ? -1 : undefined}
+                >
                   <Image
                     src={resolveImage(src)}
                     alt={`${s.name} — фото ${n + 1}`}
@@ -70,7 +77,7 @@ const { cards } = Astro.props;
                     loading="lazy"
                     decoding="async"
                   />
-                </div>
+                </a>
               ))}
             </div>
           </div>
@@ -181,6 +188,7 @@ const { cards } = Astro.props;
   .scard__media { position: relative; }
 
   .scard__frame {
+    display: block; /* кадр дуо — ссылка <a>, по умолчанию строчная */
     position: relative;
     aspect-ratio: var(--card-ratio);
     background: var(--surface-dim);
