@@ -6,312 +6,420 @@
 <meta name="robots" content="noindex">
 <title>Карта WED Secrets</title>
 <style>
-  /* Внутренний инструмент: тёмный холст карты, цвет несёт смысл. */
+  /* Внутренний инструмент: тёмный холст, цвет несёт смысл статуса. */
   :root {
-    --bg: #0e1117; --bg2: #161b24; --card: #1d2430; --line: #2a3342; --ink: #fff;
+    --bg: #0d1016; --bg2: #151a23; --card: #1b212c; --card2: #222a37; --line: #2b3443; --ink: #fff;
     --done: #3ccf73; --work: #4ea1ff; --todo: #8b95a7; --bad: #ff5a5a; --block: #f2a93b;
+    --high: #ff5a5a; --mid: #f2a93b; --low: #8b95a7;
+    --top: 108px;
   }
   * { box-sizing: border-box; }
-  html, body { height: 100%; margin: 0; }
-  body { background: var(--bg); color: var(--ink); overflow: hidden;
-    font: 14px/1.4 Onest, system-ui, -apple-system, "Segoe UI", sans-serif; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--ink); font: 13.5px/1.45 Onest, system-ui, -apple-system, "Segoe UI", sans-serif; }
+  button, input, select { font: inherit; color: inherit; }
 
-  .top { position: fixed; z-index: 5; top: 12px; left: 12px; right: 12px;
-    display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; pointer-events: none; }
-  .top > * { pointer-events: auto; }
-  h1 { margin: 0; font-size: 18px; }
+  /* ── шапка */
+  .top { position: fixed; z-index: 10; inset: 0 0 auto 0; background: var(--bg); border-bottom: 1px solid var(--line); padding: 10px 16px 0; }
+  .row1 { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+  h1 { margin: 0; font-size: 17px; }
   .upd { font-size: 12px; }
-  .tabs { display: flex; gap: 2px; background: var(--bg2); padding: 3px; border-radius: 999px; }
-  .tabs button, .tool { font: inherit; border: 0; color: var(--ink); background: transparent;
-    padding: 7px 14px; border-radius: 999px; cursor: pointer; }
-  .tabs button[aria-selected="true"] { background: var(--ink); color: var(--bg); }
-  .tool { background: var(--bg2); }
-  .legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; background: var(--bg2);
-    padding: 6px 12px; border-radius: 999px; }
-  .legend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; }
+  .stats { display: flex; gap: 6px; flex-wrap: wrap; }
+  .st { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px; background: var(--bg2); font-size: 12px; }
+  .st i, .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .search { margin-left: auto; min-width: 220px; flex: 0 1 320px; background: var(--bg2); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; }
+  .tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; margin-top: 8px; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tabs button { border: 0; background: transparent; padding: 9px 12px 10px; cursor: pointer; white-space: nowrap; border-bottom: 2px solid transparent; }
+  .tabs button[aria-selected="true"] { border-bottom-color: var(--ink); font-weight: 700; }
+  .tabs b { font-weight: 400; font-size: 11px; margin-left: 4px; padding: 0 6px; border-radius: 999px; background: var(--card2); }
 
-  svg.map { position: fixed; inset: 0; width: 100%; height: 100%; cursor: grab; touch-action: none; }
+  /* ── холсты */
+  svg.map { position: fixed; left: 0; right: 0; bottom: 0; top: var(--top); width: 100%; height: calc(100% - var(--top)); cursor: grab; touch-action: none; }
   svg.map.drag { cursor: grabbing; }
   svg text { fill: var(--ink); font-family: inherit; user-select: none; }
+  .tools { position: fixed; z-index: 9; right: 14px; bottom: 14px; display: flex; gap: 6px; }
+  .tools button { border: 1px solid var(--line); background: var(--bg2); border-radius: 999px; padding: 6px 12px; cursor: pointer; }
+  .dim { opacity: .12; }
 
-  /* ── метро */
-  .seg-done { stroke-width: 9; stroke-linecap: round; fill: none; }
-  .seg-todo { stroke-width: 4; stroke-linecap: round; fill: none; stroke-dasharray: 2 9; opacity: .75; }
-  .st { cursor: pointer; }
-  .st:hover circle.ring { stroke-width: 5; }
-  .st .lbl { font-size: 12.5px; }
+  /* метро */
+  .seg-done { stroke-width: 7; stroke-linecap: round; fill: none; }
+  .seg-todo { stroke-width: 3; stroke-linecap: round; fill: none; stroke-dasharray: 2 7; opacity: .7; }
+  .sta { cursor: pointer; }
+  .sta:hover circle.r { stroke-width: 4.5; }
+  .sta text { font-size: 11.5px; }
+  .hit circle.r { stroke: #fff !important; stroke-width: 4.5; }
   .pulse { animation: pulse 1.6s ease-out infinite; transform-box: fill-box; transform-origin: center; }
-  @keyframes pulse { 0% { transform: scale(1); opacity: .8 } 100% { transform: scale(2.4); opacity: 0 } }
-  .ttl { font-size: 15px; font-weight: 700; }
-  .cnt { font-size: 12px; }
+  @keyframes pulse { from { transform: scale(1); opacity: .8 } to { transform: scale(2.6); opacity: 0 } }
 
-  /* ── система */
-  .zone rect { fill: var(--bg2); }
-  .zone.future rect { fill: transparent; stroke: var(--line); stroke-width: 2; stroke-dasharray: 8 8; }
-  .zone text { font-size: 13px; font-weight: 700; }
-  .edge path { fill: none; stroke-width: 2.2; transition: opacity .2s; }
-  .edge.done path { stroke: #5d6b82; stroke-dasharray: 6 8; animation: flow 1.2s linear infinite; }
-  .edge.bad path  { stroke: var(--bad); stroke-width: 3; stroke-dasharray: 6 8; animation: flow 1.2s linear infinite; }
-  .edge.todo path, .edge.block path { stroke: var(--todo); stroke-dasharray: 3 7; opacity: .6; }
-  .edge text { font-size: 11px; }
-  .edge .lb { fill: var(--bg); }
-  @keyframes flow { to { stroke-dashoffset: -28; } }
-  .node { cursor: pointer; transition: opacity .2s; }
-  .node rect.box { fill: var(--card); stroke: var(--line); stroke-width: 1.5; }
-  .node:hover rect.box, .node.sel rect.box { stroke: var(--ink); }
-  .node.future rect.box { fill: var(--bg); stroke-dasharray: 5 5; }
-  .node .nt { font-size: 14px; font-weight: 700; }
-  .node .ns { font-size: 11px; }
-  svg.focus .node:not(.on), svg.focus .edge:not(.on) { opacity: .15; }
+  /* система */
+  .colh { font-size: 13px; font-weight: 700; }
+  .edge path { fill: none; stroke-width: 1.6; }
+  .edge.done path { stroke: #4f5d74; stroke-dasharray: 5 7; animation: flow 1.4s linear infinite; }
+  .edge.work path { stroke: var(--work); stroke-dasharray: 5 7; animation: flow 1.4s linear infinite; }
+  .edge.bad path { stroke: var(--bad); stroke-width: 2.4; stroke-dasharray: 5 7; animation: flow 1.4s linear infinite; }
+  .edge.todo path, .edge.block path { stroke: var(--todo); stroke-dasharray: 2 6; opacity: .55; }
+  .edge text { font-size: 10px; }
+  @keyframes flow { to { stroke-dashoffset: -24; } }
+  .node { cursor: pointer; }
+  .node rect.b { fill: var(--card); stroke: var(--line); }
+  .node:hover rect.b, .node.sel rect.b { stroke: #fff; }
+  .node text { font-size: 12px; }
+  svg.focus .node:not(.on), svg.focus .edge:not(.on) { opacity: .1; }
+
+  /* ── списки */
+  .page { padding: calc(var(--top) + 16px) 16px 60px; max-width: 1500px; margin: 0 auto; }
+  .page h2 { font-size: 16px; margin: 22px 0 10px; }
+  .page h2:first-child { margin-top: 0; }
+  .grid { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+  .card { background: var(--card); border-radius: 12px; padding: 12px 14px; border-left: 3px solid var(--c, var(--line)); min-width: 0; }
+  .card h3 { margin: 0 0 4px; font-size: 13.5px; }
+  .card p { margin: 4px 0 0; }
+  .card code { font-size: 11.5px; background: var(--bg2); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+  .meta { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
+  .chip { display: inline-block; padding: 1px 7px; border-radius: 5px; font-size: 11px; background: var(--card2); }
+  .chip.s { color: #0d1016; font-weight: 600; }
+  .src { font-size: 11px; margin-top: 6px; }
+  .filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .filters button, .filters select { border: 1px solid var(--line); background: var(--bg2); border-radius: 999px; padding: 4px 11px; cursor: pointer; }
+  .filters button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+  .bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: var(--card2); }
+  .bar span { display: block; }
+  .trk { display: grid; grid-template-columns: 210px 1fr 70px; gap: 12px; align-items: center; padding: 6px 0; cursor: pointer; }
+  .trk:hover { background: var(--bg2); }
+  .trk .nm { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .trk .nm span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .num { font-variant-numeric: tabular-nums; text-align: right; font-size: 12px; }
+  .stages { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .stage { background: var(--card); border-radius: 14px; padding: 14px 16px; }
+  .stage h3 { margin: 0; font-size: 15px; }
+  .weeks { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); align-items: start; }
+  .wk li, .lst li { display: flex; gap: 8px; align-items: baseline; padding: 3px 0; }
+  .wk ul, .lst { list-style: none; margin: 6px 0 0; padding: 0; }
+  .tl { list-style: none; margin: 0; padding: 0 0 0 16px; border-left: 2px solid var(--line); }
+  .tl li { position: relative; padding: 4px 0 8px 10px; }
+  .tl li::before { content: ''; position: absolute; left: -22px; top: 9px; width: 10px; height: 10px; border-radius: 50%; background: var(--work); }
+  .tl b { font-variant-numeric: tabular-nums; margin-right: 8px; }
+  table.t { width: 100%; border-collapse: collapse; }
+  table.t td, table.t th { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .empty { padding: 20px 0; }
 
   /* ── панель деталей */
-  .panel { position: fixed; z-index: 6; right: 12px; top: 64px; width: 340px; max-height: calc(100% - 80px);
-    overflow: auto; background: var(--bg2); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
-  .panel h2 { margin: 0 32px 6px 0; font-size: 18px; }
-  .panel .x { position: absolute; top: 10px; right: 10px; width: 32px; height: 32px; border: 0;
-    border-radius: 50%; background: var(--card); color: var(--ink); font-size: 18px; cursor: pointer; }
-  .chip { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 12px; color: #0e1117; }
-  .panel code { font-size: 12px; background: var(--card); padding: 2px 6px; border-radius: 5px; }
-  .panel ol { padding-left: 0; list-style: none; margin: 8px 0 0; }
-  .panel li { display: flex; gap: 8px; align-items: baseline; padding: 3px 0; }
-  .panel li i { flex: 0 0 9px; height: 9px; border-radius: 50%; }
-  .panel h3 { font-size: 14px; margin: 14px 0 0; }
-  .blk { position: fixed; z-index: 5; left: 12px; bottom: 12px; max-width: 420px; background: var(--bg2);
-    border-left: 3px solid var(--block); border-radius: 10px; padding: 10px 14px; font-size: 12.5px; }
-  .blk b { display: block; margin-bottom: 4px; }
-  .blk ul { margin: 0; padding-left: 16px; }
-  .hint { position: fixed; z-index: 5; right: 12px; bottom: 12px; font-size: 12px; background: var(--bg2);
-    padding: 6px 12px; border-radius: 999px; }
+  .panel { position: fixed; z-index: 12; right: 12px; top: calc(var(--top) + 10px); width: 380px; max-height: calc(100% - var(--top) - 24px); overflow: auto;
+    background: var(--bg2); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  .panel h2 { margin: 0 34px 6px 0; font-size: 16px; }
+  .panel .x { position: absolute; top: 10px; right: 10px; width: 30px; height: 30px; border: 0; border-radius: 50%; background: var(--card2); cursor: pointer; font-size: 17px; }
+  .panel h3 { font-size: 13px; margin: 14px 0 4px; }
+  .panel p { margin: 6px 0; }
   [hidden] { display: none !important; }
-  @media (max-width: 700px) {
-    .panel { left: 8px; right: 8px; top: auto; bottom: 8px; width: auto; max-height: 55%; }
-    .blk, .hint { display: none; }
+  @media (max-width: 720px) {
+    :root { --top: 140px; }
+    .search { margin-left: 0; flex: 1 1 100%; }
+    .panel { left: 8px; right: 8px; top: auto; bottom: 8px; width: auto; max-height: 60%; }
+    .trk { grid-template-columns: 130px 1fr 52px; }
   }
 </style>
 </head>
 <body>
-<div class="top">
-  <h1>Карта WED Secrets</h1>
-  <div class="tabs" role="tablist">
-    <button role="tab" data-tab="metro">Путь</button>
-    <button role="tab" data-tab="system">Система</button>
+<header class="top">
+  <div class="row1">
+    <h1>Карта WED Secrets</h1>
+    <span class="upd" id="upd"></span>
+    <div class="stats" id="stats"></div>
+    <input class="search" id="q" type="search" placeholder="Поиск по всей карте: шаг, файл, решение…">
   </div>
-  <button class="tool" id="fit">Вписать</button>
-  <div class="legend" id="legend"></div>
-  <span class="upd" id="upd"></span>
-</div>
+  <nav class="tabs" id="tabs" role="tablist"></nav>
+</header>
 
-<svg class="map" id="metro" xmlns="http://www.w3.org/2000/svg"></svg>
-<svg class="map" id="system" xmlns="http://www.w3.org/2000/svg" hidden></svg>
-
-<aside class="panel" id="panel" hidden><button class="x" id="px" aria-label="Закрыть">×</button><div id="pbody"></div></aside>
-<div class="blk" id="blk"></div>
-<div class="hint">тянуть — двигать · колесо — масштаб · нажать — подробности</div>
+<svg class="map" id="metro" hidden></svg>
+<svg class="map" id="system" hidden></svg>
+<div class="tools" id="tools" hidden><button id="fit">Вписать</button><button id="zin">+</button><button id="zout">−</button></div>
+<main class="page" id="page"></main>
+<aside class="panel" id="panel" hidden><button class="x" id="px" aria-label="Закрыть">×</button><div id="pb"></div></aside>
 
 <script src="data.js"></script>
 <script>
 const M = window.MAP;
 const NS = 'http://www.w3.org/2000/svg';
-const ST = { done: 'сделано', work: 'в работе', todo: 'впереди', bad: 'сломано', block: 'ждёт внешнего' };
-const CV = s => `var(--${s})`;
+const ST = { done: 'сделано', work: 'в работе', todo: 'впереди', bad: 'сломано / долг', block: 'ждёт внешнего' };
+const SEV = { high: 'важно', mid: 'средне', low: 'мелко' };
+const C = s => `var(--${s})`;
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-
-function el(tag, attrs = {}, parent) {
-  const e = document.createElementNS(NS, tag);
-  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
-  if (parent) parent.appendChild(e);
-  return e;
-}
-function wrap(text, max) {           // перенос подписи по словам
-  const out = []; let cur = '';
-  for (const w of text.split(' ')) {
-    if ((cur + ' ' + w).trim().length > max && cur) { out.push(cur); cur = w; } else cur = (cur + ' ' + w).trim();
-  }
-  if (cur) out.push(cur);
-  return out;
-}
-function textLines(parent, lines, x, y, attrs = {}) {
-  const t = el('text', { x, y, ...attrs }, parent);
-  lines.forEach((ln, i) => { const s = el('tspan', { x, dy: i ? '1.2em' : 0 }, t); s.textContent = ln; });
-  return t;
-}
+const el = (tag, a = {}, p) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); if (p) p.appendChild(e); return e; };
+const chipS = s => `<span class="chip s" style="background:${C(s)}">${ST[s] || s}</span>`;
+const steps = M.tracks.flatMap(t => t.steps.map(s => ({ ...s, track: t })));
+const trackById = Object.fromEntries(M.tracks.map(t => [t.id, t]));
+const count = (arr, s) => arr.filter(x => x.s === s).length;
+const barHtml = arr => `<div class="bar">${Object.keys(ST).map(s => `<span style="flex:${count(arr, s)};background:${C(s)}"></span>`).join('')}</div>`;
+let Q = '';
+const match = (...xs) => !Q || xs.some(x => String(x ?? '').toLowerCase().includes(Q));
 
 document.getElementById('upd').textContent = 'обновлено ' + M.updated;
-document.getElementById('legend').innerHTML = Object.entries(ST)
-  .map(([k, v]) => `<span><i style="background:${CV(k)}"></i>${v}</span>`).join('');
-document.getElementById('blk').innerHTML = `<b>Ждём снаружи</b><ul>${M.blockers.map(b => `<li>${esc(b)}</li>`).join('')}</ul>`;
+document.getElementById('stats').innerHTML = Object.entries(ST).map(([k, v]) => `<span class="st"><i style="background:${C(k)}"></i>${v} ${count(steps, k)}</span>`).join('');
 
-/* ═════════ ПУТЬ: схема метро ═════════ */
-const metro = document.getElementById('metro');
-const MW = 1720, ROW = 108, TOP = 120;
-const MH = TOP + ROW * M.tracks.length + 40;
-const X0 = 260, X1 = 1330, FX = 1560, FY = TOP + ROW * (M.tracks.length - 1) / 2;
-const gLines = el('g', {}, metro), gSt = el('g', {}, metro);
+/* ═══ вкладки ═══ */
+const TABS = [
+  ['overview', 'Обзор'], ['metro', 'Путь', steps.length], ['system', 'Система', M.system.nodes.length],
+  ['issues', 'Проблемы', M.issues.filter(i => i.s !== 'done').length], ['decisions', 'Решения', M.decisions.length],
+  ['questions', 'Вопросы', M.questions.length], ['skills', 'Скиллы и рутина', M.skills.length + M.routines.length],
+  ['weeks', 'Недели', M.weeks.length], ['docs', 'Документы', M.docs.length], ['recent', 'Хроника', M.recent.length],
+];
+const tabsEl = document.getElementById('tabs');
+tabsEl.innerHTML = TABS.map(([id, t, n]) => `<button role="tab" data-tab="${id}">${t}${n != null ? `<b>${n}</b>` : ''}</button>`).join('');
+let tab = (location.hash.slice(1) || 'overview');
+if (!TABS.some(t => t[0] === tab)) tab = 'overview';
+tabsEl.addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) show(b.dataset.tab); });
 
-M.tracks.forEach((tr, i) => {
-  const y = TOP + i * ROW, n = tr.steps.length;
-  const xs = tr.steps.map((_, k) => X0 + k * (X1 - X0) / (n - 1));
-  // последний пройденный — до него сплошная жирная линия
-  let reached = -1;
-  tr.steps.forEach(([, s], k) => { if (s === 'done' || s === 'work') reached = k; });
-  if (reached > 0) el('path', { d: `M${xs[0]},${y} H${xs[reached]}`, class: 'seg-done', stroke: tr.color }, gLines);
-  const from = Math.max(reached, 0);
-  el('path', { d: `M${xs[from]},${y} H${xs[n - 1]} C${xs[n - 1] + 110},${y} ${FX - 140},${FY} ${FX - 40},${FY}`,
-    class: 'seg-todo', stroke: tr.color }, gLines);
-
-  // название линии
-  const done = tr.steps.filter(s => s[1] === 'done').length;
-  el('rect', { x: 20, y: y - 22, width: 200, height: 44, rx: 22, fill: tr.color }, gSt);
-  const tt = el('text', { x: 40, y: y - 2, class: 'ttl' }, gSt); tt.textContent = tr.title;
-  const tc = el('text', { x: 40, y: y + 14, class: 'cnt' }, gSt); tc.textContent = `${done} из ${n}`;
-
-  tr.steps.forEach(([name, s, note], k) => {
-    const x = xs[k];
-    const g = el('g', { class: 'st', tabindex: 0 }, gSt);
-    if (s === 'work') el('circle', { cx: x, cy: y, r: 12, fill: tr.color, class: 'pulse' }, g);
-    const fill = s === 'done' ? tr.color : s === 'bad' ? CV('bad') : s === 'block' ? CV('block') : '#0e1117';
-    const ring = s === 'bad' ? CV('bad') : s === 'block' ? CV('block') : tr.color;
-    el('circle', { cx: x, cy: y, r: s === 'work' ? 12 : 10, fill: s === 'work' ? '#fff' : fill, stroke: ring, 'stroke-width': 4, class: 'ring' }, g);
-    const mark = s === 'done' ? '✓' : s === 'bad' ? '!' : s === 'block' ? '…' : '';
-    if (mark) { const m = el('text', { x, y: y + 4.5, 'text-anchor': 'middle', 'font-size': 12, 'font-weight': 700 }, g); m.textContent = mark; }
-    textLines(g, wrap(name, 17), x, y + 30, { 'text-anchor': 'middle', class: 'lbl' });
-    g.addEventListener('click', e => { e.stopPropagation(); showStep(tr, name, s, note); });
-  });
-});
-// пересадка «Открытие»
-el('circle', { cx: FX, cy: FY, r: 44, fill: '#fff' }, gSt);
-el('circle', { cx: FX, cy: FY, r: 36, fill: '#0e1117' }, gSt);
-const fin = el('text', { x: FX, y: FY + 5, 'text-anchor': 'middle', 'font-size': 14, 'font-weight': 700 }, gSt);
-fin.textContent = M.finale.title;
-textLines(gSt, wrap(M.finale.note, 26), FX, FY + 68, { 'text-anchor': 'middle', 'font-size': 12 });
-
-/* ═════════ СИСТЕМА: граф связей ═════════ */
-const sys = document.getElementById('system');
-const SW = 1600, SH = 1000, NW = 176, NH = 54;
-const byId = Object.fromEntries(M.nodes.map(n => [n.id, n]));
-const zoneOf = n => M.zones.find(z => n.x >= z.x && n.x <= z.x + z.w);
-
-M.zones.forEach(z => {
-  const g = el('g', { class: 'zone' + (z.future ? ' future' : '') }, sys);
-  el('rect', { x: z.x, y: 70, width: z.w, height: SH - 90, rx: 22 }, g);
-  const t = el('text', { x: z.x + 20, y: 100 }, g); t.textContent = z.title;
-});
-const gE = el('g', {}, sys), gN = el('g', {}, sys);
-const edges = M.links.map(([a, b, label, s]) => {
-  const A = byId[a], B = byId[b];
-  let d, mx, my;
-  if (Math.abs(A.x - B.x) < 40) {            // в одной колонке — дуга сбоку
-    const y1 = A.y + (B.y > A.y ? NH / 2 : -NH / 2), y2 = B.y + (B.y > A.y ? -NH / 2 : NH / 2);
-    d = `M${A.x},${y1} C${A.x + 60},${(y1 + y2) / 2} ${B.x + 60},${(y1 + y2) / 2} ${B.x},${y2}`;
-    mx = A.x + 46; my = (y1 + y2) / 2;
-  } else {
-    const dir = B.x > A.x ? 1 : -1;
-    const x1 = A.x + dir * NW / 2, x2 = B.x - dir * NW / 2, c = Math.max(60, Math.abs(x2 - x1) / 2);
-    d = `M${x1},${A.y} C${x1 + dir * c},${A.y} ${x2 - dir * c},${B.y} ${x2},${B.y}`;
-    mx = (x1 + x2) / 2; my = (A.y + B.y) / 2;
-  }
-  const g = el('g', { class: 'edge ' + s }, gE);
-  el('path', { d, 'marker-end': 'url(#arr-' + s + ')' }, g);
-  if (label) {
-    const w = label.length * 6.4 + 12;
-    el('rect', { x: mx - w / 2, y: my - 10, width: w, height: 18, rx: 9, class: 'lb' }, g);
-    const t = el('text', { x: mx, y: my + 3.5, 'text-anchor': 'middle' }, g); t.textContent = label;
-  }
-  return { a, b, g };
-});
-// наконечники стрелок по цвету статуса
-const defs = el('defs', {}, sys);
-for (const s of ['done', 'bad', 'todo', 'block']) {
-  const m = el('marker', { id: 'arr-' + s, viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse' }, defs);
-  el('path', { d: 'M0,0 L10,5 L0,10 z', fill: s === 'done' ? '#5d6b82' : CV(s) }, m);
+const page = document.getElementById('page'), metro = document.getElementById('metro'), sys = document.getElementById('system'), tools = document.getElementById('tools');
+function show(t) {
+  tab = t; history.replaceState(null, '', '#' + t);
+  tabsEl.querySelectorAll('[data-tab]').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === t));
+  const svgTab = t === 'metro' || t === 'system';
+  // у <svg> нет свойства .hidden (оно есть только у HTML-элементов) — только атрибутом
+  metro.toggleAttribute('hidden', t !== 'metro'); sys.toggleAttribute('hidden', t !== 'system');
+  tools.hidden = !svgTab; page.hidden = svgTab;
+  document.getElementById('panel').hidden = true;
+  render();
 }
-const nodeEls = {};
-M.nodes.forEach(n => {
-  const z = zoneOf(n);
-  const g = el('g', { class: 'node' + (z && z.future ? ' future' : ''), tabindex: 0 }, gN);
-  el('rect', { x: n.x - NW / 2, y: n.y - NH / 2, width: NW, height: NH, rx: 14, class: 'box' }, g);
-  el('rect', { x: n.x - NW / 2 + 8, y: n.y - NH / 2 + 10, width: 5, height: NH - 20, rx: 2.5, fill: CV(n.s) }, g);
-  const t = el('text', { x: n.x - NW / 2 + 24, y: n.y - 3, class: 'nt' }, g); t.textContent = n.t;
-  const s = el('text', { x: n.x - NW / 2 + 24, y: n.y + 15, class: 'ns' }, g); s.textContent = ST[n.s];
-  g.addEventListener('mouseenter', () => focusNode(n.id));
-  g.addEventListener('mouseleave', () => focusNode(selected));
-  g.addEventListener('click', e => { e.stopPropagation(); selected = n.id; focusNode(n.id); showNode(n); });
-  nodeEls[n.id] = g;
+function render() {
+  if (tab === 'metro') { drawMetro(); fits.metro(); }
+  else if (tab === 'system') { drawSystem(); fits.system(); }
+  else page.innerHTML = (VIEWS[tab] || VIEWS.overview)();
+}
+document.getElementById('q').addEventListener('input', e => { Q = e.target.value.trim().toLowerCase(); if (tab === 'metro') applyMetroSearch(); else if (tab === 'system') applySysSearch(); else render(); });
+
+/* ═══ панель ═══ */
+const panel = document.getElementById('panel'), pb = document.getElementById('pb');
+document.getElementById('px').onclick = () => { panel.hidden = true; selected = null; focusNode(null); };
+function openPanel(html) { pb.innerHTML = html; panel.hidden = false; }
+function trackList(t) {
+  return `<h3 style="color:${t.color}">${esc(t.title)} · ${count(t.steps, 'done')} из ${t.steps.length}</h3>${barHtml(t.steps)}
+    <ul class="lst">${t.steps.map(s => `<li><span class="dot" style="background:${C(s.s)}"></span><span>${esc(s.t)}</span></li>`).join('')}</ul>`;
+}
+function stepPanel(s) {
+  openPanel(`<h2>${esc(s.t)}</h2>${chipS(s.s)} ${s.date ? `<span class="chip">${esc(s.date)}</span>` : ''}
+    ${s.note ? `<p>${esc(s.note)}</p>` : ''}${s.src ? `<p class="src">источник: ${esc(s.src)}</p>` : ''}${trackList(s.track)}`);
+}
+
+/* ═══ ОБЗОР ═══ */
+const VIEWS = {};
+VIEWS.overview = () => {
+  const stages = M.stages.map(st => {
+    const ss = steps.filter(s => s.track.stage === st.id);
+    return `<div class="stage" style="border-top:3px solid ${C(st.status)}"><h3>Этап ${esc(st.id)}. ${esc(st.title)}</h3>
+      <div class="meta"><span class="chip">${esc(st.period)}</span>${chipS(st.status)}<span class="chip">${count(ss, 'done')} из ${ss.length} шагов</span></div>
+      ${barHtml(ss)}<p>${esc(st.goal)}</p>${st.notIncluded ? `<p class="src">не входит: ${esc(st.notIncluded)}</p>` : ''}</div>`;
+  }).join('');
+  const tracks = M.stages.map(st => `<h2>Этап ${esc(st.id)} — дорожки</h2>` + M.tracks.filter(t => t.stage === st.id).map(t =>
+    `<div class="trk" data-track="${t.id}"><div class="nm"><span class="dot" style="background:${t.color}"></span><span>${esc(t.title)}</span></div>${barHtml(t.steps)}<div class="num">${count(t.steps, 'done')} / ${t.steps.length}</div></div>`).join('')).join('');
+  const hot = M.issues.filter(i => i.sev === 'high' && i.s !== 'done');
+  const blk = M.questions.filter(q => q.s === 'block' || q.blocks);
+  return `<h2>Этапы</h2><div class="stages">${stages}</div>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(340px,1fr));margin-top:8px">
+      <div><h2>Важные проблемы · ${hot.length}</h2>${hot.map(issueCard).join('')}</div>
+      <div><h2>Блокеры и вопросы · ${blk.length}</h2>${blk.slice(0, 12).map(questionCard).join('')}</div>
+      <div><h2>Недавно</h2><ul class="tl">${M.recent.slice(0, 14).map(r => `<li><b>${esc(r.date)}</b>${esc(r.t)}</li>`).join('')}</ul></div>
+    </div>${tracks}`;
+};
+page.addEventListener('click', e => {
+  const t = e.target.closest('[data-track]'); if (t) { openPanel(trackList(trackById[t.dataset.track])); return; }
+  const f = e.target.closest('[data-f]'); if (f) { const [k, v] = f.dataset.f.split(':'); FIL[k] = FIL[k] === v ? '' : v; render(); }
 });
-let selected = null;
+page.addEventListener('change', e => { if (e.target.dataset.fsel) { FIL[e.target.dataset.fsel] = e.target.value; render(); } });
+
+/* ═══ ПРОБЛЕМЫ ═══ */
+const FIL = { sev: '', s: '', area: '' };
+function issueCard(i) {
+  return `<div class="card" style="--c:${C(i.sev)}"><h3>${esc(i.t)}</h3>
+    <div class="meta"><span class="chip s" style="background:${C(i.sev)}">${SEV[i.sev]}</span>${chipS(i.s)}<span class="chip">${esc(i.area)}</span></div>
+    ${i.where ? `<p><code>${esc(i.where)}</code></p>` : ''}${i.fix ? `<p>→ ${esc(i.fix)}</p>` : ''}<p class="src">${esc(i.src)}</p></div>`;
+}
+VIEWS.issues = () => {
+  const areas = [...new Set(M.issues.map(i => i.area))].sort();
+  const list = M.issues.filter(i => (!FIL.sev || i.sev === FIL.sev) && (!FIL.s || i.s === FIL.s) && (!FIL.area || i.area === FIL.area) && match(i.t, i.where, i.fix, i.area, i.src))
+    .sort((a, b) => (a.s === 'done') - (b.s === 'done') || 'hml'.indexOf(a.sev[0]) - 'hml'.indexOf(b.sev[0]));
+  return `<div class="filters">${Object.entries(SEV).map(([k, v]) => `<button data-f="sev:${k}" aria-pressed="${FIL.sev === k}">${v} ${M.issues.filter(i => i.sev === k && i.s !== 'done').length}</button>`).join('')}
+    ${['bad', 'todo', 'work', 'done'].map(k => `<button data-f="s:${k}" aria-pressed="${FIL.s === k}">${ST[k]} ${count(M.issues, k)}</button>`).join('')}
+    <select data-fsel="area"><option value="">все области</option>${areas.map(a => `<option ${FIL.area === a ? 'selected' : ''}>${esc(a)}</option>`).join('')}</select></div>
+    <div class="grid">${list.map(issueCard).join('') || '<p class="empty">Ничего не нашлось</p>'}</div>`;
+};
+
+/* ═══ РЕШЕНИЯ, ВОПРОСЫ ═══ */
+VIEWS.decisions = () => {
+  const list = M.decisions.filter(d => match(d.topic, d.decision, d.src));
+  return `<table class="t"><tr><th>Тема</th><th>Решение</th><th>Дата</th><th>Источник</th></tr>${list.map(d =>
+    `<tr><td><b>${esc(d.topic)}</b></td><td>${esc(d.decision)}</td><td class="num">${esc(d.date)}</td><td class="src">${esc(d.src)}</td></tr>`).join('')}</table>`;
+};
+function questionCard(q) {
+  return `<div class="card" style="--c:${C(q.s)};margin-bottom:8px"><h3>${esc(q.q)}</h3><div class="meta">${chipS(q.s)}${q.who ? `<span class="chip">${esc(q.who)}</span>` : ''}</div>
+    ${q.proposal ? `<p>Предложение: ${esc(q.proposal)}</p>` : ''}${q.blocks ? `<p class="src">блокирует: ${esc(q.blocks)}</p>` : ''}</div>`;
+}
+VIEWS.questions = () => {
+  const by = {}; M.questions.filter(q => match(q.q, q.proposal, q.blocks, q.who)).forEach(q => (by[q.who || '—'] ??= []).push(q));
+  return Object.entries(by).map(([w, qs]) => `<h2>${esc(w)} · ${qs.length}</h2><div class="grid">${qs.map(questionCard).join('')}</div>`).join('') || '<p class="empty">Ничего не нашлось</p>';
+};
+
+/* ═══ СКИЛЛЫ И РУТИНА ═══ */
+VIEWS.skills = () => `<h2>Скиллы — заготовки поведения Claude под задачу</h2><div class="grid">${M.skills.filter(s => match(s.name, s.what, s.triggers)).map(s =>
+  `<div class="card" style="--c:${C(s.s)}"><h3>${esc(s.name)}</h3><div class="meta">${chipS(s.s)}</div><p>${esc(s.what)}</p>${s.triggers ? `<p class="src">когда: ${esc(s.triggers)}</p>` : ''}<p class="src">${esc(s.src)}</p></div>`).join('')}</div>
+  <h2>Рутина — что прогонять и когда</h2><div class="grid">${M.routines.filter(r => match(r.t, r.when, r.how)).map(r =>
+  `<div class="card" style="--c:${C(r.s)}"><h3>${esc(r.t)}</h3><div class="meta">${chipS(r.s)}<span class="chip">${esc(r.when)}</span></div><p><code>${esc(r.how)}</code></p></div>`).join('')}</div>`;
+
+/* ═══ НЕДЕЛИ, ДОКУМЕНТЫ, ХРОНИКА ═══ */
+VIEWS.weeks = () => `<div class="weeks">${M.weeks.map(w => `<div class="card"><h3>${esc(w.title)}</h3>${barHtml(w.items)}<ul>${w.items.filter(i => match(i.t)).map(i =>
+  `<li class="wk"><span class="dot" style="background:${C(i.s)}"></span><span>${esc(i.t)}</span></li>`).join('')}</ul></div>`).join('')}</div>`;
+VIEWS.docs = () => `<table class="t"><tr><th>Файл</th><th class="num">Строк</th><th>Роль</th><th>Судьба</th></tr>${M.docs.filter(d => match(d.file, d.role, d.fate)).map(d =>
+  `<tr><td><code>${esc(d.file)}</code></td><td class="num">${esc(d.lines)}</td><td>${esc(d.role)}</td><td>${esc(d.fate)}</td></tr>`).join('')}</table>`;
+VIEWS.recent = () => `<ul class="tl">${M.recent.filter(r => match(r.t, r.date)).map(r => `<li><b>${esc(r.date)}</b>${esc(r.t)}</li>`).join('')}</ul>`;
+
+/* ═══ ПУТЬ: схема метро ═══ */
+const S = 46, X0 = 300, ROW = 150, HEAD = 64;
+let metroDrawn = false, MW = 0, MH = 0;
+const staEls = [];
+function drawMetro() {
+  if (metroDrawn) return applyMetroSearch(); metroDrawn = true;
+  const maxN = Math.max(...M.tracks.map(t => t.steps.length));
+  MW = X0 + maxN * S + 80;
+  let y = 30;
+  for (const st of M.stages) {
+    const tracks = M.tracks.filter(t => t.stage === st.id);
+    if (!tracks.length) continue;
+    el('rect', { x: 0, y, width: MW, height: HEAD + tracks.length * ROW, rx: 18, fill: '#11151d' }, metro);
+    const h = el('text', { x: 20, y: y + 30, 'font-size': 18, 'font-weight': 700 }, metro); h.textContent = `Этап ${st.id}. ${st.title}`;
+    const p = el('text', { x: 20, y: y + 50, 'font-size': 12 }, metro); p.textContent = `${st.period} · ${ST[st.status] || st.status}`;
+    y += HEAD;
+    for (const tr of tracks) {
+      const ly = y + ROW - 40, n = tr.steps.length;
+      const xs = tr.steps.map((_, k) => X0 + 20 + k * S);
+      let reached = -1; tr.steps.forEach((s, k) => { if (s.s === 'done' || s.s === 'work') reached = k; });
+      el('path', { d: `M${xs[0]},${ly} H${xs[n - 1] + 24}`, class: 'seg-todo', stroke: tr.color }, metro);
+      if (reached > 0) el('path', { d: `M${xs[0]},${ly} H${xs[reached]}`, class: 'seg-done', stroke: tr.color }, metro);
+      // название линии и прогресс
+      const g = el('g', { class: 'sta' }, metro);
+      el('rect', { x: 16, y: ly - 26, width: 260, height: 52, rx: 26, fill: tr.color }, g);
+      const t1 = el('text', { x: 34, y: ly - 4, 'font-size': 14, 'font-weight': 700 }, g); t1.textContent = tr.title.length > 26 ? tr.title.slice(0, 25) + '…' : tr.title;
+      const t2 = el('text', { x: 34, y: ly + 14, 'font-size': 11.5 }, g); t2.textContent = `${count(tr.steps, 'done')} из ${n}${tr.owner ? ' · ' + tr.owner : ''}`;
+      g.addEventListener('click', e => { e.stopPropagation(); openPanel(trackList(tr)); });
+      tr.steps.forEach((s, k) => {
+        const x = xs[k], gs = el('g', { class: 'sta' }, metro);
+        if (s.s === 'work') el('circle', { cx: x, cy: ly, r: 9, fill: tr.color, class: 'pulse' }, gs);
+        const fill = s.s === 'done' ? tr.color : s.s === 'bad' ? C('bad') : s.s === 'block' ? C('block') : s.s === 'work' ? '#fff' : '#0d1016';
+        const ring = s.s === 'bad' ? C('bad') : s.s === 'block' ? C('block') : tr.color;
+        el('circle', { cx: x, cy: ly, r: 8, fill, stroke: ring, 'stroke-width': 3, class: 'r' }, gs);
+        const mk = s.s === 'bad' ? '!' : s.s === 'block' ? '…' : '';
+        if (mk) { const m = el('text', { x, y: ly + 3.5, 'text-anchor': 'middle', 'font-size': 10, 'font-weight': 700 }, gs); m.textContent = mk; }
+        const lb = el('text', { x: x + 4, y: ly - 14, transform: `rotate(-38 ${x + 4} ${ly - 14})` }, gs);
+        lb.textContent = s.t.length > 40 ? s.t.slice(0, 39) + '…' : s.t;
+        gs.addEventListener('click', e => { e.stopPropagation(); stepPanel({ ...s, track: tr }); });
+        staEls.push({ g: gs, s, tr });
+      });
+      y += ROW;
+    }
+    y += 24;
+  }
+  MH = y;
+  applyMetroSearch();
+}
+function applyMetroSearch() { staEls.forEach(({ g, s, tr }) => { const hit = Q && match(s.t, s.note, s.src, tr.title); g.classList.toggle('dim', !!Q && !hit); g.classList.toggle('hit', !!hit); }); }
+
+/* ═══ СИСТЕМА: граф колонками ═══ */
+const CW = 250, NW = 224, NH = 32, GAP = 8, SY = 70;
+let sysDrawn = false, SW = 0, SH = 0, selected = null;
+const nodeEls = {}, edgeEls = [];
+function drawSystem() {
+  if (sysDrawn) return applySysSearch(); sysDrawn = true;
+  const { groups, nodes, links } = M.system;
+  const col = Object.fromEntries(groups.map((g, i) => [g.id, i]));
+  const byG = groups.map(g => nodes.filter(n => n.group === g.id));
+  const pos = {};
+  const place = () => byG.forEach((list, ci) => list.forEach((n, k) => (pos[n.id] = { x: 30 + ci * CW, y: SY + k * (NH + GAP), c: ci })));
+  place();
+  // порядок внутри колонки — по среднему положению соседей (меньше перекрещиваний)
+  const nb = {}; links.forEach(l => { (nb[l.a] ??= []).push(l.b); (nb[l.b] ??= []).push(l.a); });
+  for (let it = 0; it < 6; it++) {
+    byG.forEach(list => list.sort((a, b) => {
+      const m = n => { const ys = (nb[n.id] || []).map(id => pos[id]?.y).filter(v => v != null); return ys.length ? ys.reduce((x, y) => x + y) / ys.length : pos[n.id].y; };
+      return m(a) - m(b);
+    }));
+    place();
+  }
+  SW = 30 + groups.length * CW; SH = SY + Math.max(...byG.map(l => l.length)) * (NH + GAP) + 40;
+  groups.forEach((g, ci) => {
+    el('rect', { x: 22 + ci * CW, y: 20, width: CW - 14, height: SH - 30, rx: 14, fill: '#11151d' }, sys);
+    const t = el('text', { x: 34 + ci * CW, y: 48, class: 'colh' }, sys); t.textContent = `${g.title} · ${byG[ci].length}`;
+  });
+  const gE = el('g', {}, sys), gN = el('g', {}, sys);
+  links.forEach(l => {
+    const A = pos[l.a], B = pos[l.b]; if (!A || !B) return;
+    let d;
+    const ay = A.y + NH / 2, by = B.y + NH / 2;
+    if (A.c === B.c) { const x = A.x + NW; d = `M${x},${ay} C${x + 40},${ay} ${x + 40},${by} ${x},${by}`; }
+    else {
+      const fwd = B.c > A.c, x1 = fwd ? A.x + NW : A.x, x2 = fwd ? B.x : B.x + NW, k = Math.max(50, Math.abs(x2 - x1) * 0.45) * (fwd ? 1 : -1);
+      d = `M${x1},${ay} C${x1 + k},${ay} ${x2 - k},${by} ${x2},${by}`;
+    }
+    const g = el('g', { class: 'edge ' + l.s }, gE);
+    const path = el('path', { d }, g);
+    const tt = el('title', {}, path); tt.textContent = `${l.t || ''}`;
+    edgeEls.push({ a: l.a, b: l.b, g });
+  });
+  nodes.forEach(n => {
+    const p = pos[n.id], g = el('g', { class: 'node' }, gN);
+    el('rect', { x: p.x, y: p.y, width: NW, height: NH, rx: 9, class: 'b' }, g);
+    el('rect', { x: p.x + 6, y: p.y + 8, width: 4, height: NH - 16, rx: 2, fill: C(n.s) }, g);
+    const t = el('text', { x: p.x + 18, y: p.y + NH / 2 + 4 }, g); t.textContent = n.t.length > 30 ? n.t.slice(0, 29) + '…' : n.t;
+    g.addEventListener('mouseenter', () => focusNode(n.id));
+    g.addEventListener('mouseleave', () => focusNode(selected));
+    g.addEventListener('click', e => { e.stopPropagation(); selected = n.id; focusNode(n.id); nodePanel(n); });
+    nodeEls[n.id] = { g, n };
+  });
+  applySysSearch();
+}
 function focusNode(id) {
   sys.classList.toggle('focus', !!id);
-  Object.values(nodeEls).forEach(g => g.classList.remove('on', 'sel'));
-  edges.forEach(e => e.g.classList.remove('on'));
-  if (!id) return;
-  nodeEls[id].classList.add('on');
-  if (id === selected) nodeEls[id].classList.add('sel');
-  edges.forEach(e => { if (e.a === id || e.b === id) { e.g.classList.add('on'); nodeEls[e.a].classList.add('on'); nodeEls[e.b].classList.add('on'); } });
+  Object.values(nodeEls).forEach(({ g }) => g.classList.remove('on', 'sel'));
+  edgeEls.forEach(e => e.g.classList.remove('on'));
+  if (!id || !nodeEls[id]) return;
+  nodeEls[id].g.classList.add('on', ...(id === selected ? ['sel'] : []));
+  edgeEls.forEach(e => { if (e.a === id || e.b === id) { e.g.classList.add('on'); nodeEls[e.a]?.g.classList.add('on'); nodeEls[e.b]?.g.classList.add('on'); } });
 }
+function applySysSearch() { Object.values(nodeEls).forEach(({ g, n }) => g.classList.toggle('dim', !!Q && !match(n.t, n.d, n.f))); }
+function nodePanel(n) {
+  const nm = id => esc(nodeEls[id]?.n.t || id);
+  const ls = M.system.links.filter(l => l.a === n.id || l.b === n.id);
+  openPanel(`<h2>${esc(n.t)}</h2>${chipS(n.s)} <span class="chip">${esc(M.system.groups.find(g => g.id === n.group)?.title)}</span>
+    <p>${esc(n.d)}</p>${n.f ? `<p><code>${esc(n.f)}</code></p>` : ''}
+    <h3>Связи · ${ls.length}</h3><ul class="lst">${ls.map(l => `<li><span class="dot" style="background:${C(l.s)}"></span><span>${nm(l.a)} → ${nm(l.b)}${l.t ? ' · ' + esc(l.t) : ''}</span></li>`).join('')}</ul>`);
+}
+sys.addEventListener('click', () => { selected = null; focusNode(null); });
 
-/* ═════════ панель ═════════ */
-const panel = document.getElementById('panel'), pbody = document.getElementById('pbody');
-const chip = s => `<span class="chip" style="background:${CV(s)}">${ST[s]}</span>`;
-function stepsOf(tr) {
-  return `<h3 style="color:${tr.color}">${esc(tr.title)}</h3><ol>${tr.steps.map(([nm, s]) =>
-    `<li><i style="background:${CV(s)}"></i><span>${esc(nm)}</span></li>`).join('')}</ol>`;
-}
-function showStep(tr, name, s, note) {
-  pbody.innerHTML = `<h2>${esc(name)}</h2>${chip(s)}${note ? `<p>${esc(note)}</p>` : ''}${stepsOf(tr)}`;
-  panel.hidden = false;
-}
-function showNode(n) {
-  const tracks = (n.track || []).map(id => M.tracks.find(t => t.id === id)).filter(Boolean);
-  const links = M.links.filter(l => l[0] === n.id || l[1] === n.id)
-    .map(([a, b, lb, s]) => `<li><i style="background:${CV(s)}"></i><span>${esc(byId[a].t)} → ${esc(byId[b].t)}${lb ? ' · ' + esc(lb) : ''}</span></li>`).join('');
-  pbody.innerHTML = `<h2>${esc(n.t)}</h2>${chip(n.s)}<p>${esc(n.d)}</p>${n.f ? `<p><code>${esc(n.f)}</code></p>` : ''}
-    <h3>Связи</h3><ol>${links}</ol>${tracks.map(stepsOf).join('')}`;
-  panel.hidden = false;
-}
-document.getElementById('px').onclick = () => { panel.hidden = true; selected = null; focusNode(null); };
-
-/* ═════════ двигать и масштабировать ═════════ */
-function panZoom(svg, W, H) {
-  let vb = { x: 0, y: 0, w: W, h: H };
+/* ═══ двигать и масштабировать ═══ */
+function panZoom(svg, size) {
+  let vb = { x: 0, y: 0, w: 100, h: 100 };
   const apply = () => svg.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
-  const fit = () => {
-    const r = svg.getBoundingClientRect(), pad = 70;
-    const k = Math.max(W / r.width, (H + pad) / r.height);
-    vb = { w: r.width * k, h: r.height * k };
-    vb.x = (W - vb.w) / 2; vb.y = -pad * k * 0.6 + (H + pad - vb.h) / 2;
-    apply();
-  };
-  svg.addEventListener('wheel', e => {
-    e.preventDefault();
-    const r = svg.getBoundingClientRect(), k = e.deltaY > 0 ? 1.12 : 1 / 1.12;
-    const px = vb.x + (e.clientX - r.left) / r.width * vb.w, py = vb.y + (e.clientY - r.top) / r.height * vb.h;
-    vb.w *= k; vb.h *= k; vb.x = px - (px - vb.x) * k; vb.y = py - (py - vb.y) * k; apply();
-  }, { passive: false });
-  let drag = null;
-  svg.addEventListener('pointerdown', e => { if (e.target.closest('.st, .node')) return; drag = { x: e.clientX, y: e.clientY }; svg.classList.add('drag'); svg.setPointerCapture(e.pointerId); });
+  const zoom = (k, cx, cy) => { const r = svg.getBoundingClientRect(); const px = vb.x + (cx - r.left) / r.width * vb.w, py = vb.y + (cy - r.top) / r.height * vb.h; vb.w *= k; vb.h *= k; vb.x = px - (px - vb.x) * k; vb.y = py - (py - vb.y) * k; apply(); };
+  const fit = () => { const [W, H] = size(); const r = svg.getBoundingClientRect(); if (!r.width) return; const k = Math.max(W / r.width, H / r.height, 0.6 * W / r.width); vb = { w: r.width * k, h: r.height * k, x: 0, y: 0 }; if (W / r.width < H / r.height) vb.x = (W - vb.w) / 2; apply(); };
+  // широкая схема: стартуем с читаемого масштаба у левого края, а не мелким целиком
+  const start = () => { const [W, H] = size(); const r = svg.getBoundingClientRect(); if (!r.width) return; const k = Math.min(Math.max(W / r.width, H / r.height), 1.6); vb = { x: -10, y: 0, w: r.width * k, h: r.height * k }; apply(); };
+  svg.addEventListener('wheel', e => { e.preventDefault(); zoom(e.deltaY > 0 ? 1.12 : 1 / 1.12, e.clientX, e.clientY); }, { passive: false });
+  let drag = null, moved = false;
+  svg.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY }; moved = false; });
   svg.addEventListener('pointermove', e => {
     if (!drag) return;
-    const r = svg.getBoundingClientRect();
-    vb.x -= (e.clientX - drag.x) / r.width * vb.w; vb.y -= (e.clientY - drag.y) / r.height * vb.h;
-    drag = { x: e.clientX, y: e.clientY }; apply();
+    if (!moved && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 4) return;
+    if (!moved) { moved = true; svg.classList.add('drag'); svg.setPointerCapture(e.pointerId); }
+    const r = svg.getBoundingClientRect(); vb.x -= (e.clientX - drag.x) / r.width * vb.w; vb.y -= (e.clientY - drag.y) / r.height * vb.h; drag = { x: e.clientX, y: e.clientY }; apply();
   });
   svg.addEventListener('pointerup', () => { drag = null; svg.classList.remove('drag'); });
-  svg.addEventListener('click', () => { if (svg === sys) { selected = null; focusNode(null); } });
-  return fit;
+  svg.addEventListener('click', e => { if (moved) e.stopPropagation(); }, true);
+  return { fit, start, zoom: k => { const r = svg.getBoundingClientRect(); zoom(k, r.left + r.width / 2, r.top + r.height / 2); } };
 }
-const fits = { metro: panZoom(metro, MW, MH), system: panZoom(sys, SW, SH) };
+const pz = { metro: panZoom(metro, () => [MW, MH]), system: panZoom(sys, () => [SW, SH]) };
+const fits = { metro: () => pz.metro.start(), system: () => pz.system.start() };
+document.getElementById('fit').onclick = () => pz[tab]?.fit();
+document.getElementById('zin').onclick = () => pz[tab]?.zoom(1 / 1.3);
+document.getElementById('zout').onclick = () => pz[tab]?.zoom(1.3);
 
-/* ═════════ вкладки ═════════ */
-let tab = location.hash === '#system' ? 'system' : 'metro';
-function show(t) {
-  tab = t;
-  document.querySelectorAll('[data-tab]').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === t));
-  metro.hidden = t !== 'metro'; sys.hidden = t !== 'system'; panel.hidden = true;
-  fits[t](); history.replaceState(null, '', '#' + t);
-}
-document.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => show(b.dataset.tab));
-document.getElementById('fit').onclick = () => fits[tab]();
-addEventListener('resize', () => fits[tab]());
+addEventListener('hashchange', () => { const t = location.hash.slice(1); if (t !== tab && TABS.some(x => x[0] === t)) show(t); });
 show(tab);
 </script>
 </body>
