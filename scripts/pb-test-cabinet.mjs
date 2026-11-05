@@ -460,6 +460,11 @@ if (!MAX_SECRET) {
   res = await call(A.token, 'POST', '/api/wed/link', { code: await fresh(maxId) });
   check('MAX пустой учётки переходит к этой', res.status === 200 && res.json.record?.maxId === maxId, res.text);
   check('у пустой учётки MAX снят', (await call(SU, 'GET', `/api/collections/vendors/records/${X.id}`)).json?.maxId === '');
+
+  // остановил бота — уведомления в MAX выключаются
+  await hook({ update_type: 'bot_stopped', timestamp: Date.now(), user: { user_id: Number(maxId) } });
+  const stopped = (await call(SU, 'GET', `/api/collections/vendors/records/${A.id}`)).json;
+  check('остановил бота — заявки в MAX выключены', stopped?.notify?.max === false && stopped?.maxId === maxId, JSON.stringify(stopped?.notify));
 }
 
 // ---------- вход по почте ----------

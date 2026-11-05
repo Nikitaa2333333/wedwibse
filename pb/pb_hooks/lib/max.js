@@ -103,6 +103,20 @@ function webhook(e) {
         e.app.save(login);
         send(id, TEXT_DONE);
       }
+    } else if (body.update_type === 'bot_stopped' || body.update_type === 'dialog_removed') {
+      // остановил или удалил бота — писать ему некуда: выключаем уведомления
+      // в MAX, профиль покажет «заявки сюда не приходят»; «Начать» снова — включит тумблер
+      const id = String((body.user && body.user.user_id) || '');
+      let v = null;
+      try { v = e.app.findFirstRecordByFilter('vendors', 'maxId = {:id}', { id }); } catch (_) {}
+      if (v) {
+        let n = {};
+        try { n = JSON.parse(v.getString('notify') || '{}') || {}; } catch (_) {}
+        if (!Object.keys(n).length) n = { telegram: !!v.getString('telegramId'), email: false, emailTo: '' };
+        n.max = false;
+        v.set('notify', n);
+        e.app.save(v);
+      }
     } else if (body.update_type === 'message_created') {
       const m = body.message || {};
       const sender = m.sender || {};
