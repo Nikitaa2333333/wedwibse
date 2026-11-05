@@ -6,7 +6,7 @@
 // Скрипт telegram.org грузим только по нажатию: на остальных страницах
 // и до нажатия его нет. Номер бота (цифры до «:» в токене) не секрет —
 // PUBLIC_TG_BOT_ID в сборке; без него кнопка остаётся ссылкой прототипа.
-import { api, saveSession } from './cabinet-api';
+import { api, saveSession, session } from './cabinet-api';
 
 export const TG_BOT_ID = import.meta.env.PUBLIC_TG_BOT_ID || '';
 
@@ -61,6 +61,14 @@ export function pending(): Pending | null {
  * и ведём на экран условий: учётка появится только с их подписью.
  */
 export async function signIn(p: Pending & { accept?: boolean }): Promise<'in' | 'needs-accept' | 'waiting'> {
+  if (linkVia()) {
+    // «Подключить» из профиля: тот же аккаунт мессенджера — к открытой учётке, новой не заводим
+    const res = await api('vendor', 'POST', '/api/wed/link', p.max ? { code: p.max } : { tg: p.tg });
+    if (res?.status === 'waiting') return 'waiting';
+    const s = session('vendor');
+    if (s) saveSession('vendor', { ...s, record: res.record });
+    return 'in';
+  }
   const common = { accept: p.accept === true, invite: p.invite || undefined };
   const res = p.max
     ? await api(null, 'POST', '/api/wed/max', { code: p.max, ...common })
@@ -76,7 +84,20 @@ export async function signIn(p: Pending & { accept?: boolean }): Promise<'in' | 
   return 'in';
 }
 
+/**
+ * «Подключить» из профиля: /profi/vhod/?via=telegram|max при открытой
+ * сессии подрядчика — кнопка мессенджера привязывает его к этой учётке
+ * (POST /api/wed/link) и возвращает в профиль.
+ */
+export function linkVia(): 'telegram' | 'max' | null {
+  const v = new URLSearchParams(location.search).get('via');
+  return (v === 'telegram' || v === 'max') && session('vendor') ? v : null;
+}
+
+export const PROFILE_URL = '/profi/moi/profil/';
+
 export function afterLogin(next?: string) {
+  if (linkVia()) { location.href = PROFILE_URL; return; }
   // только свои адреса: ?next= не уводит на чужой сайт
   location.href = next && next.startsWith('/profi/') ? next : '/profi/moi/';
 }
