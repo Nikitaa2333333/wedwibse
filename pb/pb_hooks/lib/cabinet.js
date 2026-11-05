@@ -690,7 +690,7 @@ function moderateRevision(e) {
   // только статус и причина. Иначе вместе с одобрением можно подменить
   // карточку (specialist/venue + baseVersion), владельца, текст или фото.
   if (!e.hasSuperuserAuth()) {
-    denyExtra(e.requestInfo().body, ['status', 'rejectReason']);
+    denyExtra(e.requestInfo().body, ['status', 'rejectReason', 'remarkPhotos']);
     if (to !== from && to !== 'approved' && to !== 'rejected') {
       throw new BadRequestError('Модератор может одобрить правку или вернуть её с причиной.');
     }
@@ -703,6 +703,7 @@ function moderateRevision(e) {
     // не сохранилось ничего, и повторное одобрение не споткнётся о версию.
     // Письмо — уже после, через основной app: транзакционный к этому
     // моменту закрыт, и письмо через него молча не ушло бы.
+    r.set('remarkPhotos', []);
     const app = e.app;
     app.runInTransaction((txApp) => {
       approve(txApp, r);
@@ -725,15 +726,26 @@ function moderateRevision(e) {
     if (from !== 'review') throw new BadRequestError('Вернуть можно только карточку на проверке.');
     const reason = str(r.getString('rejectReason'));
     if (!reason) throw new BadRequestError('Напишите причину в поле rejectReason — без неё подрядчик не поймёт, что исправить.');
+    // кадры, которые надо заменить (необязательно): только из фото этой ревизии
+    const photos = photosOf(r);
+    let marked = [];
+    try { marked = JSON.parse(r.getString('remarkPhotos') || '[]'); } catch (_) {}
+    if (!Array.isArray(marked)) marked = [];
+    marked = marked.map(String).filter((n, i, a) => a.indexOf(n) === i);
+    if (marked.some((n) => photos.indexOf(n) === -1)) throw new BadRequestError('Отмеченного кадра нет среди фото карточки — обновите страницу.');
+    r.set('remarkPhotos', marked);
+    const nums = marked.map((n) => photos.indexOf(n) + 1).sort((a, b) => a - b);
+    const fix = nums.length ? `Заменить: фото ${nums.join(', ')}` : '';
     r.set('reviewedAt', new DateTime());
     e.next();
     const data = jsonOf(r, 'data');
     notifyVendor(e.app, r.getString('owner'), 'Карточку нужно поправить — WED Secrets',
       `<p>Мы посмотрели карточку «${str(data.name, 120)}» и вернули её на доработку.</p>` +
       `<p><strong>Что исправить:</strong> ${reason.replace(/</g, '&lt;')}</p>` +
+      (fix ? `<p>${fix}.</p>` : '') +
       `<p>Поправьте в кабинете и отправьте на проверку снова.</p>`,
       `Карточку «${str(data.name, 120)}» вернули на доработку.
-Что исправить: ${reason}
+Что исправить: ${reason}${fix ? '\n' + fix : ''}
 Поправьте в кабинете и отправьте на проверку снова.`);
     return;
   }
@@ -1350,7 +1362,7 @@ function myCards(e) {
         categorySlug: kind === 'venue' ? '' : c.getString('categorySlug'),
         status: c.getString('status'),
         url: cardUrl(kind, c.getString('categorySlug'), c.getString('slug')),
-        revision: open ? { id: open.id, status: open.getString('status'), rejectReason: open.getString('rejectReason') } : null,
+        revision: open ? { id: open.id, status: open.getString('status'), rejectReason: open.getString('rejectReason'), remarkPhotos: [].concat(Array.isArray(jsonOf(open, 'remarkPhotos')) ? jsonOf(open, 'remarkPhotos') : []) } : null,
       });
     }
   }
