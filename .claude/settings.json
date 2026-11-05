@@ -36,6 +36,17 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/map-hook.mjs\"",
+            "timeout": 30
+          }
+        ]
+      }
     ]
   }
 }
