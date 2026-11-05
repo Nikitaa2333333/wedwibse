@@ -114,15 +114,26 @@ function importPhotos(e) {
   if (status !== 'draft' && status !== 'rejected') throw new BadRequestError('Карточка на проверке или уже опубликована — фото добавляются в черновик.');
   if (cab.managedCard(e.app, rev)) throw new BadRequestError('Фото этой карточки подбираем мы — напишите в «Что поменять в фото».');
 
-  const have = rev.getStringSlice('photos').filter((n) => !!n).length;
+  // уже забранное с этой ссылки (revisions.yadisk) не берём второй раз, пока
+  // файл в карточке: оборванная пачка дозабирается сервером, а экран шлёт её снова
+  const photos = rev.getStringSlice('photos').filter((n) => !!n);
+  let seen = {};
+  try { seen = JSON.parse(rev.getString('yadisk') || '{}') || {}; } catch (_) {}
+  const ref = (p) => `${key}#${p}`;
+  const fresh = paths.filter((p) => !(seen[ref(p)] && photos.indexOf(seen[ref(p)]) !== -1));
+  const already = paths.length - fresh.length;
+
+  const have = photos.length;
   const cap = cab.photoCap(e.app, rev);
-  if (have + paths.length > cap) throw new BadRequestError(`На карточке до ${cap} фото, сейчас ${have} — можно добавить ещё ${Math.max(0, cap - have)}.`);
+  if (have + fresh.length > cap) throw new BadRequestError(`На карточке до ${cap} фото, сейчас ${have} — можно добавить ещё ${Math.max(0, cap - have)}.`);
 
   const files = [];
+  const from = [];
   const skipped = [];
-  for (const p of paths) {
+  for (const p of fresh) {
     try {
       files.push(fetchFile(key, p));
+      from.push(p);
     } catch (err) {
       skipped.push({ path: p, reason: String(err && err.message ? err.message : err) });
     }
@@ -130,8 +141,16 @@ function importPhotos(e) {
   if (files.length) {
     rev.set('photos+', files);
     e.app.save(rev);
+    // имена файлам база даёт при сохранении — сопоставляем по порядку добавления
+    const after = rev.getStringSlice('photos');
+    const added = after.slice(after.length - files.length);
+    const map = {};
+    for (const k in seen) if (after.indexOf(seen[k]) !== -1) map[k] = seen[k]; // удалённые фото — забыть
+    from.forEach((p, i) => { map[ref(p)] = added[i]; });
+    rev.set('yadisk', map);
+    e.app.save(rev);
   }
-  return e.json(200, { record: rev, added: files.length, skipped });
+  return e.json(200, { record: rev, added: files.length, already, skipped });
 }
 
 module.exports = { list, importPhotos, publicKey };

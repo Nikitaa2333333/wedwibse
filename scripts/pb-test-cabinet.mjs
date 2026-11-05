@@ -630,6 +630,20 @@ console.log('\nвход по почте');
   check('за раз не больше 5 кадров', refused(res), res.text);
   res = await call(D.token, 'POST', '/api/wed/yadisk/import', { revision: d.json?.id, url: YD, paths: items.slice(0, 2).map((x) => x.path) });
   check('выбранные кадры забираются в черновик', res.status === 200 && res.json.added === 2 && res.json.record.photos.length === 2, JSON.stringify({ added: res.json?.added, skipped: res.json?.skipped, photos: res.json?.record?.photos, msg: res.json?.message }));
+  check('служебная карта забранного подрядчику не видна', res.json?.record && !('yadisk' in res.json.record), JSON.stringify(res.json?.record));
+
+  // связь оборвалась посреди пачки, экран шлёт ту же пачку снова — дублей нет
+  res = await call(D.token, 'POST', '/api/wed/yadisk/import', { revision: d.json?.id, url: YD, paths: items.slice(0, 3).map((x) => x.path) });
+  check('повторная пачка не задваивает фото', res.status === 200 && res.json.added === 1 && res.json.already === 2 && res.json.record.photos.length === 3,
+    JSON.stringify({ added: res.json?.added, already: res.json?.already, photos: res.json?.record?.photos?.length, msg: res.json?.message }));
+  res = await call(D.token, 'PATCH', `/api/collections/revisions/records/${d.json?.id}`, { data: { name: 'Диск' }, 'photos-': [res.json?.record?.photos?.[0]] });
+  check('фото удалили', res.status === 200 && res.json.photos.length === 2, res.text);
+  res = await call(D.token, 'POST', '/api/wed/yadisk/import', { revision: d.json?.id, url: YD, paths: [items[0].path] });
+  check('удалённое фото можно забрать снова', res.status === 200 && res.json.added === 1 && res.json.already === 0, JSON.stringify({ added: res.json?.added, already: res.json?.already, msg: res.json?.message }));
+  // скрытое поле база выбрасывает из запроса подрядчика ещё до хука — проверяем, что карта цела
+  await call(D.token, 'PATCH', `/api/collections/revisions/records/${d.json?.id}`, { yadisk: {} });
+  const map = (await call(SU, 'GET', `/api/collections/revisions/records/${d.json?.id}`)).json?.yadisk;
+  check('карту забранного из кабинета не переписать', map && Object.keys(map).length === 3, JSON.stringify(map));
 }
 
 // ---------- уборка ----------

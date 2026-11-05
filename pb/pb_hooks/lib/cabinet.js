@@ -1169,7 +1169,7 @@ function maxAuth(e) {
 function linkMessenger(e) {
   const body = e.requestInfo().body || {};
   let field, ch, who, maxLogin = null;
-  if (body.code) {
+  if (body.code !== undefined) {
     const c = require(`${__hooks}/lib/max.js`).confirmed(e.app, body.code);
     if (!c) return e.json(200, { status: 'waiting' });
     field = 'maxId'; ch = 'max'; who = c.id; maxLogin = c.login;
