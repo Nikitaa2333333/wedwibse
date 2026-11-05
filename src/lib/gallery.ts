@@ -27,7 +27,6 @@
 // рвёт колонки на блоки и оставляет над собой дыры разной высоты.
 // ============================================================
 import { VENUES } from '../data/venues';
-import { ARTICLES, articleUrl, rubricBySlug } from '../data/articles';
 import { REELS, reelHref, type Reel } from '../data/reels';
 import { FEED } from '../data/feed';
 import { REAL_SPECIALISTS, specialistUrl, type Specialist } from '../data/specialists';
@@ -395,29 +394,6 @@ export interface ArticleTile {
 
 export type Tile = ({ kind: 'photo' } & Pin) | ArticleTile;
 
-/** через сколько фото-плиток в поток вклинивается статья */
-const ARTICLE_EVERY = 5;
-
-/** Статьи в доске главной. Выключены по просьбе заказчика (06.10.2026):
-    журнал пока не берём — вернуть одной строкой. */
-const ARTICLES_IN_BOARD = false;
-
-// Пропорция плашки статьи = кадр каталога на телефоне (--card-ratio 2:3):
-// в колонке из вертикальных кадров она читается как ещё один кадр.
-const ARTICLE_RATIO = 2 / 3;
-
-function articleTile(article: (typeof ARTICLES)[number]): ArticleTile {
-  return {
-    kind: 'article',
-    href: articleUrl(article),
-    rubric: rubricBySlug(article.rubricSlug)?.title ?? 'Журнал',
-    title: article.title,
-    ratio: '2 / 3',
-    index: 0,
-    height: 1 / ARTICLE_RATIO,
-  };
-}
-
 /** РОВНЫМ ШАГОМ ПО ВСЕЙ ДОСКЕ, А НЕ ХВОСТОМ И НЕ ПАЧКОЙ. Раньше ролики шли
  *  одной дорожкой внутри общего interleave — и расходились только по первым
  *  рядам: дорожек у площадок и подрядчиков столько же, сколько карточек, и
@@ -488,7 +464,7 @@ function framesOf(pins: Pin[]): Set<string> {
 
 /** Доска целиком — один непрерывный поток плиток, без блоков и полос:
  *  колонки просто идут вниз и заканчиваются на разной высоте, как в ленте.
- *  Каждая ARTICLE_EVERY-я позиция — карточка статьи. */
+ */
 export function collectTiles(): Tile[] {
   // Кадры площадок и подрядчиков идут дорожками в interleave — по одной
   // плитке с карточки по кругу, чтобы доска не шла блоками «сначала одна
@@ -509,16 +485,9 @@ export function collectTiles(): Tile[] {
     cards,
     reelPins().filter((pin) => !used.has(pin.photos[0]))
   );
-  const articles = ARTICLES_IN_BOARD ? ARTICLES.map(articleTile) : [];
-  const out: Tile[] = [];
-
-  let a = 0;
-
-  photos.forEach((pin, i) => {
-    // статью ставим ПЕРЕД плиткой, чтобы доска не начиналась с неё
-    if (i > 0 && i % ARTICLE_EVERY === 0 && articles[a]) out.push(articles[a++]);
-    out.push({ kind: 'photo', ...pin });
-  });
+  // Статей в доске нет: старый блог удалён (05.11.2026), новый пишется
+  // заново. Плитка-статья (ArticleTile) в раскладке осталась спящей — BACKLOG.
+  const out: Tile[] = photos.map((pin) => ({ kind: 'photo' as const, ...pin }));
 
   // Срез по готовому потоку: площадки/подрядчики/ролики/статьи уже
   // вперемешку, поэтому разнообразие источников не теряется. Порядок

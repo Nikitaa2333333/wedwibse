@@ -154,13 +154,21 @@ jobs:
       # по памяти. Скрипт режет их заранее и по одному — на самом сервере,
       # в фоне (первый прогон — пара часов, дальше только новые кадры).
       # flock: второй деплой не запускает второй прогрев поверх первого.
+      # ВЫКЛЮЧЕН (05.11.2026, первый прогон): служба падала по памяти даже при
+      # нарезке по одному кадру — память sharp растёт и не возвращается. Включать
+      # после настройки юнита (MALLOC_ARENA_MAX=2, VIPS_CONCURRENCY=1, лимит выше),
+      # docs/AUDIT-2026-11-06.md. Шаг не роняет выкладку (continue-on-error),
+      # ssh не ждёт фоновый процесс (setsid + ssh -f).
       - name: Warm image cache
+        if: ${{ false }}
+        continue-on-error: true
         timeout-minutes: 2
         run: |
-          SSH="ssh -i ~/.ssh/id_ed25519 -o BatchMode=yes -o ConnectTimeout=20"
           TARGET="${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}"
           scp -i ~/.ssh/id_ed25519 -o BatchMode=yes scripts/warm-images.sh "$TARGET:/srv/wedsecrets-ssr/warm-images.sh"
-          $SSH "$TARGET" 'cd /srv/wedsecrets-ssr && nohup flock -n .warm.lock bash warm-images.sh > warm.log 2>&1 < /dev/null & echo "прогрев запущен, журнал /srv/wedsecrets-ssr/warm.log"'
+          ssh -f -i ~/.ssh/id_ed25519 -o BatchMode=yes -o ConnectTimeout=20 "$TARGET" \
+            'cd /srv/wedsecrets-ssr && setsid nohup flock -n .warm.lock bash warm-images.sh > warm.log 2>&1 < /dev/null &'
+          echo "прогрев запущен, журнал /srv/wedsecrets-ssr/warm.log"
 
       # Проверять по IP бессмысленно: nginx разбирает запросы по server_name,
       # и на голый адрес отвечает дефолтный сервер, а не наш сайт. Стучимся
