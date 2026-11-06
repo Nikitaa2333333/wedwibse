@@ -261,9 +261,9 @@ select.a-field__input { appearance: none; background-image: var(--adm-chevron-do
 .c-bar .a-btn--lg { flex: 1 1 auto; height: 52px; font-size: 16px; }
 @media (min-width: 560px) { .c-bar .a-btn--lg { flex: 0 0 auto; padding-inline: 32px; } }
 .c-error { color: var(--st-bad-text); white-space: pre-line; }
-/* «Чтобы отправить, осталось» под прибитой кнопкой — спокойный янтарный комментарий,
-   не красный (красным — только замечание модератора), с полями как у плашек (06.11) */
-.c-bar .c-error { flex: 1 1 100%; padding-inline: var(--s-4); color: var(--st-warn-strong); line-height: var(--adm-lh); }
+/* «Чтобы отправить, осталось» под прибитой кнопкой — подсказка чёрным, как в плитках,
+   не красный и не янтарный (Никита 06.11), с полями как у плашек */
+.c-bar .c-error { flex: 1 1 100%; padding-inline: var(--s-4); color: var(--adm-text); line-height: var(--adm-lh); }
 .c-ok { color: var(--st-ok-text); }
 .c-error[hidden], .c-ok[hidden], .cab [hidden] { display: none !important; }
 
@@ -713,7 +713,7 @@ html:has(.cab), html:has(.cab) body { background: var(--adm-bg); }
 .c-notes-bar button:disabled { color: color-mix(in srgb, var(--adm-on-dark) 40%, transparent); }
 @media (hover: hover) { .c-notes-bar button:hover:not([aria-pressed="true"]):not([aria-expanded="true"]):not(:disabled) { background: color-mix(in srgb, var(--adm-on-dark) 18%, transparent); } }
 
-/* пустое состояние списка в плашке: текст по левому краю, действие отдельной строкой ниже (06.11:
-   ссылка в строке-сетке .c-row сжималась в столбик по слогам) */
-.c-empty-card { display: grid; gap: var(--s-2); justify-items: start; padding: var(--s-4); border-radius: var(--cab-sheet-radius); background: var(--adm-card); }
-.c-empty-card p { margin: 0; max-width: 40ch; }
+/* пустое состояние «Мои карточки»: текст без плашки и главная кнопка по центру (Никита 06.11) */
+.c-empty-center { display: grid; justify-items: center; gap: var(--s-4); padding: var(--s-8) var(--s-4); text-align: center; }
+.c-empty-center p { margin: 0; max-width: 32ch; }
+.c-sheet-area > .c-rows:has(> .c-empty-center) { background: none; border-radius: 0; }

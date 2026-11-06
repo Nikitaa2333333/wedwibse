@@ -327,7 +327,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         rev = await api('vendor', 'PATCH', `/api/collections/revisions/records/${rev.id}`, { status: 'review' });
         renderOverview();
         // результат — баннером сверху (HIG: Feedback), не строкой под кнопкой (Никита 06.11)
-        toast('Отправили на проверку. Ответим в течение 24 часов', false, 3500);
+        toast('Отправили на проверку, ответим за 24\u00a0часа', false, 3500);
       } catch (x) {
         // хук перечисляет, чего не хватает, через «; » — по строке на пункт
         markTried();
@@ -1308,7 +1308,12 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       return;
     }
     if (b.dataset.pmode) {
+      // «Одна цена» не теряется при переходе на тарифы или «по запросу» и обратно
+      // (Никита 06.11: ввёл цену, открыл «Тарифы» — цена затёрлась). Как tariffsDraft:
+      // черновик в ревизии, на сайт идут только поля выбранного способа.
+      if (priceMode() === 'one' && b.dataset.pmode !== 'one') data.priceOneDraft = { from: data.priceFrom ?? '', note: data.priceNote ?? '' };
       data.priceMode = b.dataset.pmode;
+      if (data.priceMode === 'one' && data.priceOneDraft) { data.priceFrom = data.priceOneDraft.from; data.priceNote = data.priceOneDraft.note; delete data.priceOneDraft; }
       if (data.priceMode === 'tariffs' && !data.tariffs?.length && !data.tariffsDraft?.length) data.tariffs = [{}];
       derive();
       renderSection('prays');
