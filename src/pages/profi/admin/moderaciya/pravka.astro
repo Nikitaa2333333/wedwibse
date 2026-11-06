@@ -73,7 +73,9 @@ const QUESTIONS = Object.fromEntries(
   /* красим саму плашку решения, а не блок внутри неё — плашка в плашке запрещена */
   .pr__side:has(.pr__state[data-st="rejected"]:not(:empty)) { background: var(--st-bad-bg); }
   .pr__side:has(.pr__state[data-st="approved"]:not(:empty)) { background: var(--st-ok-bg); }
-  .pr__state[data-st="rejected"] :global(.status), .pr__state[data-st="approved"] :global(.status) { background: var(--adm-card); }
+  .pr__state :global(.pr__state-h) { font-weight: 600; }
+  .pr__state[data-st="rejected"] :global(.pr__state-h) { color: var(--st-bad-strong); }
+  .pr__state[data-st="approved"] :global(.pr__state-h) { color: var(--st-ok-strong); }
   .pr__state:empty { display: none; }
   .pr__state :global(.pr__state-text) { margin: 0; font-size: 16px; line-height: 1.4; white-space: pre-line; overflow-wrap: anywhere; }
   /* текст подрядчика разделами: заголовок раздела — как он написал, абзацы с воздухом */
@@ -118,6 +120,22 @@ const QUESTIONS = Object.fromEntries(
     const error = $('[data-pr-error]');
     const fail = (m: string) => { error.textContent = m; error.hidden = false; };
     const id = new URLSearchParams(location.search).get('id') || '';
+
+    // когда решили: «сегодня в 17:04», «вчера в 9:30», «5 нояб. в 14:20» — со временем всегда
+    const when = (d: string) => {
+      const t = new Date(String(d).replace(' ', 'T'));
+      const time = t.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+      const day = new Date(); day.setHours(0, 0, 0, 0);
+      const diff = Math.round((day.getTime() - new Date(t).setHours(0, 0, 0, 0)) / 864e5);
+      return `${diff === 0 ? 'сегодня' : diff === 1 ? 'вчера' : t.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })} в\u00a0${time}`;
+    };
+    // плашка решения: без плашки-статуса внутри — цвет плашки уже говорит «вернули / одобрили»
+    // (Никита 06.11: «пилюля в плашке»); заголовком — что и когда, ниже текст модератора
+    const decision = (status: string, at: string, reason?: string) => {
+      const what = status === 'rejected' ? 'Вернули' : status === 'approved' ? 'Одобрили' : REV_STATUS[status]?.label ?? '';
+      const text = status === 'rejected' ? esc(reason || '') : status === 'approved' ? 'Карточка опубликована в базе. На сайте появится со следующей выкладкой' : '';
+      return `<span class="pr__state-h">${what} ${when(at)}</span>${text ? `<span class="pr__state-text">${text}</span>` : ''}`;
+    };
 
     let rev: any;
     async function render() {
@@ -191,9 +209,8 @@ const QUESTIONS = Object.fromEntries(
       $('[data-pr-photos]').innerHTML = (rev.photos ?? []).map((n: string) =>
         `<li><a href="${fileUrl(rev, n, { token })}" target="_blank" rel="noopener"><img src="${fileUrl(rev, n, { thumb: '400x0', token })}" alt="" loading="lazy" /></a></li>`).join('');
 
-      const st = REV_STATUS[rev.status];
       $('[data-pr-state]').dataset.st = rev.status;
-      $('[data-pr-state]').innerHTML = rev.status === 'review' ? '' : `<span class="status ${st.cls}">${st.label}</span>${rev.status === 'rejected' && rev.rejectReason ? `<span class="pr__state-text">${esc(rev.rejectReason)}</span>` : ''}${rev.status === 'approved' ? '<span class="pr__state-text">Карточка опубликована в базе. На сайте появится со следующей выкладкой.</span>' : ''}`;
+      $('[data-pr-state]').innerHTML = rev.status === 'review' ? '' : decision(rev.status, rev.reviewedAt || rev.updated, rev.rejectReason);
       $('[data-pr-acts]').hidden = rev.status !== 'review';
     }
 
@@ -206,10 +223,9 @@ const QUESTIONS = Object.fromEntries(
       const state = $('[data-pr-state]');
       const before = state.innerHTML;
       const beforeSt = state.dataset.st ?? '';
-      const st = REV_STATUS[body.status];
       acts.hidden = true;
       state.dataset.st = body.status;
-      state.innerHTML = `<span class="status ${st.cls}">${st.label}</span>${body.rejectReason ? `<span class="pr__state-text">${esc(body.rejectReason)}</span>` : ''}`;
+      state.innerHTML = decision(body.status, new Date().toISOString(), body.rejectReason);
       // плашка решения — к середине экрана: тост «Отменить» внизу её не закрывает (Никита 06.11)
       state.scrollIntoView({ behavior: 'smooth', block: 'center' });
       later({
