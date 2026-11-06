@@ -80,3 +80,21 @@
 .tip--center { left: 50%; transform: translateX(-50%); width: max-content; max-width: 100%; }
 .tip--center::after { left: 50%; margin-left: -8px; }
 .tip--bad { color: var(--error-text); }
+
+/* Код из письма — шесть клеток (CodeInput.astro, Никита 06.11). Настоящее поле
+   лежит поверх клеток прозрачным: нажатие в любую клетку ставит курсор в него. */
+.otp { display: grid; }
+.otp > * { grid-area: 1 / 1; }
+.otp__input {
+  z-index: 1; align-self: stretch; width: 100%; min-height: 100%;
+  opacity: 0; border: 0; padding: 0; font-size: 16px; color: transparent; caret-color: transparent;
+}
+.otp__cells { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--s-2); }
+.otp__cell {
+  display: grid; place-items: center; aspect-ratio: 4 / 5;
+  border-radius: var(--radius-card); background: var(--surface); border: 1px solid transparent;
+  font-size: var(--fs-h3); font-variant-numeric: tabular-nums; color: var(--fg);
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+.otp__cell.is-active { border-color: var(--fg); }
+.otp:has([aria-invalid="true"]) .otp__cell { border-color: var(--error-text); }

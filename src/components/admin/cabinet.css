@@ -91,7 +91,7 @@ details.c-row > summary { display: flex; align-items: center; justify-content: s
 details.c-row > summary::-webkit-details-marker { display: none; }
 details.c-row > summary .c-row__go { flex: none; transition: transform var(--dur-fast) var(--ease-out); }
 details[open].c-row > summary .c-row__go { transform: rotate(90deg); }
-.c-details__text { margin-top: var(--s-3); font-size: var(--adm-fs); line-height: 1.5; overflow-wrap: anywhere; }
+.c-details__text { margin-top: var(--s-3); font-size: 16px; line-height: 1.5; /* ответ читают, а не пробегают — 16, не 14 (Никита 06.11) */ overflow-wrap: anywhere; }
 
 /* статус — .status из base.css (05.11.2026: .c-badge и .c-state слиты в него) */
 

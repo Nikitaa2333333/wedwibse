@@ -89,7 +89,8 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
   font: inherit;
   font-size: 16px;
 }
-.a-field__input:focus-visible { outline: 2px solid var(--adm-primary); outline-offset: -1px; border-color: transparent; }
+/* фокус — тонкая серая обводка, как у Apple, не чёрная в 2 px (Никита 06.11) */
+.a-field__input:focus-visible { outline: 1px solid var(--adm-focus); outline-offset: -1px; border-color: transparent; }
 .a-field__input[aria-invalid="true"] { border-color: var(--st-bad-text); }
 .a-login__error { color: var(--st-bad-text); font-size: var(--adm-fs); line-height: var(--adm-lh); }
 /* ошибки входа — облачком .tip (base.css, lib/form-check.ts), форма не прыгает */
@@ -175,6 +176,10 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
 .a-task__sub { font-size: var(--adm-fs-sm); line-height: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .a-task__urgent { color: var(--st-bad-text); font-weight: 600; }
 .a-task > .status { justify-self: end; }
+/* уже открытая модератором — приглушена целиком, плашка статуса без цвета (Никита 06.11) */
+.a-task--seen, .a-task--seen .a-task__urgent { color: var(--adm-text-seen); }
+.a-task--seen .a-task__cover { opacity: 0.6; }
+.a-task--seen .status { background: var(--st-muted-bg); color: var(--adm-text-seen); }
 .a-task__fill { font-size: var(--adm-fs-sm); white-space: nowrap; }
 /* у задачи в таблице (заявки, модерация) ячейка без своих полей */
 .a-table td.a-task-cell { padding: 0; }
@@ -256,7 +261,7 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
   font: inherit;
 }
 .a-input::placeholder { color: var(--adm-text-2); }
-.a-input:focus-visible { outline: 2px solid var(--adm-primary); outline-offset: -1px; }
+.a-input:focus-visible { outline: 1px solid var(--adm-focus); outline-offset: -1px; }
 
 /* Строка инструментов над таблицей (Директ) */
 .a-tools { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); padding: 12px var(--adm-pad); }
@@ -451,7 +456,8 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
 }
 .c-tab { display: grid; justify-items: center; align-content: center; gap: 4px; min-width: 0; color: var(--adm-text-2); text-decoration: none; font-size: var(--adm-fs-sm); line-height: 16px; font-weight: 500; }
 .c-tab svg { width: 26px; height: 26px; display: block; }
-.c-tab[aria-current="page"] { color: var(--cab-ink); font-weight: 600; }
+/* выбранный раздел виден фоном, а не только жирностью (Никита 06.11, замечание Евгения) */
+.c-tab[aria-current="page"] { color: var(--cab-ink); font-weight: 600; background: var(--adm-bg); border-radius: 16px; margin: 6px 4px; }
 @media (hover: hover) { .c-tab:hover { color: var(--cab-ink); } }
 
 .c-tab__ic { position: relative; display: block; }

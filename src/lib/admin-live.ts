@@ -83,6 +83,23 @@ export function counts(revs: any[]) {
 // рядом с «Одобрили» путалось.
 const TONE = { check: '', ok: ' status--ok', wait: ' status--warn', bad: ' status--bad', none: '' } as const;
 
+// ПРОСМОТРЕННОЕ (Никита 06.11): заявку или правку, которую модератор уже открыл, список
+// приглушает целиком — как просмотренную заявку у подрядчика (--adm-text-seen). Помним в
+// браузере модератора: id → время правки; правка изменилась после просмотра — снова яркая.
+const SEEN_KEY = 'wed-adm-seen';
+function seenMap(): Record<string, string> {
+  try { return JSON.parse(localStorage.getItem(SEEN_KEY) || '{}'); } catch { return {}; }
+}
+export function markSeen(id: string, updated: string) {
+  try {
+    const m = seenMap();
+    m[id] = updated;
+    const keys = Object.keys(m);
+    if (keys.length > 500) keys.slice(0, keys.length - 500).forEach((k) => delete m[k]);
+    localStorage.setItem(SEEN_KEY, JSON.stringify(m));
+  } catch {}
+}
+
 export function taskRow(r: any, o: { task: string; tone: 'check' | 'ok' | 'wait' | 'bad' | 'none'; fill?: boolean }): string {
   const href = `/profi/admin/moderaciya/pravka/?id=${encodeURIComponent(r.id)}`;
   const name = String(r.data?.name || '').trim() || 'Без названия';
@@ -92,7 +109,8 @@ export function taskRow(r: any, o: { task: string; tone: 'check' | 'ok' | 'wait'
     ? `<span class="${left < URGENT_MIN ? 'a-task__urgent' : ''}">${leftText(left)}</span>`
     : whenText(r.updated);
   // data-astro-reload: переходом ClientRouter разбор не запускался (26.10)
-  return `<a class="a-task" href="${href}" data-astro-reload>`
+  const seen = seenMap()[r.id] === r.updated;
+  return `<a class="a-task${seen ? ' a-task--seen' : ''}" href="${href}" data-astro-reload>`
     + `<span class="a-task__cover a-task__cover--empty" aria-hidden="true">${esc(name.slice(0, 1))}</span>`
     + `<span class="a-task__body"><span class="a-task__name">${esc(name)}</span><span class="a-task__sub">${when}</span></span>`
     + `${pill}</a>`;

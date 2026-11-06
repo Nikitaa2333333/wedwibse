@@ -35,14 +35,11 @@ const QUESTIONS = Object.fromEntries(
         <ul class="pr__photos" data-pr-photos></ul>
       </section>
     </div>
-    <aside class="a-card pr__side">
+    <aside class="a-card pr__side" data-toast-top>
       <p class="pr__state" data-pr-state></p>
       <div class="pr__acts" data-pr-acts hidden>
+        <!-- две кнопки решения парой; причина — в отдельном окне (HIG: Sheets), а не полем между кнопками (Никита 06.11) -->
         <button class="a-btn a-btn--primary a-btn--lg a-btn--block" type="button" data-pr-approve>Одобрить</button>
-        <div class="pr__why" data-pr-why hidden>
-          <label class="pr__label" for="pr-reason">Что исправить</label>
-          <textarea class="a-input pr__reason" id="pr-reason" rows="4" placeholder="Своими словами: что не так и что сделать" data-pr-reason></textarea>
-        </div>
         <button class="a-btn a-btn--lg a-btn--block" type="button" data-pr-reject>Вернуть с причиной</button>
       </div>
       <p class="pr__error" data-pr-error hidden></p>
@@ -66,19 +63,31 @@ const QUESTIONS = Object.fromEntries(
   .pr__photos { margin-top: var(--s-3); list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; } /* три колонки, как у подрядчика: модератору хватит, быстрее пролистать */
   :global(.pr__photos img) { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-radius: var(--radius-card); display: block; }
   .pr__side { display: grid; gap: var(--s-3); align-content: start; }
-  .pr__acts { display: grid; gap: var(--s-3); }
-  .pr__acts[hidden], .pr__error[hidden], .pr__why[hidden] { display: none; }
-  .pr__why { display: grid; gap: var(--s-2); }
-  .pr__label { font-weight: 500; margin-bottom: calc(-1 * var(--s-2)); }
+  .pr__acts { display: grid; gap: var(--s-2); }
+  .pr__acts[hidden], .pr__error[hidden] { display: none; }
   .pr__n { font-weight: var(--w-body); }
-  .pr__reason { width: 100%; resize: vertical; min-height: 96px; height: auto; padding-block: var(--s-2); }
+  /* статус и под ним текст модератора: внутри группы 8 px, без подписи «Причина:» (Никита 06.11) */
+  .pr__state { display: grid; gap: var(--s-2); justify-items: start; margin: 0; }
+  .pr__state:empty { display: none; }
+  .pr__state :global(.pr__state-text) { margin: 0; font-size: 16px; line-height: 1.4; white-space: pre-line; overflow-wrap: anywhere; }
+  /* текст подрядчика разделами: заголовок раздела — как он написал, абзацы с воздухом */
+  .pr__fields :global(.pr__sec + .pr__sec) { margin-top: var(--s-4); }
+  .pr__fields :global(.pr__sec-t) { display: block; margin-bottom: var(--s-1); font-size: 17px; font-weight: 600; }
+  .pr__fields :global(.pr__sec p) { margin: 0; white-space: pre-line; }
+  .pr__fields :global(.pr__sec p + p) { margin-top: var(--s-2); }
+  /* окно «Вернуть на доработку»: подпись, поле, кнопки — внутренние 8, до кнопок 16 */
+  :global(.c-dialog__body.pr-why) { gap: var(--s-2); }
+  :global(.pr-why .a-input) { width: 100%; resize: vertical; min-height: 120px; height: auto; padding: var(--s-3); font-size: 16px; line-height: 1.4; }
+  :global(.pr-why .a-field__label) { margin-top: var(--s-2); }
+  :global(.pr-why__acts) { display: grid; gap: var(--s-2); margin-top: var(--s-2); }
   .pr__error { color: var(--st-bad-text); font-size: var(--fs-small); white-space: pre-line; }
 </style>
 
 <script>
   import { api, esc, fileToken, fileUrl, requireSession, REV_STATUS, errText } from '../../../../lib/cabinet-api';
   import { VENUE_QUESTIONS, VENUE_TERMS, priceFrom, rub } from '../../../../lib/cabinet-form';
-  import { later } from '../../../../lib/cab-ui';
+  import { later, openDialog, X_ICON } from '../../../../lib/cab-ui';
+  import { markSeen } from '../../../../lib/admin-live';
   import { fieldError, clearFieldError } from '../../../../lib/form-check';
 
   const LABELS: [string, string][] = [
@@ -115,6 +124,7 @@ const QUESTIONS = Object.fromEntries(
         // конвейера — только плоские поля
         was = card.page?.source === 'cabinet' ? card.page : card;
       }
+      markSeen(rev.id, rev.updated);
       const d = rev.data ?? {};
       const role = rev.kind === 'venue' ? 'Площадка' : roles[rev.categorySlug] ?? rev.categorySlug;
       $('[data-pr-title]').textContent = d.name || 'Без названия';
@@ -134,10 +144,10 @@ const QUESTIONS = Object.fromEntries(
         return `<dt>${label}</dt><dd>${changed ? `<span class="pr__was">${fmt(before!) || 'пусто'}</span><span class="pr__now">${fmt(now) || 'пусто'}</span>` : fmt(now) || 'пусто'}</dd>`;
       });
       // текст разделами — как написал подрядчик
-      for (const sec of d.sections ?? []) {
-        if (!String(sec?.body ?? '').trim()) continue;
-        rows.push(`<dt>Текст: ${esc(sec.title || 'без заголовка')}</dt><dd>${esc(sec.body) || 'пусто'}</dd>`);
-      }
+      // одной строкой «Описание»: заголовки разделов — как написал подрядчик, абзацы отдельно
+      // (было «Текст: Что беру на себя» — непонятная метка, Никита 06.11)
+      const secs = (d.sections ?? []).filter((x: any) => String(x?.body ?? '').trim());
+      if (secs.length) rows.push(`<dt>Описание</dt><dd>${secs.map((x: any) => `<div class="pr__sec">${x.title ? `<span class="pr__sec-t">${esc(x.title)}</span>` : ''}${String(x.body).split(/\n\s*\n/).map((p: string) => `<p>${esc(p.replace(/^\s*>\s*/, '').trim())}</p>`).join('')}</div>`).join('')}</dd>`);
       const qs = rev.kind === 'venue' ? VENUE_QUESTIONS : JSON.parse(root.dataset.questions!)[rev.categorySlug] ?? [];
       const answered = qs.filter((q: any) => answer(qs, q.key, d.filters?.[q.key]));
       if (qs.length) rows.push(`<dt>Вопросы: ${answered.length} из ${qs.length}</dt><dd>${answered.map((q: any) => `${esc(q.label)}: <b>${esc(answer(qs, q.key, d.filters[q.key]))}</b>`).join('<br>') || 'пусто'}</dd>`);
@@ -176,7 +186,7 @@ const QUESTIONS = Object.fromEntries(
         `<li><a href="${fileUrl(rev, n, { token })}" target="_blank" rel="noopener"><img src="${fileUrl(rev, n, { thumb: '400x0', token })}" alt="" loading="lazy" /></a></li>`).join('');
 
       const st = REV_STATUS[rev.status];
-      $('[data-pr-state]').innerHTML = rev.status === 'review' ? '' : `<span class="status ${st.cls}">${st.label}</span>${rev.status === 'rejected' && rev.rejectReason ? `<br><span class="a-sub">Причина: ${esc(rev.rejectReason)}</span>` : ''}${rev.status === 'approved' ? '<br><span class="a-sub">Карточка опубликована в базе. На сайте появится со следующей выкладкой.</span>' : ''}`;
+      $('[data-pr-state]').innerHTML = rev.status === 'review' ? '' : `<span class="status ${st.cls}">${st.label}</span>${rev.status === 'rejected' && rev.rejectReason ? `<span class="pr__state-text">${esc(rev.rejectReason)}</span>` : ''}${rev.status === 'approved' ? '<span class="pr__state-text">Карточка опубликована в базе. На сайте появится со следующей выкладкой.</span>' : ''}`;
       $('[data-pr-acts]').hidden = rev.status !== 'review';
     }
 
@@ -190,7 +200,9 @@ const QUESTIONS = Object.fromEntries(
       const before = state.innerHTML;
       const st = REV_STATUS[body.status];
       acts.hidden = true;
-      state.innerHTML = `<span class="status ${st.cls}">${st.label}</span>`;
+      state.innerHTML = `<span class="status ${st.cls}">${st.label}</span>${body.rejectReason ? `<span class="pr__state-text">${esc(body.rejectReason)}</span>` : ''}`;
+      // плашка решения — к середине экрана: тост «Отменить» внизу её не закрывает (Никита 06.11)
+      state.scrollIntoView({ behavior: 'smooth', block: 'center' });
       later({
         text,
         undo: () => { state.innerHTML = before; acts.hidden = false; },
@@ -205,21 +217,30 @@ const QUESTIONS = Object.fromEntries(
       });
     }
 
-    $('[data-pr-reason]').addEventListener('input', (e) => clearFieldError(e.target as HTMLInputElement));
     $('[data-pr-approve]').addEventListener('click', () => act({ status: 'approved' }, 'Одобрено'));
+    // причина — в окне (HIG: Sheets): подпись, поле и две кнопки одной ширины столбиком
     $('[data-pr-reject]').addEventListener('click', () => {
-      // первое нажатие — раскрыть поле «Что исправить» и прокрутить к нему; второе — вернуть
-      const why = $('[data-pr-why]');
-      if (why.hidden) {
-        why.hidden = false;
-        why.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        $<HTMLTextAreaElement>('[data-pr-reason]').focus({ preventScroll: true });
-        return;
-      }
-      const reason = $<HTMLTextAreaElement>('[data-pr-reason]').value.trim();
-      // ошибка поля — облачком у поля, не строкой под кнопкой (правило «где какая ошибка»)
-      if (!reason) return fieldError($<HTMLTextAreaElement>('[data-pr-reason]') as unknown as HTMLInputElement, 'Напишите, что исправить — без этого подрядчик не поймёт, что делать');
-      act({ status: 'rejected', rejectReason: reason }, 'Вернули с причиной');
+      const { dlg, close } = openDialog({ html: `
+        <div class="c-dialog__body pr-why">
+          <button class="c-dialog__x" type="button" data-close aria-label="Закрыть">${X_ICON}</button>
+          <h2 class="a-h2">Вернуть на доработку</h2>
+          <label class="a-field__label" for="pr-reason">Что исправить</label>
+          <textarea class="a-input" id="pr-reason" rows="5" placeholder="Своими словами: что не так и что сделать" data-pr-reason></textarea>
+          <div class="pr-why__acts">
+            <button class="a-btn a-btn--primary a-btn--lg a-btn--block" type="button" data-pr-send>Вернуть</button>
+            <button class="a-btn a-btn--lg a-btn--block" type="button" data-close>Не возвращать</button>
+          </div>
+        </div>` });
+      const ta = dlg.querySelector<HTMLTextAreaElement>('[data-pr-reason]')!;
+      ta.addEventListener('input', () => clearFieldError(ta as unknown as HTMLInputElement));
+      ta.focus();
+      dlg.querySelector('[data-pr-send]')!.addEventListener('click', () => {
+        const reason = ta.value.trim();
+        // ошибка поля — облачком у поля (правило «где какая ошибка»)
+        if (!reason) return fieldError(ta as unknown as HTMLInputElement, 'Напишите, что исправить — без этого подрядчик не поймёт, что делать');
+        close();
+        act({ status: 'rejected', rejectReason: reason }, 'Вернули с причиной');
+      });
     });
 
     try { await render(); } catch (err) { fail(errText(err)); }
