@@ -66,13 +66,11 @@ const QUESTIONS = Object.fromEntries(
   /* внутри dd жирное <b> гасит глобальное правило сайта (dd b … !important) — имя тарифа и зала span'ом */
   .pr__fields :global(.pr__tn) { font-weight: 600; }
   .pr__fields :global(.pr__empty) { font-weight: 400; }
-  .pr__fields :global(dd:has(.pr__q)) { font-weight: 400; }
-  .pr__fields :global(.pr__q) { display: grid; gap: 6px; }
-  .pr__fields :global(.pr__q:first-child) { margin-top: 6px; }
-  .pr__fields :global(.pr__q + .pr__q) { margin-top: var(--s-3); }
-  .pr__fields :global(.pr__q-l) { font-size: 15px; line-height: 20px; }
-  .pr__fields :global(.pr__chips) { display: flex; flex-wrap: wrap; gap: 6px; }
-  .pr__fields :global(.pr__chip) { padding: 5px 12px; border-radius: 999px; background: var(--adm-bg); font-size: 15px; line-height: 20px; font-weight: 500; }
+  .pr__fields :global(dd:has(.pr__qt)) { font-weight: 400; }
+  .pr__fields :global(.pr__qt) { display: grid; margin-top: var(--s-1); }
+  .pr__fields :global(.pr__q) { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s-3); padding-block: 10px; border-top: 1px solid var(--adm-line); font-size: 15px; line-height: 20px; }
+  .pr__fields :global(.pr__q:first-child) { border-top: 0; padding-top: var(--s-1); }
+  .pr__fields :global(.pr__q-v) { display: grid; gap: 2px; font-weight: 600; }
   .pr__fields :global(.pr__line) { display: block; }
   .pr__fields :global(.pr__line + .pr__line) { margin-top: var(--s-1); } /* 8 — «дыра», 0 — «слиплось» (06.11) */
   :global(.pr__was) { display: block; text-decoration: line-through; background: var(--diff-del); }
@@ -197,9 +195,10 @@ const QUESTIONS = Object.fromEntries(
       if (secs.length) rows.push(`<dt>Описание</dt><dd>${secs.map((x: any) => `<div class="pr__sec">${x.title ? `<span class="pr__sec-t">${esc(x.title)}</span>` : ''}${String(x.body).split(/\n\s*\n/).map((p: string) => `<p>${esc(p.replace(/^\s*>\s*/, '').trim())}</p>`).join('')}</div>`).join('')}</dd>`);
       const qs = rev.kind === 'venue' ? VENUE_QUESTIONS : JSON.parse(root.dataset.questions!)[rev.categorySlug] ?? [];
       const answered = qs.filter((q: any) => answer(qs, q.key, d.filters?.[q.key]));
-      // ответы — вопрос подписью, выбранное капсулами (Никита 06.11: строкой через запятую читать неудобно)
-      const chips = (q: any) => answers(qs, q.key, d.filters[q.key]).map((x: string) => `<span class="pr__chip">${esc(x)}</span>`).join('');
-      if (qs.length) rows.push(`<dt>Вопросы: ${answered.length} из ${qs.length}</dt><dd>${answered.map((q: any) => `<span class="pr__q"><span class="pr__q-l">${esc(q.label)}</span><span class="pr__chips">${chips(q)}</span></span>`).join('') || EMPTY}</dd>`);
+      // ответы таблицей (Никита 06.11): вопрос слева, ответ справа, строки через тонкую линию;
+      // несколько вариантов — каждый своей строкой в правой колонке
+      const vals = (q: any) => answers(qs, q.key, d.filters[q.key]).map((x: string) => `<span>${esc(x)}</span>`).join('');
+      if (qs.length) rows.push(`<dt>Вопросы: ${answered.length} из ${qs.length}</dt><dd>${answered.length ? `<span class="pr__qt">${answered.map((q: any) => `<span class="pr__q"><span class="pr__q-l">${esc(q.label)}</span><span class="pr__q-v">${vals(q)}</span></span>`).join('')}</span>` : EMPTY}</dd>`);
       const tariffs = (d.tariffs ?? []).filter((t: any) => t?.name || t?.price);
       if (tariffs.length) {
         const p = priceFrom(d);
