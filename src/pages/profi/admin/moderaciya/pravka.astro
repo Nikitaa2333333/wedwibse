@@ -87,6 +87,10 @@ const QUESTIONS = Object.fromEntries(
   .pr__state[data-st="approved"] :global(.pr__state-h) { color: var(--st-ok-strong); }
   .pr__state:empty { display: none; }
   .pr__state :global(.pr__state-text) { margin: 0; font-size: 16px; line-height: 1.4; white-space: pre-line; overflow-wrap: anywhere; }
+  /* текст модератора — облачком комментария с хвостиком к заголовку (Никита 06.11: «всё же выделять»):
+     сразу видно, что это написанное человеком, а не часть интерфейса */
+  .pr__state[data-st="rejected"] :global(.pr__state-text) { position: relative; justify-self: stretch; margin-top: 6px; padding: 12px 14px; border-radius: 16px; background: var(--adm-bg); }
+  .pr__state[data-st="rejected"] :global(.pr__state-text)::before { content: ''; position: absolute; left: 18px; top: -7px; width: 14px; height: 8px; background: inherit; clip-path: polygon(0 100%, 50% 0, 100% 100%); }
   /* текст подрядчика разделами: заголовок раздела — как он написал, абзацы с воздухом */
   .pr__fields :global(.pr__sec + .pr__sec) { margin-top: var(--s-4); }
   .pr__fields :global(.pr__sec-t) { display: block; margin-bottom: var(--s-1); font-size: 17px; font-weight: 600; }
