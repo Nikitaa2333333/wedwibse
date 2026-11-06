@@ -5,7 +5,6 @@
 // Вид — система админки (CabinetShell, cabinet.css): строками, статус
 // одним словом и цветом, действие — на экране карточки.
 import CabinetShell from '../../../components/admin/CabinetShell.astro';
-import AdminIcon from '../../../components/admin/AdminIcon.astro';
 import { SPECIALIST_CATEGORIES } from '../../../data/specialists';
 
 const ROLES = Object.fromEntries(SPECIALIST_CATEGORIES.map((c) => [c.slug, c.role]));
@@ -15,12 +14,10 @@ const ROLES = Object.fromEntries(SPECIALIST_CATEGORIES.map((c) => [c.slug, c.rol
   <div class="cab-col" data-mine data-roles={JSON.stringify(ROLES)}>
     <div class="a-title">
       <h1 class="a-h1">Мои карточки</h1>
-      <div class="a-title__actions">
-        <a class="a-btn a-btn--primary" href="/profi/moi/novaya/" data-add hidden><AdminIcon name="plus" /> Новая карточка</a>
-      </div>
     </div>
     <div class="c-sheet-area">
       <div class="c-rows" data-list><div class="sk-card" aria-busy="true" aria-label="Загружаем"><div class="sk-row"><span class="sk sk--thumb"></span><span class="sk-row__body"><span class="sk sk--line"></span><span class="sk sk--line sk--short"></span></span><span class="sk sk--pill"></span></div><div class="sk-row"><span class="sk sk--thumb"></span><span class="sk-row__body"><span class="sk sk--line"></span><span class="sk sk--line sk--short"></span></span><span class="sk sk--pill"></span></div><div class="sk-row"><span class="sk sk--thumb"></span><span class="sk-row__body"><span class="sk sk--line"></span><span class="sk sk--line sk--short"></span></span><span class="sk sk--pill"></span></div></div></div>
+      <a class="c-add" href="/profi/moi/novaya/" data-add hidden><span class="c-add__ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.4" d="M12 5v14M5 12h14"/></svg></span>Добавить ещё карточку</a>
       <div class="c-fail" data-error hidden><p data-error-text></p><button class="c-chipbtn" type="button" data-retry>Повторить</button></div>
     </div>
   </div>
@@ -71,8 +68,10 @@ const ROLES = Object.fromEntries(SPECIALIST_CATEGORIES.map((c) => [c.slug, c.rol
         const thumb = r.photos?.[0] ? fileUrl(r, r.photos[0], { thumb: '400x0', token }) : '';
         rows.push(row(`/profi/moi/kartochka/?id=${r.id}`, thumb, r.data?.name || 'Без названия', sub, st, r.status === 'rejected'));
       }
-      list.innerHTML = rows.join('') || '<p class="c-row c-row__sub">Карточек пока нет. <a class="c-link" href="/profi/moi/novaya/">Завести карточку</a> — площадки или подрядчика</p>';
-      root.querySelector<HTMLElement>('[data-add]')!.hidden = cards.items.length + revs.items.length >= MAX_CARDS;
+      // пусто — текст без плашки и кнопка по центру (Никита 06.11); есть карточки —
+      // «Добавить ещё карточку» под списком, пока не упёрлись в MAX_CARDS
+      list.innerHTML = rows.join('') || '<div class="c-empty-center"><p>Карточек пока нет. Заведите первую — площадки или подрядчика</p><a class="a-btn a-btn--primary a-btn--lg" href="/profi/moi/novaya/">Завести карточку</a></div>';
+      root.querySelector<HTMLElement>('[data-add]')!.hidden = !rows.length || rows.length >= MAX_CARDS;
     } catch (err) {
       list.innerHTML = '';
       error.querySelector('[data-error-text]')!.textContent = `Карточки не загрузились. ${errText(err)}`;

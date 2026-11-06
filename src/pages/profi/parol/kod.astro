@@ -3,6 +3,7 @@
 // Верный код сразу открывает кабинет и заодно подтверждает почту.
 import ProfiShell from '../../../components/profi/ProfiShell.astro';
 import '../../../components/profi/auth.css';
+import CodeInput from '../../../components/profi/CodeInput.astro';
 ---
 
 <ProfiShell title="Код из письма" look="auth">
@@ -13,10 +14,10 @@ import '../../../components/profi/auth.css';
     </div>
 
     <form class="auth__form" data-code-form>
-      <label class="field">
+      <div class="field">
         <span class="field__label">Код</span>
-        <input class="input" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required />
-      </label>
+        <CodeInput />
+      </div>
       <label class="field">
         <span class="field__label">Новый пароль</span>
         <input class="input" type="password" name="password" autocomplete="new-password" minlength="8" placeholder="Не короче 8 знаков" required />

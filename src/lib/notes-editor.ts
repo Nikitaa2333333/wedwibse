@@ -12,7 +12,12 @@
 // в разделы базы — lib/notes-model.ts.
 import type { Block, BlockKind } from './notes-model';
 import { plainToBlocks, looksLikeHeading } from './notes-model';
-import { later as undoable, LIST_ICON, UNDO_ICON, REDO_ICON } from './cab-ui';
+import { later as undoable, toast, LIST_ICON, UNDO_ICON, REDO_ICON } from './cab-ui';
+
+// Смайлики в описание не берём (Никита 06.11, автопроверка текста): набранный — не
+// вставляется, во вставленном тексте убирается; © ® ™ — не смайлики, оставляем.
+const EMOJI = /(?![\u00a9\u00ae\u2122])\p{Extended_Pictographic}|[\u200d\ufe0f\u{1F3FB}-\u{1F3FF}]/gu;
+const NO_EMOJI = 'Смайлики в описание не добавляем';
 
 const TAG: Record<BlockKind, string> = { h: 'h3', lead: 'blockquote', p: 'p', li: 'li' };
 const BLOCK_TAGS = /^(P|DIV|H[1-6]|LI|UL|OL|BLOCKQUOTE|SECTION|ARTICLE|HEADER|FOOTER|MAIN|ASIDE|TABLE|TBODY|THEAD|TR|TD|TH|DL|DT|DD|FIGURE|FIGCAPTION|PRE|ADDRESS|NAV)$/;
@@ -211,6 +216,13 @@ export function mountNotes(o: NotesOptions) {
   // ---------- ввод ----------
   ed.addEventListener('beforeinput', (e) => {
     const t = e.inputType;
+    if (t.startsWith('insert') && e.data && EMOJI.test(e.data)) {
+      EMOJI.lastIndex = 0;
+      e.preventDefault();
+      toast(NO_EMOJI, false, 2400);
+      return;
+    }
+    EMOJI.lastIndex = 0;
     if (t === 'insertParagraph' || t === 'insertLineBreak') {
       e.preventDefault();
       const sel = selection();
@@ -307,6 +319,14 @@ export function mountNotes(o: NotesOptions) {
       guessed = pasted.filter((x) => x.t === 'h').length;
     }
     if (!pasted.length) ({ blocks: pasted, guessed } = plainToBlocks(plain));
+    let hadEmoji = false;
+    pasted = pasted.map((x) => {
+      const clean = x.text.replace(EMOJI, '');
+      if (clean === x.text) return x;
+      hadEmoji = true;
+      return { ...x, text: clean.replace(/[ \t]{2,}/g, ' ').trim() };
+    }).filter((x) => x.text);
+    if (hadEmoji) toast(NO_EMOJI, false, 2400);
     if (!pasted.length) return;
     const sel = selection();
     const before = read();

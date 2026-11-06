@@ -46,18 +46,20 @@ import AdminShell from '../../../components/admin/AdminShell.astro';
         return xs.length ? Math.min(...xs) : undefined;
       };
       const nNew = c.newReview.length, nEdit = c.editReview.length, nDraft = c.drafts.length;
-      // плитки 2×2 как в Напоминаниях Apple: значок в круге, крупное число, подпись (Никита 05.11)
+      // плитки 2×2 как в Напоминаниях Apple: значок, крупное число, подпись (Никита 05.11)
       const tiles = [
-        { n: nNew, label: 'Новые карточки', left: soon(c.newReview), href: '/profi/admin/zayavki/#review', icon: 'partners' },
-        { n: nEdit, label: 'Правки', left: soon(c.editReview), href: '/profi/admin/moderaciya/', icon: 'moderation' },
-        { n: nDraft, label: 'Не закончены', href: '/profi/admin/zayavki/#draft', icon: 'catalog' },
-        { n: 0, label: 'Жалобы', href: '/profi/admin/zhaloby/', icon: 'complaints' },
-      ] as { n: number; label: string; left?: number; href: string; icon: keyof typeof ADMIN_ICONS }[];
+        // цвет значка — смысл, как у статусов (Никита 06.11): проверить — голубой, не закончены — жёлтый,
+        // жалобы — красный; пусто (0) — серый, чтобы цвет звал только туда, где есть дело
+        { n: nNew, label: 'Новые карточки', left: soon(c.newReview), href: '/profi/admin/zayavki/#review', icon: 'partners', tone: 'info' },
+        { n: nEdit, label: 'Правки', left: soon(c.editReview), href: '/profi/admin/moderaciya/', icon: 'moderation', tone: 'info' },
+        { n: nDraft, label: 'Не закончены', href: '/profi/admin/zayavki/#draft', icon: 'catalog', tone: 'warn' },
+        { n: 0, label: 'Жалобы', href: '/profi/admin/zhaloby/', icon: 'complaints', tone: 'bad' },
+      ] as { n: number; label: string; left?: number; href: string; icon: keyof typeof ADMIN_ICONS; tone: string }[];
       // плитки стоят всегда (ноль — тоже ответ), как смарт-списки в Напоминаниях
       acts.innerHTML = `<div class="a-tiles">${tiles.map((t) => {
             const urgent = (t.left ?? DEADLINE_MIN) < URGENT_MIN;
             const note = t.left !== undefined ? leftText(t.left) : '';
-            return `<a class="a-tile" href="${t.href}"><span class="a-tile__ic">${ic(t.icon, '')}</span><b class="a-tile__n">${t.n}</b><span class="a-tile__label">${t.label}</span>${note ? `<span class="a-tile__note${urgent ? ' a-tile__note--urgent' : ''}">${note}</span>` : ''}</a>`;
+            return `<a class="a-tile" href="${t.href}"><span class="a-tile__ic${t.n ? ` a-tile__ic--${t.tone}` : ''}">${ic(t.icon, '')}</span><b class="a-tile__n">${t.n}</b><span class="a-tile__label">${t.label}</span>${note ? `<span class="a-tile__note${urgent ? ' a-tile__note--urgent' : ''}">${note}</span>` : ''}</a>`;
           }).join('')}</div>`;
       const rows = [
         ...c.newReview.sort((a, b) => (leftMin(a) ?? 0) - (leftMin(b) ?? 0)).map((r) => taskRow(r, { task: 'Проверить', tone: 'check' })),

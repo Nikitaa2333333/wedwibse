@@ -91,7 +91,7 @@ details.c-row > summary { display: flex; align-items: center; justify-content: s
 details.c-row > summary::-webkit-details-marker { display: none; }
 details.c-row > summary .c-row__go { flex: none; transition: transform var(--dur-fast) var(--ease-out); }
 details[open].c-row > summary .c-row__go { transform: rotate(90deg); }
-.c-details__text { margin-top: var(--s-3); font-size: var(--adm-fs); line-height: 1.5; overflow-wrap: anywhere; }
+.c-details__text { margin-top: var(--s-2); font-size: 16px; line-height: 1.5; /* ответ читают, а не пробегают — 16, не 14 (Никита 06.11) */ overflow-wrap: anywhere; }
 
 /* статус — .status из base.css (05.11.2026: .c-badge и .c-state слиты в него) */
 
@@ -149,6 +149,8 @@ details[open].c-row > summary .c-row__go { transform: rotate(90deg); }
 .c-row--card .c-row__sub { font-size: var(--adm-fs); line-height: var(--adm-lh); }
 .c-row__body { display: grid; gap: 2px; min-width: 0; }
 .c-row__title { font-weight: 500; font-size: 15px; line-height: 20px; overflow-wrap: anywhere; }
+/* вопрос в «Помощи» и раскрывающиеся строки — крупнее ответа: заголовок 17/600, ответ 16/400 (Никита 06.11) */
+details.c-row > summary .c-row__title { font-size: 17px; line-height: 22px; font-weight: 600; }
 .c-row__sub { font-size: var(--adm-fs-sm); line-height: 16px; color: var(--adm-text-2); overflow-wrap: anywhere; }
 .c-row__sub--bad { color: var(--st-bad-text); }
 /* пустой раздел до первой попытки отправить — серым, не ошибкой (Никита, 02.11) */
@@ -226,12 +228,19 @@ select.a-field__input { appearance: none; background-image: var(--adm-chevron-do
 .c-photo__tools { justify-content: flex-end; }
 
 /* отбор кадров с Яндекс Диска: та же плитка, нажатие отмечает, номер — порядок добавления */
-.c-yd-grid { max-height: 56vh; overflow-y: auto; overflow-x: clip; margin-block: var(--s-3); grid-auto-rows: max-content; align-content: start; } /* ряды не сжимаются под высоту окна — иначе плитки наезжали друг на друга */
-.c-yd-pick { padding: 0; border: 0; cursor: pointer; }
-.c-yd-pick[aria-pressed="true"] { outline: 3px solid var(--st-ok-text); outline-offset: -3px; }
-.c-yd-pick__n { position: absolute; right: 6px; top: 6px; min-width: 24px; height: 24px; padding-inline: 6px; border-radius: 12px; display: grid; place-items: center; background: var(--st-ok); color: var(--st-ok-ink); font-size: var(--fs-small); font-weight: var(--w-semibold); }
-.c-yd-pick__n:empty { display: none; }
-.c-yd-tools { display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: center; }
+/* сетка без своей прокрутки — листается всё окно, кнопка «Добавить» прибита к его низу */
+.c-yd-grid { grid-auto-rows: max-content; align-content: start; }
+/* выбор кадра как в Фото у Apple (Никита 06.11): кадр «прожимается» внутрь, тонкая обводка,
+   в углу кружок; у отмеченного — тёмный кружок с номером (порядок в карточке). Без зелёной рамки. */
+.c-yd-pick { padding: 0; border: 0; cursor: pointer; background: none; }
+.c-yd-pick img { transition: transform var(--dur-fast) var(--ease-out); }
+.c-yd-pick[aria-pressed="true"] img { transform: scale(0.9); border-radius: 10px; }
+.c-yd-pick__n { position: absolute; right: 8px; top: 8px; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; border: 1.5px solid var(--adm-on-dark); background: var(--adm-veil); color: var(--adm-on-dark); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; transition: transform var(--dur-fast) var(--ease-out); }
+.c-yd-pick[aria-pressed="true"] .c-yd-pick__n { background: var(--cab-ink); border-color: transparent; transform: scale(1.08); }
+.c-yd-pick--done .c-yd-pick__n { display: none; }
+.c-yd-head { display: flex; align-items: center; justify-content: flex-end; gap: var(--s-3); font-weight: 500; }
+.c-yd-head[hidden], .c-yd-bar[hidden] { display: none; }
+.c-yd-bar { position: sticky; bottom: 0; margin: 0 calc(-1 * var(--s-4)) calc(-1 * (var(--s-4) + env(safe-area-inset-bottom))); padding: var(--s-3) var(--s-4) calc(var(--s-3) + env(safe-area-inset-bottom)); background: var(--adm-card); box-shadow: 0 -1px 0 var(--adm-line); }
 
 .c-photo__tools button { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; background: var(--adm-glass); color: var(--adm-text); }
 .c-photo__tools svg { width: 16px; height: 16px; }
@@ -261,6 +270,9 @@ select.a-field__input { appearance: none; background-image: var(--adm-chevron-do
 .c-bar .a-btn--lg { flex: 1 1 auto; height: 52px; font-size: 16px; }
 @media (min-width: 560px) { .c-bar .a-btn--lg { flex: 0 0 auto; padding-inline: 32px; } }
 .c-error { color: var(--st-bad-text); white-space: pre-line; }
+/* «Чтобы отправить, осталось» под прибитой кнопкой — подсказка чёрным, как в плитках,
+   не красный и не янтарный (Никита 06.11), с полями как у плашек */
+.c-bar .c-error { flex: 1 1 100%; padding-inline: var(--s-4); color: var(--adm-text); line-height: var(--adm-lh); }
 .c-ok { color: var(--st-ok-text); }
 .c-error[hidden], .c-ok[hidden], .cab [hidden] { display: none !important; }
 
@@ -406,6 +418,8 @@ select.a-field__input { appearance: none; background-image: var(--adm-chevron-do
 .c-tile__ic { display: grid; place-items: center; width: 52px; height: 52px; margin-bottom: auto; border-radius: 16px; background: var(--adm-bg); color: var(--adm-text); }
 .c-tile__ic svg { width: 28px; height: 28px; }
 .c-tile__title { margin-top: var(--s-3); font-size: 18px; line-height: 24px; font-weight: 600; }
+/* раздел ещё не начат — значок и название серые, подсказка «что сделать» остаётся чёрной (Никита 06.11) */
+.c-tile--fresh .c-tile__ic, .c-tile--fresh .c-tile__title { color: var(--adm-text-seen); }
 .c-tile__sub { font-size: var(--adm-fs); line-height: 18px; }
 @media (hover: hover) { .c-tile:hover { background: var(--adm-hover); } }
 
@@ -437,7 +451,8 @@ html:has(.cab), html:has(.cab) body { background: var(--adm-bg); }
   60% { transform: translateX(-5px); }
   80% { transform: translateX(3px); }
 }
-body:has(.c-bar .a-btn) .c-toast { bottom: calc(var(--cab-tabs-h) + env(safe-area-inset-bottom) + 80px); }
+/* тост на экране с прибитой кнопкой — сверху (base.css). Старое правило с bottom здесь
+   перебивало top и растягивало тост на весь экран — красный прямоугольник (06.11) */
 /* заполненный раздел — тонкая галочка в углу, без кружка и без заливки
    (Никита, 02.11: зелёные и красные плитки — «светофор», сняты) */
 .c-tile__done { position: absolute; top: var(--s-4); right: var(--s-4); width: 22px; height: 22px; color: var(--st-ok-text); }
@@ -546,7 +561,7 @@ body:has(.c-bar .a-btn) .c-toast { bottom: calc(var(--cab-tabs-h) + env(safe-are
 .c-btn-wide { background: var(--adm-card); }
 
 /* переключатель строкой: подпись слева, тумблер справа (HIG: Toggles) — MAX в контактах */
-.c-switchrow { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); width: 100%; min-height: 44px; padding: 0; border: 0; background: none; font: inherit; color: var(--adm-text); text-align: left; cursor: pointer; }
+.c-switchrow { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); width: 100%; min-height: 32px; font-size: 17px; font-weight: 500; padding: 0; border: 0; background: none; font: inherit; color: var(--adm-text); text-align: left; cursor: pointer; }
 .c-switchrow[aria-checked="true"] .c-switch { background: var(--cab-ink); }
 .c-switchrow[aria-checked="true"] .c-switch::after { transform: translateX(20px); }
 /* пояснение-плашка (режим «по запросу») */
@@ -635,6 +650,22 @@ body:has(.c-bar .a-btn) .c-toast { bottom: calc(var(--cab-tabs-h) + env(safe-are
 .c-reject__h { display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--st-bad-strong); }
 .c-reject__h svg { width: 18px; height: 18px; flex: none; }
 .c-reject__text { line-height: 1.4; }
+/* сообщение о состоянии карточки во всю ширину, как плитки и «Вернули» (Никита 06.11:
+   «на проверке» стояло узкой плашкой в шапке, а того же смысла плашки в других местах — до краёв) */
+.c-note-wide { margin: 0; padding: 16px; border-radius: var(--cab-sheet-radius); line-height: 1.4; color: var(--adm-text); }
+.c-note-wide--info { background: var(--st-info-bg); }
+.c-note-wide:has(.c-clock) { display: flex; align-items: flex-start; gap: 12px; }
+.c-note-wide p { margin: 0; }
+.c-note-wide .c-note-wide__h { display: block; font-weight: 600; color: var(--st-info-strong); }
+/* «на проверке» — часы, у которых медленно идут стрелки: ждём ответа (Никита 06.11).
+   linear здесь — ход времени, как у кружка-таймера; без движения при reduce motion */
+.c-clock { flex: none; width: 24px; height: 24px; color: var(--st-info-strong); }
+.c-clock svg { display: block; width: 100%; height: 100%; }
+.c-clock__m, .c-clock__h { transform-origin: 12px 12px; }
+.c-clock__m { animation: c-clock 6s linear infinite; }
+.c-clock__h { animation: c-clock 72s linear infinite; }
+@keyframes c-clock { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .c-clock__m, .c-clock__h { animation: none; } }
 .c-reject__go { margin-top: 6px; background: var(--adm-card); color: var(--st-bad-strong); }
 
 /* ---------- «Описание» как Apple Заметки (Никита, 05.11.2026) ----------
@@ -708,3 +739,9 @@ body:has(.c-bar .a-btn) .c-toast { bottom: calc(var(--cab-tabs-h) + env(safe-are
 .c-notes-bar [aria-pressed="true"], .c-notes-bar [aria-expanded="true"] { background: var(--adm-on-dark); color: var(--cab-ink); }
 .c-notes-bar button:disabled { color: color-mix(in srgb, var(--adm-on-dark) 40%, transparent); }
 @media (hover: hover) { .c-notes-bar button:hover:not([aria-pressed="true"]):not([aria-expanded="true"]):not(:disabled) { background: color-mix(in srgb, var(--adm-on-dark) 18%, transparent); } }
+
+/* пустое состояние «Мои карточки»: текст без плашки и главная кнопка по центру (Никита 06.11) */
+/* по центру экрана и чуть выше середины — оптический центр: блок не «падает» вниз (Никита 06.11) */
+.c-empty-center { display: grid; justify-items: center; align-content: center; gap: var(--s-4); min-height: calc(100svh - var(--cab-tabs-h) - env(safe-area-inset-bottom) - 120px); padding: 0 var(--s-4) 14svh; text-align: center; }
+.c-empty-center p { margin: 0; max-width: 32ch; }
+.c-sheet-area > .c-rows:has(> .c-empty-center) { background: none; border-radius: 0; }

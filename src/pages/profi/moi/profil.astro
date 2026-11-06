@@ -19,7 +19,19 @@ import maxMark from '../../../assets/profi/max-mark.webp';
     <div class="c-head">
       <h1 class="a-h1" data-name>Профиль</h1>
     </div>
-    <div class="c-sheet-area">
+    {/* Скелет, пока не пришли учётка, документы и список карточек: раньше блоки
+        появлялись по очереди и «Выйти» прыгало вниз (Никита 06.11) */}
+    <div class="c-sheet-area" data-prof-sk aria-busy="true" aria-label="Загружаем">
+      {[3, 2].map((n) => (
+        <div class="sk-card">
+          <div class="sk-row" style="grid-template-columns:minmax(0,1fr)"><span class="sk sk--title"></span></div>
+          {Array.from({ length: n }, () => (
+            <div class="sk-row"><span class="sk sk--ic"></span><span class="sk-row__body"><span class="sk sk--line"></span><span class="sk sk--line sk--short"></span></span><span class="sk sk--pill"></span></div>
+          ))}
+        </div>
+      ))}
+    </div>
+    <div class="c-sheet-area" data-prof-body hidden>
       {/* Вход и уведомления — ОДНА группа (Никита 05.11): канал один и тот же —
           вошли через MAX, туда и приходят заявки (так включено по умолчанию,
           выключается тумблером). Колокольчик качнётся при открытии экрана. */}
@@ -41,7 +53,7 @@ import maxMark from '../../../assets/profi/max-mark.webp';
           </div>
           <div class="c-row" data-ch="email">
             <span class="c-row__ic"><AdminIcon name="mail" /></span>
-            <span class="c-row__body"><span class="c-row__title">Почта</span><input class="c-inline-input" type="email" inputmode="email" autocomplete="email" placeholder="почта для заявок" aria-label="Почта для заявок" data-email-to /></span>
+            <span class="c-row__body"><span class="c-row__title">Почта</span><input class="c-inline-input" type="email" inputmode="email" autocomplete="email" placeholder="впишите почту для заявок" aria-label="Почта для заявок" data-email-to /></span>
             <span class="c-ch-ctl" data-ctl></span>
             <span></span>
           </div>
@@ -102,7 +114,9 @@ import maxMark from '../../../assets/profi/max-mark.webp';
           if (sub) sub.textContent = 'вход не подключён';
           return;
         }
-        ctl.innerHTML = `<button class="c-switch" type="button" role="switch" aria-checked="${!!n[ch]}" aria-label="Присылать заявки в ${NAME[ch]}" ${ch === 'email' && !n.emailTo ? 'disabled' : ''}></button>`;
+        // без адреса тумблер не выключен намертво: нажатие ведёт в поле с подсказкой (06.11:
+        // «не реагирует» — был disabled без объяснения)
+        ctl.innerHTML = `<button class="c-switch" type="button" role="switch" aria-checked="${!!n[ch]}" aria-label="Присылать заявки в ${NAME[ch]}"></button>`;
         // подпись постоянная — при переключении строка не меняет высоту (Никита 05.11);
         // присылать ли заявки, говорит сам тумблер
         if (sub) sub.textContent = 'вход подключён';
@@ -119,6 +133,13 @@ import maxMark from '../../../assets/profi/max-mark.webp';
         const sw = (e.target as HTMLElement).closest<HTMLButtonElement>('.c-switch');
         if (!sw || sw.disabled) return;
         const ch = sw.closest<HTMLElement>('[data-ch]')!.dataset.ch as Ch;
+        // без адреса — сразу курсор в поле почты (открывается клавиатура), без облачка (Никита 06.11:
+        // «куда вписать?» — поле прямо в этой строке, под словом «Почта»)
+        if (ch === 'email' && (!n.emailTo || !emailOk())) {
+          emailTo.focus();
+          if (n.emailTo) fieldError(emailTo, 'В адресе ошибка, пример: name@mail.ru', emailTo.closest<HTMLElement>('.c-row') ?? undefined);
+          return;
+        }
         n[ch] = !n[ch];
         paint();
         saveNotify();
@@ -158,7 +179,9 @@ import maxMark from '../../../assets/profi/max-mark.webp';
       error.textContent = errText(err);
       error.hidden = false;
     }
-    loadDeletable();
+    await loadDeletable();
+    root.querySelector<HTMLElement>('[data-prof-sk]')!.remove();
+    root.querySelector<HTMLElement>('[data-prof-body]')!.hidden = false;
   }
 
   // карточки, которые можно удалить: свои новые, ещё не опубликованные

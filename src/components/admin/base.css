@@ -85,6 +85,7 @@
   --st-warn-strong: #7a5200; /* тёмно-жёлтый текст на жёлтой подложке */
   --st-warn-dot: #ff9d00;   /* точка «проверить» */
   --st-muted-dot: #b8bec8;  /* точка «пусто, нет данных» */
+  --st-muted-bg: #e2e6ed;   /* серая подложка статуса «черновик, пусто»: на поле страницы --adm-bg плашка пропадала (06.11) */
 
   /* Поверхности и тени интерфейса */
   --adm-on-dark: #fff;                       /* текст и знаки на тёмной кнопке, панели, просмотрщике */
@@ -126,7 +127,7 @@
   height: 24px;
   padding: 0 10px;
   border-radius: var(--radius-status);
-  background: var(--adm-bg);
+  background: var(--st-muted-bg);
   color: var(--adm-text);
   font-size: var(--adm-fs-sm);
   font-weight: 600;
@@ -182,17 +183,12 @@
 /* поля одинаковые со всех сторон: от края до текста = от края до кнопки (Никита 05.11) */
 .c-toast:has(.c-toast__undo) { display: flex; align-items: center; gap: 12px; padding: 10px; text-align: left; pointer-events: auto; border-radius: 18px; } /* 18, не капсула: текст в 2–3 строки капсулой режется (Никита 05.11) */
 .c-toast__text { flex: 1; min-width: 0; padding-left: 4px; }
-/* кружок-таймер «Отменить» — как в Телеграме: обводка убывает, внутри секунды */
-.c-toast__timer { position: relative; flex: none; width: 26px; height: 26px; display: grid; place-items: center; }
-.c-toast__timer svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
-/* бледная полная окружность (дорожка) + яркая убывающая дуга, как в Телеграме */
-.c-toast__timer circle { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-dasharray: 62.9; stroke-dashoffset: 0; }
-.c-toast__timer circle.track { stroke: var(--adm-on-dark-soft); stroke-dasharray: none; animation: none !important; }
-/* linear здесь — ход времени, а не движение: кружок убывает равномерно, как часы */
-.c-toast.is-on .c-toast__timer circle { animation: toast-timer var(--ms) linear forwards; }
-.c-toast__timer b { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
-@keyframes toast-timer { to { stroke-dashoffset: 62.9; } }
 .c-toast:not(.is-on) { pointer-events: none; }
+/* «Отменить»: капсула заливается за время до отправки (linear — ход времени); тот же приём, что у загрузки */
+.c-toast:has(.c-toast__fill) { overflow: hidden; isolation: isolate; padding-left: 18px; }
+.c-toast__fill { position: absolute; inset: 0; z-index: -1; background: var(--adm-on-dark-soft); transform: scaleX(0); transform-origin: left center; pointer-events: none; }
+.c-toast.is-on .c-toast__fill { animation: toast-fill var(--ms) linear forwards; }
+@keyframes toast-fill { to { transform: scaleX(1); } }
 /* действие в тосте — капсулой; «Повторить» со значком круговой стрелки.
    Тост живёт вне .adm — браузерную рамку кнопки снимаем явно (было «2px outset») */
 .c-toast button, .c-progress-pill button { border: 0; font: inherit; cursor: pointer; }
@@ -274,10 +270,12 @@
 @media (hover: hover) { .c-chipbtn--danger:hover { background: color-mix(in srgb, var(--st-bad-bg) 70%, var(--st-bad-dot)); } }
 
 /* капсула долгой операции: текст с процентом, полоска, «Прервать» (cab-ui → progress) */
-.c-progress-pill { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--cab-tabs-h) + env(safe-area-inset-bottom) + var(--s-3)); z-index: 7; width: min(420px, calc(100% - 2 * var(--s-4))); display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px 12px; padding: 10px 10px 12px 18px; border-radius: 22px; background: var(--cab-ink); color: var(--adm-on-dark); font-size: var(--adm-fs); font-weight: 500; box-shadow: var(--adm-shadow-tip); }
-.c-progress-pill__bar { grid-column: 1; grid-row: 2; height: 4px; border-radius: 2px; background: var(--adm-on-dark-soft); overflow: hidden; }
-.c-progress-pill__bar i { display: block; height: 100%; width: 0; border-radius: 2px; background: var(--adm-on-dark); transition: width var(--dur-fast) var(--ease-out); }
-.c-progress-pill__stop { grid-column: 2; grid-row: 1 / span 2; height: 32px; padding: 0 12px; border-radius: 999px; background: var(--adm-on-dark-soft); color: var(--adm-on-dark); font-weight: 600; white-space: nowrap; }
+.c-progress-pill { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--cab-tabs-h) + env(safe-area-inset-bottom) + var(--s-3)); z-index: 7; width: min(420px, calc(100% - 2 * var(--s-4))); display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 18px; border-radius: 22px; overflow: hidden; isolation: isolate; background: var(--cab-ink); color: var(--adm-on-dark); font-size: var(--adm-fs); font-weight: 500; box-shadow: var(--adm-shadow-tip); }
+/* ход загрузки — заливкой самой капсулы слева направо, без отдельной полоски (Никита 06.11) */
+.c-progress-pill__bar { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+.c-progress-pill__bar i { display: block; height: 100%; width: 0; background: var(--adm-on-dark-soft); transition: width var(--dur-fast) var(--ease-out); }
+.c-progress-pill__text { flex: 1; min-width: 0; font-variant-numeric: tabular-nums; }
+.c-progress-pill__stop { flex: none; height: 32px; padding: 0 12px; border-radius: 999px; background: var(--adm-on-dark-soft); color: var(--adm-on-dark); font-weight: 600; white-space: nowrap; }
 @media (min-width: 1024px) { body:has(.adm-nav) .c-progress-pill { left: calc(50% + var(--adm-side-w) / 2); bottom: var(--s-6); } }
 
 /* ============ СКЕЛЕТ ЗАГРУЗКИ (05.11.2026, HIG: Loading; правило 4 скилла) ============
@@ -314,5 +312,6 @@
 .c-alert__acts .a-btn { width: 100%; height: 44px; font-size: 16px; }
 /* где внизу прибита панель с кнопкой (анкета) — короткие уведомления сверху,
    как баннеры iOS, чтобы не закрывать кнопку (Никита 05.11) */
-body:has(.c-bar) .c-toast { bottom: auto; top: calc(env(safe-area-inset-top) + var(--s-3)); transform: translate(-50%, -8px); }
-body:has(.c-bar) .c-toast.is-on { transform: translate(-50%, 0); }
+/* и где решение стоит последней плашкой (разбор правки): тост внизу закрывал «Вернули» (Никита 06.11) */
+body:has(.c-bar) .c-toast, body:has([data-toast-top]) .c-toast { bottom: auto; top: calc(env(safe-area-inset-top) + var(--s-3)); transform: translate(-50%, -8px); }
+body:has(.c-bar) .c-toast.is-on, body:has([data-toast-top]) .c-toast.is-on { transform: translate(-50%, 0); }
