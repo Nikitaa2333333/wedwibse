@@ -67,7 +67,7 @@ const QUESTIONS = Object.fromEntries(
   .pr__fields :global(.pr__tn) { font-weight: 600; }
   .pr__fields :global(.pr__empty) { font-weight: 400; }
   .pr__fields :global(.pr__line) { display: block; }
-  .pr__fields :global(.pr__line + .pr__line) { margin-top: var(--s-2); }
+  .pr__fields :global(.pr__line + .pr__line) { margin-top: var(--s-1); } /* 8 — «дыра», 0 — «слиплось» (06.11) */
   :global(.pr__was) { display: block; text-decoration: line-through; background: var(--diff-del); }
   :global(.pr__now) { background: var(--diff-add); }
   .pr__photos { margin-top: var(--s-3); list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; } /* три колонки, как у подрядчика: модератору хватит, быстрее пролистать */
