@@ -49,16 +49,23 @@ const QUESTIONS = Object.fromEntries(
 
 <style>
   .pr__main { display: grid; gap: var(--s-4); min-width: 0; }
-  .pr__fields { display: grid; gap: 2px; margin-top: var(--s-2); }
+  .pr__fields { display: grid; margin-top: var(--s-3); }
   /* строки приходят из базы через innerHTML — без scope-атрибута, поэтому :global */
   /* акцент — на присланном, не на подписях (Никита 05.11): подпись мелкая, значение крупнее;
      между полями отступ больше, чем между подписью и значением (внутреннее < внешнего) */
-  /* плотнее (Никита 06.11: «отступы слишком большие»): подпись к значению вплотную, между полями 12 */
-  .pr__fields :global(dt) { font-size: var(--adm-fs-sm); line-height: 16px; font-weight: 500; margin-top: var(--s-3); }
-  .pr__fields :global(dt:first-child) { margin-top: 0; }
-  .pr__fields :global(dd) { margin-top: 0; font-size: 16px; font-weight: 500; white-space: pre-line; overflow-wrap: anywhere; line-height: 1.35; }
+  /* «Что прислали» как карточка контакта в iOS (Никита 06.11: подпись и присланное сливались):
+     каждое поле — строка, между строками тонкая линия; подпись мелкая сверху, присланное крупнее
+     и плотнее под ней. Внутри строки 2 px, строка 12 сверху и снизу — внутреннее меньше внешнего */
+  .pr__fields :global(dt) { padding-top: var(--s-3); border-top: 1px solid var(--adm-line); font-size: 13px; line-height: 16px; font-weight: 500; }
+  .pr__fields :global(dt:first-child) { padding-top: 0; border-top: 0; }
+  .pr__fields :global(dd) { margin: 2px 0 0; padding-bottom: var(--s-3); font-size: 17px; font-weight: 600; white-space: pre-line; overflow-wrap: anywhere; line-height: 1.35; }
+  .pr__fields :global(dd:last-child) { padding-bottom: 0; }
+  /* длинный текст подрядчика читают — обычным весом; заголовки его разделов — 600 */
+  .pr__fields :global(dd:has(.pr__sec)), .pr__fields :global(dd:has(.pr__tariff)), .pr__fields :global(dd:has(.pr__tn)) { font-weight: 400; }
   .pr__fields :global(.pr__tariff) { display: block; margin-top: 6px; }
-  .pr__fields :global(.pr__tariff b) { font-weight: 600; }
+  /* внутри dd жирное <b> гасит глобальное правило сайта (dd b … !important) — имя тарифа и зала span'ом */
+  .pr__fields :global(.pr__tn) { font-weight: 600; }
+  .pr__fields :global(.pr__empty) { font-weight: 400; }
   :global(.pr__was) { display: block; text-decoration: line-through; background: var(--diff-del); }
   :global(.pr__now) { background: var(--diff-add); }
   .pr__photos { margin-top: var(--s-3); list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; } /* три колонки, как у подрядчика: модератору хватит, быстрее пролистать */
@@ -71,9 +78,8 @@ const QUESTIONS = Object.fromEntries(
   .pr__state { display: grid; gap: var(--s-2); justify-items: start; margin: 0; }
   /* решение модератора — своей цветной плашкой, а не частью интерфейса (Никита 06.11): видно, что это
      наш комментарий, который может меняться. Вернули — красная подложка, одобрили — зелёная */
-  /* красим саму плашку решения, а не блок внутри неё — плашка в плашке запрещена */
-  .pr__side:has(.pr__state[data-st="rejected"]:not(:empty)) { background: var(--st-bad-bg); }
-  .pr__side:has(.pr__state[data-st="approved"]:not(:empty)) { background: var(--st-ok-bg); }
+  /* для модератора решение — уже история, не тревога (Никита 06.11): плашка белая, как остальные,
+     цветной только заголовок «Вернули / Одобрили» */
   .pr__state :global(.pr__state-h) { font-weight: 600; }
   .pr__state[data-st="rejected"] :global(.pr__state-h) { color: var(--st-bad-strong); }
   .pr__state[data-st="approved"] :global(.pr__state-h) { color: var(--st-ok-strong); }
@@ -105,6 +111,8 @@ const QUESTIONS = Object.fromEntries(
   ];
   /** ответ на вопрос словами: значения фильтра → подписи вариантов */
   const MONEY_KEYS = ['rentFrom', 'checkFrom', 'priceFrom'];
+  // «пусто» — обычным весом, чтобы не читалось присланным текстом (06.11)
+  const EMPTY = '<span class="pr__empty">пусто</span>';
   const answer = (qs: any[], key: string, v: unknown) => {
     const q = qs.find((x) => x.key === key);
     const vals = ([] as unknown[]).concat(v ?? []).map(String).filter(Boolean);
@@ -166,7 +174,7 @@ const QUESTIONS = Object.fromEntries(
         const changed = before !== null && before !== now;
         // суммы — с разрядами и ₽ (правило 24)
         const fmt = (v: string) => (MONEY_KEYS.includes(k) && Number(v) > 0 ? rub(Number(v)) : esc(v));
-        return `<dt>${label}</dt><dd>${changed ? `<span class="pr__was">${fmt(before!) || 'пусто'}</span><span class="pr__now">${fmt(now) || 'пусто'}</span>` : fmt(now) || 'пусто'}</dd>`;
+        return `<dt>${label}</dt><dd>${changed ? `<span class="pr__was">${fmt(before!) || EMPTY}</span><span class="pr__now">${fmt(now) || EMPTY}</span>` : fmt(now) || EMPTY}</dd>`;
       });
       // текст разделами — как написал подрядчик
       // одной строкой «Описание»: заголовки разделов — как написал подрядчик, абзацы отдельно
@@ -175,14 +183,14 @@ const QUESTIONS = Object.fromEntries(
       if (secs.length) rows.push(`<dt>Описание</dt><dd>${secs.map((x: any) => `<div class="pr__sec">${x.title ? `<span class="pr__sec-t">${esc(x.title)}</span>` : ''}${String(x.body).split(/\n\s*\n/).map((p: string) => `<p>${esc(p.replace(/^\s*>\s*/, '').trim())}</p>`).join('')}</div>`).join('')}</dd>`);
       const qs = rev.kind === 'venue' ? VENUE_QUESTIONS : JSON.parse(root.dataset.questions!)[rev.categorySlug] ?? [];
       const answered = qs.filter((q: any) => answer(qs, q.key, d.filters?.[q.key]));
-      if (qs.length) rows.push(`<dt>Вопросы: ${answered.length} из ${qs.length}</dt><dd>${answered.map((q: any) => `${esc(q.label)}: <b>${esc(answer(qs, q.key, d.filters[q.key]))}</b>`).join('<br>') || 'пусто'}</dd>`);
+      if (qs.length) rows.push(`<dt>Вопросы: ${answered.length} из ${qs.length}</dt><dd>${answered.map((q: any) => `${esc(q.label)}: <b>${esc(answer(qs, q.key, d.filters[q.key]))}</b>`).join('<br>') || EMPTY}</dd>`);
       const tariffs = (d.tariffs ?? []).filter((t: any) => t?.name || t?.price);
       if (tariffs.length) {
         const p = priceFrom(d);
-        rows.push(`<dt>Тарифы${p ? `, в каталоге от ${rub(p)}` : ''}</dt><dd>${tariffs.map((t: any) => `<span class="pr__tariff"><b>${esc(t.name)}</b> — ${t.price ? rub(Number(t.price)) : 'без цены'}${t.includes ? `\n${esc(t.includes)}` : ''}</span>`).join('')}</dd>`);
+        rows.push(`<dt>Тарифы${p ? `, в каталоге от ${rub(p)}` : ''}</dt><dd>${tariffs.map((t: any) => `<span class="pr__tariff"><span class="pr__tn">${esc(t.name)}</span> — ${t.price ? rub(Number(t.price)) : 'без цены'}${t.includes ? `\n${esc(t.includes)}` : ''}</span>`).join('')}</dd>`);
       }
       const halls = (d.halls ?? []).filter((h: any) => h?.name);
-      if (halls.length) rows.push(`<dt>Залы</dt><dd>${halls.map((h: any) => `<b>${esc(h.name)}</b> — банкет до ${esc(h.banquet || '—')}, фуршет до ${esc(h.buffet || '—')}${h.area ? `, ${esc(h.area)} м²` : ''}${h.priceFrom ? `, от ${rub(Number(h.priceFrom))}` : ''}${h.note ? `\n${esc(h.note)}` : ''}`).join('\n\n')}</dd>`);
+      if (halls.length) rows.push(`<dt>Залы</dt><dd>${halls.map((h: any) => `<span class="pr__tn">${esc(h.name)}</span> — банкет до ${esc(h.banquet || '—')}, фуршет до ${esc(h.buffet || '—')}${h.area ? `, ${esc(h.area)} м²` : ''}${h.priceFrom ? `, от ${rub(Number(h.priceFrom))}` : ''}${h.note ? `\n${esc(h.note)}` : ''}`).join('\n\n')}</dd>`);
       if (rev.kind === 'venue') {
         const t = d.terms ?? {};
         const lines = [
@@ -195,7 +203,7 @@ const QUESTIONS = Object.fromEntries(
       const videos = (d.videos ?? []).map((v: any) => String(v?.url ?? '').trim()).filter((u: string) => /^https?:\/\//.test(u));
       if (videos.length) rows.push(`<dt>Видео — подготовить по docs/VIDEO.md</dt><dd>${videos.map((u: string) => `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(u)}</a>`).join('\n')}</dd>`);
       const c = d.contacts ?? {};
-      rows.push(`<dt>Контакты (скрыты, за кнопкой)</dt><dd>${esc([c.phone, c.telegram && `Telegram ${c.telegram}`, c.max && `MAX ${c.max}`, c.site, c.email].filter(Boolean).join(' · ')) || 'пусто'}</dd>`);
+      rows.push(`<dt>Контакты (скрыты, за кнопкой)</dt><dd>${esc([c.phone, c.telegram && `Telegram ${c.telegram}`, c.max && `MAX ${c.max}`, c.site, c.email].filter(Boolean).join('\n')) || EMPTY}</dd>`);
       // карточка «ведём мы» (пилот, 03.11): одобрение меняет только цену,
       // вопросы, контакты и видео; текст и фото — просьбы, делаем руками в JSON
       if (d.managed) {
