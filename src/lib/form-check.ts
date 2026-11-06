@@ -59,6 +59,17 @@ export function fieldError(el: HTMLInputElement, text: string, anchor?: HTMLElem
   m.textContent = text;
   b.append(m);
   tips.set(el, m);
+  // облачко не висит до бесконечности и не закрывает экран (Никита 06.11): уходит само через
+  // 5 с или по нажатию в любом месте; поле остаётся подсвеченным (aria-invalid), пока не исправят
+  const hide = () => {
+    clearTimeout(t);
+    removeEventListener('pointerdown', hide, true);
+    m.remove();
+    if (tips.get(el) === m) tips.delete(el);
+  };
+  const t = window.setTimeout(hide, 5000);
+  // нажатие, которым ошибку вызвали, ещё идёт — слушаем со следующего кадра
+  requestAnimationFrame(() => addEventListener('pointerdown', hide, true));
 }
 
 /** облачко над кнопкой отправки — общая ошибка формы; пустой текст — убрать */

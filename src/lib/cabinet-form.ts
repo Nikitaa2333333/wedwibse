@@ -1,3 +1,4 @@
+import { plural } from './plural';
 // Анкета кабинета: разделы, их заполненность и форма данных карточки.
 // Один источник для списка разделов (/profi/moi/kartochka/) и для экрана
 // «Мои карточки». Что можно отправить на проверку, решает хук базы
@@ -213,7 +214,8 @@ export function sectionTodo(key: SectionKey, rev: any, questions: Question[]): s
     }
     case 'voprosy': {
       const left = questions.filter((q) => !filled(d.filters?.[q.key])).length;
-      return `ответьте ещё на ${left} из ${questions.length}`;
+      // «ответьте ещё на 8 из 8» — и коряво, и «8» падала на строку одна (Никита 06.11)
+      return left === questions.length ? `ответьте на${NBSP}${left}${NBSP}${plural(left, ['вопрос', 'вопроса', 'вопросов'])}` : `осталось ответить на${NBSP}${left}${NBSP}из${NBSP}${questions.length}`;
     }
     case 'prays':
       return (d.priceMode ?? ((d.tariffs ?? []).length ? 'tariffs' : 'one')) === 'tariffs'

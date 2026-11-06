@@ -226,12 +226,19 @@ select.a-field__input { appearance: none; background-image: var(--adm-chevron-do
 .c-photo__tools { justify-content: flex-end; }
 
 /* отбор кадров с Яндекс Диска: та же плитка, нажатие отмечает, номер — порядок добавления */
-.c-yd-grid { max-height: 56vh; overflow-y: auto; overflow-x: clip; margin-block: var(--s-3); grid-auto-rows: max-content; align-content: start; } /* ряды не сжимаются под высоту окна — иначе плитки наезжали друг на друга */
-.c-yd-pick { padding: 0; border: 0; cursor: pointer; }
-.c-yd-pick[aria-pressed="true"] { outline: 3px solid var(--st-ok-text); outline-offset: -3px; }
-.c-yd-pick__n { position: absolute; right: 6px; top: 6px; min-width: 24px; height: 24px; padding-inline: 6px; border-radius: 12px; display: grid; place-items: center; background: var(--st-ok); color: var(--st-ok-ink); font-size: var(--fs-small); font-weight: var(--w-semibold); }
-.c-yd-pick__n:empty { display: none; }
-.c-yd-tools { display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: center; }
+/* сетка без своей прокрутки — листается всё окно, кнопка «Добавить» прибита к его низу */
+.c-yd-grid { grid-auto-rows: max-content; align-content: start; }
+/* выбор кадра как в Фото у Apple (Никита 06.11): кадр «прожимается» внутрь, тонкая обводка,
+   в углу кружок; у отмеченного — тёмный кружок с номером (порядок в карточке). Без зелёной рамки. */
+.c-yd-pick { padding: 0; border: 0; cursor: pointer; background: none; }
+.c-yd-pick img { transition: transform var(--dur-fast) var(--ease-out); }
+.c-yd-pick[aria-pressed="true"] img { transform: scale(0.9); border-radius: 10px; box-shadow: 0 0 0 1px var(--adm-focus); }
+.c-yd-pick__n { position: absolute; right: 8px; top: 8px; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; border: 1.5px solid var(--adm-on-dark); background: var(--adm-veil); color: var(--adm-on-dark); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; transition: transform var(--dur-fast) var(--ease-out); }
+.c-yd-pick[aria-pressed="true"] .c-yd-pick__n { background: var(--cab-ink); border-color: var(--adm-on-dark); transform: scale(1.08); }
+.c-yd-pick--done .c-yd-pick__n { display: none; }
+.c-yd-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); font-weight: 500; }
+.c-yd-head[hidden], .c-yd-bar[hidden] { display: none; }
+.c-yd-bar { position: sticky; bottom: 0; margin: 0 calc(-1 * var(--s-4)) calc(-1 * (var(--s-4) + env(safe-area-inset-bottom))); padding: var(--s-3) var(--s-4) calc(var(--s-3) + env(safe-area-inset-bottom)); background: var(--adm-card); box-shadow: 0 -1px 0 var(--adm-line); }
 
 .c-photo__tools button { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; background: var(--adm-glass); color: var(--adm-text); }
 .c-photo__tools svg { width: 16px; height: 16px; }
@@ -639,6 +646,10 @@ html:has(.cab), html:has(.cab) body { background: var(--adm-bg); }
 .c-reject__h { display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--st-bad-strong); }
 .c-reject__h svg { width: 18px; height: 18px; flex: none; }
 .c-reject__text { line-height: 1.4; }
+/* сообщение о состоянии карточки во всю ширину, как плитки и «Вернули» (Никита 06.11:
+   «на проверке» стояло узкой плашкой в шапке, а того же смысла плашки в других местах — до краёв) */
+.c-note-wide { margin: 0; padding: 16px; border-radius: var(--cab-sheet-radius); line-height: 1.4; color: var(--adm-text); }
+.c-note-wide--info { background: var(--st-info-bg); }
 .c-reject__go { margin-top: 6px; background: var(--adm-card); color: var(--st-bad-strong); }
 
 /* ---------- «Описание» как Apple Заметки (Никита, 05.11.2026) ----------

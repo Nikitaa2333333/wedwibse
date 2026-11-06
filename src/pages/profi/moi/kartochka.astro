@@ -42,7 +42,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
   import { PHONE_COUNTRIES, DEFAULT_PHONE_COUNTRY, findCountry, flagSrc, nationalDigits, isComplete, fullE164, attachPhoneField } from '../../../lib/phone';
   import {
     SECTIONS, VENUE_QUESTIONS, VENUE_TERMS, MAX_PHOTOS, MAX_VIDEOS, MIN_PHOTOS, MIN_TEXT,
-    sectionState, sectionTodo, priceUnits, MAX_TARIFFS, cardState, priceFrom, rub, num, textLength, shrinkPhoto,
+    sectionState, sectionTodo, priceUnits, MAX_TARIFFS, cardState, priceFrom, rub, num, textLength, shrinkPhoto, NBSP,
     type Kind, type SectionKey, type Question,
   } from '../../../lib/cabinet-form';
 
@@ -234,17 +234,17 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       <div class="c-head">
         <div class="c-head__top"><a class="c-back" href="/profi/moi/">${icon('back')} Мои карточки</a><span class="c-head__right">${kind === 'specialist' && rev.status !== 'approved' ? `<button class="c-chipbtn c-head__act" type="button" data-preview><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Как на сайте</button>` : ''}</span></div>
         <h1 class="a-h1">${esc(title)}</h1>
-        ${rev.status === 'review' ? '<p class="c-reason c-reason--info">Карточка на проверке — ответим в течение 24 часов. Пока она на проверке, менять её нельзя; можно отозвать.</p>' : ''}
-        ${managed() && rev.status !== 'review' ? `<p class="c-reason c-reason--info">${MANAGED_NOTE}</p>` : ''}
         <div class="c-progress" role="progressbar" aria-label="Заполнено разделов" aria-valuemin="0" aria-valuemax="${must.length}" aria-valuenow="${done}">
           <div class="c-progress__bar"><i style="width:${Math.round((done / must.length) * 100)}%"></i></div>
         </div>
-        ${/* статус — справа в строке заполненности: в верхней строке ему не хватало места (Никита 05.11) */''}
-        <div class="c-progress__row"><p class="c-progress__text">Заполнено ${done}${' '}из ${must.length} разделов</p>${rev.status === 'rejected' && rev.rejectReason ? '' : '<span data-saved></span>'}</div>
+        ${/* плашки статуса здесь нет (Никита 06.11): «Черновик» и «На проверке» дублировали сообщение ниже и перегружали шапку */''}
+        <div class="c-progress__row"><p class="c-progress__text">Заполнено ${done}${' '}из ${must.length} разделов</p></div>
       </div>
       <div class="c-sheet-area">
       ${/* возврат — плашкой во всю ширину, как плитки (Никита 05.11) */''}
       ${rev.status === 'rejected' && rev.rejectReason ? rejectBox() : ''}
+      ${rev.status === 'review' ? '<p class="c-note-wide c-note-wide--info" role="note">Карточка на проверке — ответим в течение 24 часов. Пока она на проверке, менять её нельзя; можно отозвать</p>' : ''}
+      ${managed() && rev.status !== 'review' ? `<p class="c-note-wide c-note-wide--info" role="note">${MANAGED_NOTE}</p>` : ''}
       <div class="c-tiles">
         ${states.map((x) => `
           <a class="c-row c-tile" href="${url(x.key)}" data-tile="${x.key}">
@@ -754,7 +754,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
           ${field('Telegram', 'contacts.telegram', data.contacts?.telegram, { placeholder: '@ник или ссылка t.me/…' })}
           <div class="a-field">
             <span class="a-field__label">MAX</span>
-            <button class="c-switchrow" type="button" role="switch" aria-checked="${!!data.contacts?.maxSame}" data-maxsame><span>Этот номер есть в MAX — показать паре кнопку MAX</span><span class="c-switch" aria-hidden="true"></span></button>
+            <button class="c-switchrow" type="button" role="switch" aria-checked="${!!data.contacts?.maxSame}" data-maxsame><span>Есть MAX на этом номере</span><span class="c-switch" aria-hidden="true"></span></button>
           </div>
           ${field('Сайт или страница в соцсети', 'contacts.site', data.contacts?.site, { placeholder: 'site.ru или vk.com/…', note: 'Пара увидит вместе с телефоном' })}
           ${field('Почта', 'contacts.email', data.contacts?.email, { type: 'email', placeholder: 'name@mail.ru' })}` };
@@ -1015,17 +1015,18 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       html: `<div class="c-dialog__body">
       <button class="c-dialog__x" type="button" data-close aria-label="Закрыть">${X_ICON}</button>
       <h2 class="a-h2 c-yd-title"><img src="${cfg.ydIcon}" alt="" width="28" height="28" />Фото с Яндекс Диска</h2>
-      <p class="a-lead">Вставьте ссылку на папку с доступом «всем, у кого есть ссылка» — кадры появятся сами</p>
+      ${/* текст короче (Никита 06.11): без названия папки, счёта фото и видео, без «можно добавить до 50» —
+           про предел скажем, только когда в него упёрлись */''}
+      <p class="a-lead">Вставьте ссылку на папку. Доступ к ней должен быть открыт всем, у кого есть ссылка</p>
       <input class="a-field__input c-yd-url" type="url" inputmode="url" placeholder="https://disk.yandex.ru/d/…" aria-label="Ссылка на папку" data-yd-url />
       <p class="c-error" data-yd-error hidden></p>
-      <p class="a-field__note" data-yd-have></p>
       <p class="a-field__note" data-yd-info hidden></p>
       <p class="a-field__note c-yd-status" data-yd-status role="status" hidden></p>
+      <div class="c-yd-head" data-yd-tools hidden><span>Отметьте кадры</span><button class="c-chipbtn" type="button" data-yd-all>Отметить все</button></div>
       <div class="c-photos c-yd-grid" data-yd-grid></div>
-      <div class="c-yd-tools" data-yd-tools hidden>
-        <button class="a-btn a-btn--primary a-btn--lg" type="button" data-yd-go>Добавить</button>
-        <button class="c-chipbtn" type="button" data-yd-all>Отметить все</button>
-      </div>
+      ${/* кнопка прибита к низу окна и появляется с первой отметкой — раньше она пряталась
+           под сеткой кадров, и было непонятно, добавились фото или нет (Никита 06.11) */''}
+      <div class="c-yd-bar" data-yd-bar hidden><button class="a-btn a-btn--primary a-btn--lg a-btn--block" type="button" data-yd-go>Добавить</button></div>
     </div>`,
     });
     const $ = <T extends HTMLElement>(s: string) => dlg.querySelector<T>(s)!;
@@ -1036,17 +1037,14 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     // уже забранное в этом окне: после обрыва связи отметки с них снимаем,
     // плитки помечаем «уже в карточке» и повторно не предлагаем (задача 05.11)
     const imported = new Set<string>();
-    const haveLine = () => {
-      const n = (rev.photos ?? []).length;
-      $('[data-yd-have]').textContent = n ? `В карточке уже ${n} из ${MAX_PHOTOS} фото — можно добавить ещё ${room()}` : `В карточке пока нет фото — можно добавить до ${MAX_PHOTOS}`;
-    };
     const room = () => MAX_PHOTOS - (rev.photos ?? []).length;
+    const limitText = () => `На карточке до ${MAX_PHOTOS}${NBSP}фото — ${(rev.photos ?? []).length ? `поместится ещё ${room()}` : `отметили первые ${MAX_PHOTOS}`}`;
     // как у Apple: короткий текст под полем; красным — только сбой (fail),
     // подсказка вроде «не та ссылка», «только ролики» — спокойным тёмным текстом (note)
     const fail = (m: string) => { err.classList.remove('c-yd-note'); err.textContent = m; err.hidden = !m; };
     const note = (m: string) => { err.classList.add('c-yd-note'); err.textContent = m; err.hidden = !m; };
+    const bar = $('[data-yd-bar]');
     const sync = () => {
-      haveLine();
       grid.querySelectorAll<HTMLElement>('[data-yd-path]').forEach((b) => {
         const done = imported.has(b.dataset.ydPath!);
         b.classList.toggle('c-yd-pick--done', done);
@@ -1055,8 +1053,9 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         b.setAttribute('aria-pressed', String(i !== -1));
         b.querySelector('.c-yd-pick__n')!.textContent = i === -1 ? '' : String(i + 1);
       });
-      go.textContent = picked.length ? `Добавить ${picked.length}` : 'Добавить';
-      go.disabled = !picked.length || busy;
+      if (!busy) go.textContent = `Добавить ${picked.length}${NBSP}фото`;
+      go.disabled = busy;
+      bar.hidden = !picked.length && !busy;
     };
 
     // кнопки «Показать» нет (Никита 05.11: непонятно, что она покажет) —
@@ -1087,14 +1086,14 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         if (!items.length) {
           info.hidden = true;
           // папка только с роликами — отдельно: ролики идут ссылкой в разделе «Видео»
-          note(r.videos ? `В папке только видео (${r.videos}) — фото нет. Ролики пришлите ссылкой в разделе «Видео», мы подготовим их сами` : 'В папке нет фотографий — проверьте ссылку');
+          note(r.videos ? 'В папке только видео — их добавьте в разделе «Видео»' : 'В папке нет фотографий — проверьте ссылку');
           return;
         }
-        info.textContent = `${r.title ? `«${r.title}», ` : ''}${items.length} фото${r.capped ? ' (показаны первые)' : ''}${r.videos ? `, видео ${r.videos} — их пришлите в разделе «Видео»` : ''}`;
+        info.hidden = true;
         grid.innerHTML = items.map((it) => `
           <button class="c-photo c-yd-pick" type="button" aria-pressed="false" data-yd-path="${esc(it.path)}" title="${esc(it.name)}">
             ${it.preview ? `<img src="${esc(it.preview)}" alt="" loading="lazy" referrerpolicy="no-referrer" />` : ''}
-            <span class="c-yd-pick__n"></span><span class="c-yd-pick__done">в карточке</span>
+            <span class="c-yd-pick__n" aria-hidden="true"></span><span class="c-yd-pick__done">в карточке</span>
           </button>`).join('');
         tools.hidden = false;
         sync();
@@ -1110,12 +1109,15 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       const p = b.dataset.ydPath!;
       const i = picked.indexOf(p);
       if (i !== -1) picked.splice(i, 1);
-      else if (picked.length < room()) picked.push(p);
-      else fail(`Больше не поместится: на карточке до ${MAX_PHOTOS} фото.`);
+      else if (picked.length < room()) { picked.push(p); note(''); }
+      else note(limitText());
       sync();
     });
     $('[data-yd-all]').addEventListener('click', () => {
-      for (const it of items) if (!picked.includes(it.path) && !imported.has(it.path) && picked.length < room()) picked.push(it.path);
+      const free = items.filter((it) => !picked.includes(it.path) && !imported.has(it.path));
+      for (const it of free) if (picked.length < room()) picked.push(it.path);
+      // отметили не всё — упёрлись в предел карточки: говорим только сейчас
+      note(free.length > 0 && picked.length >= room() && items.length - imported.size > picked.length ? limitText() : '');
       sync();
     });
 
@@ -1180,7 +1182,6 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         sync();
       }
     });
-    haveLine();
     $<HTMLInputElement>('[data-yd-url]').focus();
   }
 

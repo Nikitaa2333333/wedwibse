@@ -276,10 +276,12 @@
 @media (hover: hover) { .c-chipbtn--danger:hover { background: color-mix(in srgb, var(--st-bad-bg) 70%, var(--st-bad-dot)); } }
 
 /* капсула долгой операции: текст с процентом, полоска, «Прервать» (cab-ui → progress) */
-.c-progress-pill { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--cab-tabs-h) + env(safe-area-inset-bottom) + var(--s-3)); z-index: 7; width: min(420px, calc(100% - 2 * var(--s-4))); display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px 12px; padding: 10px 10px 12px 18px; border-radius: 22px; background: var(--cab-ink); color: var(--adm-on-dark); font-size: var(--adm-fs); font-weight: 500; box-shadow: var(--adm-shadow-tip); }
-.c-progress-pill__bar { grid-column: 1; grid-row: 2; height: 4px; border-radius: 2px; background: var(--adm-on-dark-soft); overflow: hidden; }
-.c-progress-pill__bar i { display: block; height: 100%; width: 0; border-radius: 2px; background: var(--adm-on-dark); transition: width var(--dur-fast) var(--ease-out); }
-.c-progress-pill__stop { grid-column: 2; grid-row: 1 / span 2; height: 32px; padding: 0 12px; border-radius: 999px; background: var(--adm-on-dark-soft); color: var(--adm-on-dark); font-weight: 600; white-space: nowrap; }
+.c-progress-pill { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--cab-tabs-h) + env(safe-area-inset-bottom) + var(--s-3)); z-index: 7; width: min(420px, calc(100% - 2 * var(--s-4))); display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 18px; border-radius: 22px; overflow: hidden; isolation: isolate; background: var(--cab-ink); color: var(--adm-on-dark); font-size: var(--adm-fs); font-weight: 500; box-shadow: var(--adm-shadow-tip); }
+/* ход загрузки — заливкой самой капсулы слева направо, без отдельной полоски (Никита 06.11) */
+.c-progress-pill__bar { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+.c-progress-pill__bar i { display: block; height: 100%; width: 0; background: var(--adm-on-dark-soft); transition: width var(--dur-fast) var(--ease-out); }
+.c-progress-pill__text { flex: 1; min-width: 0; font-variant-numeric: tabular-nums; }
+.c-progress-pill__stop { flex: none; height: 32px; padding: 0 12px; border-radius: 999px; background: var(--adm-on-dark-soft); color: var(--adm-on-dark); font-weight: 600; white-space: nowrap; }
 @media (min-width: 1024px) { body:has(.adm-nav) .c-progress-pill { left: calc(50% + var(--adm-side-w) / 2); bottom: var(--s-6); } }
 
 /* ============ СКЕЛЕТ ЗАГРУЗКИ (05.11.2026, HIG: Loading; правило 4 скилла) ============
