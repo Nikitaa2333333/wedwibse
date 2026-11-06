@@ -49,13 +49,14 @@ const QUESTIONS = Object.fromEntries(
 
 <style>
   .pr__main { display: grid; gap: var(--s-4); min-width: 0; }
-  .pr__fields { display: grid; gap: var(--s-1); margin-top: var(--s-3); }
+  .pr__fields { display: grid; gap: 2px; margin-top: var(--s-2); }
   /* строки приходят из базы через innerHTML — без scope-атрибута, поэтому :global */
   /* акцент — на присланном, не на подписях (Никита 05.11): подпись мелкая, значение крупнее;
      между полями отступ больше, чем между подписью и значением (внутреннее < внешнего) */
-  .pr__fields :global(dt) { font-size: var(--adm-fs-sm); font-weight: 500; margin-top: var(--s-4); }
+  /* плотнее (Никита 06.11: «отступы слишком большие»): подпись к значению вплотную, между полями 12 */
+  .pr__fields :global(dt) { font-size: var(--adm-fs-sm); line-height: 16px; font-weight: 500; margin-top: var(--s-3); }
   .pr__fields :global(dt:first-child) { margin-top: 0; }
-  .pr__fields :global(dd) { margin-top: 2px; font-size: 16px; font-weight: 500; white-space: pre-line; overflow-wrap: anywhere; line-height: 1.4; }
+  .pr__fields :global(dd) { margin-top: 0; font-size: 16px; font-weight: 500; white-space: pre-line; overflow-wrap: anywhere; line-height: 1.35; }
   .pr__fields :global(.pr__tariff) { display: block; margin-top: 6px; }
   .pr__fields :global(.pr__tariff b) { font-weight: 600; }
   :global(.pr__was) { display: block; text-decoration: line-through; background: var(--diff-del); }
