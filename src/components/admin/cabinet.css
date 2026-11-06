@@ -745,3 +745,7 @@ html:has(.cab), html:has(.cab) body { background: var(--adm-bg); }
 .c-empty-center { display: grid; justify-items: center; align-content: center; gap: var(--s-4); min-height: calc(100svh - var(--cab-tabs-h) - env(safe-area-inset-bottom) - 120px); padding: 0 var(--s-4) 14svh; text-align: center; }
 .c-empty-center p { margin: 0; max-width: 32ch; }
 .c-sheet-area > .c-rows:has(> .c-empty-center) { background: none; border-radius: 0; }
+
+/* подпись поля со значком (контакты): значок одним цветом, контуром, по высоте строки подписи */
+.c-label-ic { display: flex; align-items: center; gap: 8px; }
+.c-label-ic svg { width: 20px; height: 20px; flex: none; }

@@ -531,7 +531,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     const c = findCountry(String(code || DEFAULT_PHONE_COUNTRY));
     return `
     <div class="a-field">
-      <span class="a-field__label" id="c-phone-label">Телефон</span>
+      <span class="a-field__label c-label-ic" id="c-phone-label">${icon('phone')}Телефон</span>
       <div class="c-phone">
         <div class="cc-picker">
           <button type="button" class="cc-toggle" aria-haspopup="menu" aria-expanded="false">
@@ -580,9 +580,9 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
   /** сумма в рублях с разрядами для показа в поле: «40000» → «40 000» */
   const MONEY = /(^|\.)(price|priceFrom|rentFrom|checkFrom)$/;
   const money = (v: unknown) => { const d = String(v ?? '').replace(/\D/g, ''); return d ? num(Number(d)) : ''; };
-  const field = (label: string, bind: string, value0: unknown, opts: { type?: string; note?: string; area?: boolean; placeholder?: string; mode?: string; max?: number } = {}, value = MONEY.test(bind) ? money(value0) : value0) => `
+  const field = (label: string, bind: string, value0: unknown, opts: { type?: string; note?: string; area?: boolean; placeholder?: string; mode?: string; max?: number; icon?: string } = {}, value = MONEY.test(bind) ? money(value0) : value0) => `
     <label class="a-field">
-      <span class="a-field__label">${label}</span>
+      <span class="a-field__label${opts.icon ? ' c-label-ic' : ''}">${opts.icon ? icon(opts.icon) : ''}${label}</span>
       ${opts.area
         ? `<textarea class="a-field__input" data-bind="${bind}" placeholder="${esc(opts.placeholder ?? '')}">${esc(value)}</textarea>`
         : `<input class="a-field__input" data-bind="${bind}" type="${opts.type ?? 'text'}" ${opts.mode ? `inputmode="${opts.mode}"` : ''} ${opts.max ? `maxlength="${opts.max}"` : ''} value="${esc(value)}" placeholder="${esc(opts.placeholder ?? '')}" />`}
@@ -751,13 +751,14 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       case 'kontakty':
         return { title: 'Контакты', lead: 'Пара видит их по кнопке «Показать контакты».', html: `
           ${phoneField(data.contacts?.phone, data.contacts?.phoneCountry)}
-          ${field('Telegram', 'contacts.telegram', data.contacts?.telegram, { placeholder: '@ник или ссылка t.me/…' })}
+          ${/* значки контактов одним цветом, контуром (Никита 06.11): телефон, Telegram, MAX, сайт, почта */''}
+          ${field('Telegram', 'contacts.telegram', data.contacts?.telegram, { placeholder: '@ник или ссылка t.me/…', icon: 'telegram' })}
           <div class="a-field">
-            <span class="a-field__label">MAX</span>
+            <span class="a-field__label c-label-ic">${icon('maxMark')}MAX</span>
             <button class="c-switchrow" type="button" role="switch" aria-checked="${!!data.contacts?.maxSame}" data-maxsame><span>На этом же номере</span><span class="c-switch" aria-hidden="true"></span></button>
           </div>
-          ${field('Сайт или страница в соцсети', 'contacts.site', data.contacts?.site, { placeholder: 'site.ru или vk.com/…' })}
-          ${field('Почта', 'contacts.email', data.contacts?.email, { type: 'email', placeholder: 'name@mail.ru' })}` };
+          ${field('Сайт или страница в соцсети', 'contacts.site', data.contacts?.site, { placeholder: 'site.ru или vk.com/…', icon: 'globe' })}
+          ${field('Почта', 'contacts.email', data.contacts?.email, { type: 'email', placeholder: 'name@mail.ru', icon: 'mail' })}` };
     }
   }
 
