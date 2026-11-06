@@ -68,6 +68,12 @@ const QUESTIONS = Object.fromEntries(
   .pr__n { font-weight: var(--w-body); }
   /* статус и под ним текст модератора: внутри группы 8 px, без подписи «Причина:» (Никита 06.11) */
   .pr__state { display: grid; gap: var(--s-2); justify-items: start; margin: 0; }
+  /* решение модератора — своей цветной плашкой, а не частью интерфейса (Никита 06.11): видно, что это
+     наш комментарий, который может меняться. Вернули — красная подложка, одобрили — зелёная */
+  /* красим саму плашку решения, а не блок внутри неё — плашка в плашке запрещена */
+  .pr__side:has(.pr__state[data-st="rejected"]:not(:empty)) { background: var(--st-bad-bg); }
+  .pr__side:has(.pr__state[data-st="approved"]:not(:empty)) { background: var(--st-ok-bg); }
+  .pr__state[data-st="rejected"] :global(.status), .pr__state[data-st="approved"] :global(.status) { background: var(--adm-card); }
   .pr__state:empty { display: none; }
   .pr__state :global(.pr__state-text) { margin: 0; font-size: 16px; line-height: 1.4; white-space: pre-line; overflow-wrap: anywhere; }
   /* текст подрядчика разделами: заголовок раздела — как он написал, абзацы с воздухом */
@@ -186,6 +192,7 @@ const QUESTIONS = Object.fromEntries(
         `<li><a href="${fileUrl(rev, n, { token })}" target="_blank" rel="noopener"><img src="${fileUrl(rev, n, { thumb: '400x0', token })}" alt="" loading="lazy" /></a></li>`).join('');
 
       const st = REV_STATUS[rev.status];
+      $('[data-pr-state]').dataset.st = rev.status;
       $('[data-pr-state]').innerHTML = rev.status === 'review' ? '' : `<span class="status ${st.cls}">${st.label}</span>${rev.status === 'rejected' && rev.rejectReason ? `<span class="pr__state-text">${esc(rev.rejectReason)}</span>` : ''}${rev.status === 'approved' ? '<span class="pr__state-text">Карточка опубликована в базе. На сайте появится со следующей выкладкой.</span>' : ''}`;
       $('[data-pr-acts]').hidden = rev.status !== 'review';
     }
@@ -198,14 +205,16 @@ const QUESTIONS = Object.fromEntries(
       const acts = $('[data-pr-acts]');
       const state = $('[data-pr-state]');
       const before = state.innerHTML;
+      const beforeSt = state.dataset.st ?? '';
       const st = REV_STATUS[body.status];
       acts.hidden = true;
+      state.dataset.st = body.status;
       state.innerHTML = `<span class="status ${st.cls}">${st.label}</span>${body.rejectReason ? `<span class="pr__state-text">${esc(body.rejectReason)}</span>` : ''}`;
       // плашка решения — к середине экрана: тост «Отменить» внизу её не закрывает (Никита 06.11)
       state.scrollIntoView({ behavior: 'smooth', block: 'center' });
       later({
         text,
-        undo: () => { state.innerHTML = before; acts.hidden = false; },
+        undo: () => { state.innerHTML = before; state.dataset.st = beforeSt; acts.hidden = false; },
         run: async () => {
           try {
             await api('moderator', 'PATCH', `/api/collections/revisions/records/${rev.id}`, body, { keepalive: true });
@@ -223,12 +232,12 @@ const QUESTIONS = Object.fromEntries(
       const { dlg, close } = openDialog({ html: `
         <div class="c-dialog__body pr-why">
           <button class="c-dialog__x" type="button" data-close aria-label="Закрыть">${X_ICON}</button>
-          <h2 class="a-h2">Вернуть на доработку</h2>
-          <label class="a-field__label" for="pr-reason">Что исправить</label>
-          <textarea class="a-input" id="pr-reason" rows="5" placeholder="Своими словами: что не так и что сделать" data-pr-reason></textarea>
+          <h2 class="a-h2">Вернуть с причиной</h2>
+          <label class="a-field__label" for="pr-reason">Напишите, что исправить</label>
+          <textarea class="a-input" id="pr-reason" rows="5" placeholder="Например: на двух кадрах чужой логотип — уберите их" data-pr-reason></textarea>
           <div class="pr-why__acts">
-            <button class="a-btn a-btn--primary a-btn--lg a-btn--block" type="button" data-pr-send>Вернуть</button>
-            <button class="a-btn a-btn--lg a-btn--block" type="button" data-close>Не возвращать</button>
+            <button class="a-btn a-btn--primary a-btn--lg a-btn--block" type="button" data-pr-send>Отправить</button>
+            <button class="a-btn a-btn--lg a-btn--block" type="button" data-close>Отмена</button>
           </div>
         </div>` });
       const ta = dlg.querySelector<HTMLTextAreaElement>('[data-pr-reason]')!;

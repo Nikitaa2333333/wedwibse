@@ -216,6 +216,10 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     </div>`;
   }
 
+  /** раздел ещё не начат — плитка серая (Никита 06.11); начат, но не дотянут — чёрная с подсказкой */
+  const isFresh = (x: { key: string; done: boolean; optional?: boolean; sub: string }) =>
+    !x.done && !x.optional && (/^пусто/.test(x.sub) || (x.key === 'voprosy' && /^0 из/.test(x.sub)) || (x.key === 'prays' && x.sub === 'нет тарифа с ценой' && !(data.tariffs ?? []).some((t: any) => t?.name || t?.price)));
+
   function renderOverview() {
     const st = cardState(rev.status, !isNew());
     const secs = SECTIONS[kind];
@@ -234,20 +238,16 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       <div class="c-head">
         <div class="c-head__top"><a class="c-back" href="/profi/moi/">${icon('back')} Мои карточки</a><span class="c-head__right">${kind === 'specialist' && rev.status !== 'approved' ? `<button class="c-chipbtn c-head__act" type="button" data-preview><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Как на сайте</button>` : ''}</span></div>
         <h1 class="a-h1">${esc(title)}</h1>
-        <div class="c-progress" role="progressbar" aria-label="Заполнено разделов" aria-valuemin="0" aria-valuemax="${must.length}" aria-valuenow="${done}">
-          <div class="c-progress__bar"><i style="width:${Math.round((done / must.length) * 100)}%"></i></div>
-        </div>
-        ${/* плашки статуса здесь нет (Никита 06.11): «Черновик» и «На проверке» дублировали сообщение ниже и перегружали шапку */''}
-        <div class="c-progress__row"><p class="c-progress__text">Заполнено ${done}${' '}из ${must.length} разделов</p></div>
+        ${/* полосы и «Заполнено N из 6» нет (Никита 06.11): что не начато — видно по самим плиткам (серые), что готово — галочка */''}
       </div>
       <div class="c-sheet-area">
       ${/* возврат — плашкой во всю ширину, как плитки (Никита 05.11) */''}
       ${rev.status === 'rejected' && rev.rejectReason ? rejectBox() : ''}
-      ${rev.status === 'review' ? '<p class="c-note-wide c-note-wide--info" role="note">Карточка на проверке — ответим в течение 24 часов. Пока она на проверке, менять её нельзя; можно отозвать</p>' : ''}
+      ${rev.status === 'review' ? `<div class="c-note-wide c-note-wide--info" role="note"><span class="c-clock" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><path class="c-clock__h" d="M12 12 9.2 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path class="c-clock__m" d="M12 12V6.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span><div><span class="c-note-wide__h">Карточка на проверке</span><span>Ответим в течение 24 часов. Пока она на проверке, менять её нельзя; можно отозвать</span></div></div>` : ''}
       ${managed() && rev.status !== 'review' ? `<p class="c-note-wide c-note-wide--info" role="note">${MANAGED_NOTE}</p>` : ''}
       <div class="c-tiles">
         ${states.map((x) => `
-          <a class="c-row c-tile" href="${url(x.key)}" data-tile="${x.key}">
+          <a class="c-row c-tile${isFresh(x) ? ' c-tile--fresh' : ''}" href="${url(x.key)}" data-tile="${x.key}">
             ${tileVisual(x.key, x.icon)}
             ${x.done && x.key !== rejectKey() ? `<span class="c-tile__done" aria-label="заполнено">${tick}</span>` : ''}
             <span class="c-tile__title">${x.title}</span>
@@ -754,9 +754,9 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
           ${field('Telegram', 'contacts.telegram', data.contacts?.telegram, { placeholder: '@ник или ссылка t.me/…' })}
           <div class="a-field">
             <span class="a-field__label">MAX</span>
-            <button class="c-switchrow" type="button" role="switch" aria-checked="${!!data.contacts?.maxSame}" data-maxsame><span>Есть MAX на этом номере</span><span class="c-switch" aria-hidden="true"></span></button>
+            <button class="c-switchrow" type="button" role="switch" aria-checked="${!!data.contacts?.maxSame}" data-maxsame><span>На этом же номере</span><span class="c-switch" aria-hidden="true"></span></button>
           </div>
-          ${field('Сайт или страница в соцсети', 'contacts.site', data.contacts?.site, { placeholder: 'site.ru или vk.com/…', note: 'Пара увидит вместе с телефоном' })}
+          ${field('Сайт или страница в соцсети', 'contacts.site', data.contacts?.site, { placeholder: 'site.ru или vk.com/…' })}
           ${field('Почта', 'contacts.email', data.contacts?.email, { type: 'email', placeholder: 'name@mail.ru' })}` };
     }
   }
@@ -1022,7 +1022,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       <p class="c-error" data-yd-error hidden></p>
       <p class="a-field__note" data-yd-info hidden></p>
       <p class="a-field__note c-yd-status" data-yd-status role="status" hidden></p>
-      <div class="c-yd-head" data-yd-tools hidden><span>Отметьте кадры</span><button class="c-chipbtn" type="button" data-yd-all>Отметить все</button></div>
+      <div class="c-yd-head" data-yd-tools hidden><button class="c-chipbtn" type="button" data-yd-all>Отметить все</button></div>
       <div class="c-photos c-yd-grid" data-yd-grid></div>
       ${/* кнопка прибита к низу окна и появляется с первой отметкой — раньше она пряталась
            под сеткой кадров, и было непонятно, добавились фото или нет (Никита 06.11) */''}

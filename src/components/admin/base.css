@@ -85,7 +85,6 @@
   --st-warn-strong: #7a5200; /* тёмно-жёлтый текст на жёлтой подложке */
   --st-warn-dot: #ff9d00;   /* точка «проверить» */
   --st-muted-dot: #b8bec8;  /* точка «пусто, нет данных» */
-  --adm-focus: #b8bec8;     /* обводка поля в фокусе: тонкая серая, не чёрная (Никита 06.11) */
   --st-muted-bg: #e2e6ed;   /* серая подложка статуса «черновик, пусто»: на поле страницы --adm-bg плашка пропадала (06.11) */
 
   /* Поверхности и тени интерфейса */
@@ -184,17 +183,12 @@
 /* поля одинаковые со всех сторон: от края до текста = от края до кнопки (Никита 05.11) */
 .c-toast:has(.c-toast__undo) { display: flex; align-items: center; gap: 12px; padding: 10px; text-align: left; pointer-events: auto; border-radius: 18px; } /* 18, не капсула: текст в 2–3 строки капсулой режется (Никита 05.11) */
 .c-toast__text { flex: 1; min-width: 0; padding-left: 4px; }
-/* кружок-таймер «Отменить» — как в Телеграме: обводка убывает, внутри секунды */
-.c-toast__timer { position: relative; flex: none; width: 26px; height: 26px; display: grid; place-items: center; }
-.c-toast__timer svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
-/* бледная полная окружность (дорожка) + яркая убывающая дуга, как в Телеграме */
-.c-toast__timer circle { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-dasharray: 62.9; stroke-dashoffset: 0; }
-.c-toast__timer circle.track { stroke: var(--adm-on-dark-soft); stroke-dasharray: none; animation: none !important; }
-/* linear здесь — ход времени, а не движение: кружок убывает равномерно, как часы */
-.c-toast.is-on .c-toast__timer circle { animation: toast-timer var(--ms) linear forwards; }
-.c-toast__timer b { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
-@keyframes toast-timer { to { stroke-dashoffset: 62.9; } }
 .c-toast:not(.is-on) { pointer-events: none; }
+/* «Отменить»: капсула заливается за время до отправки (linear — ход времени); тот же приём, что у загрузки */
+.c-toast:has(.c-toast__fill) { overflow: hidden; isolation: isolate; padding-left: 18px; }
+.c-toast__fill { position: absolute; inset: 0; z-index: -1; background: var(--adm-on-dark-soft); transform: scaleX(0); transform-origin: left center; pointer-events: none; }
+.c-toast.is-on .c-toast__fill { animation: toast-fill var(--ms) linear forwards; }
+@keyframes toast-fill { to { transform: scaleX(1); } }
 /* действие в тосте — капсулой; «Повторить» со значком круговой стрелки.
    Тост живёт вне .adm — браузерную рамку кнопки снимаем явно (было «2px outset») */
 .c-toast button, .c-progress-pill button { border: 0; font: inherit; cursor: pointer; }

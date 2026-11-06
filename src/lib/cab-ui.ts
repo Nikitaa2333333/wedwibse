@@ -93,17 +93,12 @@ export function toast(text: string, bad = false, ms = 1600, action?: ToastAction
   el.textContent = '';
   const isUndo = typeof action === 'function';
   if (isUndo) {
-    // кружок: обводка убывает за ms, внутри — секунды
-    const t = document.createElement('span');
-    t.className = 'c-toast__timer';
-    t.style.setProperty('--ms', `${ms}ms`);
-    t.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle class="track" cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="10"/></svg><b></b>';
-    const n = t.querySelector('b')!;
-    const end = Date.now() + ms;
-    const tick = () => { n.textContent = String(Math.max(0, Math.ceil((end - Date.now()) / 1000))); };
-    tick();
-    tickTimer = window.setInterval(tick, 250);
-    el.append(t);
+    // время на «Отменить» — заливкой самой капсулы, как ход загрузки фото (Никита 06.11):
+    // одна и та же форма у «идёт процесс»; дошла до края — действие ушло
+    const f = document.createElement('span');
+    f.className = 'c-toast__fill';
+    f.style.setProperty('--ms', `${ms}ms`);
+    el.append(f);
   }
   const msg = document.createElement('span');
   msg.className = 'c-toast__text';

@@ -89,8 +89,9 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
   font: inherit;
   font-size: 16px;
 }
-/* фокус — тонкая серая обводка, как у Apple, не чёрная в 2 px (Никита 06.11) */
-.a-field__input:focus-visible { outline: 1px solid var(--adm-focus); outline-offset: -1px; border-color: transparent; }
+/* фокус поля — как в iOS: только курсор, без рамки (Никита 06.11: чёрная рамка «дёшево», серая — «у Apple не так»).
+   Поле и так видно своей подложкой или контуром; куда печатаешь — показывает курсор и клавиатура. */
+.a-field__input:focus-visible { outline: none; }
 .a-field__input[aria-invalid="true"] { border-color: var(--st-bad-text); }
 .a-login__error { color: var(--st-bad-text); font-size: var(--adm-fs); line-height: var(--adm-lh); }
 /* ошибки входа — облачком .tip (base.css, lib/form-check.ts), форма не прыгает */
@@ -261,7 +262,7 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
   font: inherit;
 }
 .a-input::placeholder { color: var(--adm-text-2); }
-.a-input:focus-visible { outline: 1px solid var(--adm-focus); outline-offset: -1px; }
+.a-input:focus-visible { outline: none; }
 
 /* Строка инструментов над таблицей (Директ) */
 .a-tools { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); padding: 12px var(--adm-pad); }
@@ -525,7 +526,11 @@ html:has(.adm), html:has(.adm) body { background: var(--adm-bg); }
 /* СВОДКА — плитки 2×2 как в Напоминаниях Apple: значок в сером круге, крупное число справа, подпись */
 .a-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--cab-gap); }
 .a-tile { display: grid; grid-template-columns: auto 1fr; grid-template-areas: "ic n" "label label" "note note"; align-items: center; gap: 8px 10px; padding: 14px 16px; border-radius: var(--adm-radius); background: var(--adm-card); color: inherit; text-decoration: none; min-height: 104px; align-content: start; }
-.a-tile__ic { grid-area: ic; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--adm-bg); }
+/* значок — скруглённый квадрат, тот же, что в плитках кабинета (.c-tile__ic), не круг (Никита 06.11) */
+.a-tile__ic { grid-area: ic; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--adm-bg); color: var(--adm-text); }
+.a-tile__ic--info { background: var(--st-info-bg); color: var(--st-info-strong); }
+.a-tile__ic--warn { background: var(--st-warn-bg); color: var(--st-warn-strong); }
+.a-tile__ic--bad { background: var(--st-bad-bg); color: var(--st-bad-strong); }
 .a-tile__ic svg { width: 20px; height: 20px; }
 .a-tile__n { grid-area: n; justify-self: end; font-size: 28px; line-height: 32px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .a-tile__label { grid-area: label; font-size: 15px; font-weight: 600; }

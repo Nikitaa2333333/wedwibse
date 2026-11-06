@@ -53,7 +53,7 @@ import maxMark from '../../../assets/profi/max-mark.webp';
           </div>
           <div class="c-row" data-ch="email">
             <span class="c-row__ic"><AdminIcon name="mail" /></span>
-            <span class="c-row__body"><span class="c-row__title">Почта</span><input class="c-inline-input" type="email" inputmode="email" autocomplete="email" placeholder="почта для заявок" aria-label="Почта для заявок" data-email-to /></span>
+            <span class="c-row__body"><span class="c-row__title">Почта</span><input class="c-inline-input" type="email" inputmode="email" autocomplete="email" placeholder="впишите почту для заявок" aria-label="Почта для заявок" data-email-to /></span>
             <span class="c-ch-ctl" data-ctl></span>
             <span></span>
           </div>
@@ -133,9 +133,11 @@ import maxMark from '../../../assets/profi/max-mark.webp';
         const sw = (e.target as HTMLElement).closest<HTMLButtonElement>('.c-switch');
         if (!sw || sw.disabled) return;
         const ch = sw.closest<HTMLElement>('[data-ch]')!.dataset.ch as Ch;
+        // без адреса — сразу курсор в поле почты (открывается клавиатура), без облачка (Никита 06.11:
+        // «куда вписать?» — поле прямо в этой строке, под словом «Почта»)
         if (ch === 'email' && (!n.emailTo || !emailOk())) {
           emailTo.focus();
-          fieldError(emailTo, n.emailTo ? 'В адресе ошибка, пример: name@mail.ru' : 'Впишите почту, куда присылать заявки', emailTo.closest<HTMLElement>('.c-row') ?? undefined);
+          if (n.emailTo) fieldError(emailTo, 'В адресе ошибка, пример: name@mail.ru', emailTo.closest<HTMLElement>('.c-row') ?? undefined);
           return;
         }
         n[ch] = !n[ch];
