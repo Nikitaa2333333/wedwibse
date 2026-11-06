@@ -261,6 +261,9 @@ select.a-field__input { appearance: none; background-image: var(--adm-chevron-do
 .c-bar .a-btn--lg { flex: 1 1 auto; height: 52px; font-size: 16px; }
 @media (min-width: 560px) { .c-bar .a-btn--lg { flex: 0 0 auto; padding-inline: 32px; } }
 .c-error { color: var(--st-bad-text); white-space: pre-line; }
+/* «Чтобы отправить, осталось» под прибитой кнопкой — спокойный янтарный комментарий,
+   не красный (красным — только замечание модератора), с полями как у плашек (06.11) */
+.c-bar .c-error { flex: 1 1 100%; padding-inline: var(--s-4); color: var(--st-warn-strong); line-height: var(--adm-lh); }
 .c-ok { color: var(--st-ok-text); }
 .c-error[hidden], .c-ok[hidden], .cab [hidden] { display: none !important; }
 
@@ -437,7 +440,8 @@ html:has(.cab), html:has(.cab) body { background: var(--adm-bg); }
   60% { transform: translateX(-5px); }
   80% { transform: translateX(3px); }
 }
-body:has(.c-bar .a-btn) .c-toast { bottom: calc(var(--cab-tabs-h) + env(safe-area-inset-bottom) + 80px); }
+/* тост на экране с прибитой кнопкой — сверху (base.css). Старое правило с bottom здесь
+   перебивало top и растягивало тост на весь экран — красный прямоугольник (06.11) */
 /* заполненный раздел — тонкая галочка в углу, без кружка и без заливки
    (Никита, 02.11: зелёные и красные плитки — «светофор», сняты) */
 .c-tile__done { position: absolute; top: var(--s-4); right: var(--s-4); width: 22px; height: 22px; color: var(--st-ok-text); }
@@ -708,3 +712,8 @@ body:has(.c-bar .a-btn) .c-toast { bottom: calc(var(--cab-tabs-h) + env(safe-are
 .c-notes-bar [aria-pressed="true"], .c-notes-bar [aria-expanded="true"] { background: var(--adm-on-dark); color: var(--cab-ink); }
 .c-notes-bar button:disabled { color: color-mix(in srgb, var(--adm-on-dark) 40%, transparent); }
 @media (hover: hover) { .c-notes-bar button:hover:not([aria-pressed="true"]):not([aria-expanded="true"]):not(:disabled) { background: color-mix(in srgb, var(--adm-on-dark) 18%, transparent); } }
+
+/* пустое состояние списка в плашке: текст по левому краю, действие отдельной строкой ниже (06.11:
+   ссылка в строке-сетке .c-row сжималась в столбик по слогам) */
+.c-empty-card { display: grid; gap: var(--s-2); justify-items: start; padding: var(--s-4); border-radius: var(--cab-sheet-radius); background: var(--adm-card); }
+.c-empty-card p { margin: 0; max-width: 40ch; }

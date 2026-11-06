@@ -71,7 +71,7 @@ const ROLES = Object.fromEntries(SPECIALIST_CATEGORIES.map((c) => [c.slug, c.rol
         const thumb = r.photos?.[0] ? fileUrl(r, r.photos[0], { thumb: '400x0', token }) : '';
         rows.push(row(`/profi/moi/kartochka/?id=${r.id}`, thumb, r.data?.name || 'Без названия', sub, st, r.status === 'rejected'));
       }
-      list.innerHTML = rows.join('') || '<p class="c-row c-row__sub">Карточек пока нет. <a class="c-link" href="/profi/moi/novaya/">Завести карточку</a> — площадки или подрядчика</p>';
+      list.innerHTML = rows.join('') || '<div class="c-empty-card"><p>Карточек пока нет. Заведите первую — площадки или подрядчика</p><a class="c-link" href="/profi/moi/novaya/">Завести карточку</a></div>';
       root.querySelector<HTMLElement>('[data-add]')!.hidden = cards.items.length + revs.items.length >= MAX_CARDS;
     } catch (err) {
       list.innerHTML = '';

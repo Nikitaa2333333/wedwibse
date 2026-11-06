@@ -270,7 +270,6 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
             : `<button class="a-btn a-btn--primary a-btn--lg${missing.length ? ' c-btn-locked' : ''}" type="button" data-submit ${missing.length ? 'aria-disabled="true"' : ''}>${missing.length ? icon('lock') : ''}Отправить на проверку</button>`}
 
         <span class="c-error" data-error hidden></span>
-        <span class="c-ok" data-ok hidden></span>
       </div>
       </div>`;
     savedLabel();
@@ -285,7 +284,6 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       }).catch(() => {});
     }
     const err = view.querySelector<HTMLElement>('[data-error]')!;
-    const ok = view.querySelector<HTMLElement>('[data-ok]')!;
     // превью до одобрения (/profi/prevyu/): сначала сохраняем набранное,
     // потом ссылку у базы; в той же вкладке — айфон не открывает окно,
     // открытое после ответа сервера (как с MAX, 31.10)
@@ -328,8 +326,8 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         await save();
         rev = await api('vendor', 'PATCH', `/api/collections/revisions/records/${rev.id}`, { status: 'review' });
         renderOverview();
-        view.querySelector<HTMLElement>('[data-ok]')!.textContent = 'Отправили на проверку. Ответим в течение 24 часов.';
-        view.querySelector<HTMLElement>('[data-ok]')!.hidden = false;
+        // результат — баннером сверху (HIG: Feedback), не строкой под кнопкой (Никита 06.11)
+        toast('Отправили на проверку. Ответим в течение 24 часов', false, 3500);
       } catch (x) {
         // хук перечисляет, чего не хватает, через «; » — по строке на пункт
         markTried();
@@ -342,9 +340,8 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       try {
         rev = await api('vendor', 'PATCH', `/api/collections/revisions/records/${rev.id}`, { status: 'draft' });
         renderOverview();
-      } catch (x) { err.textContent = errText(x); err.hidden = false; }
+      } catch (x) { toast(`Не отозвали. ${errText(x)}`, true, undefined, { label: 'Повторить', fn: () => view.querySelector<HTMLButtonElement>('[data-withdraw]')?.click() }); }
     });
-    void ok;
   }
 
   // ---------- «как это выглядит на сайте» ----------
@@ -708,14 +705,15 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
           ${mode === 'one' ? `
             ${field('Цена от, ₽', 'priceFrom', data.priceFrom, { mode: 'numeric', placeholder: '40 000' })}
             <div class="c-card c-card--chips">
-              ${field('Цена указана за', 'priceNote', data.priceNote, { placeholder: priceUnits(kind, rev.categorySlug)[0] })}
+              ${/* подсказка в поле не повторяет вариант из капсул: «за проект» серым читалось как выбранное (06.11) */''}
+              ${field('Цена указана за', 'priceNote', data.priceNote, { placeholder: 'или впишите свой вариант' })}
               ${unitChips('priceNote', data.priceNote)}
             </div>` : ''}
           ${mode === 'tariffs' ? `
             ${tariffHint()}
             <div class="c-items">${ts.map((t: any, i: number) => `
               <div class="c-tcard">
-                <input class="c-tcard__name" data-bind="tariffs.${i}.name" value="${esc(t.name)}" placeholder="Название, например «Полный день»" aria-label="Название тарифа" />
+                <input class="c-tcard__name" data-bind="tariffs.${i}.name" value="${esc(t.name)}" placeholder="Название тарифа" aria-label="Название тарифа" />
                 <div class="c-tcard__price">
                   <input data-bind="tariffs.${i}.price" inputmode="numeric" value="${esc(money(t.price))}" placeholder="Цена" aria-label="Цена, ₽" size="7" /><span>₽</span>
                   <input class="c-tcard__unit" data-bind="tariffs.${i}.unit" value="${esc(t.unit)}" placeholder="${priceUnits(kind, rev.categorySlug)[0]}" aria-label="Цена указана за" />
