@@ -63,6 +63,11 @@ jobs:
           # никнейм бота MAX — тоже не секрет (ключ живёт только в базе);
           # без него «Войти через MAX» остаётся ссылкой прототипа
           PUBLIC_MAX_BOT: id503613656680_bot
+          # СЕРВИС ФОТО (07.11.2026, docs/PHOTO-SERVICE.md): Astro фото не режет —
+          # ни при сборке, ни на сервере; адреса /ph/… режет imgproxy на VPS.
+          # Без этой переменной сборка снова пойдёт через sharp (5–7 минут,
+          # ~2 ГБ вариантов) и страницы — через /_image службы страниц.
+          PHOTO_SERVICE: '1'
         run: npx astro build
 
       # Карта сайта из готовой сборки (страницы с noindex в неё не идут).
@@ -149,26 +154,22 @@ jobs:
             sudo /usr/bin/systemctl restart wedsecrets-ssr; sleep 3
             curl -s -o /dev/null -w "превью отвечает: %{http_code}\n" http://127.0.0.1:4321/profi/prevyu/'
 
-      # ПРОГРЕВ НАРЕЗКИ ФОТО (05.11.2026): кадры каталога режутся на сервере по
-      # первому запросу; на холодном кэше пачка нарезок 05.11 уронила службу
-      # по памяти. Скрипт режет их заранее и по одному — на самом сервере,
-      # в фоне (первый прогон — пара часов, дальше только новые кадры).
-      # flock: второй деплой не запускает второй прогрев поверх первого.
-      # ВЫКЛЮЧЕН (05.11.2026, первый прогон): служба падала по памяти даже при
-      # нарезке по одному кадру — память sharp растёт и не возвращается. Включать
-      # после настройки юнита (MALLOC_ARENA_MAX=2, VIPS_CONCURRENCY=1, лимит выше),
-      # docs/AUDIT-2026-11-06.md. Шаг не роняет выкладку (continue-on-error),
-      # ssh не ждёт фоновый процесс (setsid + ssh -f).
-      - name: Warm image cache
-        if: ${{ false }}
+      # ОБРАБОТЧИК НАРЕЗКИ ФОТО (сервис фото, 07.11.2026, docs/PHOTO-SERVICE.md).
+      # Прогрева /_image больше нет: новые кадры сборки дорежет сам обработчик
+      # (обход раз в 10 минут), посетитель до этого получает кадр, нарезанный
+      # imgproxy на лету. Здесь только код обработчика — и перезапуск, если он
+      # поменялся. Шаг не роняет выкладку: сайт от обработчика не зависит.
+      - name: Photo worker
         continue-on-error: true
-        timeout-minutes: 2
+        timeout-minutes: 3
         run: |
+          SSH="ssh -i ~/.ssh/id_ed25519 -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=10 -o ServerAliveCountMax=3"
           TARGET="${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}"
-          scp -i ~/.ssh/id_ed25519 -o BatchMode=yes scripts/warm-images.sh "$TARGET:/srv/wedsecrets-ssr/warm-images.sh"
-          ssh -f -i ~/.ssh/id_ed25519 -o BatchMode=yes -o ConnectTimeout=20 "$TARGET" \
-            'cd /srv/wedsecrets-ssr && setsid nohup flock -n .warm.lock bash warm-images.sh > warm.log 2>&1 < /dev/null &'
-          echo "прогрев запущен, журнал /srv/wedsecrets-ssr/warm.log"
+          mkdir -p photo/scripts photo/src/lib
+          cp scripts/photo-worker.mjs photo/scripts/ && cp src/lib/photo-url.mjs photo/src/lib/
+          echo '{"type":"module"}' > photo/package.json
+          changed=$(rsync -az --checksum --timeout=60 --itemize-changes -e "$SSH" photo/ "$TARGET:/srv/wedsecrets-photos/app/" | grep -c '^<f' || true)
+          if [ "$changed" != "0" ]; then $SSH "$TARGET" 'sudo /usr/bin/systemctl restart wedsecrets-photo'; echo "обработчик обновлён"; else echo "обработчик без изменений"; fi
 
       # Проверять по IP бессмысленно: nginx разбирает запросы по server_name,
       # и на голый адрес отвечает дефолтный сервер, а не наш сайт. Стучимся

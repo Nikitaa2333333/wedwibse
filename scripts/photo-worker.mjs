@@ -37,6 +37,9 @@ const PAUSE_MS = Number(env('PAUSE_MS', '50'));
 const ONCE = process.argv.includes('--once');
 
 const IMG = /\.(webp|jpe?g|png|avif)$/i;
+/** вариант, нарезанный сборкой на sharp (имя.ХЭШ_ХЭШ.webp), — не оригинал; такие
+ *  остаются в _astro от сборок до сервиса фото, резать их второй раз незачем */
+const ASTRO_VARIANT = /\.[A-Za-z0-9_-]{8}_[A-Za-z0-9_-]+\.[a-z]+$/;
 const sleep = (ms) => new Promise((ok) => setTimeout(ok, ms));
 const log = (...a) => console.log(new Date().toISOString().slice(0, 19), ...a);
 
@@ -94,7 +97,7 @@ async function sweep() {
   let seen = 0, made = 0;
   // кадры сборки: в _astro лежат оригиналы (с PHOTO_SERVICE=1 сборка вариантов не делает)
   for (const d of await list(SITE_ASTRO)) {
-    if (!d.isFile() || !IMG.test(d.name)) continue;
+    if (!d.isFile() || !IMG.test(d.name) || ASTRO_VARIANT.test(d.name)) continue;
     seen++;
     made += await cut({ kind: 'a', file: d.name });
     made += await drainQueue(); // «Готово» подрядчика не ждёт конца обхода
