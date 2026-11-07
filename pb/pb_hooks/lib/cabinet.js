@@ -389,6 +389,32 @@ function deploySite(why) {
 // deploySite остаётся для площадок из кабинета (этап 3).
 function cardSaved(e) {
   e.next();
+  queuePhotos(e.record);
+}
+
+/**
+ * СЕРВИС ФОТО (07.11.2026, docs/PHOTO-SERVICE.md): кадры записи — в очередь
+ * нарезки. Обработчик (scripts/photo-worker.mjs, служба wedsecrets-photo)
+ * режет все ширины заранее, чтобы первый посетитель не ждал ни одного кадра.
+ * Вызывается по «Готово» (кадры ревизии) и при сохранении карточки
+ * (одобрение, pb-seed --publish). Уже нарезанное обработчик пропускает сам,
+ * поэтому лишний вызов ничего не стоит. Без PHOTO_QUEUE (локально, тесты)
+ * молчит; сбой записи очереди не ломает запрос — обход обработчика раз
+ * в 10 минут дорежет пропущенное.
+ */
+function queuePhotos(record) {
+  const dir = $os.getenv('PHOTO_QUEUE');
+  if (!dir) return;
+  try {
+    const names = photosOf(record).slice();
+    const avatar = record.getString('avatar');
+    if (avatar) names.push(avatar);
+    if (!names.length) return;
+    const base = `${record.collection().id}/${record.id}/`;
+    $os.writeFile(`${dir}/${Date.now()}-${record.id}.txt`, names.map((n) => base + n).join('\n'), 0o644);
+  } catch (err) {
+    $app.logger().warn('cabinet: очередь нарезки фото не записалась', 'record', record.id, 'error', String(err));
+  }
 }
 
 /**
@@ -690,6 +716,8 @@ function vendorUpdateRevision(e) {
       `<p>Получили вашу карточку «${str(data.name, 120)}» и проверим её в ближайшее время.</p>` +
       `<p>Когда она появится на сайте, пришлём письмо со ссылкой.</p>`,
       `Получили вашу карточку «${str(data.name, 120)}» и проверим её в ближайшее время. Когда она появится на сайте, пришлём ссылку.`);
+    // сервис фото: «Готово» — нарезка кадров начинается сразу, к одобрению всё готово
+    queuePhotos(r);
   }
 }
 
@@ -787,14 +815,20 @@ function approve(app, rev) {
   // Файлы копируются из ревизии в карточку (у ревизии они закрыты, у
   // карточки — открыты). Набор ревизии полный, поэтому он заменяет набор
   // карточки целиком; старые файлы карточки PocketBase удалит сам.
+  // СЕРВИС ФОТО (07.11.2026): имя файла при копировании СОХРАНЯЕМ (true) —
+  // по имени лежат варианты, нарезанные по «Готово», и после одобрения они
+  // находятся без повторной нарезки. Кадр, который у карточки уже есть
+  // (правка: startEdit скопировал его в ревизию с тем же именем), не
+  // копируем вовсе — оставляем файл карточки как был.
   const names = photosOf(rev);
+  const has = photosOf(card);
   const fsys = app.newFilesystem();
   try {
     const base = rev.baseFilesPath() + '/';
-    card.set('photos', names.map((n) => fsys.getReuploadableFile(base + n, false)));
+    card.set('photos', names.map((n) => has.indexOf(n) !== -1 ? n : fsys.getReuploadableFile(base + n, true)));
     if (kind === 'specialist') {
       const avatar = rev.getString('avatar');
-      card.set('avatar', avatar ? fsys.getReuploadableFile(base + avatar, false) : null);
+      card.set('avatar', !avatar ? null : avatar === card.getString('avatar') ? avatar : fsys.getReuploadableFile(base + avatar, true));
     }
     app.save(card);
   } finally {
@@ -1010,9 +1044,11 @@ function startEdit(e) {
     const photos = photosOf(card);
     // все кадры: набор правки при одобрении заменяет набор карточки целиком,
     // обрезка здесь стёрла бы лишние кадры с сайта
-    rev.set('photos', photos.map((n) => fsys.getReuploadableFile(base + n, false)));
+    // имена сохраняем (сервис фото): нетронутые кадры правки при одобрении
+    // остаются файлами карточки, их варианты уже нарезаны
+    rev.set('photos', photos.map((n) => fsys.getReuploadableFile(base + n, true)));
     if (kind === 'specialist' && card.getString('avatar')) {
-      rev.set('avatar', fsys.getReuploadableFile(base + card.getString('avatar'), false));
+      rev.set('avatar', fsys.getReuploadableFile(base + card.getString('avatar'), true));
     }
     e.app.save(rev);
   } finally {

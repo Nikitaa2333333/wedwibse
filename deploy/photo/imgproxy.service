@@ -1,0 +1,30 @@
+# /etc/systemd/system/imgproxy.service — сервис фото WED Secrets (07.11.2026).
+# Отдельный процесс: его сбой не роняет страницы (wedsecrets-ssr) и базу.
+[Unit]
+Description=WED Secrets — imgproxy (нарезка фото, docs/PHOTO-SERVICE.md)
+After=network.target
+
+[Service]
+User=imgproxy
+Group=imgproxy
+EnvironmentFile=/etc/wedsecrets/imgproxy.env
+ExecStart=/usr/bin/imgproxy
+Restart=always
+RestartSec=2
+
+# оригиналы — только на чтение и только эти две папки
+BindReadOnlyPaths=/var/www/wedsecrets/_astro:/srv/wedsecrets-photos/src/site
+BindReadOnlyPaths=/srv/wedsecrets-pb/pb_data/storage:/srv/wedsecrets-photos/src/pb
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+NoNewPrivileges=true
+
+# потолок памяти: страницам и базе остаётся своё
+MemoryHigh=300M
+MemoryMax=400M
+# нарезка уступает процессор страницам
+Nice=5
+
+[Install]
+WantedBy=multi-user.target

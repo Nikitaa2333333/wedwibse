@@ -1,0 +1,29 @@
+# Пакет imgproxy для сервера (сервис фото, 07.11.2026, docs/PHOTO-SERVICE.md).
+# Готовых пакетов у imgproxy нет; официальный способ без Docker на сервере —
+# выгрузить .deb из их образа скриптом imgproxy-build-package
+# (docs.imgproxy.net/installation). Сервер: Ubuntu 26.04, amd64.
+# Запуск: руками (Actions → imgproxy package) или пушем правки этого файла.
+# Обновить imgproxy — поменять версию ниже; пакет берётся из артефакта
+# (gh run download) и ставится на сервере: dpkg -i, apt-get install -f.
+name: imgproxy package
+
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/imgproxy-package.yml']
+
+jobs:
+  deb:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Export .deb from the official image
+        run: |
+          mkdir -p dist
+          docker run -u0 --rm -v "$PWD/dist:/dist" ghcr.io/imgproxy/imgproxy:v4.0.22-amd64 imgproxy-build-package deb /dist
+          ls -la dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: imgproxy-deb
+          path: dist/*.deb
+          retention-days: 30

@@ -21,6 +21,9 @@ onRecordUpdateRequest((e) => {
 onRecordAfterCreateSuccess((e) => require(`${__hooks}/lib/cabinet.js`).cardSaved(e), 'specialists');
 onRecordAfterUpdateSuccess((e) => require(`${__hooks}/lib/cabinet.js`).cardSaved(e), 'specialists');
 onRecordAfterDeleteSuccess((e) => require(`${__hooks}/lib/cabinet.js`).cardDeleted(e), 'specialists');
+// площадки: только очередь нарезки фото (сервис фото, 07.11.2026)
+onRecordAfterCreateSuccess((e) => require(`${__hooks}/lib/cabinet.js`).cardSaved(e), 'venues');
+onRecordAfterUpdateSuccess((e) => require(`${__hooks}/lib/cabinet.js`).cardSaved(e), 'venues');
 
 // ---------- видео ----------
 onRecordCreateRequest((e) => {

@@ -22,6 +22,11 @@ export default defineConfig({
   adapter: node({ mode: 'standalone' }),
   // фото анкеты в превью приходят из базы по ссылке — разрешаем ровно её файлы
   image: {
+    // СЕРВИС ФОТО (07.11.2026, docs/PHOTO-SERVICE.md): на боевой сборке
+    // (PHOTO_SERVICE=1 в deploy.yml) Astro фото не режет вовсе — ни при сборке,
+    // ни на сервере; адреса /ph/… режет imgproxy. Без переменной (astro dev,
+    // локальная сборка) — обычный sharp, как раньше.
+    ...(process.env.PHOTO_SERVICE === '1' ? { service: { entrypoint: './src/lib/photo-service.ts' } } : {}),
     remotePatterns: [{
       protocol: previewFiles.protocol.replace(':', ''),
       hostname: previewFiles.hostname,
