@@ -819,9 +819,11 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
 
   function renderSection(key: SectionKey) {
     const b = sectionBody(key);
+    // строка «‹ Назад … ✓ Сохранено» прибита к верху (Никита 07.11): статус виден
+    // всегда, но не всплывает на каждое нажатие. Вне .c-head — иначе ей некуда липнуть
     view.innerHTML = `
+      <div class="c-head__top c-head__top--sticky"><a class="c-back" href="${url()}">${icon('back')} ${esc(data.name || 'Анкета')}</a><span class="c-saved" data-savemark aria-live="polite"></span></div>
       <div class="c-head">
-        <div class="c-head__top"><a class="c-back" href="${url()}">${icon('back')} ${esc(data.name || 'Анкета')}</a><span class="c-saved" data-savemark aria-live="polite"></span></div>
         ${/* «?» — только там, где есть подсказка (Никита 07.11): фото и тарифы; нажатие возвращает закрытую
              подсказку-баннер (как подсказки TipKit у Apple). Превью раздела — кнопкой «Как на сайте» на обзоре */''}
         <h1 class="a-h1 c-title">${b.title}${key === 'foto' || (key === 'prays' && priceMode() === 'tariffs') ? ` <button class="c-help" type="button" data-hint-again="${key}" aria-label="Показать подсказку">?</button>` : ''}</h1>
