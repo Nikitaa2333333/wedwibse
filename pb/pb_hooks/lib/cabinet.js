@@ -1572,6 +1572,26 @@ function vendorUpdateAccount(e) {
 // Форма на карточке (BookingSheet) без входа → POST /api/wed/lead. Служебное
 // (статус, связь с учёткой невесты) из запроса не берём. Частоту держит
 // rate limit маршрута (миграция 1762200000).
+// Срез в админке (07.11, docs/cabinet/LEADS-ADMIN.md) держится на полях, а не
+// на тексте: source — откуда (card / favorites), batch — общий номер одной
+// отправки из избранного, venue / specialist — карточка по адресу. Те же
+// правила один раз прошли по старым заявкам (миграция 1762600000).
+/** адрес карточки → { col, id }: /moskva/podryadchiki/<кат>/<slug>/, /moskva/ploshchadki/<slug>/ */
+function leadLink(app, url) {
+  const s = String(url || '');
+  let m = s.match(/\/moskva\/podryadchiki\/([a-z0-9-]+)\/([a-z0-9-]+)\/?(?:[?#]|$)/);
+  if (m) {
+    const r = findOne(app, 'specialists', 'categorySlug = {:c} && slug = {:s}', { c: m[1], s: m[2] });
+    return r ? { col: 'specialist', id: r.id } : null;
+  }
+  m = s.match(/\/moskva\/ploshchadki\/([a-z0-9-]+)\/?(?:[?#]|$)/);
+  if (m) {
+    const r = findOne(app, 'venues', 'slug = {:s}', { s: m[1] });
+    return r ? { col: 'venue', id: r.id } : null;
+  }
+  return null;
+}
+
 function createLead(e) {
   const body = e.requestInfo().body || {};
   const name = str(body.name, 120);
@@ -1583,13 +1603,19 @@ function createLead(e) {
   if (body.consent !== true) throw new BadRequestError('Нужно согласие на обработку данных.');
   const eventDate = /^\d{4}-\d{2}-\d{2}$/.test(str(body.eventDate)) ? str(body.eventDate) + ' 12:00:00.000Z' : '';
   const col = e.app.findCollectionByNameOrId('leads');
-  const save = (app, msg, url) => {
+  const save = (app, msg, url, batch) => {
     const r = new Record(col);
     r.set('kind', 'client');
     r.set('name', name);
     r.set('phone', phone);
     r.set('message', msg);
-    if (/^https?:\/\//.test(url)) r.set('sourceUrl', url);
+    r.set('source', batch ? 'favorites' : 'card');
+    if (batch) r.set('batch', batch);
+    if (/^https?:\/\//.test(url)) {
+      r.set('sourceUrl', url);
+      const link = leadLink(app, url);
+      if (link) r.set(link.col, link.id);
+    }
     if (eventDate) r.set('eventDate', eventDate);
     r.set('consent', true);
     r.set('status', 'new');
@@ -1606,8 +1632,9 @@ function createLead(e) {
       .slice(0, 50);
     if (!cards.length) throw new BadRequestError('Отметьте, кому написать.');
     // все или ничего: половина заявок без второй половины — хуже ошибки
+    const batch = $security.randomString(15);
     e.app.runInTransaction((tx) => {
-      for (const c of cards) save(tx, `Карточка: ${c.name}\nИз избранного, всем сразу (${cards.length})\n${message}`.trim(), c.url);
+      for (const c of cards) save(tx, `Карточка: ${c.name}\nИз избранного, всем сразу (${cards.length})\n${message}`.trim(), c.url, batch);
     });
     const list = cards.map((c) => `— ${c.name}${c.url ? ` ${c.url}` : ''}`).join('\n');
     const text = `Заявка из избранного, ${cards.length} карточ.\n${name}, ${phone}\n${message}\n${list}`;
@@ -1616,7 +1643,7 @@ function createLead(e) {
     return e.json(200, { ok: true, count: cards.length });
   }
 
-  save(e.app, message, sourceUrl);
+  save(e.app, message, sourceUrl, '');
   const text = `Заявка с сайта\n${name}, ${phone}\n${message}\n${sourceUrl}`;
   telegram(text);
   mailUs(`Заявка с сайта: ${name}`, text);

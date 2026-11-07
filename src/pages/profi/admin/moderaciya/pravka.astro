@@ -208,7 +208,7 @@ const QUESTIONS = Object.fromEntries(
       $('[data-pr-title]').textContent = d.name || 'Без названия';
       if (!cardId) {
         $<HTMLAnchorElement>('[data-pr-back]').href = '/profi/admin/zayavki/';
-        $('[data-pr-back-label]').textContent = 'Заявки';
+        $('[data-pr-back-label]').textContent = 'Новые карточки';
       }
       // без точек-разделителей (Никита 05.11): что это — первой строкой, кто прислал — второй
       $('[data-pr-lead]').innerHTML = `${esc(role)}, ${cardId ? 'правка опубликованной карточки' : 'новая карточка'}<br>Прислал(а): ${esc(rev.expand?.owner?.name || rev.expand?.owner?.email || 'без имени')}`;

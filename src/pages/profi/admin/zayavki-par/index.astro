@@ -1,0 +1,349 @@
+---
+// ЗАЯВКИ ПАР — что пишут пары с сайта (07.11.2026, docs/cabinet/LEADS-ADMIN.md).
+// Форма на карточке и «Написать всем» из избранного; до этого экрана заявки
+// были видны только в чате MAX и на почте kabinet@. Только для нас: подрядчику
+// заявки пока не передаём (третий этап).
+// Сверху — срез цифрами, как «Сводка» (Метрика: цифры первым экраном): новые,
+// сегодня, 7 и 30 дней; ниже — откуда, по категориям, кому чаще пишут.
+// Список — одна отправка одной строкой (группа из избранного — с перечнем
+// карточек), статус меняется в строке с «Отменить», без «Вы уверены?».
+// Все цифры — подсчёт по `leads` в браузере модератора (lib/admin-leads.ts).
+// Телефон и имя — персональные данные: страница под входом модератора,
+// noindex (AdminShell), в адрес и в журнал браузера они не попадают.
+import AdminShell from '../../../../components/admin/AdminShell.astro';
+import AdminIcon from '../../../../components/admin/AdminIcon.astro';
+import { SPECIALIST_CATEGORIES } from '../../../../data/specialists';
+
+// подписи категорий — на сервере: справочник подрядчиков в браузер не везём
+const CATS: Record<string, string> = { venue: 'Площадки', ...Object.fromEntries(SPECIALIST_CATEGORIES.map((c) => [c.slug, c.label])) };
+
+const tabs = [
+  { v: 'all', label: 'Все' },
+  { v: 'new', label: 'Новые' },
+  { v: 'in-progress', label: 'В работе' },
+  { v: 'done', label: 'Закрытые' },
+  { v: 'spam', label: 'Спам' },
+];
+const periods = [
+  { v: '1', label: 'Сегодня' },
+  { v: '7', label: '7 дней' },
+  { v: '30', label: '30 дней' },
+  { v: 'all', label: 'Всё время' },
+];
+const skRow = '<div class="sk-row"><span class="sk-row__body"><span class="sk sk--line"></span><span class="sk sk--line sk--short"></span></span><span class="sk sk--pill"></span></div>';
+---
+
+<AdminShell title="Заявки пар" section="leads">
+  <div class="a-title">
+    <h1 class="a-h1">Заявки пар</h1>
+  </div>
+
+  <section class="a-acts" aria-label="Сколько заявок" data-ld-tiles>
+    <div class="sk-card a-card a-card--flush" aria-busy="true" aria-label="Загружаем" set:html={skRow + skRow} />
+  </section>
+
+  <section class="a-card a-card--flush" data-ld-slice hidden></section>
+
+  <section class="a-card a-card--flush">
+    <nav class="a-tabs" aria-label="Статус заявки">
+      {tabs.map((t) => (
+        <a class:list={['a-tabs__item', { 'is-active': t.v === 'all' }]} href={`#${t.v}`} data-ld-tab={t.v}>
+          {t.label} <span class="a-tabs__n" data-ld-n={t.v}></span>
+        </a>
+      ))}
+    </nav>
+    <div class="a-tools a-tools--leads">
+      <div class="a-seg" role="group" aria-label="Период">
+        {periods.map((p) => (
+          <button type="button" class="a-seg__btn" data-ld-period={p.v} aria-pressed={p.v === '30' ? 'true' : 'false'}>{p.label}</button>
+        ))}
+      </div>
+      <label class="a-select-wrap">
+        <span class="visually-hidden">Категория</span>
+        <select class="a-select" data-ld-cat>
+          <option value="">Все категории</option>
+        </select>
+      </label>
+      <label class="a-search">
+        <span class="visually-hidden">Поиск</span>
+        <input class="a-input" type="search" placeholder="Имя или телефон" autocomplete="off" data-ld-search />
+        <AdminIcon name="search" />
+      </label>
+    </div>
+    <div class="a-leads" data-ld-rows aria-live="polite" set:html={skRow + skRow + skRow} />
+  </section>
+</AdminShell>
+
+<script type="application/json" id="ld-cats" set:html={JSON.stringify(CATS)} />
+
+<script>
+  import { requireSession, errText, esc, api } from '../../../../lib/cabinet-api';
+  import { toast } from '../../../../lib/cab-ui';
+  import { failBox, setNavCount } from '../../../../lib/admin-live';
+  import { loadLeads, newCount, sendCount, groupLeads, cardOf, leadText, at, LEAD_STATUS, dropLeadsCache, type LeadGroup, type LeadStatus } from '../../../../lib/admin-leads';
+  import { ADMIN_ICONS } from '../../../../lib/admin-icons';
+
+  const NB = ' ';
+  const DAY = 864e5;
+  let all: any[] = [];
+  let cats: Record<string, string> = {};
+  const f = { tab: 'all', period: '30', cat: '', q: '' };
+
+  const ic = (name: keyof typeof ADMIN_ICONS) => `<svg viewBox="0 0 24 24" aria-hidden="true">${ADMIN_ICONS[name]}</svg>`;
+  const catLabel = (c: string) => (c ? cats[c] ?? c : 'Без карточки');
+  const day0 = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); };
+  /** начало периода: сегодня с полуночи, 7 и 30 дней — включая сегодня */
+  const since = (p: string) => (p === 'all' ? 0 : day0() - (Number(p) - 1) * DAY);
+  const plural = (n: number, one: string, few: string, many: string) =>
+    n % 10 === 1 && n % 100 !== 11 ? one : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? few : many;
+
+  function when(d: string): string {
+    const t = new Date(at(d));
+    const time = t.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    const diff = Math.round((day0() - new Date(t).setHours(0, 0, 0, 0)) / DAY);
+    if (diff === 0) return `сегодня в${NB}${time}`;
+    if (diff === 1) return `вчера в${NB}${time}`;
+    const date = t.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', ...(t.getFullYear() !== new Date().getFullYear() ? { year: 'numeric' } : {}) });
+    return `${date} в${NB}${time}`.replace(/ /g, NB);
+  }
+  const wedding = (d: string) => new Date(at(d)).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }).replace(/\s?г\.$/, '').replace(/ /g, NB);
+  /** +7 900 000-00-01 — как вводят; ссылка — цифрами */
+  const telHref = (p: string) => { const d = String(p).replace(/\D/g, ''); return 'tel:+' + (d.length === 11 && d[0] === '8' ? '7' + d.slice(1) : d.length === 10 ? '7' + d : d); };
+  const way = (l: any) => /^Связаться:\s*(.+)$/m.exec(String(l.message || ''))?.[1]?.trim().toLowerCase() ?? '';
+
+  // ---------- срез ----------
+  function renderTiles() {
+    const box = document.querySelector<HTMLElement>('[data-ld-tiles]');
+    if (!box) return;
+    const live = all.filter((l) => l.status !== 'spam');
+    // отправки, как строки списка: нажал на плитку — в списке столько же строк
+    const n = (p: string) => sendCount(live.filter((l) => at(l.created) >= since(p)));
+    const nNew = newCount(all);
+    const tiles = [
+      { n: nNew, label: 'Новые', note: nNew ? 'ждут ответа' : '', tone: 'info', icon: 'leads', tab: 'new', period: 'all' },
+      { n: n('1'), label: 'Сегодня', tone: 'none', icon: 'clock', tab: 'all', period: '1' },
+      { n: n('7'), label: 'За 7 дней', tone: 'none', icon: 'history', tab: 'all', period: '7' },
+      { n: n('30'), label: 'За 30 дней', tone: 'none', icon: 'history', tab: 'all', period: '30' },
+    ] as const;
+    // плитки как в «Сводке»: белые, цвет смысла — у значка и числа, ноль — серый; нажатие ставит фильтр списка
+    box.innerHTML = `<div class="a-tiles">${tiles.map((t) =>
+      `<a class="a-tile${t.n ? ` a-tile--${t.tone}` : ''}" href="#${t.tab}" data-go-tab="${t.tab}" data-go-period="${t.period}"><span class="a-tile__ic">${ic(t.icon)}</span><b class="a-tile__n">${t.n}</b><span class="a-tile__label">${t.label}</span>${'note' in t && t.note ? `<span class="a-tile__note">${t.note}</span>` : ''}</a>`,
+    ).join('')}</div>`;
+  }
+
+  function renderSlice() {
+    const box = document.querySelector<HTMLElement>('[data-ld-slice]');
+    if (!box) return;
+    box.hidden = false;
+    const live = all.filter((l) => l.status !== 'spam' && at(l.created) >= since('30'));
+    if (!live.length) {
+      box.innerHTML = `<div class="a-card__head"><h2 class="a-h2">Срез за 30 дней</h2></div><p class="a-empty a-empty--slice">За 30 дней заявок не было. Они появятся здесь, когда пара напишет с карточки или из избранного</p>`;
+      return;
+    }
+    const fav = live.filter((l) => l.source === 'favorites').length;
+    const sends = sendCount(live);
+    const byCat = new Map<string, number>();
+    const byCard = new Map<string, { name: string; href: string; n: number }>();
+    for (const l of live) {
+      const c = cardOf(l);
+      byCat.set(c.cat, (byCat.get(c.cat) ?? 0) + 1);
+      const key = l.specialist || l.venue || c.href || c.name;
+      const cur = byCard.get(key) ?? { name: c.name, href: c.href, n: 0 };
+      cur.n++;
+      byCard.set(key, cur);
+    }
+    const row = (label: string, value: string) => `<li class="a-stat"><span class="a-stat__label">${label}</span><span class="a-stat__v">${value}</span></li>`;
+    const cats_ = [...byCat.entries()].sort((a, b) => b[1] - a[1]);
+    const top = [...byCard.values()].sort((a, b) => b.n - a.n).slice(0, 5);
+    const pct = Math.round((fav / live.length) * 100);
+    box.innerHTML = `<div class="a-card__head"><h2 class="a-h2">Срез за 30 дней</h2></div>
+      <div class="a-slice">
+        <ul class="a-stats">
+          ${row('Отправили пары', String(sends))}
+          ${row('Получили карточки', String(live.length))}
+          ${row('Из избранного', `${pct}${NB}%<span class="a-stat__note">${fav} из ${live.length}</span>`)}
+        </ul>
+        <div>
+          <h3 class="a-h3 a-slice__h">По категориям</h3>
+          <ul class="a-stats">${cats_.map(([c, n]) => row(esc(catLabel(c)), String(n))).join('')}</ul>
+        </div>
+        <div>
+          <h3 class="a-h3 a-slice__h">Кому чаще пишут</h3>
+          <ul class="a-stats">${top.map((t) => row(t.href ? `<a class="a-name" href="${esc(t.href)}" target="_blank" rel="noopener">${esc(t.name)}</a>` : esc(t.name), String(t.n))).join('')}</ul>
+        </div>
+      </div>`;
+  }
+
+  // ---------- список ----------
+  function matches(g: LeadGroup, o: { tab?: boolean } = {}): boolean {
+    if (o.tab !== false) {
+      if (f.tab === 'all' ? g.status === 'spam' : g.status !== f.tab) return false;
+    }
+    if (at(g.first.created) < since(f.period)) return false;
+    if (f.cat && !g.items.some((l) => cardOf(l).cat === f.cat)) return false;
+    if (f.q) {
+      const q = f.q.toLowerCase();
+      const digits = q.replace(/\D/g, '');
+      const l = g.first;
+      if (!String(l.name).toLowerCase().includes(q) && !(digits.length >= 3 && String(l.phone).replace(/\D/g, '').includes(digits))) return false;
+    }
+    return true;
+  }
+
+  const NEXT: Record<LeadStatus, { to: LeadStatus; label: string }[]> = {
+    new: [{ to: 'in-progress', label: 'Взять в работу' }],
+    'in-progress': [{ to: 'done', label: 'Закрыть' }],
+    done: [{ to: 'in-progress', label: 'Вернуть в работу' }],
+    spam: [{ to: 'new', label: 'Не спам' }],
+  };
+  const DONE_TEXT: Record<LeadStatus, string> = { new: 'Заявка снова новая', 'in-progress': 'Заявка в работе', done: 'Заявка закрыта', spam: 'Заявка в спаме' };
+
+  function leadRow(g: LeadGroup): string {
+    const l = g.first;
+    const st = LEAD_STATUS[g.status];
+    const cards = g.items.map(cardOf);
+    const link = (c: { name: string; href: string }) => (c.href ? `<a class="a-name" href="${esc(c.href)}" target="_blank" rel="noopener">${esc(c.name)}</a>` : esc(c.name));
+    const from = g.fav
+      ? `<span class="a-lead__from">Из избранного, ${cards.length}${NB}${plural(cards.length, 'карточке', 'карточкам', 'карточкам')}</span><ul class="a-lead__cards">${cards.map((c) => `<li>${link(c)}</li>`).join('')}</ul>`
+      : `<span class="a-lead__from">С карточки</span><ul class="a-lead__cards"><li>${link(cards[0])}</li></ul>`;
+    const text = leadText(l).split('\n').filter((s) => !/^Связаться:/.test(s)).join('\n').trim();
+    const w = way(l);
+    const msgr = w === 'telegram' ? `<a class="c-chipbtn" href="https://t.me/${esc(telHref(l.phone).slice(4))}" target="_blank" rel="noopener">Написать в Telegram</a>`
+      : w === 'whatsapp' ? `<a class="c-chipbtn" href="https://wa.me/${esc(telHref(l.phone).slice(5))}" target="_blank" rel="noopener">Написать в WhatsApp</a>` : '';
+    const acts = NEXT[g.status].map((a) => `<button type="button" class="c-chipbtn c-chipbtn--main" data-set="${a.to}">${a.label}</button>`).join('')
+      + (g.status !== 'spam' ? '<button type="button" class="c-chipbtn" data-set="spam">Спам</button>' : '');
+    return `<article class="a-lead" data-group="${esc(g.id)}">
+      <div class="a-lead__head">
+        <span class="a-lead__who"><span class="a-lead__name">${esc(l.name)}</span><span class="a-lead__when">${when(l.created)}</span></span>
+        <span class="status ${st.cls}">${st.label}</span>
+      </div>
+      <div class="a-lead__contact"><a class="a-lead__phone" href="${esc(telHref(l.phone))}">${esc(l.phone)}</a>${w && !msgr ? `<span class="a-lead__way">просит ${esc(w)}</span>` : ''}</div>
+      <div class="a-lead__where">${from}</div>
+      ${l.eventDate ? `<p class="a-lead__date">Свадьба ${wedding(l.eventDate)}</p>` : ''}
+      ${text ? `<p class="a-lead__msg">${esc(text)}</p>` : ''}
+      <div class="a-lead__acts">${msgr}<span class="a-lead__acts-r">${acts}</span></div>
+    </article>`;
+  }
+
+  function renderList() {
+    const box = document.querySelector<HTMLElement>('[data-ld-rows]');
+    if (!box) return;
+    const groups = groupLeads(all);
+    // счётчики вкладок — с учётом периода, категории и поиска
+    for (const t of ['all', 'new', 'in-progress', 'done', 'spam']) {
+      const el = document.querySelector<HTMLElement>(`[data-ld-n="${t}"]`);
+      if (!el) continue;
+      const n = groups.filter((g) => matches(g, { tab: false }) && (t === 'all' ? g.status !== 'spam' : g.status === t)).length;
+      el.textContent = String(n);
+      el.classList.toggle('a-tabs__n--info', t === 'new' && n > 0);
+    }
+    const shown = groups.filter((g) => matches(g));
+    box.innerHTML = shown.map(leadRow).join('') || `<p class="a-empty">${all.length
+      ? 'Под эти условия заявок нет. Смените период, вкладку или категорию'
+      : 'Заявок пока нет. Они появятся здесь, когда пара напишет с карточки или из избранного'}</p>`;
+  }
+
+  function renderCats() {
+    const sel = document.querySelector<HTMLSelectElement>('[data-ld-cat]');
+    if (!sel) return;
+    const present = [...new Set(all.map((l) => cardOf(l).cat))].sort((a, b) => catLabel(a).localeCompare(catLabel(b), 'ru'));
+    sel.innerHTML = '<option value="">Все категории</option>' + present.map((c) => `<option value="${esc(c)}">${esc(catLabel(c))}</option>`).join('');
+    sel.value = present.includes(f.cat) ? f.cat : '';
+  }
+
+  function renderAll() {
+    renderTiles();
+    renderSlice();
+    renderList();
+    setNavCount('leads', newCount(all));
+  }
+
+  // ---------- статус в строке: сразу на экране, сервер догоняет, «Отменить» ----------
+  async function patch(ids: string[], status: LeadStatus | Record<string, LeadStatus>) {
+    await Promise.all(ids.map((id) => api('moderator', 'PATCH', `/api/collections/leads/records/${id}`, { status: typeof status === 'string' ? status : status[id] })));
+  }
+
+  async function setStatus(groupId: string, to: LeadStatus) {
+    const g = groupLeads(all).find((x) => x.id === groupId);
+    if (!g) return;
+    const before: Record<string, LeadStatus> = Object.fromEntries(g.items.map((l) => [l.id, (l.status || 'new') as LeadStatus]));
+    const ids = Object.keys(before);
+    const apply = (s: LeadStatus | Record<string, LeadStatus>) => {
+      for (const l of all) if (ids.includes(l.id)) l.status = typeof s === 'string' ? s : s[l.id];
+      dropLeadsCache();
+      renderAll();
+    };
+    apply(to);
+    try {
+      await patch(ids, to);
+      toast(DONE_TEXT[to], false, 5000, async () => {
+        apply(before);
+        try { await patch(ids, before); } catch (err) { toast(`Не отменилось. ${errText(err)}`, true); load(true); }
+      });
+    } catch (err) {
+      apply(before);
+      toast(`Статус не сохранился. ${errText(err)}`, true, 0, { label: 'Повторить', fn: () => setStatus(groupId, to) });
+    }
+  }
+
+  async function load(force = false) {
+    const rows = document.querySelector<HTMLElement>('[data-ld-rows]');
+    const tiles = document.querySelector<HTMLElement>('[data-ld-tiles]');
+    if (!rows || !tiles) return;
+    try {
+      all = await loadLeads(force);
+      renderCats();
+      renderAll();
+    } catch (err) {
+      tiles.innerHTML = '';
+      rows.innerHTML = failBox(`Заявки не загрузились. ${errText(err)}`);
+    }
+  }
+
+  document.addEventListener('astro:page-load', () => {
+    const rows = document.querySelector<HTMLElement>('[data-ld-rows]');
+    if (!rows || !requireSession('moderator')) return;
+    try { cats = JSON.parse(document.getElementById('ld-cats')?.textContent || '{}'); } catch {}
+    const fromHash = location.hash.slice(1);
+    if (['all', 'new', 'in-progress', 'done', 'spam'].includes(fromHash)) f.tab = fromHash;
+    const syncTabs = () => document.querySelectorAll<HTMLElement>('[data-ld-tab]').forEach((t) => t.classList.toggle('is-active', t.dataset.ldTab === f.tab));
+    const syncPeriod = () => document.querySelectorAll<HTMLElement>('[data-ld-period]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.ldPeriod === f.period)));
+    syncTabs();
+
+    document.querySelectorAll<HTMLElement>('[data-ld-tab]').forEach((t) => t.addEventListener('click', (e) => {
+      e.preventDefault();
+      f.tab = t.dataset.ldTab!;
+      history.replaceState(null, '', `#${f.tab}`);
+      syncTabs();
+      renderList();
+    }));
+    document.querySelectorAll<HTMLElement>('[data-ld-period]').forEach((b) => b.addEventListener('click', () => {
+      f.period = b.dataset.ldPeriod!;
+      syncPeriod();
+      renderList();
+    }));
+    document.querySelector<HTMLSelectElement>('[data-ld-cat]')?.addEventListener('change', (e) => { f.cat = (e.target as HTMLSelectElement).value; renderList(); });
+    document.querySelector<HTMLInputElement>('[data-ld-search]')?.addEventListener('input', (e) => { f.q = (e.target as HTMLInputElement).value.trim(); renderList(); });
+    // плитка среза ставит фильтр списка и ведёт к нему
+    document.querySelector('[data-ld-tiles]')?.addEventListener('click', (e) => {
+      const a = (e.target as HTMLElement).closest<HTMLElement>('[data-go-tab]');
+      if (!a) return;
+      e.preventDefault();
+      f.tab = a.dataset.goTab!;
+      f.period = a.dataset.goPeriod!;
+      history.replaceState(null, '', `#${f.tab}`);
+      syncTabs();
+      syncPeriod();
+      renderList();
+      rows.closest('.a-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    rows.addEventListener('click', (e) => {
+      const t = e.target as HTMLElement;
+      if (t.closest('[data-retry]')) { load(true); return; }
+      const b = t.closest<HTMLButtonElement>('[data-set]');
+      const row = b?.closest<HTMLElement>('[data-group]');
+      if (b && row) setStatus(row.dataset.group!, b.dataset.set as LeadStatus);
+    });
+    load();
+  });
+</script>
