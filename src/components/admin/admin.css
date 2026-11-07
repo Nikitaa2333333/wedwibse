@@ -184,7 +184,7 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
 /* первая строка списка — без линии сверху: линия только между строками (Никита 07.11) */
 .a-tasks > .a-task:first-child, tbody > tr:first-child .a-task { border-top: 0; }
 /* ещё не открытая — точка у имени, как непрочитанное письмо в Почте; открытая — приглушена, без точки */
-.a-task:not(.a-task--seen) .a-task__name::before { content: ''; display: inline-block; width: 8px; height: 8px; margin: 0 8px 2px 0; border-radius: 50%; background: var(--st-info-strong); vertical-align: middle; }
+.a-task:not(.a-task--seen) .a-task__name::before { content: ''; display: inline-block; width: 6px; height: 6px; margin: 0 7px 3px 0; border-radius: 50%; background: var(--st-info-strong); vertical-align: middle; }
 .a-task__fill { font-size: var(--adm-fs-sm); white-space: nowrap; }
 /* у задачи в таблице (заявки, модерация) ячейка без своих полей */
 .a-table td.a-task-cell { padding: 0; }
@@ -532,19 +532,19 @@ html:has(.adm), html:has(.adm) body { background: var(--adm-bg); }
 .a-tile { display: grid; grid-template-columns: auto 1fr; grid-template-areas: "ic n" "label label" "note note"; align-items: center; gap: 8px 10px; padding: 14px 16px; border-radius: var(--adm-radius); background: var(--adm-card); color: inherit; text-decoration: none; min-height: 104px; align-content: start; }
 /* значок — скруглённый квадрат, тот же, что в плитках кабинета (.c-tile__ic), не круг (Никита 06.11) */
 .a-tile__ic { grid-area: ic; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--adm-bg); color: var(--adm-text); }
-/* плитка с делом — сплошной цвет смысла, как «Быстрые команды» у Apple (Никита 07.11), без градиента;
-   значок на полупрозрачной белой подложке. Ноль — белая плитка, цвет зовёт только туда, где есть дело */
-.a-tile--info { background: var(--st-info); color: var(--st-info-ink); }
-.a-tile--warn { background: var(--st-warn); color: var(--st-warn-ink); }
-.a-tile--bad { background: var(--st-bad); color: var(--st-bad-fg); }
-.a-tile--info .a-tile__ic, .a-tile--warn .a-tile__ic, .a-tile--bad .a-tile__ic { background: color-mix(in srgb, var(--adm-card) 45%, transparent); color: inherit; }
-.a-tile--info .a-tile__note--urgent, .a-tile--warn .a-tile__note--urgent, .a-tile--bad .a-tile__note--urgent { color: inherit; }
+/* сводка как плитки Apple (Никита 07.11): значок без подложки, крупное число; цвет смысла — у значка и числа,
+   плитка белая. Ноль — серый значок: цвет зовёт только туда, где есть дело */
+.a-tile .a-tile__ic { background: none; width: auto; height: auto; border-radius: 0; color: var(--adm-text-seen); }
+.a-tile .a-tile__ic svg { width: 26px; height: 26px; }
+.a-tile--info .a-tile__ic, .a-tile--info .a-tile__n { color: var(--st-info-strong); }
+.a-tile--warn .a-tile__ic, .a-tile--warn .a-tile__n { color: var(--st-warn-strong); }
+.a-tile--bad .a-tile__ic, .a-tile--bad .a-tile__n { color: var(--st-bad-strong); }
 .a-tile__ic svg { width: 20px; height: 20px; }
 .a-tile__n { grid-area: n; justify-self: end; font-size: 28px; line-height: 32px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .a-tile__label { grid-area: label; font-size: 15px; font-weight: 600; }
 .a-tile__note { grid-area: note; font-size: var(--adm-fs-sm); margin-top: -4px; }
 .a-tile__note--urgent { color: var(--st-bad-strong); font-weight: 600; }
-@media (hover: hover) { .a-tile:not([class*="a-tile--"]):hover { background: var(--adm-hover); } .a-tile[class*="a-tile--"]:hover { filter: brightness(0.97); } }
+@media (hover: hover) { .a-tile:hover { background: var(--adm-hover); } }
 @media (min-width: 768px) { .a-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 /* жалобы: текст без плашки */
 .a-plain { padding-inline: var(--s-4); max-width: 46ch; }

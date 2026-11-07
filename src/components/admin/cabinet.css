@@ -172,7 +172,9 @@ textarea.a-field__input { height: auto; min-height: 160px; padding: 12px 14px; l
 /* ссылка на ролик принята — зелёная галочка у поля (Никита 07.11) */
 .c-vrow__ok { display: grid; place-items: center; width: 28px; height: 28px; color: var(--st-ok-text); }
 .c-vrow__ok svg { width: 22px; height: 22px; }
-.c-vnote { padding-inline: var(--s-4); }
+.c-seg-note { padding-inline: var(--s-4); }
+/* принятая ссылка: длинный адрес плавно уходит под галочку, а не обрезается краем (Никита 07.11) */
+.c-vrow:has(.c-vrow__ok:not([hidden])) .a-field__input { -webkit-mask-image: linear-gradient(to right, var(--adm-text) calc(100% - 40px), transparent); mask-image: linear-gradient(to right, var(--adm-text) calc(100% - 40px), transparent); }
 .c-add-link { justify-self: start; }
 select.a-field__input { appearance: none; background-image: var(--adm-chevron-down); background-repeat: no-repeat; background-position: right 14px center; background-size: 20px 20px; padding-right: 44px; } /* тонкий шеврон вместо двух треугольников (05.11, HIG: Pop-up buttons) */
 .c-grid2 { display: grid; gap: var(--s-3); grid-template-columns: minmax(0, 1fr); }
@@ -317,7 +319,8 @@ select.a-field__input { appearance: none; background-image: var(--adm-chevron-do
 .c-link--danger { color: var(--st-bad-text) !important; justify-self: center; align-self: center; padding: 8px; }
 
 /* «?» у подписи поля — открывает «как это выглядит» */
-.c-help { width: 20px; height: 20px; margin-left: 4px; border-radius: 50%; background: var(--adm-bg); color: var(--adm-text); font-size: 12px; font-weight: 600; line-height: 20px; text-align: center; vertical-align: 1px; }
+/* «?» у заголовка — тихий: тонкий серый кружок, не чёрный знак на белом (Никита 07.11: «берёт внимание») */
+.c-help { width: 22px; height: 22px; margin-left: 6px; border: 1.5px solid currentColor; border-radius: 50%; background: none; color: var(--adm-text-seen); font-size: 13px; font-weight: 500; line-height: 19px; text-align: center; vertical-align: 3px; }
 @media (hover: hover) { .c-help:hover { background: var(--adm-line); } }
 
 /* кнопки «Добавить раздел / пакет» — заметные, капсулой без обводки */
@@ -766,7 +769,7 @@ html:has(.cab), html:has(.cab) body { background: var(--adm-bg); }
 .c-mailedit { display: grid; gap: 2px; min-width: 0; padding: 0; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
 .c-mailedit__v { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
 .c-mailedit__v > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.c-mailedit__v svg { width: 16px; height: 16px; flex: none; }
+.c-mailedit__v svg { width: 15px; height: 15px; flex: none; color: var(--adm-text-seen); }
 .c-mailform { gap: var(--s-2); }
 .c-mailform .a-field__input { height: 48px; padding-inline: var(--s-3); border-radius: 12px; background: var(--adm-bg); font-size: 17px; }
 .c-mailform__acts { display: grid; gap: var(--s-2); margin-top: var(--s-2); }
