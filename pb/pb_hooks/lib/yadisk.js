@@ -150,7 +150,7 @@ function importPhotos(e) {
   if (rev.getString('owner') !== e.auth.id) throw new ForbiddenError('Это не ваша карточка.');
   const status = rev.getString('status');
   if (status !== 'draft' && status !== 'rejected') throw new BadRequestError('Карточка на проверке или уже опубликована — фото добавляются в черновик.');
-  if (cab.managedCard(e.app, rev)) throw new BadRequestError('Фото этой карточки подбираем мы — напишите в «Что поменять в фото».');
+  // с 07.11 фото карточки «ведём мы» владелец добавляет и убирает сам (Никита)
 
   // уже забранное с этой ссылки (revisions.yadisk) не берём второй раз, пока
   // файл в карточке: оборванная пачка дозабирается сервером, а экран шлёт её снова

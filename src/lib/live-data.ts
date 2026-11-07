@@ -118,7 +118,14 @@ async function ourCard(rec: PbRecord, next: Reg): Promise<Specialist | null> {
     const pbName = byPath[path];
     return pbName ? remoteKey(rec, pbName, next) : null;
   };
-  const photos = (await Promise.all((p.photos ?? []).map(one))).filter(Boolean) as string[];
+  // фото, которые владелец «ведём мы» поменял сам (07.11): имена файлов
+  // карточки; кадр, нарезанный при сборке, остаётся своим путём (photoIndex)
+  const ownPhotos = (rec.page as { ownerEdits?: { photos?: string[] } } | undefined)?.ownerEdits?.photos;
+  const byName = async (pbName: string): Promise<string | null> => {
+    const src = rec.photoIndex?.[pbName];
+    return src && hasLocalImage(src) ? src : remoteKey(rec, pbName, next);
+  };
+  const photos = (await Promise.all(Array.isArray(ownPhotos) && ownPhotos.length ? ownPhotos.map(byName) : (p.photos ?? []).map(one))).filter(Boolean) as string[];
   if (!photos.length) return null;
   const card = { ...p, photos } as Specialist;
   if (p.avatar) {

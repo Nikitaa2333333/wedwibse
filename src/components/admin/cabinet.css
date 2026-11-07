@@ -61,6 +61,11 @@
 /* поле внутри плашки — без своей подложки: заголовок поля, под ним текст */
 .c-form .a-field__input, .c-card .a-field__input { height: 32px; padding: 0; border-radius: 0; background: none; }
 .c-form textarea.a-field__input, .c-card textarea.a-field__input { height: auto; min-height: 120px; padding: 0; }
+/* поле растёт по тексту (data-grow) — без своей прокрутки внутри плашки (Никита 07.11:
+   строка под именем уходила за край, «Коротко о себе» листалось в окошке) */
+.c-form textarea.a-field__input[data-grow] { min-height: 32px; resize: none; overflow: hidden; line-height: 1.4; }
+.c-form textarea.a-field__input[data-grow="area"] { min-height: 96px; }
+.c-form .a-field__input + .a-field__note { margin-top: 10px; }
 .c-form .a-field__input:focus-visible, .c-card .a-field__input:focus-visible { outline: none; }
 .c-form .c-phone, .c-card .c-phone { height: 32px; background: none; border-radius: 0; }
 .c-form .c-phone:focus-within { outline: none; }
@@ -282,6 +287,8 @@ select.a-field__input { appearance: none; background-image: var(--adm-chevron-do
 /* «Чтобы отправить, осталось» под прибитой кнопкой — подсказка чёрным, как в плитках,
    не красный и не янтарный (Никита 06.11), с полями как у плашек */
 .c-bar .c-error { flex: 1 1 100%; padding-inline: var(--s-4); color: var(--adm-text); line-height: var(--adm-lh); }
+/* что будет после нажатия — строкой под кнопкой (Никита 07.11: «а что она отправит?») */
+.c-bar__hint { flex: 1 1 100%; margin: 0; padding-inline: var(--s-4); font-size: var(--adm-fs-sm); line-height: 1.35; color: var(--adm-text); }
 .c-ok { color: var(--st-ok-text); }
 .c-error[hidden], .c-ok[hidden], .cab [hidden] { display: none !important; }
 
@@ -674,6 +681,10 @@ html:has(.cab), html:has(.cab) body { background: var(--adm-bg); }
 .c-note-wide--info { background: var(--st-info-bg); }
 .c-note-wide:has(.c-clock) { display: flex; align-items: flex-start; gap: 12px; }
 .c-note-wide p { margin: 0; }
+/* плашку можно закрыть крестиком (Никита 07.11) — справа сверху, текст его не заходит */
+.c-note-wide--x { position: relative; padding-right: 44px; }
+.c-note-x { position: absolute; top: 8px; right: 8px; display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--adm-text); cursor: pointer; }
+.c-note-x svg { width: 16px; height: 16px; }
 .c-note-wide .c-note-wide__h { display: block; font-weight: 600; color: var(--st-info-strong); }
 /* «на проверке» — часы, у которых медленно идут стрелки: ждём ответа (Никита 06.11).
    linear здесь — ход времени, как у кружка-таймера; без движения при reduce motion */

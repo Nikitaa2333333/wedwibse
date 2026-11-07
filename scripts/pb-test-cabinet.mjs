@@ -573,7 +573,7 @@ console.log('\nвход по почте');
     story: [{ title: 'Обо мне', text: [ABOUT], items: [{ title: 'Свой звук', text: 'Колонки и свет — мои.' }] }],
   };
   const fd = new FormData();
-  for (let i = 0; i < 8; i++) fd.append('photos', new Blob([PNG], { type: 'image/png' }), `m${i}.png`);
+  for (let i = 0; i < 9; i++) fd.append('photos', new Blob([PNG], { type: 'image/png' }), `m${i}.png`);
   for (const [k, v] of Object.entries({
     slug: ours.slug, categorySlug: ours.categorySlug, citySlug: 'moskva', name: ours.name, tagline: ours.tagline,
     priceFrom: String(ours.priceFrom), status: 'published', filters: JSON.stringify(ours.filters),
@@ -595,10 +595,11 @@ console.log('\nвход по почте');
   const ed = res.json;
   cleanup.revisions.push(ed?.id);
   check('анкета открывается заполненной', res.status === 200 && ed.data?.managed === true && ed.data?.name === ours.name &&
-    ed.data?.sections?.[0]?.body.includes('Свой звук') && ed.data?.priceFrom === 90000 && ed.photos?.length === 8, res.text);
+    ed.data?.sections?.[0]?.body.includes('Свой звук') && ed.data?.priceFrom === 90000 && ed.photos?.length === 9, res.text);
 
+  // 07.11: фото «ведём мы» владелец убирает и добавляет сам
   res = await call(C.token, 'PATCH', `/api/collections/revisions/records/${ed?.id}`, { 'photos-': [ed?.photos?.[0]] });
-  check('фото владелец сам не убирает', refused(res), res.text);
+  check('владелец сам убирает фото', res.status === 200 && res.json?.photos?.length === 8, res.text);
 
   // 07.11: строку под именем, «Коротко о себе» и портрет владелец ставит сам
   const INTRO = 'Веду свадьбы двенадцать лет и знаю, как сделать вечер живым. ' + 'Без конкурсов. '.repeat(50);
@@ -637,7 +638,9 @@ console.log('\nвход по почте');
   check('строка, «О себе» и портрет владельца — в правках для сайта', p.ownerEdits?.tagline === 'Своя строка от владельца' &&
     p.ownerEdits?.intro?.length === 600 && !!p.ownerEdits?.avatar && res.json?.avatar === p.ownerEdits?.avatar &&
     res.json?.tagline === 'Своя строка от владельца', res.text);
-  check('фото, имя и цена в каталоге', res.json?.photos?.length === 8 && res.json?.name === ours.name && res.json?.priceFrom === 55000 && res.json?.version === 1, res.text);
+  check('фото владельца — в карточке и в правках для сайта', res.json?.photos?.length === 8 && p.ownerEdits?.photos?.length === 8 &&
+    p.ownerEdits.photos.every((n) => res.json.photos.includes(n)), res.text);
+  check('имя и цена в каталоге', res.json?.name === ours.name && res.json?.priceFrom === 55000 && res.json?.version === 1, res.text);
   res = await call(SU, 'GET', `/api/collections/specialists/records/${card.json?.id}`);
   check('анкета карточки: режим остался, просьбы — в ревизии', res.json?.form?.managed === true && !res.json?.form?.requests &&
     res.json?.contacts?.phone === '+79160000077', res.text);
