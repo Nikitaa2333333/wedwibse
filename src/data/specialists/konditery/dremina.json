@@ -29,6 +29,7 @@
   "gender": "ж",
   "priceFrom": 3500,
   "priceNote": "за килограмм, декор считается отдельно",
+  "age": "25–35",
   "experienceYears": 10,
   "cities": [
     "цао",
@@ -85,6 +86,7 @@
       "сзао",
       "mo"
     ],
+    "delivery": "yes",
     "priceKg": "3-4",
     "productType": [
       "wedding-cake",
