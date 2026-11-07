@@ -19,7 +19,8 @@
 // Сценарий (заказчик, 30.09.2026): человек открывает направление, ещё раз
 // пробегает свои карточки и делает одно из двух —
 //   «Написать всем» — одно сообщение каждой карточке направления сразу
-//      (в шторке можно снять лишних). Бэкенда нет — отправка-заглушка;
+//      (в шторке можно снять лишних). С 06.11 уходит в базу: POST
+//      /api/wed/lead со списком cards, по заявке в `leads` на карточку;
 //   «Сравнить» (`#<cat>/compare`) — таблица по всем карточкам направления,
 //      только строки, где данные есть хотя бы у двух: сравнивать «—» с «—»
 //      незачем, а незаполненная строка у одной карточки не валидна.
@@ -84,8 +85,9 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
   </div>
 
   <!-- «НАПИСАТЬ ВСЕМ». Реестровая шторка: список карточек направления,
-       все отмечены — лишних можно снять; после отправки та же шторка
-       показывает, кому ушло. ЗАГЛУШКА: бэкенда нет, см. TODO в скрипте. -->
+       все отмечены — лишних можно снять; ниже контакты (те же, что
+       в заявке с карточки, ключ wed:contact). Уходит одним запросом
+       POST /api/wed/lead со списком cards — по заявке на карточку. -->
   <div class="sheet" data-sheet="write">
     <div class="sheet__backdrop" data-sheet-close></div>
     <section class="sheet__panel" role="dialog" aria-modal="true" aria-labelledby="write-title">
@@ -95,15 +97,37 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
           <Icon name="close" />
         </button>
       </header>
-      <div class="sheet__body" data-lenis-prevent>
-        <p class="t-small" data-write-lead></p>
-        <ul class="write-list" data-write-list></ul>
-        <p class="t-small write-note" data-write-note hidden>Ответы соберутся в чате — по одному диалогу на каждого.</p>
-      </div>
-      <footer class="sheet__foot">
-        <button class="pill" type="button" data-write-send>Отправить</button>
-        <button class="pill" type="button" data-sheet-close data-write-ok hidden>Готово</button>
-      </footer>
+      <form class="write-form" data-write-form>
+        <div class="sheet__body" data-lenis-prevent>
+          <p class="t-small" data-write-lead></p>
+          <ul class="write-list" data-write-list></ul>
+          <div class="write-fields" data-write-fields>
+            <label class="field">
+              <span class="field__label">Как вас зовут</span>
+              <input class="input" type="text" name="name" autocomplete="name" placeholder="Имя" required />
+            </label>
+            <label class="field">
+              <span class="field__label">Телефон</span>
+              <input class="input" type="tel" name="phone" autocomplete="tel" inputmode="tel" placeholder="+7 900 000-00-00" required />
+            </label>
+            <label class="field">
+              <span class="field__label">Дата свадьбы</span>
+              <input class="input" type="date" name="date" />
+            </label>
+            <label class="field">
+              <span class="field__label">Сообщение</span>
+              <textarea class="input" name="comment" rows="3" placeholder="Сколько гостей, что важно, вопросы"></textarea>
+            </label>
+          </div>
+          <p class="t-small write-note" data-write-note hidden>Менеджер свяжется с вами и передаст заявку каждому.</p>
+        </div>
+        <footer class="sheet__foot">
+          <button class="pill" type="submit" data-write-send>Отправить</button>
+          <p class="t-small write-error" data-write-error role="alert" hidden></p>
+          <p class="t-caption" data-write-legal>Отправляя заявку, вы соглашаетесь на обработку своих данных.</p>
+          <button class="pill" type="button" data-sheet-close data-write-ok hidden>Готово</button>
+        </footer>
+      </form>
     </section>
   </div>
 
@@ -662,11 +686,28 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
 
   .write-note { margin-top: var(--s-4); }
 
+  /* Форма во всю панель: тело листается, футер липкий — как в BookingSheet */
+  .write-form {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .write-fields {
+    display: grid;
+    gap: var(--s-5);
+    margin-top: var(--s-6);
+  }
+
+  .write-fields[hidden] { display: none; }
+  .write-error { color: var(--error-text); }
+
   .sheet__foot > [hidden] { display: none; }
 </style>
 
 <script>
   import { getFavorites, removeFavorite, CHANGE_EVENT, STORAGE_KEY, type FavoriteItem } from '../../lib/favorites';
+  import { api, errText } from '../../lib/cabinet-api';
   import { bindSheet } from '../../lib/sheet';
   import { withCount } from '../../lib/plural';
   import { icons, type IconName } from '../../lib/icons';
@@ -695,6 +736,10 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
   const writeNote = $('[data-write-note]');
   const writeSend = $<HTMLButtonElement>('[data-write-send]');
   const writeOk = $<HTMLButtonElement>('[data-write-ok]');
+  const writeForm = $<HTMLFormElement>('[data-write-form]');
+  const writeFields = $('[data-write-fields]');
+  const writeError = $('[data-write-error]');
+  const writeLegal = $('[data-write-legal]');
 
   /** факты для таблицы — id → строки; собраны на сборке (lib/compare-facts.ts) */
   const FACTS: Record<string, Fact[]> = JSON.parse($('[data-facts]')?.textContent || '{}');
@@ -1072,9 +1117,20 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
 
   /* ---------- «Написать всем» ---------- */
 
-  // TODO(бэкенд): заглушка. Настоящая отправка — один запрос со списком id
-  // отмеченных карточек; здесь только показываем, кому сообщение «ушло».
+  // Один запрос POST /api/wed/lead со списком cards — хук заводит по заявке
+  // на каждую отмеченную карточку (06.11). «Отправлено» — только после
+  // ответа базы. Контакты — общий ключ с заявкой на карточке (BookingSheet).
   const writeSheet = writeSheetEl ? bindSheet(writeSheetEl) : null;
+  const CONTACT_KEY = 'wed:contact';
+
+  function fillContact() {
+    if (!writeForm) return;
+    let c: { name?: string; phone?: string } = {};
+    try { c = JSON.parse(localStorage.getItem(CONTACT_KEY) ?? '{}'); } catch {}
+    const f = writeForm.elements as any;
+    if (c.name && !f.name.value) f.name.value = c.name;
+    if (c.phone && !f.phone.value) f.phone.value = c.phone;
+  }
 
   function pic(i: FavoriteItem): string {
     return `<span class="write-item__pic" aria-hidden="true"><img src="${escapeHtml(COVERS[i.id] || i.img)}" alt="" loading="lazy" decoding="async" /></span>`;
@@ -1112,17 +1168,48 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
     if (writeNote) writeNote.hidden = true;
     if (writeSend) writeSend.hidden = false;
     if (writeOk) writeOk.hidden = true;
+    if (writeFields) writeFields.hidden = false;
+    if (writeLegal) writeLegal.hidden = false;
+    if (writeError) writeError.hidden = true;
+    fillContact();
     syncSendLabel();
     writeSheet.open(writeBtn);
   });
 
-  writeSend?.addEventListener('click', () => {
+  writeForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!writeSend) return;
     const ids = new Set(checkedIds());
     // в том же порядке, что список в шторке (свежие сверху)
     const sent = [...items].reverse().filter((i) => ids.has(i.id));
     if (!sent.length) return;
+    const data = new FormData(writeForm);
+    const get = (k: string) => String(data.get(k) ?? '').trim();
+    if (writeError) writeError.hidden = true;
+    writeSend.disabled = true;
+    try {
+      await api(null, 'POST', '/api/wed/lead', {
+        name: get('name'),
+        phone: get('phone'),
+        message: [get('date') && `Дата свадьбы: ${get('date')}`, get('comment')].filter(Boolean).join('\n'),
+        eventDate: get('date'),
+        cards: sent.map((i) => ({ name: i.name, url: new URL(i.href, location.origin).href })),
+        consent: true,
+      });
+    } catch (err) {
+      if (writeError) {
+        writeError.textContent = errText(err);
+        writeError.hidden = false;
+      }
+      syncSendLabel();
+      return;
+    }
+    try { (window as any).ym?.(113797542, 'reachGoal', 'lead'); } catch {}
+    try { localStorage.setItem(CONTACT_KEY, JSON.stringify({ ...JSON.parse(localStorage.getItem(CONTACT_KEY) ?? '{}'), name: get('name'), phone: get('phone') })); } catch {}
+    if (writeFields) writeFields.hidden = true;
+    if (writeLegal) writeLegal.hidden = true;
     if (writeTitle) writeTitle.textContent = `Отправлено: ${withCount(sent.length, ['адресат', 'адресата', 'адресатов'])}`;
-    if (writeLead) writeLead.textContent = 'Сообщение ушло:';
+    if (writeLead) writeLead.textContent = 'Заявка ушла:';
     if (writeList) {
       writeList.innerHTML = sent.map((i) => `
         <li class="write-item">${pic(i)}<span class="write-item__name">${escapeHtml(i.name)}</span></li>

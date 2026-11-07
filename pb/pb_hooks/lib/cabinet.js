@@ -108,6 +108,31 @@ function looksLikeText(data) {
   return words.length >= 20;
 }
 
+/**
+ * Смайлики в описании (Никита 06.11): форма их не пропускает (lib/notes-editor.ts),
+ * но запрос можно собрать и в обход формы — проверка дублируется здесь.
+ * Не \p{Extended_Pictographic}: в goja свойства Юникода в регулярках
+ * ненадёжны — идём по кодовым точкам. © ® ™ — не смайлики, лежат вне диапазонов.
+ */
+function isEmoji(c) {
+  return (c >= 0x1f000 && c <= 0x1faff) // смайлы, люди, флаги, транспорт, символы
+    || (c >= 0x2600 && c <= 0x27bf)     // ☀ ☺ ♥ ✨ ✅ ✈ — разные символы и дингбаты
+    || (c >= 0x2b05 && c <= 0x2b55)     // ⬆ ⬛ ⭐ ⭕
+    || c === 0x231a || c === 0x231b || (c >= 0x23e9 && c <= 0x23fa) // ⌚ ⏰ ⏳
+    || c === 0x200d || c === 0xfe0f      // склейка и «покажи картинкой»
+    || c === 0x3030 || c === 0x303d || c === 0x3297 || c === 0x3299;
+}
+
+function hasEmoji(text) {
+  for (const ch of String(text || '')) if (isEmoji(ch.codePointAt(0))) return true;
+  return false;
+}
+
+/** смайлики в тексте карточки: разделы «Описания» с заголовками и старое «О себе» */
+function emojiInText(data) {
+  return sectionsOf(data).some((x) => hasEmoji(x.title) || hasEmoji(x.body)) || hasEmoji(data.about);
+}
+
 /** тело раздела → StorySection: абзацы до списка — text, список — list, после — after */
 function parseSection(sec) {
   const out = { text: [], list: [], after: [] };
@@ -453,6 +478,51 @@ function telegramTo(chatId, text, button) {
 }
 
 /**
+ * Письмо подрядчику в стиле кабинета (06.11): поле страницы, марка, белая
+ * плашка со статусом (цвета — шкала --st-* из components/admin/base.css),
+ * причина возврата — в красной подложке, как .c-reason, без жирной метки;
+ * внизу кнопка «Открыть кабинет». Только инлайн-стили и таблицы: почтовые
+ * клиенты не понимают ни <style>, ни SVG — поэтому марка PNG
+ * (public/mail/logo-tag-v1.png; новый знак — новое имя файла, nginx кэширует).
+ *   status — 'ok' | 'bad' | 'info'; label — текст плашки;
+ *   lines / after — абзацы до и после причины (готовый HTML);
+ *   reason — текст причины (экранируем здесь)
+ */
+const MAIL_ST = {
+  ok: ['#e3f6e9', '#17703a'],
+  bad: ['#fde9e9', '#b3263e'],
+  info: ['#e8efff', '#1f4fa8'],
+};
+const escHtml = (v) => String(v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+function vendorMail({ status, label, title, lines, reason, after = [] }) {
+  const [bg, fg] = MAIL_ST[status] || MAIL_ST.info;
+  const font = "font-family:Onest,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;";
+  const text = `${font}font-size:16px;line-height:1.5;color:#1e242e;`;
+  const p = (html) => `<p style="margin:0 0 12px;${text}">${html}</p>`;
+  return '<!doctype html><html lang="ru"><head><meta charset="utf-8">' +
+    '<meta name="viewport" content="width=device-width,initial-scale=1"></head>' +
+    `<body style="margin:0;padding:0;background:#eff2f7;">` +
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eff2f7;"><tr><td align="center" style="padding:28px 16px;">` +
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;">` +
+    `<tr><td style="padding:0 4px 20px;"><a href="${SITE_URL}/"><img src="${SITE_URL}/mail/logo-tag-v1.png" width="194" height="36" alt="Свадебные секреты" style="display:block;border:0;"></a></td></tr>` +
+    `<tr><td style="background:#ffffff;border-radius:12px;padding:24px;">` +
+    `<span style="display:inline-block;padding:5px 10px;border-radius:999px;background:${bg};color:${fg};${font}font-size:13px;line-height:1;font-weight:600;">${escHtml(label)}</span>` +
+    `<h1 style="margin:16px 0 12px;${font}font-size:22px;line-height:1.25;font-weight:600;color:#1e242e;">${escHtml(title)}</h1>` +
+    lines.map(p).join('') +
+    (reason
+      ? `<div style="margin:4px 0 16px;padding:12px 14px;border-radius:12px;background:${MAIL_ST.bad[0]};${text}white-space:pre-line;">${escHtml(reason)}</div>`
+      : '') +
+    after.map(p).join('') +
+    `<table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:8px;"><tr><td style="border-radius:12px;background:#1e242e;">` +
+    `<a href="${SITE_URL}/profi/moi/" style="display:inline-block;padding:13px 22px;${font}font-size:16px;line-height:1;font-weight:600;color:#ffffff;text-decoration:none;">Открыть кабинет</a>` +
+    `</td></tr></table>` +
+    `</td></tr>` +
+    `<tr><td style="padding:16px 4px 0;${font}font-size:13px;line-height:1.4;color:#1e242e;">Письмо из кабинета подрядчика WED Secrets, <a href="${SITE_URL}/" style="color:#1e242e;">wed-secrets.ru</a></td></tr>` +
+    `</table></td></tr></table></body></html>`;
+}
+
+/**
  * Уведомление подрядчику: письмо на почту учётки (как было) и сообщение
  * в мессенджеры по vendorChannels. Мессенджеры — только при
  * VENDOR_MESSENGER_NOTIFY=1 в окружении базы: это сообщения людям, тексты
@@ -545,6 +615,8 @@ function submitProblems(rev, managed) {
   if (photos < MIN_PHOTOS) problems.push(`загрузите не меньше ${MIN_PHOTOS} фото (сейчас ${photos})`);
   if (textLength(data) < MIN_ABOUT) problems.push(`напишите текст карточки подробнее — от ${MIN_ABOUT} знаков`);
   else if (!looksLikeText(data)) problems.push('в тексте карточки должны быть слова — напишите о себе по-настоящему');
+  // у «ведём мы» текст наш, владелец его не правит — как и с контактами ниже
+  if (!managed && emojiInText(data)) problems.push('уберите смайлики из описания — на сайте их не будет');
   const price = priceFromOf(data);
   if (price !== null && price > MAX_PRICE) problems.push('проверьте цену — больше 50 млн ₽ не бывает');
   if (tariffsOf(data).some((t) => t.price !== null && t.price > MAX_PRICE)) problems.push('проверьте цены в прайсе');
@@ -713,8 +785,12 @@ function vendorUpdateRevision(e) {
       (managed && requestsText(data) ? `\nПросит поправить —\n${requestsText(data)}` : ''));
     // тексты для мессенджеров согласованы Никитой 05.11 («включай с правками»); менять — с его согласия
     notifyVendor(e.app, r.getString('owner'), 'Карточка отправлена на проверку — WED Secrets',
-      `<p>Получили вашу карточку «${str(data.name, 120)}» и проверим её в ближайшее время.</p>` +
-      `<p>Когда она появится на сайте, пришлём письмо со ссылкой.</p>`,
+      vendorMail({
+        status: 'info',
+        label: 'На проверке',
+        title: str(data.name, 120),
+        lines: ['Получили вашу карточку и проверим её в ближайшее время.', 'Когда она появится на сайте, пришлём письмо со ссылкой.'],
+      }),
       `Получили вашу карточку «${str(data.name, 120)}» и проверим её в ближайшее время. Когда она появится на сайте, пришлём ссылку.`);
     // сервис фото: «Готово» — нарезка кадров начинается сразу, к одобрению всё готово
     queuePhotos(r);
@@ -754,8 +830,15 @@ function moderateRevision(e) {
     const kind = r.getString('kind');
     const url = cardUrl(kind, r.getString('categorySlug'), r.getString('slug'));
     notifyVendor(app, r.getString('owner'), 'Карточка опубликована — WED Secrets',
-      `<p>Карточку «${str(data.name, 120)}» одобрили — она уже на сайте: <a href="${url}">${url}</a></p>` +
-      `<p>Теперь в кабинете можно добавить видео — пришлите ссылку на Яндекс.Диск, ролики мы обработаем сами.</p>`,
+      vendorMail({
+        status: 'ok',
+        label: 'На сайте',
+        title: str(data.name, 120),
+        lines: [
+          `Карточку одобрили — она уже на сайте: <a href="${escHtml(url)}" style="color:#1e242e;">${escHtml(url.replace(/^https?:\/\//, ''))}</a>`,
+          'Теперь в кабинете можно добавить видео — пришлите ссылку на Яндекс.Диск, ролики мы обработаем сами.',
+        ],
+      }),
       `Карточку «${str(data.name, 120)}» одобрили — она уже на сайте: ${url}
 Теперь в кабинете можно добавить видео.`);
     return;
@@ -769,9 +852,14 @@ function moderateRevision(e) {
     e.next();
     const data = jsonOf(r, 'data');
     notifyVendor(e.app, r.getString('owner'), 'Карточку нужно поправить — WED Secrets',
-      `<p>Мы посмотрели карточку «${str(data.name, 120)}» и вернули её на доработку.</p>` +
-      `<p><strong>Что исправить:</strong> ${reason.replace(/</g, '&lt;')}</p>` +
-      `<p>Поправьте в кабинете и отправьте на проверку снова.</p>`,
+      vendorMail({
+        status: 'bad',
+        label: 'Нужно поправить',
+        title: str(data.name, 120),
+        lines: ['Мы посмотрели карточку и вернули её на доработку. Вот что поправить:'],
+        reason,
+        after: ['Поправьте в кабинете и отправьте на проверку снова.'],
+      }),
       `Карточку «${str(data.name, 120)}» вернули на доработку.
 Что исправить: ${reason}
 Поправьте в кабинете и отправьте на проверку снова.`);
@@ -1443,16 +1531,42 @@ function createLead(e) {
   if (!name) throw new BadRequestError('Напишите, как вас зовут.');
   if (phone.replace(/\D/g, '').length < 10) throw new BadRequestError('Проверьте телефон — нужно 10 цифр и больше.');
   if (body.consent !== true) throw new BadRequestError('Нужно согласие на обработку данных.');
-  const r = new Record(e.app.findCollectionByNameOrId('leads'));
-  r.set('kind', 'client');
-  r.set('name', name);
-  r.set('phone', phone);
-  r.set('message', message);
-  if (/^https?:\/\//.test(sourceUrl)) r.set('sourceUrl', sourceUrl);
-  if (/^\d{4}-\d{2}-\d{2}$/.test(str(body.eventDate))) r.set('eventDate', str(body.eventDate) + ' 12:00:00.000Z');
-  r.set('consent', true);
-  r.set('status', 'new');
-  e.app.save(r);
+  const eventDate = /^\d{4}-\d{2}-\d{2}$/.test(str(body.eventDate)) ? str(body.eventDate) + ' 12:00:00.000Z' : '';
+  const col = e.app.findCollectionByNameOrId('leads');
+  const save = (app, msg, url) => {
+    const r = new Record(col);
+    r.set('kind', 'client');
+    r.set('name', name);
+    r.set('phone', phone);
+    r.set('message', msg);
+    if (/^https?:\/\//.test(url)) r.set('sourceUrl', url);
+    if (eventDate) r.set('eventDate', eventDate);
+    r.set('consent', true);
+    r.set('status', 'new');
+    app.save(r);
+  };
+
+  // «Написать всем» из избранного (06.11): одним запросом список карточек
+  // { name, url } — по заявке на каждую (у каждой свой адресат), но одно
+  // уведомление нам. Лимит частоты маршрута считает это одним запросом.
+  if (Array.isArray(body.cards)) {
+    const cards = body.cards
+      .map((c) => ({ name: str(c && c.name, 200), url: str(c && c.url, 500) }))
+      .filter((c) => c.name)
+      .slice(0, 50);
+    if (!cards.length) throw new BadRequestError('Отметьте, кому написать.');
+    // все или ничего: половина заявок без второй половины — хуже ошибки
+    e.app.runInTransaction((tx) => {
+      for (const c of cards) save(tx, `Карточка: ${c.name}\nИз избранного, всем сразу (${cards.length})\n${message}`.trim(), c.url);
+    });
+    const list = cards.map((c) => `— ${c.name}${c.url ? ` ${c.url}` : ''}`).join('\n');
+    const text = `Заявка из избранного, ${cards.length} карточ.\n${name}, ${phone}\n${message}\n${list}`;
+    telegram(text);
+    mailUs(`Заявка из избранного: ${name}, ${cards.length}`, text);
+    return e.json(200, { ok: true, count: cards.length });
+  }
+
+  save(e.app, message, sourceUrl);
   const text = `Заявка с сайта\n${name}, ${phone}\n${message}\n${sourceUrl}`;
   telegram(text);
   mailUs(`Заявка с сайта: ${name}`, text);
