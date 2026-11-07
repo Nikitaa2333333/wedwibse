@@ -1604,6 +1604,7 @@ function createLead(e) {
   if (body.consent !== true) throw new BadRequestError('Нужно согласие на обработку данных.');
   const eventDate = /^\d{4}-\d{2}-\d{2}$/.test(str(body.eventDate)) ? str(body.eventDate) + ' 12:00:00.000Z' : '';
   const col = e.app.findCollectionByNameOrId('leads');
+  const linked = [];
   const save = (app, msg, url) => {
     const r = new Record(col);
     r.set('kind', 'client');
@@ -1611,6 +1612,10 @@ function createLead(e) {
     r.set('phone', phone);
     r.set('message', msg);
     if (/^https?:\/\//.test(url)) r.set('sourceUrl', url);
+    // заявка — к своей карточке по адресу страницы (07.11): по связи её видит
+    // владелец в кабинете (myLeads) и считает срез админка (LEADS-ADMIN.md)
+    const card = cardOfUrl(app, url);
+    if (card) { r.set(card.kind, card.record.id); linked.push(card); }
     if (eventDate) r.set('eventDate', eventDate);
     r.set('consent', true);
     r.set('status', 'new');
@@ -1634,6 +1639,7 @@ function createLead(e) {
     const text = `Заявка из избранного, ${cards.length} карточ.\n${name}, ${phone}\n${message}\n${list}`;
     telegram(text);
     mailUs(`Заявка из избранного: ${name}, ${cards.length}`, text);
+    leadToVendors(e.app, linked);
     return e.json(200, { ok: true, count: cards.length });
   }
 
@@ -1641,7 +1647,82 @@ function createLead(e) {
   const text = `Заявка с сайта\n${name}, ${phone}\n${message}\n${sourceUrl}`;
   telegram(text);
   mailUs(`Заявка с сайта: ${name}`, text);
+  leadToVendors(e.app, linked);
   return e.json(200, { ok: true });
+}
+
+/** карточка сайта по адресу её страницы: /moskva/podryadchiki/<кат>/<slug>/, /moskva/ploshchadki/<slug>/ */
+function cardOfUrl(app, url) {
+  const path = String(url || '').replace(/^https?:\/\/[^/]+/, '').split(/[?#]/)[0];
+  let m = path.match(/^\/moskva\/podryadchiki\/([a-z0-9-]+)\/([a-z0-9-]+)\/?$/);
+  if (m) {
+    const rec = findOne(app, 'specialists', 'categorySlug = {:c} && slug = {:s}', { c: m[1], s: m[2] });
+    return rec ? { kind: 'specialist', record: rec } : null;
+  }
+  m = path.match(/^\/moskva\/ploshchadki\/([a-z0-9-]+)\/?$/);
+  if (m) {
+    const rec = findOne(app, 'venues', 'slug = {:s}', { s: m[1] });
+    return rec ? { kind: 'venue', record: rec } : null;
+  }
+  return null;
+}
+
+// ---------- заявки подрядчику (ВРЕМЕННО, Никита 07.11: «чтобы видеть, как всё будет») ----------
+// По решению второго этапа данные пары подрядчику не передаём (DECISIONS.md,
+// «Деньги» — третий этап). Сейчас — на время показа: владелец карточки видит
+// её заявки в кабинете. Убрать — LEADS_TO_VENDORS = false (экран снова пустой).
+// Уведомление владельцу в мессенджер и на почту — отдельно, только при
+// VENDOR_LEAD_NOTIFY=1 в окружении базы: это сообщения людям, текст — с согласия Никиты.
+const LEADS_TO_VENDORS = true;
+
+function leadToVendors(app, linked) {
+  if (!LEADS_TO_VENDORS || $os.getenv('VENDOR_LEAD_NOTIFY') !== '1') return;
+  const seen = {};
+  for (const c of linked) {
+    const owner = c.record.getString('owner');
+    if (!owner || seen[owner + c.record.id]) continue;
+    seen[owner + c.record.id] = true;
+    const card = c.record.getString('name');
+    try {
+      notifyVendor(app, owner, `Новая заявка — ${card}`,
+        vendorMail({ status: 'ok', label: 'Новая заявка', title: card, lines: ['Пара оставила заявку на вашей карточке. Имя, телефон и дата свадьбы — в кабинете, в разделе «Заявки».'] }),
+        `Новая заявка на карточке «${card}». Имя, телефон и дата свадьбы — в кабинете, в разделе «Заявки».`);
+    } catch (err) {
+      app.logger().warn('cabinet: уведомление о заявке не ушло', 'vendor', owner, 'error', String(err));
+    }
+  }
+}
+
+/**
+ * GET /api/wed/my-leads — заявки на карточки владельца (ВРЕМЕННО, см. выше).
+ * Отдаём только то, что нужно связаться: имя, телефон, дату, сообщение, когда.
+ */
+function myLeads(e) {
+  if (!LEADS_TO_VENDORS) return e.json(200, { items: [] });
+  const ids = { specialist: [], venue: [] };
+  for (const kind of ['specialist', 'venue']) {
+    for (const c of e.app.findRecordsByFilter(cardCollection(kind), 'owner = {:v}', '', 0, 0, { v: e.auth.id })) ids[kind].push(c);
+  }
+  const items = [];
+  for (const kind of ['specialist', 'venue']) {
+    for (const card of ids[kind]) {
+      for (const l of e.app.findRecordsByFilter('leads', `${kind} = {:id} && status != "spam"`, '-created', 100, 0, { id: card.id })) {
+        // сообщение без служебной первой строки «Карточка: …» и строки про избранное
+        const msg = l.getString('message').split('\n').filter((s) => !/^Карточка: |^Из избранного, всем сразу|^Дата свадьбы: /.test(s)).join('\n').trim();
+        items.push({
+          id: l.id,
+          card: card.getString('name'),
+          name: l.getString('name'),
+          phone: l.getString('phone'),
+          eventDate: l.getString('eventDate').slice(0, 10),
+          message: msg,
+          created: l.getString('created'),
+        });
+      }
+    }
+  }
+  items.sort((a, b) => (a.created < b.created ? 1 : -1));
+  return e.json(200, { items });
 }
 
 // ---------- модератор снимает и удаляет (Никита, 02.11) ----------
@@ -1684,6 +1765,7 @@ function cardDeleted(e) {
 
 module.exports = {
   createLead,
+  myLeads,
   modRemove,
   cardDeleted,
   cardSaved,

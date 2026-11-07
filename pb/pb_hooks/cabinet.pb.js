@@ -85,3 +85,5 @@ routerAdd('POST', '/api/wed/invite', (e) => require(`${__hooks}/lib/cabinet.js`)
 // мои карточки: опубликованные (с владельцем) — у подрядчика нет доступа
 // к закрытым полям карточки, список отдаёт маршрут
 routerAdd('GET', '/api/wed/my-cards', (e) => require(`${__hooks}/lib/cabinet.js`).myCards(e), $apis.requireAuth('vendors'));
+// заявки на мои карточки — ВРЕМЕННО, на время показа (lib/cabinet.js, LEADS_TO_VENDORS)
+routerAdd('GET', '/api/wed/my-leads', (e) => require(`${__hooks}/lib/cabinet.js`).myLeads(e), $apis.requireAuth('vendors'));
