@@ -52,7 +52,7 @@ const su = await call(null, 'POST', '/api/collections/_superusers/auth-with-pass
 if (su.status !== 200) throw new Error('нет доступа суперпользователя: ' + su.text);
 const SU = su.json.token;
 
-const cleanup = { invites: [], signatures: [], revisions: [], specialists: [], vendors: [], video_requests: [], moderators: [], legal_docs: [], max_logins: [] };
+const cleanup = { leads: [], invites: [], signatures: [], revisions: [], specialists: [], vendors: [], video_requests: [], moderators: [], legal_docs: [], max_logins: [] };
 
 async function makeVendor(tag) {
   const pass = crypto.randomUUID();
@@ -644,6 +644,23 @@ console.log('\nвход по почте');
   res = await call(SU, 'GET', `/api/collections/specialists/records/${card.json?.id}`);
   check('анкета карточки: режим остался, просьбы — в ревизии', res.json?.form?.managed === true && !res.json?.form?.requests &&
     res.json?.contacts?.phone === '+79160000077', res.text);
+
+  // заявка пары привязывается к карточке по адресу; владелец видит её в кабинете (ВРЕМЕННО, 07.11)
+  res = await call(null, 'POST', '/api/wed/lead', {
+    name: 'Пара Тестовая', phone: '+79160000011', consent: true, eventDate: '2027-06-12',
+    message: `Карточка: ${ours.name}\nХотим ведущего на 80 гостей`,
+    sourceUrl: `https://wed-secrets.ru/moskva/podryadchiki/${ours.categorySlug}/${ours.slug}/`,
+  });
+  check('заявка с карточки принимается', res.status === 200, res.text);
+  const leads = await call(SU, 'GET', `/api/collections/leads/records?filter=${encodeURIComponent(`specialist = "${card.json?.id}"`)}`);
+  check('заявка привязана к карточке', leads.json?.items?.length === 1, leads.text);
+  for (const x of leads.json?.items ?? []) cleanup.leads.push(x.id);
+  res = await call(C.token, 'GET', '/api/wed/my-leads');
+  check('владелец видит заявку на свою карточку', res.status === 200 && res.json?.items?.length === 1 &&
+    res.json.items[0].phone === '+79160000011' && res.json.items[0].eventDate === '2027-06-12' &&
+    res.json.items[0].message === 'Хотим ведущего на 80 гостей', res.text);
+  res = await call(A.token, 'GET', '/api/wed/my-leads');
+  check('чужие заявки подрядчику не видны', res.status === 200 && !res.json?.items?.some((x) => x.phone === '+79160000011'), res.text);
 }
 
 // ---------- фото с Яндекс Диска (lib/yadisk.js) ----------

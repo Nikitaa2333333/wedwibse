@@ -2,7 +2,9 @@
 // ЗАЯВКИ — раздел нижнего меню кабинета (Никита, 02.11). Заявка одного вида:
 // пара оставила имя, телефон, дату и число гостей и увидела контакты
 // подрядчика (CABINET.md §18, «Показать контакты»). Передача данных пары
-// подрядчику во втором этапе НЕ входит (DECISIONS.md) — раздел пока пустой.
+// подрядчику во втором этапе НЕ входит (DECISIONS.md). ВРЕМЕННО (07.11, Никита:
+// «чтобы видеть, как всё будет», потом уберём) раздел показывает настоящие
+// заявки на карточки владельца — выключается в хуке (LEADS_TO_VENDORS).
 // В демо-режиме дев-сервера (?demo) — макет на будущее (Никита, 05.11):
 // главное подрядчику — быстро связаться, поэтому сверху имя, крупно дата
 // и гости, сразу кнопки «Позвонить» / «Написать», внизу — когда пришла.
@@ -35,6 +37,8 @@ import CabinetShell from '../../../components/admin/CabinetShell.astro';
   :global(.c-lead__acts) { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   :global(.c-lead__acts .a-btn) { height: 48px; font-size: 16px; }
   :global(.c-lead__when) { font-size: var(--adm-fs-sm); }
+  /* что написала пара — обычным текстом под датой, переносы как набрали */
+  :global(.c-lead__msg) { grid-column: 1 / -1; margin-top: 6px; font-size: 16px; line-height: 22px; white-space: pre-line; overflow-wrap: anywhere; }
   /* Новая — точка у имени и зелёная плашка. Просмотренная — вся заявка приглушена,
      как у Профи.ру (Никита 05.11). Исключение из правила «текст только контрастный»:
      здесь приглушение несёт смысл «уже видели», цвет — токен --adm-text-seen. */
@@ -46,8 +50,57 @@ import CabinetShell from '../../../components/admin/CabinetShell.astro';
 </style>
 
 <script>
-  import { requireSession } from '../../../lib/cabinet-api';
-  requireSession('vendor');
+  import { api, esc, errText, requireSession } from '../../../lib/cabinet-api';
+  const s = requireSession('vendor');
+
+  // ВРЕМЕННО (Никита 07.11: «чтобы видеть, как всё будет», потом уберём):
+  // настоящие заявки на мои карточки — GET /api/wed/my-leads (хук, LEADS_TO_VENDORS).
+  // «Новая» / «Просмотрена» — по этому устройству (localStorage): журнал
+  // просмотров на сервере — отдельный шаг («Показать контакты», ROADMAP).
+  const SEEN = 'wed-cab-leads-seen';
+  const readSeen = (): string[] => { try { return JSON.parse(localStorage.getItem(SEEN) ?? '[]'); } catch { return []; } };
+  const when = (d: string) => {
+    const t = new Date(String(d).replace(' ', 'T'));
+    const time = t.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    const day = new Date(); day.setHours(0, 0, 0, 0);
+    const diff = Math.round((day.getTime() - new Date(t).setHours(0, 0, 0, 0)) / 864e5);
+    return `${diff === 0 ? 'сегодня' : diff === 1 ? 'вчера' : t.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })} в ${time}`;
+  };
+  const wedding = (d: string) => (d ? `Свадьба ${new Date(`${d}T12:00:00`).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}` : 'Дата свадьбы не указана');
+
+  async function loadLeads() {
+    const box = document.querySelector<HTMLElement>('[data-leads]')!;
+    let items: any[] = [];
+    try {
+      items = (await api('vendor', 'GET', '/api/wed/my-leads')).items ?? [];
+    } catch (x) {
+      box.innerHTML = `<p class="c-empty c-error">Заявки не загрузились. ${esc(errText(x))}</p>`;
+      return;
+    }
+    if (!items.length) return; // остаётся «Заявок пока нет»
+    const seen = new Set(readSeen());
+    const many = new Set(items.map((l) => l.card)).size > 1;
+    box.innerHTML = `<div class="c-leads">${items.map((l) => {
+      const old = seen.has(l.id);
+      const tel = String(l.phone).replace(/[^\d+]/g, '');
+      return `
+      <article class="c-lead${old ? ' c-lead--seen' : ''}">
+        <div class="c-lead__who">
+          <span class="c-lead__name">${esc(l.name)}</span>
+          <span class="status ${old ? '' : 'status--ok'}">${old ? 'Просмотрена' : 'Новая'}</span>
+          <span class="c-lead__date">${esc(wedding(l.eventDate))}</span>
+          ${l.message ? `<span class="c-lead__msg">${esc(l.message)}</span>` : ''}
+        </div>
+        <div class="c-lead__acts">
+          <a class="a-btn a-btn--primary" href="tel:${esc(tel)}">Позвонить</a>
+          <a class="a-btn" href="sms:${esc(tel)}">Написать</a>
+        </div>
+        <span class="c-lead__when">Заявка пришла ${when(l.created)}${many ? ` · ${esc(l.card)}` : ''}</span>
+      </article>`;
+    }).join('')}</div>`;
+    // увидел — в следующий раз это уже «Просмотрена»
+    try { localStorage.setItem(SEEN, JSON.stringify([...new Set([...seen, ...items.map((l) => l.id)])].slice(-500))); } catch {}
+  }
 
   // демо (только дев): макет будущих заявок
   if (import.meta.env.DEV && sessionStorage.getItem('wed-cab-demo') === '1') {
@@ -70,5 +123,5 @@ import CabinetShell from '../../../components/admin/CabinetShell.astro';
         <span class="c-lead__when">Заявка пришла ${l.when}</span>
       </article>`).join('')}</div>
       <p class="c-empty">Макет для демо: заявки придут, когда запустим форму невесты</p>`;
-  }
+  } else if (s) loadLeads();
 </script>
