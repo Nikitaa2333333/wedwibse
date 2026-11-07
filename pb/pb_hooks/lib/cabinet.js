@@ -597,8 +597,9 @@ function mailVendor(app, vendorId, subject, html) {
 // form.managed у карточки: form пишет только суперпользователь
 // (scripts/card-to-form.mjs), подрядчик в карточку не пишет никогда.
 // 07.11 (Никита): владелец сам ставит портрет, строку под именем (tagline,
-// до 80 знаков) и короткое «О себе» (intro, до 600 знаков) — оно встаёт
-// первым абзацем текста визитки; остальной текст по-прежнему наш.
+// до 80 знаков), короткое «О себе» (intro, до 600 знаков — первым абзацем
+// текста визитки) и меняет фото (убрать, добавить до потолка, порядок);
+// остальной текст и тарифы по-прежнему наши.
 const MANAGED_KEYS = ['priceMode', 'priceFrom', 'priceNote', 'filters', 'contacts', 'videos', 'requests', 'tagline', 'intro'];
 const MANAGED_TAGLINE_MAX = 80;
 const MANAGED_INTRO_MAX = 600;
@@ -778,11 +779,11 @@ function vendorUpdateRevision(e) {
     throw new BadRequestError('Из кабинета карточку можно сохранить черновиком или отправить на проверку.');
   }
 
-  // «ведём мы»: фото и обложку меняем мы по просьбе, портрет владелец ставит
-  // сам (07.11); из анкеты доходит только разрешённое — остальное как в карточке
+  // «ведём мы»: портрет и фото (добавить до потолка, убрать, порядок) владелец
+  // меняет сам (07.11); из анкеты доходит только разрешённое — остальное как в карточке
   const managed = isNewCard ? null : managedCard(e.app, r);
   if (managed) {
-    denyExtra(body, ['data', 'status', 'avatar']);
+    denyExtra(body, ['data', 'status', 'avatar', 'photos']);
     r.set('data', lockManaged(jsonOf(managed, 'form'), jsonOf(r, 'data')));
   }
 
@@ -986,18 +987,29 @@ function approveManaged(app, rev, card) {
   card.set('contacts', data.contacts && typeof data.contacts === 'object' ? data.contacts : {});
   // портрет владельца (07.11): новый файл ревизии → карточке, имя сохраняем
   // (сервис фото, как в approve); не загружал — у карточки остаётся прежний
+  // фото (07.11): набор ревизии заменяет набор карточки, как в approve; кадр,
+  // который у карточки уже есть, не копируем — имя то же, файл тот же
   const avatar = rev.getString('avatar');
-  if (avatar && avatar !== card.getString('avatar')) {
+  const before = photosOf(card);
+  const names = photosOf(rev);
+  const photosChanged = names.join('|') !== before.join('|');
+  if ((avatar && avatar !== card.getString('avatar')) || photosChanged) {
     const fsys = app.newFilesystem();
     try {
-      card.set('avatar', fsys.getReuploadableFile(rev.baseFilesPath() + '/' + avatar, true));
+      const base = rev.baseFilesPath() + '/';
+      if (avatar && avatar !== card.getString('avatar')) card.set('avatar', fsys.getReuploadableFile(base + avatar, true));
+      if (photosChanged) card.set('photos', names.map((n) => before.indexOf(n) !== -1 ? n : fsys.getReuploadableFile(base + n, true)));
       app.save(card);
     } finally {
       fsys.close();
     }
   }
   const page = jsonOf(card, 'page');
+  const prevEdits = page.ownerEdits && typeof page.ownerEdits === 'object' ? page.ownerEdits : {};
   page.ownerEdits = {
+    // набор фото владельца — именами файлов карточки (сайт: lib/live-data.ts);
+    // пока он фото не трогал, визитка показывает наш набор из git
+    photos: photosChanged ? photosOf(card) : prevEdits.photos,
     priceMode: data.priceMode,
     priceFrom: priceFromOf(data),
     priceNote: str(data.priceNote, 300),
@@ -1554,7 +1566,16 @@ function vendorUpdateAccount(e) {
   // куда присылать заявки: только известные ключи и только нужных типов;
   // Telegram и MAX — лишь при подключённом входе (бот пишет тем, кто приходил)
   if (body && 'notify' in body) {
-    const n = body.notify && typeof body.notify === 'object' ? body.notify : {};
+    // JSON-поле записи PocketBase кладёт в тело запроса сырыми байтами
+    // (types.JSONRaw), а не объектом: n.email читался как undefined, и почта
+    // для заявок не включалась никогда (Никита, 07.11). Приводим к объекту.
+    let n = body.notify;
+    if (n && typeof n === 'object' && !('email' in n || 'telegram' in n || 'max' in n || 'emailTo' in n)) {
+      try { n = JSON.parse(toString(n)); } catch (_) { n = {}; }
+    } else if (typeof n === 'string') {
+      try { n = JSON.parse(n); } catch (_) { n = {}; }
+    }
+    if (!n || typeof n !== 'object') n = {};
     const emailTo = str(n.emailTo, 200);
     if (emailTo && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailTo)) throw new BadRequestError('Проверьте почту для заявок.');
     const r = e.record;

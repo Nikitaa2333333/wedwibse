@@ -85,10 +85,15 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
   // «что поправить» (data.requests). Хук всё равно пропускает только это —
   // экран просто не предлагает лишнего.
   const managed = () => data?.managed === true && !isNew();
-  const MANAGED_NOTE = 'Карточку оформили мы. Портрет, строку под именем, первый абзац текста, цену, ответы на вопросы, контакты и видео меняете сами. Остальной текст и фото — напишите, что поправить, сделаем сами.';
-  /** поле просьбы нам: текст или фото */
-  const requestField = (key: 'text' | 'photos', label: string, placeholder: string) =>
-    field(label, `requests.${key}`, data.requests?.[key], { area: true, placeholder, note: 'Модератор увидит вместе с остальной правкой и поправит сам' });
+  // текст — без «оформили мы» (Никита 07.11: «как будто мы самые главные»); плашку можно закрыть
+  const MANAGED_NOTE = 'Карточка уже заведена администраторами. Вы можете поправить портрет, строку под именем, первый абзац текста, фото, цену, ответы на вопросы, контакты и добавить видео. Остальное в тексте напишите нам — мы быстро поправим.';
+  const mnoteKey = () => `wed-cab-mnote-${rev?.specialist}`;
+  const mnoteHidden = () => { try { return localStorage.getItem(mnoteKey()) === '1'; } catch { return false; } };
+  /** поле просьбы нам. Кнопки у него нет — и так и задумано: просьба сохраняется
+   *  сама и уходит вместе с остальными изменениями (Никита 07.11: «а что-то
+   *  появится, кнопка отправки?») — об этом и говорит подпись */
+  const requestField = (key: 'text', label: string, placeholder: string) =>
+    field(label, `requests.${key}`, data.requests?.[key], { grow: 'area', placeholder, note: 'Сохранится само. Уйдёт нам вместе с остальными изменениями — кнопкой «Отправить изменения на проверку» на странице карточки' });
   const role = () => (kind === 'venue' ? 'Площадка' : cfg.roles[rev.categorySlug] ?? rev.categorySlug);
   const section = () => q.get('s') as SectionKey | null;
   const url = (sec?: string) => `/profi/moi/kartochka/?id=${rev.id}${sec ? `&s=${sec}` : ''}`;
@@ -245,7 +250,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       ${/* возврат — плашкой во всю ширину, как плитки (Никита 05.11) */''}
       ${rev.status === 'rejected' && rev.rejectReason ? rejectBox() : ''}
       ${rev.status === 'review' ? `<div class="c-note-wide c-note-wide--info" role="note"><span class="c-clock" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><path class="c-clock__h" d="M12 12 9.2 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path class="c-clock__m" d="M12 12V6.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span><div><span class="c-note-wide__h">Карточка на проверке</span><span>Ответим в течение 24 часов. Пока она на проверке, менять её нельзя; можно отозвать</span></div></div>` : ''}
-      ${managed() && rev.status !== 'review' ? `<p class="c-note-wide c-note-wide--info" role="note">${MANAGED_NOTE}</p>` : ''}
+      ${managed() && rev.status !== 'review' && !mnoteHidden() ? `<div class="c-note-wide c-note-wide--info c-note-wide--x" role="note" data-mnote><p>${MANAGED_NOTE}</p><button class="c-note-x" type="button" aria-label="Скрыть" data-mnote-x>${X_ICON}</button></div>` : ''}
       <div class="c-tiles">
         ${states.map((x) => `
           <a class="c-row c-tile${isFresh(x) ? ' c-tile--fresh' : ''}" href="${url(x.key)}" data-tile="${x.key}">
@@ -268,7 +273,10 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
           ? '<button class="a-btn a-btn--lg" type="button" data-withdraw>Отозвать с проверки</button>'
           : rev.status === 'approved'
             ? `<a class="a-btn a-btn--lg" href="${siteUrl}" target="_blank" rel="noopener" data-site-link hidden>Открыть на сайте</a><p class="c-reason c-reason--info" data-site-wait>Карточка одобрена и выходит на сайт — обычно это несколько минут.</p>`
-            : `<button class="a-btn a-btn--primary a-btn--lg${missing.length ? ' c-btn-locked' : ''}" type="button" data-submit ${missing.length ? 'aria-disabled="true"' : ''}>${missing.length ? icon('lock') : ''}Отправить на проверку</button>`}
+            // «Отправить на проверку» — а что отправит, непонятно (Никита 07.11):
+            // у опубликованной — «изменения», и строкой ниже, что будет дальше
+            : `<button class="a-btn a-btn--primary a-btn--lg${missing.length ? ' c-btn-locked' : ''}" type="button" data-submit ${missing.length ? 'aria-disabled="true"' : ''}>${missing.length ? icon('lock') : ''}${isNew() ? 'Отправить на проверку' : 'Отправить изменения на проверку'}</button>
+               <p class="c-bar__hint">${missing.length ? 'Сначала заполните то, что отмечено на плитках' : isNew() ? 'Модератор проверит карточку и опубликует её на сайте — обычно за день' : 'Всё, что вы поправили, вместе с просьбами нам. Модератор проверит и опубликует — обычно за день'}</p>`}
 
         <span class="c-error" data-error hidden></span>
       </div>
@@ -285,6 +293,10 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       }).catch(() => {});
     }
     const err = view.querySelector<HTMLElement>('[data-error]')!;
+    view.querySelector('[data-mnote-x]')?.addEventListener('click', () => {
+      try { localStorage.setItem(mnoteKey(), '1'); } catch {}
+      view.querySelector('[data-mnote]')?.remove();
+    });
     // превью до одобрения (/profi/prevyu/): сначала сохраняем набранное,
     // потом ссылку у базы; в той же вкладке — айфон не открывает окно,
     // открытое после ответа сервера (как с MAX, 31.10)
@@ -581,14 +593,24 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
   /** сумма в рублях с разрядами для показа в поле: «40000» → «40 000» */
   const MONEY = /(^|\.)(price|priceFrom|rentFrom|checkFrom)$/;
   const money = (v: unknown) => { const d = String(v ?? '').replace(/\D/g, ''); return d ? num(Number(d)) : ''; };
-  const field = (label: string, bind: string, value0: unknown, opts: { type?: string; note?: string; area?: boolean; placeholder?: string; mode?: string; max?: number } = {}, value = MONEY.test(bind) ? money(value0) : value0) => `
+  // grow: поле растёт по тексту — 'line' (одна фраза, переносится, Enter не ставит
+  // новую строку) или 'area' (несколько абзацев); без прокрутки внутри (07.11)
+  const field = (label: string, bind: string, value0: unknown, opts: { type?: string; note?: string; area?: boolean; placeholder?: string; mode?: string; max?: number; grow?: 'line' | 'area' } = {}, value = MONEY.test(bind) ? money(value0) : value0) => `
     <label class="a-field">
       <span class="a-field__label">${label}</span>
-      ${opts.area
+      ${opts.grow
+        ? `<textarea class="a-field__input" data-bind="${bind}" data-grow="${opts.grow}" rows="1" ${opts.max ? `maxlength="${opts.max}"` : ''} placeholder="${esc(opts.placeholder ?? '')}">${esc(value)}</textarea>`
+        : opts.area
         ? `<textarea class="a-field__input" data-bind="${bind}" ${opts.max ? `maxlength="${opts.max}"` : ''} placeholder="${esc(opts.placeholder ?? '')}">${esc(value)}</textarea>`
         : `<input class="a-field__input" data-bind="${bind}" type="${opts.type ?? 'text'}" ${opts.mode ? `inputmode="${opts.mode}"` : ''} ${opts.max ? `maxlength="${opts.max}"` : ''} value="${esc(value)}" placeholder="${esc(opts.placeholder ?? '')}" />`}
       ${opts.note ? `<span class="a-field__note">${opts.note}</span>` : ''}
     </label>`;
+
+  /** высота поля data-grow — по тексту */
+  function grow(t: HTMLTextAreaElement) {
+    t.style.height = 'auto';
+    t.style.height = `${t.scrollHeight}px`;
+  }
 
   const choices = (qs: Question[], scope: 'filters' | 'terms') => qs.map((g) => {
     const cur = data[scope]?.[g.key];
@@ -624,31 +646,25 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       </label>
     </div>`;
 
-  /** карточка «ведём мы»: имя, фото и основной текст — просмотр и просьба;
-   *  портрет, строку под именем и «Коротко о себе» владелец ставит сам (07.11) */
+  /** карточка «ведём мы»: имя и основной текст — просьбой; портрет, строку
+   *  под именем, «Коротко о себе» и фото владелец меняет сам (07.11).
+   *  Фото — обычный раздел анкеты (sectionBody), здесь его нет. */
   function managedBody(key: SectionKey): { title: string; lead: string; html: string } | null {
     if (!managed()) return null;
     if (key === 'osnovnoe') return { title: role(), lead: '', html: `
       <div class="c-card">
         <p class="a-field__label">Имя</p><p>${esc(data.name)}</p>
       </div>
-      ${field('Строка под именем', 'tagline', data.tagline, { placeholder: 'Репортаж без постановки, плёнка по желанию', note: 'Одна фраза, до 80 знаков — её видно в каталоге', max: 80 })}
+      ${field('Строка под именем', 'tagline', data.tagline, { grow: 'line', placeholder: 'Репортаж без постановки, плёнка по желанию', note: 'Одна фраза, до 80 знаков — её видно в каталоге', max: 80 })}
       ${avatarField()}
       ${requestField('text', 'Что ещё поправить', 'Например: имя — «Михаил Галкин, ведущий»')}` };
-    if (key === 'foto') return { title: 'Фото', lead: 'Кадры подобрали мы — так, чтобы карточка смотрелась с телефона.', html: `
-      <div class="c-photos" data-photos></div>
-      ${requestField('photos', 'Что поменять в фото', 'Например: убрать 5-й и 12-й кадр; новые кадры — ссылка на Яндекс Диск')}` };
     if (key === 'tekst') {
-      const secs = (data.sections ?? []).filter((x: any) => String(x?.body ?? '').trim());
-      // «Коротко о себе» встаёт на сайте первым абзацем вместо нашего —
-      // поэтому превью ниже показывает его уже на этом месте
-      const intro = data.intro ?? firstParagraph();
-      const shown = secs.map((x: any, i: number) => (i === 0 && intro ? { ...x, body: [intro, ...String(x.body).split(/\n\s*\n/).slice(1)].join('\n\n') } : x));
-      return { title: 'Описание', lead: 'Первый абзац пишете сами, остальной текст оформили мы.', html: `
-        ${field('Коротко о себе', 'intro', intro, { area: true, max: 600, placeholder: 'Пара слов от вас: кто вы и как работаете', note: 'До 600 знаков. Встанет первым абзацем текста на вашей странице' })}
-        <p class="a-field__label">Так текст будет стоять на странице</p>
-        <div class="c-pv c-pv-story" data-intro-pv>${shown.map((x: any) => `<section>${x.title ? `<h3>${esc(x.title)}</h3>` : ''}${storyHtml(x.body)}</section>`).join('')}</div>
-        ${requestField('text', 'Что поправить в тексте', 'Например: во втором абзаце — «работаю с 2012 года»; добавить раздел про выездную регистрацию')}` };
+      // превью всего текста убрано (Никита 07.11: «я бы не транслировал, это видно
+      // на странице») — вместо него ссылка на саму визитку
+      const page = `/moskva/podryadchiki/${rev.categorySlug}/${rev.slug}/`;
+      return { title: 'Описание', lead: `Вы можете поправить первый абзац. Остальной текст уже стоит на карточке — <a href="${page}" target="_blank" rel="noopener">посмотреть на странице</a>.`, html: `
+        ${field('Коротко о себе', 'intro', data.intro ?? firstParagraph(), { grow: 'area', max: 600, placeholder: 'Пара слов от вас: кто вы и как работаете', note: 'До 600 знаков. Встанет первым абзацем текста на вашей странице' })}
+        ${requestField('text', 'Что поправить в остальном тексте', 'Например: во втором абзаце — «работаю с 2012 года»; добавить раздел про выездную регистрацию')}` };
     }
     return null;
   }
@@ -673,7 +689,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
                   ? field('Название студии или команды', 'firstName', data.firstName, { placeholder: 'Студия «Свет»' })
                   : field('Имя', 'firstName', data.firstName, { placeholder: 'Елена' }) + field('Фамилия', 'lastName', data.lastName, { placeholder: 'Каморина' })}
               </div>
-              ${field('Строка под именем', 'tagline', data.tagline, { placeholder: 'Репортаж без постановки, плёнка по желанию', note: 'Одна фраза, до 80 знаков', max: 80 })}
+              ${field('Строка под именем', 'tagline', data.tagline, { grow: 'line', placeholder: 'Репортаж без постановки, плёнка по желанию', note: 'Одна фраза, до 80 знаков', max: 80 })}
               <div class="a-field">
                 <span class="a-field__label">Портрет</span>
                 <label class="c-ava">
@@ -723,7 +739,8 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         // (кейтеринг, кавер-группа). На визитке — «от N ₽» и под ней «за что».
         const mode = priceMode();
         const ts = data.tariffs ?? [];
-        // у карточки «ведём мы» тарифы живут в тексте визитки — их правим мы
+        // у карточки «ведём мы» тарифы живут в тексте визитки — их правим мы;
+        // пилюлю «Тарифы» туда не возвращаем (Никита 07.11: «не усложнять, ведём индивидуально»)
         const modes = managed() ? [['one', 'Одна цена'], ['request', 'По запросу']] : [['one', 'Одна цена'], ['tariffs', 'Тарифы'], ['request', 'По запросу']];
         const unitChips = (bind: string, cur: unknown) => `<div class="c-opts">${priceUnits(kind, rev.categorySlug).map((u) => `<button class="c-opt" type="button" aria-pressed="${cur === u}" data-unit="${bind}" data-v="${u}">${u}</button>`).join('')}</div>`;
         return { title: 'Цена', lead: '', html: `
@@ -802,9 +819,11 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
 
   function renderSection(key: SectionKey) {
     const b = sectionBody(key);
+    // строка «‹ Назад … ✓ Сохранено» прибита к верху (Никита 07.11): статус виден
+    // всегда, но не всплывает на каждое нажатие. Вне .c-head — иначе ей некуда липнуть
     view.innerHTML = `
+      <div class="c-head__top c-head__top--sticky"><a class="c-back" href="${url()}">${icon('back')} ${esc(data.name || 'Анкета')}</a><span class="c-saved" data-savemark aria-live="polite"></span></div>
       <div class="c-head">
-        <div class="c-head__top"><a class="c-back" href="${url()}">${icon('back')} ${esc(data.name || 'Анкета')}</a><span class="c-saved" data-savemark aria-live="polite"></span></div>
         ${/* «?» — только там, где есть подсказка (Никита 07.11): фото и тарифы; нажатие возвращает закрытую
              подсказку-баннер (как подсказки TipKit у Apple). Превью раздела — кнопкой «Как на сайте» на обзоре */''}
         <h1 class="a-h1 c-title">${b.title}${key === 'foto' || (key === 'prays' && priceMode() === 'tariffs') ? ` <button class="c-help" type="button" data-hint-again="${key}" aria-label="Показать подсказку">?</button>` : ''}</h1>
@@ -815,6 +834,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         <div class="c-form" data-form>${b.html}</div>
       </div>`;
     savedLabel();
+    view.querySelectorAll<HTMLTextAreaElement>('textarea[data-grow]').forEach(grow);
     if (locked()) view.querySelectorAll<HTMLInputElement>('input, textarea, button.c-opt, button.c-add, button.c-tool, button.c-link').forEach((x) => (x.disabled = true));
     if (key === 'foto') renderPhotos();
     if (key === 'kontakty') bindPhone();
@@ -846,7 +866,8 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     const box = view.querySelector<HTMLElement>('[data-photos]');
     if (!box) return;
     const names: string[] = rev.photos ?? [];
-    const lock = locked() || managed();
+    // с 07.11 и у «ведём мы»: убрать, добавить до потолка, переставить (Никита)
+    const lock = locked();
     // Евгений, 31.10: стрелки «левее/правее» — как на калькуляторе. Порядок —
     // перетаскиванием (bindPhotoDrag). Обложка — первый кадр, обычного размера
     // с плашкой «Обложка» (Никита, 02.11: крупная 2×2 — вернули обычную);
@@ -1310,6 +1331,11 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     const t = e.target as HTMLInputElement;
     if (!t.dataset.bind) return;
     if (t.getAttribute('aria-invalid')) clearFieldError(t); // начал исправлять — облачко уходит
+    if (t.matches('textarea[data-grow]')) {
+      // одна фраза: перенос строки (в том числе вставленный) не храним
+      if (t.dataset.grow === 'line' && /\n/.test(t.value)) t.value = t.value.replace(/\s*\n+\s*/g, ' ');
+      grow(t as unknown as HTMLTextAreaElement);
+    }
     // суммы в рублях — разряды видны уже при наборе («40 000», правило 24);
     // в данные уходят только цифры
     if (/(^|\.)(price|priceFrom|rentFrom|checkFrom)$/.test(t.dataset.bind)) {
@@ -1496,7 +1522,10 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
   });
   view.addEventListener('keydown', (e) => {
     const t = e.target as HTMLInputElement;
-    if (e.key !== 'Enter' || t.tagName !== 'INPUT' || !t.closest('[data-form]')) return;
+    // строка под именем — textarea ради переноса, но Enter в ней ведёт к следующему полю, как в input
+    const line = t.tagName === 'TEXTAREA' && t.dataset.grow === 'line';
+    if (e.key !== 'Enter' || (t.tagName !== 'INPUT' && !line) || !t.closest('[data-form]')) return;
+    if (line) e.preventDefault();
     const all = [...view.querySelectorAll<HTMLElement>('[data-form] input:not([type=hidden]):not([type=file]), [data-form] textarea')];
     const next = all[all.indexOf(t) + 1];
     if (next) { e.preventDefault(); next.focus(); }

@@ -150,7 +150,9 @@ export function sectionState(key: SectionKey, rev: any, questions: Question[]): 
       return { done, sub: done ? [d.name, d.tagline || d.address].filter(Boolean).join(', ') : 'пусто', empty: !done };
     }
     case 'foto':
-      return { done: photos >= MIN_PHOTOS, sub: photos ? `${photos}${NBSP}из ${MAX_PHOTOS}${photos < MIN_PHOTOS ? `, нужно от${NBSP}${MIN_PHOTOS}` : ''}` : `пусто, нужно от${NBSP}${MIN_PHOTOS}`, empty: photos < MIN_PHOTOS };
+      // кадров больше потолка бывает только у наших карточек (у пилотных до 51):
+      // «51 из 50» читалось ошибкой (Никита, 07.11) — тогда просто число
+      return { done: photos >= MIN_PHOTOS, sub: photos ? `${photos}${NBSP}${photos > MAX_PHOTOS ? 'фото' : `из ${MAX_PHOTOS}`}${photos < MIN_PHOTOS ? `, нужно от${NBSP}${MIN_PHOTOS}` : ''}` : `пусто, нужно от${NBSP}${MIN_PHOTOS}`, empty: photos < MIN_PHOTOS };
     case 'video': {
       const n = (d.videos ?? []).filter((v: any) => str(v?.url)).length;
       return { done: n > 0, sub: n ? `${n} ${n === 1 ? 'ссылка' : n < 5 ? 'ссылки' : 'ссылок'}` : 'по желанию' };

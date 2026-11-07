@@ -61,6 +61,11 @@
 /* поле внутри плашки — без своей подложки: заголовок поля, под ним текст */
 .c-form .a-field__input, .c-card .a-field__input { height: 32px; padding: 0; border-radius: 0; background: none; }
 .c-form textarea.a-field__input, .c-card textarea.a-field__input { height: auto; min-height: 120px; padding: 0; }
+/* поле растёт по тексту (data-grow) — без своей прокрутки внутри плашки (Никита 07.11:
+   строка под именем уходила за край, «Коротко о себе» листалось в окошке) */
+.c-form textarea.a-field__input[data-grow] { min-height: 32px; resize: none; overflow: hidden; line-height: 1.4; }
+.c-form textarea.a-field__input[data-grow="area"] { min-height: 96px; }
+.c-form textarea[data-grow="area"] + .a-field__note, .c-form textarea:not([data-grow]) + .a-field__note { margin-top: 10px; }
 .c-form .a-field__input:focus-visible, .c-card .a-field__input:focus-visible { outline: none; }
 .c-form .c-phone, .c-card .c-phone { height: 32px; background: none; border-radius: 0; }
 .c-form .c-phone:focus-within { outline: none; }
@@ -106,6 +111,17 @@ details[open].c-row > summary .c-row__go { transform: rotate(90deg); }
 /* верхняя строка: «‹ назад» слева, плашка статуса справа — заголовок ниже на всю ширину */
 .c-head__top { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); min-height: 44px; }
 .c-head__top .c-back { min-width: 0; }
+/* в разделе анкеты строка прибита к верху: «Сохранено» видно при любой прокрутке
+   (Никита 07.11). Фон поля тянется в стороны тенью — без своих полей и плашки */
+.c-head__top--sticky {
+  position: sticky; top: 0; z-index: 3;
+  /* поля те же, что были у неё внутри .c-head; заголовок ниже — без лишней дыры */
+  padding: calc(var(--s-2) + env(safe-area-inset-top)) var(--s-4) var(--s-1);
+  margin-bottom: calc(-1 * var(--cab-gap));
+  background: var(--adm-bg);
+  box-shadow: 0 0 0 100vmax var(--adm-bg);
+  clip-path: inset(0 -100vmax);
+}
 .c-head__top .c-state { margin-left: 0; flex: none; }
 /* ссылка страницы — одной строкой, без разрыва посреди слова */
 .c-url { color: var(--adm-text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -282,6 +298,8 @@ select.a-field__input { appearance: none; background-image: var(--adm-chevron-do
 /* «Чтобы отправить, осталось» под прибитой кнопкой — подсказка чёрным, как в плитках,
    не красный и не янтарный (Никита 06.11), с полями как у плашек */
 .c-bar .c-error { flex: 1 1 100%; padding-inline: var(--s-4); color: var(--adm-text); line-height: var(--adm-lh); }
+/* что будет после нажатия — строкой под кнопкой (Никита 07.11: «а что она отправит?») */
+.c-bar__hint { flex: 1 1 100%; margin: 0; padding-inline: var(--s-4); font-size: var(--adm-fs-sm); line-height: 1.35; color: var(--adm-text); }
 .c-ok { color: var(--st-ok-text); }
 .c-error[hidden], .c-ok[hidden], .cab [hidden] { display: none !important; }
 
@@ -674,6 +692,10 @@ html:has(.cab), html:has(.cab) body { background: var(--adm-bg); }
 .c-note-wide--info { background: var(--st-info-bg); }
 .c-note-wide:has(.c-clock) { display: flex; align-items: flex-start; gap: 12px; }
 .c-note-wide p { margin: 0; }
+/* плашку можно закрыть крестиком (Никита 07.11) — справа сверху, текст его не заходит */
+.c-note-wide--x { position: relative; padding-right: 44px; }
+.c-note-x { position: absolute; top: 8px; right: 8px; display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--adm-text); cursor: pointer; }
+.c-note-x svg { width: 16px; height: 16px; }
 .c-note-wide .c-note-wide__h { display: block; font-weight: 600; color: var(--st-info-strong); }
 /* «на проверке» — часы, у которых медленно идут стрелки: ждём ответа (Никита 06.11).
    linear здесь — ход времени, как у кружка-таймера; без движения при reduce motion */
@@ -748,7 +770,9 @@ html:has(.cab), html:has(.cab) body { background: var(--adm-bg); }
 
 /* подсказка в окне Диска (не та ссылка, только ролики) — тёмным, не красным: это не ошибка (как у Apple) */
 .c-error.c-yd-note { color: var(--adm-text); }
-.c-yd-status { margin: 0 0 var(--s-2); font-size: 15px; line-height: 20px; font-weight: 500; text-align: center; } /* ход забора — над прибитой кнопкой */
+/* ход забора — над прибитой кнопкой; отступ до кнопки заметно больше межстрочного
+   (Никита 07.11: «прижалось»), две строки переносятся ровно */
+.c-yd-status { margin: var(--s-1) 0 var(--s-4); font-size: 15px; line-height: 20px; font-weight: 500; text-align: center; text-wrap: balance; }
 /* капсула «Aa» — без тени, выделена цветом (Никита 05.11: «тень не хочу, инструмент
    выделить»): тёмная, как наши кнопки, знаки белые; выбранное — белая капсула внутри */
 .c-notes-bar__main, .c-notes-bar__styles { background: var(--cab-ink); box-shadow: none; }
