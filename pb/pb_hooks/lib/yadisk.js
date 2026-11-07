@@ -81,20 +81,56 @@ function list(e) {
   return e.json(200, { title, items, videos, capped: items.length >= MAX_ITEMS });
 }
 
-/** файл с диска: оригинал, если влезает в поле photos, иначе копия до 3000 px */
-function fetchFile(key, path) {
-  const meta = api({ public_key: key, path, preview_size: '3000x', preview_crop: 'false' });
-  const original = OK_MIME.indexOf(meta.mime_type) !== -1 && meta.size > 0 && meta.size <= MAX_BYTES;
-  let url = meta.preview;
-  if (original) {
-    url = api({ public_key: key, path }, 20, '/download').href;
+/**
+ * Ссылка на оригинал. Документированный /download отвечает 429 «Слишком много
+ * запросов» вразнобой — даже на запросы по одному и с паузой 8 с (07.11.2026:
+ * у подрядчика не забрались 7 из 9 кадров). Поэтому: /download с повтором,
+ * затем поле file из сведений о файле — в документации его нет, но это прямая
+ * ссылка на тот же оригинал (md5 всех 6 «упавших» кадров совпал). Нет ни того,
+ * ни другого — null, и fetchFile возьмёт копию Диска до 3000 px.
+ */
+function originalUrl(key, path, meta) {
+  for (let i = 0; i < 3; i++) {
+    try {
+      const res = send({ url: `${API}/download?public_key=${encodeURIComponent(key)}&path=${encodeURIComponent(path)}`, method: 'GET', timeout: 20 });
+      if (res.statusCode === 200 && res.json && res.json.href) return res.json.href;
+      if (res.statusCode !== 429) break;
+    } catch (_) { break; }
+    sleep(700 * (i + 1));
   }
-  if (!url) throw new Error('нет ссылки на файл');
+  return meta.file || null;
+}
+
+function download(url) {
   const res = send({ url, method: 'GET', timeout: 120 });
   if (res.statusCode !== 200) throw new Error(`диск ответил ${res.statusCode}`);
   if (!res.body || !res.body.length || res.body.length > MAX_BYTES) throw new Error('файл пустой или больше 15 МБ');
+  return res.body;
+}
+
+/** файл с диска: оригинал, если влезает в поле photos, иначе копия до 3000 px */
+function fetchFile(key, path) {
+  const meta = api({ public_key: key, path, preview_size: '3000x', preview_crop: 'false' });
+  const fits = OK_MIME.indexOf(meta.mime_type) !== -1 && meta.size > 0 && meta.size <= MAX_BYTES;
+  let body = null;
+  let original = false;
+  if (fits) {
+    const url = originalUrl(key, path, meta);
+    if (url) {
+      try {
+        const b = download(url);
+        // недокачанный оригинал не берём — лучше целая копия
+        if (b.length === meta.size) { body = b; original = true; }
+      } catch (_) {}
+    }
+    if (!original) $app.logger().info('yadisk: оригинал не отдался, беру копию до 3000 px', 'path', path);
+  }
+  if (!body) {
+    if (!meta.preview) throw new Error(fits ? 'Диск не отдал ни оригинал, ни копию' : 'нет ссылки на файл');
+    body = download(meta.preview);
+  }
   const base = String(meta.name || 'photo').replace(/\.[^.]+$/, '').replace(/[^\wа-яё-]+/gi, '_').slice(0, 60) || 'photo';
-  return $filesystem.fileFromBytes(res.body, `${base}.${original ? meta.name.split('.').pop().toLowerCase() : 'jpg'}`);
+  return $filesystem.fileFromBytes(body, `${base}.${original ? meta.name.split('.').pop().toLowerCase() : 'jpg'}`);
 }
 
 function importPhotos(e) {
@@ -140,6 +176,8 @@ function importPhotos(e) {
       skipped.push({ path: p, reason: String(err && err.message ? err.message : err) });
     }
   }
+  // причина остаётся в журнале базы: экран показывает подрядчику только имена файлов
+  if (skipped.length) $app.logger().warn('yadisk: кадры не забрались', 'revision', rev.id, 'skipped', JSON.stringify(skipped));
   if (files.length) {
     rev.set('photos+', files);
     e.app.save(rev);
