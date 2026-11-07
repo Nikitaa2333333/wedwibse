@@ -72,6 +72,8 @@ const QUESTIONS = Object.fromEntries(
   .pr__fields :global(.pr__q:first-child) { border-top: 0; padding-top: var(--s-1); }
   .pr__fields :global(.pr__q-v) { display: grid; gap: 2px; font-weight: 600; }
   .pr__fields :global(.pr__line) { display: block; }
+  /* портрет в разборе — кружком, как он стоит на визитке (07.11) */
+  .pr__fields :global(.pr__ava) { display: block; width: 72px; height: 72px; border-radius: 50%; object-fit: cover; }
   .pr__fields :global(.pr__line + .pr__line) { margin-top: var(--s-1); } /* 8 — «дыра», 0 — «слиплось» (06.11) */
   :global(.pr__was) { display: block; text-decoration: line-through; background: var(--diff-del); }
   :global(.pr__now) { background: var(--diff-add); }
@@ -122,7 +124,7 @@ const QUESTIONS = Object.fromEntries(
   import { fieldError, clearFieldError } from '../../../../lib/form-check';
 
   const LABELS: [string, string][] = [
-    ['name', 'Название'], ['tagline', 'Коротко о себе'], ['address', 'Адрес'], ['rentFrom', 'Аренда от'],
+    ['name', 'Название'], ['tagline', 'Строка под именем'], ['intro', 'Коротко о себе (первый абзац)'], ['address', 'Адрес'], ['rentFrom', 'Аренда от'],
     ['checkFrom', 'Средний чек от'], ['capacityBanquet', 'Гостей до'], ['about', 'О себе'], ['priceFrom', 'Цена от'], ['priceNote', 'Цена указана за'],
   ];
   /** ответ на вопрос словами: значения фильтра → подписи вариантов */
@@ -197,6 +199,8 @@ const QUESTIONS = Object.fromEntries(
         // у карточки из кабинета прежние ответы лежат в page; у карточек
         // конвейера — только плоские поля
         was = card.page?.source === 'cabinet' ? card.page : card;
+        // «ведём мы»: прежнее «Коротко о себе» лежит в анкете карточки (07.11)
+        if (card.form?.managed) was = { ...was, intro: card.form.intro ?? '' };
       }
       markSeen(rev.id, rev.updated);
       const d = rev.data ?? {};
@@ -256,7 +260,12 @@ const QUESTIONS = Object.fromEntries(
       if (d.managed) {
         const r = d.requests ?? {};
         const asks = [r.text && `Текст: ${r.text}`, r.photos && `Фото: ${r.photos}`].filter(Boolean);
-        rows.unshift(`<dt>Ведём мы — текст и фото владелец не меняет</dt><dd>${asks.length ? `Просит поправить — сделать руками в src/data/specialists/${esc(rev.categorySlug)}/${esc(rev.slug)}.json:\n${esc(asks.join('\n'))}` : 'Просьб по тексту и фото нет.'}</dd>`);
+        rows.unshift(`<dt>Ведём мы — основной текст и фото владелец не меняет</dt><dd>${asks.length ? `Просит поправить — сделать руками в src/data/specialists/${esc(rev.categorySlug)}/${esc(rev.slug)}.json:\n${esc(asks.join('\n'))}` : 'Просьб по тексту и фото нет.'}</dd>`);
+      }
+      // портрет владелец ставит сам (07.11, и «ведём мы», и обычная анкета)
+      if (rev.avatar) {
+        const at = await fileToken('moderator');
+        rows.push(`<dt>Портрет</dt><dd><a href="${fileUrl(rev, rev.avatar, { token: at })}" target="_blank" rel="noopener"><img class="pr__ava" src="${fileUrl(rev, rev.avatar, { thumb: '200x200', token: at })}" alt="" /></a></dd>`);
       }
       $('[data-pr-fields]').innerHTML = rows.join('');
 

@@ -349,7 +349,28 @@ export const isFromCabinet = (s: Pick<Specialist, 'categorySlug' | 'slug'>) => f
 // из git, а цену и ответы на вопросы владелец правит сам в кабинете.
 // Одобренные правки кладёт scripts/pb-pull-cabinet.mjs (owner-edits.json,
 // в .gitignore); здесь они ложатся поверх JSON. Нет файла — JSON как есть.
-type OwnerEdits = { priceMode?: string; priceFrom?: number | null; priceNote?: string; filters?: Record<string, string | string[]> };
+// 07.11: + строка под именем, «Коротко о себе» (первый абзац текста) и
+// портрет — их владелец «ведём мы» тоже ставит сам (хук approveManaged).
+// avatar — имя файла в базе; адрес из него собирает lib/live-data.ts.
+type OwnerEdits = {
+  priceMode?: string; priceFrom?: number | null; priceNote?: string; filters?: Record<string, string | string[]>;
+  tagline?: string; intro?: string; avatar?: string;
+};
+
+/** «Коротко о себе» владельца — на место первого абзаца текста визитки
+ *  (того же, что кабинет показывает ему в поле: крупная фраза или первый абзац) */
+function withIntro(s: Specialist, intro: string): Pick<Specialist, 'story' | 'bio'> {
+  if (s.story?.length) {
+    const [first, ...rest] = s.story;
+    const sec = { ...first };
+    if (sec.lead) sec.lead = intro;
+    else sec.text = [intro, ...(sec.text ?? []).slice(1)];
+    return { story: [sec, ...rest], bio: s.bio };
+  }
+  // карточка старого формата: текст в bio
+  const paras = String(s.bio ?? '').split(/\n\s*\n/);
+  return { story: s.story, bio: [intro, ...paras.slice(1)].filter(Boolean).join('\n\n') };
+}
 let ownerEdits: Record<string, OwnerEdits> =
   Object.values(import.meta.glob<Record<string, OwnerEdits>>('./cabinet/owner-edits.json', { eager: true, import: 'default' }))[0] ?? {};
 
@@ -358,6 +379,8 @@ function withOwnerEdits(s: Specialist): Specialist {
   const e = ownerEdits[`${s.categorySlug}/${s.slug}`];
   if (!e) return s;
   const out: Specialist = { ...s, priceNote: e.priceNote ?? s.priceNote };
+  if (e.tagline?.trim()) out.tagline = e.tagline.trim();
+  if (e.intro?.trim()) Object.assign(out, withIntro(s, e.intro.trim()));
   if (e.priceFrom && e.priceFrom > 0) out.priceFrom = e.priceFrom;
   else delete out.priceFrom; // «по запросу»
   if (e.filters) {
