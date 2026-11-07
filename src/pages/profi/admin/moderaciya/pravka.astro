@@ -88,6 +88,11 @@ const QUESTIONS = Object.fromEntries(
   /* для модератора решение — уже история, не тревога (Никита 06.11): плашка белая, как остальные,
      цветной только заголовок «Вернули / Одобрили» */
   .pr__state :global(.pr__state-h) { font-weight: 600; }
+  .pr__state :global(.pr__state-h--plain) { font-size: 17px; }
+  /* у незаконченной карточки «Связаться» — первым экраном: ради него модератор сюда и пришёл */
+  .a-grid:has(.pr__state[data-st="draft"]) .pr__side { order: -1; }
+  .pr__state :global(.pr__contacts) { display: grid; gap: var(--s-1); font-size: 16px; font-weight: 600; }
+  .pr__state :global(.pr__contact-acts) { display: grid; gap: var(--s-2); justify-self: stretch; margin-top: var(--s-2); }
   .pr__state[data-st="rejected"] :global(.pr__state-h) { color: var(--st-bad-strong); }
   .pr__state[data-st="approved"] :global(.pr__state-h) { color: var(--st-ok-strong); }
   .pr__state:empty { display: none; }
@@ -156,6 +161,30 @@ const QUESTIONS = Object.fromEntries(
       const what = status === 'rejected' ? 'Вернули' : status === 'approved' ? 'Одобрили' : REV_STATUS[status]?.label ?? '';
       const text = status === 'rejected' ? esc(reason || '') : status === 'approved' ? 'Карточка опубликована в базе. На сайте появится со следующей выкладкой' : '';
       return `<span class="pr__state-h">${what} ${when(at)}</span>${text ? `<span class="pr__state-text">${text}</span>` : ''}`;
+    };
+
+    // НЕ ЗАКОНЧЕНА → «Связаться» (Никита 07.11): из «Можно написать» модератор приходит сюда, чтобы напомнить
+    // подрядчику. Контакты — из учётки (почта регистрации, телефон, привязанный Telegram) и из раздела
+    // «Контакты» анкеты, если уже вписаны. Что есть — кнопками, по одной на способ
+    const contactBox = (r: any) => {
+      const o = r.expand?.owner ?? {};
+      const c = r.data?.contacts ?? {};
+      const days = Math.max(0, Math.round((Date.now() - new Date(String(r.updated).replace(' ', 'T')).getTime()) / 864e5));
+      const digits = (v: string) => String(v || '').replace(/[^\d+]/g, '');
+      const phone = digits(c.phone || o.phone || '');
+      const tgUser = String(c.telegram || '').replace(/^@|^https?:\/\/t\.me\//, '').trim();
+      const acts = [
+        phone && `<a class="a-btn a-btn--lg a-btn--block" href="tel:${esc(phone)}">Позвонить</a>`,
+        tgUser ? `<a class="a-btn a-btn--lg a-btn--block" href="https://t.me/${esc(tgUser)}" target="_blank" rel="noopener">Написать в Telegram</a>`
+          : o.telegramId ? `<a class="a-btn a-btn--lg a-btn--block" href="tg://user?id=${esc(o.telegramId)}">Написать в Telegram</a>` : '',
+        o.email && `<a class="a-btn a-btn--lg a-btn--block" href="mailto:${esc(o.email)}">Написать на почту</a>`,
+      ].filter(Boolean);
+      const pretty = (v: string) => { const m = v.replace(/\D/g, '').match(/^[78](\d{3})(\d{3})(\d{2})(\d{2})$/); return m ? `+7\u00a0${m[1]}\u00a0${m[2]}-${m[3]}-${m[4]}` : v; };
+      const lines = [phone && esc(pretty(phone)), tgUser && `Telegram @${esc(tgUser)}`, !tgUser && o.telegramId && 'Telegram подключён', o.maxId && 'MAX подключён', o.email && esc(o.email)].filter(Boolean);
+      return `<span class="pr__state-h pr__state-h--plain">Связаться</span>
+        <span class="pr__state-text">${days ? `${days} ${days % 10 === 1 && days % 100 !== 11 ? 'день' : days % 10 >= 2 && days % 10 <= 4 && (days % 100 < 12 || days % 100 > 14) ? 'дня' : 'дней'} без правок` : 'Карточку заполняют сейчас'}. ${esc(o.name || 'Подрядчик')} ещё не отправил её на проверку</span>
+        ${lines.length ? `<span class="pr__contacts">${lines.map((x) => `<span>${x}</span>`).join('')}</span>` : '<span class="pr__state-text">Контактов пока нет — подрядчик их ещё не вписал</span>'}
+        ${acts.length ? `<span class="pr__contact-acts">${acts.join('')}</span>` : ''}`;
     };
 
     let rev: any;
@@ -237,7 +266,7 @@ const QUESTIONS = Object.fromEntries(
         `<li><a href="${fileUrl(rev, n, { token })}" target="_blank" rel="noopener"><img src="${fileUrl(rev, n, { thumb: '400x0', token })}" alt="" loading="lazy" /></a></li>`).join('');
 
       $('[data-pr-state]').dataset.st = rev.status;
-      $('[data-pr-state]').innerHTML = rev.status === 'review' ? '' : decision(rev.status, rev.reviewedAt || rev.updated, rev.rejectReason);
+      $('[data-pr-state]').innerHTML = rev.status === 'review' ? '' : rev.status === 'draft' ? contactBox(rev) : decision(rev.status, rev.reviewedAt || rev.updated, rev.rejectReason);
       $('[data-pr-acts]').hidden = rev.status !== 'review';
     }
 
