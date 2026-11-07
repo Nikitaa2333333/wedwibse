@@ -478,15 +478,21 @@ function telegramTo(chatId, text, button) {
 }
 
 /**
- * Письмо подрядчику в стиле кабинета (06.11): поле страницы, марка, белая
- * плашка со статусом (цвета — шкала --st-* из components/admin/base.css),
- * причина возврата — в красной подложке, как .c-reason, без жирной метки;
- * внизу кнопка «Открыть кабинет». Только инлайн-стили и таблицы: почтовые
- * клиенты не понимают ни <style>, ни SVG — поэтому марка PNG
- * (public/mail/logo-tag-v1.png; новый знак — новое имя файла, nginx кэширует).
+ * Письмо подрядчику (07.11, вторая версия после разбора Никиты: первая —
+ * узкая карточка на сером поле — на ПК тонула в пустых полях, на телефоне
+ * отступала текстом на два уровня). Теперь белый лист без рамки, одна
+ * колонка 560 px: марка, плашка статуса (шкала --st-* кабинета), крупное
+ * имя карточки, текст, причина возврата пунктами в красной подложке без
+ * жирной метки, кнопка (на телефоне во всю ширину) и адрес кабинета текстом —
+ * на случай, если почта кнопку не нарисует. Стили инлайн + bgcolor (их
+ * понимают все клиенты), <style> — только отступы на узком экране.
+ * Марка — знак «крем», как на главной (public/logo-unicase.svg), в PNG
+ * втрое плотнее показа: public/mail/logo-cream-v2.png (почта SVG не
+ * показывает; новый знак — новое имя файла, nginx кэширует).
  *   status — 'ok' | 'bad' | 'info'; label — текст плашки;
  *   lines / after — абзацы до и после причины (готовый HTML);
- *   reason — текст причины (экранируем здесь)
+ *   reason — текст причины, строки → пункты (экранируем здесь);
+ *   logoSrc — только для пробной отправки (cid:), по умолчанию адрес сайта
  */
 const MAIL_ST = {
   ok: ['#e3f6e9', '#17703a'],
@@ -495,31 +501,50 @@ const MAIL_ST = {
 };
 const escHtml = (v) => String(v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
-function vendorMail({ status, label, title, lines, reason, after = [] }) {
+function vendorMail({ status, label, title, lines, reason, after = [], logoSrc }) {
   const [bg, fg] = MAIL_ST[status] || MAIL_ST.info;
-  const font = "font-family:Onest,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;";
-  const text = `${font}font-size:16px;line-height:1.5;color:#1e242e;`;
-  const p = (html) => `<p style="margin:0 0 12px;${text}">${html}</p>`;
+  const ink = '#1e242e';
+  const font = "font-family:Onest,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;";
+  const text = `${font}font-size:17px;line-height:1.55;color:${ink};`;
+  const p = (html) => `<p style="margin:0 0 14px;${text}">${html}</p>`;
+  const cabinet = `${SITE_URL}/profi/moi/`;
+  const points = reason
+    ? String(reason).split(/\n+/).map((s) => s.trim()).filter((s) => !!s)
+    : [];
+  const reasonHtml = points.length
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 20px;"><tr>` +
+      `<td bgcolor="${MAIL_ST.bad[0]}" style="background:${MAIL_ST.bad[0]};border-radius:14px;padding:16px 18px;">` +
+      points.map((s, i) =>
+        `<table role="presentation" cellpadding="0" cellspacing="0" style="${i ? 'margin-top:10px;' : ''}"><tr>` +
+        `<td valign="top" style="padding:0 10px 0 0;${text}color:${MAIL_ST.bad[1]};">•</td>` +
+        `<td valign="top" style="${text}">${escHtml(s)}</td></tr></table>`).join('') +
+      `</td></tr></table>`
+    : '';
   return '<!doctype html><html lang="ru"><head><meta charset="utf-8">' +
-    '<meta name="viewport" content="width=device-width,initial-scale=1"></head>' +
-    `<body style="margin:0;padding:0;background:#eff2f7;">` +
-    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eff2f7;"><tr><td align="center" style="padding:28px 16px;">` +
-    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;">` +
-    `<tr><td style="padding:0 4px 20px;"><a href="${SITE_URL}/"><img src="${SITE_URL}/mail/logo-tag-v1.png" width="194" height="36" alt="Свадебные секреты" style="display:block;border:0;"></a></td></tr>` +
-    `<tr><td style="background:#ffffff;border-radius:12px;padding:24px;">` +
-    `<span style="display:inline-block;padding:5px 10px;border-radius:999px;background:${bg};color:${fg};${font}font-size:13px;line-height:1;font-weight:600;">${escHtml(label)}</span>` +
-    `<h1 style="margin:16px 0 12px;${font}font-size:22px;line-height:1.25;font-weight:600;color:#1e242e;">${escHtml(title)}</h1>` +
+    '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+    '<meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light">' +
+    '<style>@media (max-width:600px){.wrap{padding:20px 20px 28px!important}.btn,.btn a{display:block!important;width:100%!important;text-align:center!important;box-sizing:border-box}.h1{font-size:24px!important}}</style>' +
+    `</head><body style="margin:0;padding:0;background:#ffffff;">` +
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#ffffff" style="background:#ffffff;"><tr><td align="center">` +
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;"><tr><td class="wrap" align="left" style="padding:36px 24px 40px;">` +
+    // марка
+    `<a href="${SITE_URL}/" style="display:inline-block;"><img src="${logoSrc || `${SITE_URL}/mail/logo-cream-v2.png`}" width="160" height="51" alt="Свадебные секреты" style="display:block;width:160px;height:51px;border:0;"></a>` +
+    // статус и имя
+    `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:36px 0 0;"><tr>` +
+    `<td bgcolor="${bg}" style="background:${bg};border-radius:999px;padding:6px 12px;${font}font-size:14px;line-height:1;font-weight:600;color:${fg};">${escHtml(label)}</td></tr></table>` +
+    `<h1 class="h1" style="margin:14px 0 18px;${font}font-size:28px;line-height:1.2;font-weight:700;color:${ink};">${escHtml(title)}</h1>` +
     lines.map(p).join('') +
-    (reason
-      ? `<div style="margin:4px 0 16px;padding:12px 14px;border-radius:12px;background:${MAIL_ST.bad[0]};${text}white-space:pre-line;">${escHtml(reason)}</div>`
-      : '') +
+    reasonHtml +
     after.map(p).join('') +
-    `<table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:8px;"><tr><td style="border-radius:12px;background:#1e242e;">` +
-    `<a href="${SITE_URL}/profi/moi/" style="display:inline-block;padding:13px 22px;${font}font-size:16px;line-height:1;font-weight:600;color:#ffffff;text-decoration:none;">Открыть кабинет</a>` +
+    // кнопка
+    `<table role="presentation" class="btn" cellpadding="0" cellspacing="0" style="margin:26px 0 0;"><tr>` +
+    `<td bgcolor="${ink}" style="background:${ink};border-radius:14px;">` +
+    `<a href="${cabinet}" style="display:inline-block;padding:16px 28px;${font}font-size:17px;line-height:1;font-weight:600;color:#ffffff;text-decoration:none;border-radius:14px;">Открыть кабинет</a>` +
     `</td></tr></table>` +
-    `</td></tr>` +
-    `<tr><td style="padding:16px 4px 0;${font}font-size:13px;line-height:1.4;color:#1e242e;">Письмо из кабинета подрядчика WED Secrets, <a href="${SITE_URL}/" style="color:#1e242e;">wed-secrets.ru</a></td></tr>` +
-    `</table></td></tr></table></body></html>`;
+    `<p style="margin:14px 0 0;${font}font-size:14px;line-height:1.45;color:${ink};">или по адресу <a href="${cabinet}" style="color:${ink};">wed-secrets.ru/profi/moi</a></p>` +
+    // подвал
+    `<p style="margin:44px 0 0;${font}font-size:13px;line-height:1.45;color:${ink};">Свадебные секреты, кабинет подрядчика.<br>Письмо отправлено автоматически, отвечать на него не нужно.</p>` +
+    `</td></tr></table></td></tr></table></body></html>`;
 }
 
 /**
