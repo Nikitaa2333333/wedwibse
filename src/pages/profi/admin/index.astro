@@ -48,11 +48,11 @@ import AdminShell from '../../../components/admin/AdminShell.astro';
       const nNew = c.newReview.length, nEdit = c.editReview.length, nDraft = c.drafts.length;
       // плитки 2×2 как в Напоминаниях Apple: значок, крупное число, подпись (Никита 05.11)
       const tiles = [
-        // цвет значка — смысл, как у статусов (Никита 06.11): проверить — голубой, не закончены — жёлтый,
+        // цвет значка — смысл, как у статусов (Никита 06.11, 07.11): проверить — синий, не закончены — серый,
         // жалобы — красный; пусто (0) — серый, чтобы цвет звал только туда, где есть дело
         { n: nNew, label: 'Новые карточки', left: soon(c.newReview), href: '/profi/admin/zayavki/#review', icon: 'partners', tone: 'info' },
         { n: nEdit, label: 'Правки', left: soon(c.editReview), href: '/profi/admin/moderaciya/', icon: 'moderation', tone: 'info' },
-        { n: nDraft, label: 'Не закончены', href: '/profi/admin/zayavki/#draft', icon: 'catalog', tone: 'warn' },
+        { n: nDraft, label: 'Не закончены', href: '/profi/admin/zayavki/#draft', icon: 'catalog', tone: 'none' }, // ждём подрядчика — серым (07.11)
         { n: 0, label: 'Жалобы', href: '/profi/admin/zhaloby/', icon: 'complaints', tone: 'bad' },
       ] as { n: number; label: string; left?: number; href: string; icon: keyof typeof ADMIN_ICONS; tone: string }[];
       // плитки стоят всегда (ноль — тоже ответ), как смарт-списки в Напоминаниях

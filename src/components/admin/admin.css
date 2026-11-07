@@ -183,8 +183,6 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
 .a-task--seen .status { background: var(--st-muted-bg); color: var(--adm-text-seen); }
 /* первая строка списка — без линии сверху: линия только между строками (Никита 07.11) */
 .a-tasks > .a-task:first-child, tbody > tr:first-child .a-task { border-top: 0; }
-/* ещё не открытая — точка у имени, как непрочитанное письмо в Почте; открытая — приглушена, без точки */
-.a-task:not(.a-task--seen) .a-task__name::before { content: ''; display: inline-block; width: 6px; height: 6px; margin: 0 7px 3px 0; border-radius: 50%; background: var(--st-info-strong); vertical-align: middle; }
 .a-task__fill { font-size: var(--adm-fs-sm); white-space: nowrap; }
 /* у задачи в таблице (заявки, модерация) ячейка без своих полей */
 .a-table td.a-task-cell { padding: 0; }
@@ -537,7 +535,6 @@ html:has(.adm), html:has(.adm) body { background: var(--adm-bg); }
 .a-tile .a-tile__ic { background: none; width: auto; height: auto; border-radius: 0; color: var(--adm-text-seen); }
 .a-tile .a-tile__ic svg { width: 26px; height: 26px; }
 .a-tile--info .a-tile__ic, .a-tile--info .a-tile__n { color: var(--st-info-strong); }
-.a-tile--warn .a-tile__ic, .a-tile--warn .a-tile__n { color: var(--st-warn-strong); }
 .a-tile--bad .a-tile__ic, .a-tile--bad .a-tile__n { color: var(--st-bad-strong); }
 .a-tile__ic svg { width: 20px; height: 20px; }
 .a-tile__n { grid-area: n; justify-self: end; font-size: 28px; line-height: 32px; font-weight: 600; font-variant-numeric: tabular-nums; }
