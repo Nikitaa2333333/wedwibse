@@ -40,9 +40,25 @@ function sectionOf(s) {
   return { title: s.title ?? '', body: paras.filter(Boolean).join('\n\n') };
 }
 
+/**
+ * Карточка старого формата — без story (Лешаковы, 07.11: из-за этого им
+ * не вышла анкета и ссылка): текст живёт в bio, offers, packageIncludes,
+ * quote. Собираем из них разделы в том же порядке, что на визитке.
+ */
+function legacyStory(card) {
+  const out = [];
+  if (card.bio) out.push({ title: card.aboutTitle ?? 'О нас', text: String(card.bio).split(/\n\s*\n/) });
+  if (card.offers?.length) out.push({ title: 'Почему мы', items: card.offers });
+  if (card.packageIncludes?.length) out.push({ title: 'Что входит', list: card.packageIncludes });
+  if (card.quote) out.push({ title: 'Стоимость', text: [card.quote] });
+  return out;
+}
+
+const storyOf = (card) => (card.story?.length ? card.story : legacyStory(card));
+
 /** JSON карточки конвейера → объект form той же формы, что пишет кабинет (lib/cabinet-form.ts) */
 export function cardToForm(card) {
-  const sections = (card.story ?? []).map(sectionOf).filter((x) => x.body);
+  const sections = storyOf(card).map(sectionOf).filter((x) => x.body);
   const price = Number(card.priceFrom) > 0 ? Number(card.priceFrom) : null;
   return {
     managed: true,
@@ -76,7 +92,7 @@ function storyStrings(card) {
     else if (Array.isArray(v)) v.forEach(walk);
     else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) if (k !== 'photo' && k !== 'kind' && k !== 'dark') walk(x);
   };
-  walk(card.story ?? []);
+  walk(storyOf(card));
   return out;
 }
 
