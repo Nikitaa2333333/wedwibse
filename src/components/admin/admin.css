@@ -176,6 +176,8 @@ html[data-look] .adm :is(h1, h2, h3, h4, p, .a-h1) { margin: 0; font-family: inh
 .a-task__name { font-size: 16px; line-height: 22px; font-weight: 600; overflow-wrap: anywhere; }
 .a-task__sub { font-size: var(--adm-fs-sm); line-height: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .a-task__urgent { color: var(--st-bad-text); font-weight: 600; }
+/* давно не трогали — пора написать: тёмным полужирным, без тревожного цвета (07.11) */
+.a-task__stale { font-weight: 600; }
 .a-task > .status { justify-self: end; }
 /* уже открытая модератором — приглушена целиком, плашка статуса без цвета (Никита 06.11) */
 .a-task--seen, .a-task--seen .a-task__urgent { color: var(--adm-text-seen); }
