@@ -703,8 +703,6 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         const unitChips = (bind: string, cur: unknown) => `<div class="c-opts">${priceUnits(kind, rev.categorySlug).map((u) => `<button class="c-opt" type="button" aria-pressed="${cur === u}" data-unit="${bind}" data-v="${u}">${u}</button>`).join('')}</div>`;
         return { title: 'Цена', lead: '', html: `
           <div class="c-seg">${modes.map(([v, l]) => `<button type="button" aria-pressed="${mode === v}" data-pmode="${v}">${l}</button>`).join('')}</div>
-          ${/* что сохранится при переключении (Никита 07.11): на карточке — выбранный способ, остальное не стирается */''}
-          <p class="a-field__note c-seg-note">На карточке покажем ${mode === 'one' ? 'одну цену' : mode === 'tariffs' ? 'тарифы' : '«Цена по запросу»'}. Введённое в других вариантах не стирается — можно вернуться</p>
           ${mode === 'one' ? `
             ${field('Цена от, ₽', 'priceFrom', data.priceFrom, { mode: 'numeric', placeholder: '40 000' })}
             <div class="c-card c-card--chips">
@@ -902,7 +900,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         <span class="c-thint__card c-thint__card--2"><i></i><b></b></span>
         <span class="c-thint__card c-thint__card--3"><i></i><b></b></span>
       </span>
-      <span class="c-hint__text"><b>Два-три тарифа — пара сравнит</b><span>Название, цена и что входит. В каталоге покажем «от» самого недорогого</span></span>
+      <span class="c-hint__text"><b>Тарифы на выбор</b><span>До ${MAX_TARIFFS}: название, цена и что входит. В каталоге покажем цену самого недорогого</span></span>
       <button class="c-hint__close" type="button" aria-label="Понятно" data-tariff-hint-close>${X_ICON}</button>
     </div>`;
   }

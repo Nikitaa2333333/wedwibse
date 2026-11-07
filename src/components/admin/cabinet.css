@@ -172,7 +172,6 @@ textarea.a-field__input { height: auto; min-height: 160px; padding: 12px 14px; l
 /* ссылка на ролик принята — зелёная галочка у поля (Никита 07.11) */
 .c-vrow__ok { display: grid; place-items: center; width: 28px; height: 28px; color: var(--st-ok-text); }
 .c-vrow__ok svg { width: 22px; height: 22px; }
-.c-seg-note { padding-inline: var(--s-4); }
 /* принятая ссылка: длинный адрес плавно уходит под галочку, а не обрезается краем (Никита 07.11) */
 .c-vrow:has(.c-vrow__ok:not([hidden])) .a-field__input { -webkit-mask-image: linear-gradient(to right, var(--adm-text) calc(100% - 40px), transparent); mask-image: linear-gradient(to right, var(--adm-text) calc(100% - 40px), transparent); }
 .c-add-link { justify-self: start; }
@@ -319,8 +318,9 @@ select.a-field__input { appearance: none; background-image: var(--adm-chevron-do
 .c-link--danger { color: var(--st-bad-text) !important; justify-self: center; align-self: center; padding: 8px; }
 
 /* «?» у подписи поля — открывает «как это выглядит» */
-/* «?» у заголовка — тихий: тонкий серый кружок, не чёрный знак на белом (Никита 07.11: «берёт внимание») */
-.c-help { width: 22px; height: 22px; margin-left: 6px; border: 1.5px solid currentColor; border-radius: 50%; background: none; color: var(--adm-text-seen); font-size: 13px; font-weight: 500; line-height: 19px; text-align: center; vertical-align: 3px; }
+/* «?» у заголовка — маленький серый кружок без обводки, знак ровно по центру (Никита 07.11) */
+.c-help { display: inline-grid; place-items: center; width: 20px; height: 20px; margin-left: 6px; padding: 0; border: 0; border-radius: 50%; background: var(--adm-line); color: var(--adm-text-seen); font-size: 12px; font-weight: 600; line-height: 1; vertical-align: middle; }
+.c-help:focus { outline: none; }
 @media (hover: hover) { .c-help:hover { background: var(--adm-line); } }
 
 /* кнопки «Добавить раздел / пакет» — заметные, капсулой без обводки */
@@ -383,8 +383,7 @@ select.a-field__input { appearance: none; background-image: var(--adm-chevron-do
 
 /* ---------- превью, второй заход (27.10): кусок визитки без подписей ---------- */
 .c-title { display: flex; align-items: center; gap: 8px; }
-.c-title .c-help { width: 28px; height: 28px; line-height: 28px; font-size: 15px; margin: 0; flex: none; background: var(--adm-card); color: var(--cab-ink); }
-@media (hover: hover) { .c-title .c-help:hover { background: var(--cab-ink); color: var(--adm-on-dark); } }
+.c-title .c-help { flex: none; margin: 0; } /* вид — в .c-help выше: маленький серый кружок (07.11) */
 /* длинное слово без пробелов не распирает панель вбок (CLAUDE.md, «панель ездит») */
 .c-sheet { box-sizing: border-box; }
 .c-sheet__body { position: relative; min-width: 0; overflow-wrap: anywhere; }
