@@ -594,16 +594,30 @@ console.log('\nвход по почте');
   res = await call(C.token, 'PATCH', `/api/collections/revisions/records/${ed?.id}`, { 'photos-': [ed?.photos?.[0]] });
   check('фото владелец сам не убирает', refused(res), res.text);
 
+  // 07.11: строку под именем, «Коротко о себе» и портрет владелец ставит сам
+  const INTRO = 'Веду свадьбы двенадцать лет и знаю, как сделать вечер живым. ' + 'Без конкурсов. '.repeat(50);
   res = await call(C.token, 'PATCH', `/api/collections/revisions/records/${ed?.id}`, {
     data: {
-      ...ed?.data, name: 'Взлом', tagline: 'Чужая строка', sections: [{ title: '', body: 'подмена' }],
+      ...ed?.data, name: 'Взлом', tagline: 'Своя строка от владельца', intro: INTRO, sections: [{ title: '', body: 'подмена' }],
       priceFrom: 55000, priceNote: 'за 5 часов', filters: { gender: 'м', style: ['humor'] },
       contacts: { phone: '+79160000077' }, requests: { text: 'Добавьте про выездную регистрацию' },
     },
   });
   check('из анкеты доходит только разрешённое', res.status === 200 && res.json.data.name === ours.name &&
-    res.json.data.tagline === ours.tagline && res.json.data.sections[0].body.includes('Свой звук') &&
+    res.json.data.tagline === 'Своя строка от владельца' && res.json.data.intro?.length === 600 &&
+    res.json.data.sections[0].body.includes('Свой звук') &&
     res.json.data.priceFrom === 55000 && res.json.data.requests?.text?.includes('выездную'), res.text);
+
+  const ava = new FormData();
+  ava.append('avatar', new Blob([PNG], { type: 'image/png' }), 'me.png');
+  res = await call(C.token, 'PATCH', `/api/collections/revisions/records/${ed?.id}`, ava);
+  check('портрет владелец ставит сам', res.status === 200 && !!res.json?.avatar, res.text);
+  const own = res.json?.data ?? {};
+
+  res = await call(C.token, 'PATCH', `/api/collections/revisions/records/${ed?.id}`, { data: { ...own, intro: 'Люблю свадьбы 😍 ' + own.intro } });
+  res = await call(C.token, 'PATCH', `/api/collections/revisions/records/${ed?.id}`, { status: 'review' });
+  check('смайлик в «Коротко о себе» не пропускается', refused(res) && says(res, 'смайлики'), res.text);
+  await call(C.token, 'PATCH', `/api/collections/revisions/records/${ed?.id}`, { data: own });
 
   res = await call(C.token, 'PATCH', `/api/collections/revisions/records/${ed?.id}`, { status: 'review' });
   check('правка «ведём мы» уходит на проверку', res.status === 200, res.text);
@@ -614,6 +628,9 @@ console.log('\nвход по почте');
   const p = res.json?.page ?? {};
   check('на сайт едут только правки владельца', p.source !== 'cabinet' && p.ownerEdits?.priceFrom === 55000 &&
     p.ownerEdits?.priceNote === 'за 5 часов' && p.ownerEdits?.filters?.style?.[0] === 'humor' && p.story?.[0]?.items?.length === 1, res.text);
+  check('строка, «О себе» и портрет владельца — в правках для сайта', p.ownerEdits?.tagline === 'Своя строка от владельца' &&
+    p.ownerEdits?.intro?.length === 600 && !!p.ownerEdits?.avatar && res.json?.avatar === p.ownerEdits?.avatar &&
+    res.json?.tagline === 'Своя строка от владельца', res.text);
   check('фото, имя и цена в каталоге', res.json?.photos?.length === 8 && res.json?.name === ours.name && res.json?.priceFrom === 55000 && res.json?.version === 1, res.text);
   res = await call(SU, 'GET', `/api/collections/specialists/records/${card.json?.id}`);
   check('анкета карточки: режим остался, просьбы — в ревизии', res.json?.form?.managed === true && !res.json?.form?.requests &&

@@ -80,11 +80,12 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
   const locked = () => rev?.status === 'review' || rev?.status === 'approved';
   const isNew = () => !rev.venue && !rev.specialist;
   // «Карточку ведём мы» (пилот, 03.11, docs/cabinet/CABINET.md §24): визитку оформили мы,
-  // владелец сам меняет цену, вопросы, контакты и видео; текст, фото, имя
-  // и портрет — просьбой «что поправить» (data.requests). Хук всё равно
-  // пропускает только это — экран просто не предлагает лишнего.
+  // владелец сам меняет цену, вопросы, контакты, видео, а с 07.11 ещё портрет,
+  // строку под именем и «Коротко о себе»; основной текст, фото и имя — просьбой
+  // «что поправить» (data.requests). Хук всё равно пропускает только это —
+  // экран просто не предлагает лишнего.
   const managed = () => data?.managed === true && !isNew();
-  const MANAGED_NOTE = 'Карточку оформили мы. Цену, ответы на вопросы, контакты и видео меняете сами, а текст и фото — напишите, что поправить, сделаем сами.';
+  const MANAGED_NOTE = 'Карточку оформили мы. Портрет, строку под именем, первый абзац текста, цену, ответы на вопросы, контакты и видео меняете сами. Остальной текст и фото — напишите, что поправить, сделаем сами.';
   /** поле просьбы нам: текст или фото */
   const requestField = (key: 'text' | 'photos', label: string, placeholder: string) =>
     field(label, `requests.${key}`, data.requests?.[key], { area: true, placeholder, note: 'Модератор увидит вместе с остальной правкой и поправит сам' });
@@ -584,7 +585,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     <label class="a-field">
       <span class="a-field__label">${label}</span>
       ${opts.area
-        ? `<textarea class="a-field__input" data-bind="${bind}" placeholder="${esc(opts.placeholder ?? '')}">${esc(value)}</textarea>`
+        ? `<textarea class="a-field__input" data-bind="${bind}" ${opts.max ? `maxlength="${opts.max}"` : ''} placeholder="${esc(opts.placeholder ?? '')}">${esc(value)}</textarea>`
         : `<input class="a-field__input" data-bind="${bind}" type="${opts.type ?? 'text'}" ${opts.mode ? `inputmode="${opts.mode}"` : ''} ${opts.max ? `maxlength="${opts.max}"` : ''} value="${esc(value)}" placeholder="${esc(opts.placeholder ?? '')}" />`}
       ${opts.note ? `<span class="a-field__note">${opts.note}</span>` : ''}
     </label>`;
@@ -606,23 +607,47 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       <button class="c-tool" type="button" data-remove="${list}" data-i="${i}" aria-label="Удалить">${X_ICON}</button>
     </div>`;
 
-  /** карточка «ведём мы»: основное, фото и текст — просмотр и просьба */
+  /** первый абзац нашего текста — с него начинается «Коротко о себе» (07.11) */
+  const firstParagraph = () => {
+    const body = String((data.sections ?? []).find((x: any) => String(x?.body ?? '').trim())?.body ?? '');
+    return body.split(/\n\s*\n/)[0].replace(/^\s*>\s*/, '').trim();
+  };
+
+  /** портрет: тот же выбор файла с кадрированием, что в обычной анкете */
+  const avatarField = () => `
+    <div class="a-field">
+      <span class="a-field__label">Портрет</span>
+      <label class="c-ava">
+        <span class="c-ava__img" data-ava>${rev.avatar ? `<img src="${fileUrl(rev, rev.avatar, { thumb: '200x200', token })}" alt="" />` : icon('profile')}</span>
+        <span class="c-chipbtn">${rev.avatar ? 'Заменить фото' : 'Загрузить фото'}</span>
+        <input type="file" accept="image/jpeg,image/png,image/webp" hidden data-avatar />
+      </label>
+    </div>`;
+
+  /** карточка «ведём мы»: имя, фото и основной текст — просмотр и просьба;
+   *  портрет, строку под именем и «Коротко о себе» владелец ставит сам (07.11) */
   function managedBody(key: SectionKey): { title: string; lead: string; html: string } | null {
     if (!managed()) return null;
     if (key === 'osnovnoe') return { title: role(), lead: '', html: `
       <div class="c-card">
         <p class="a-field__label">Имя</p><p>${esc(data.name)}</p>
-        ${data.tagline ? `<p class="a-field__label">Строка под именем</p><p>${esc(data.tagline)}</p>` : ''}
-        ${rev.avatar ? `<span class="c-ava__img"><img src="${fileUrl(rev, rev.avatar, { thumb: '200x200', token })}" alt="" /></span>` : ''}
       </div>
-      ${requestField('text', 'Что поправить', 'Например: строка под именем — «Веду свадьбы с 2005 года»; заменить портрет — пришлю в Telegram')}` };
+      ${field('Строка под именем', 'tagline', data.tagline, { placeholder: 'Репортаж без постановки, плёнка по желанию', note: 'Одна фраза, до 80 знаков — её видно в каталоге', max: 80 })}
+      ${avatarField()}
+      ${requestField('text', 'Что ещё поправить', 'Например: имя — «Михаил Галкин, ведущий»')}` };
     if (key === 'foto') return { title: 'Фото', lead: 'Кадры подобрали мы — так, чтобы карточка смотрелась с телефона.', html: `
       <div class="c-photos" data-photos></div>
       ${requestField('photos', 'Что поменять в фото', 'Например: убрать 5-й и 12-й кадр; новые кадры — ссылка на Яндекс Диск')}` };
     if (key === 'tekst') {
       const secs = (data.sections ?? []).filter((x: any) => String(x?.body ?? '').trim());
-      return { title: 'Описание', lead: 'Так текст стоит на вашей странице сейчас.', html: `
-        <div class="c-pv c-pv-story">${secs.map((x: any) => `<section>${x.title ? `<h3>${esc(x.title)}</h3>` : ''}${storyHtml(x.body)}</section>`).join('')}</div>
+      // «Коротко о себе» встаёт на сайте первым абзацем вместо нашего —
+      // поэтому превью ниже показывает его уже на этом месте
+      const intro = data.intro ?? firstParagraph();
+      const shown = secs.map((x: any, i: number) => (i === 0 && intro ? { ...x, body: [intro, ...String(x.body).split(/\n\s*\n/).slice(1)].join('\n\n') } : x));
+      return { title: 'Описание', lead: 'Первый абзац пишете сами, остальной текст оформили мы.', html: `
+        ${field('Коротко о себе', 'intro', intro, { area: true, max: 600, placeholder: 'Пара слов от вас: кто вы и как работаете', note: 'До 600 знаков. Встанет первым абзацем текста на вашей странице' })}
+        <p class="a-field__label">Так текст будет стоять на странице</p>
+        <div class="c-pv c-pv-story" data-intro-pv>${shown.map((x: any) => `<section>${x.title ? `<h3>${esc(x.title)}</h3>` : ''}${storyHtml(x.body)}</section>`).join('')}</div>
         ${requestField('text', 'Что поправить в тексте', 'Например: во втором абзаце — «работаю с 2012 года»; добавить раздел про выездную регистрацию')}` };
     }
     return null;

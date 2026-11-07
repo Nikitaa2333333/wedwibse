@@ -73,7 +73,7 @@ function findContact(value, path) {
 
 /** как поле шаблона называется у подрядчика в форме */
 const FIELD_LABELS = {
-  name: 'Название', tagline: 'Строка под именем', about: 'О себе', priceNote: 'Про цену',
+  name: 'Название', tagline: 'Строка под именем', about: 'О себе', intro: 'Коротко о себе', priceNote: 'Про цену',
   address: 'Адрес', halls: 'Залы', filters: 'Ответы на вопросы', sections: 'Описание',
   tariffs: 'Прайс', terms: 'Условия',
 };
@@ -596,7 +596,12 @@ function mailVendor(app, vendorId, subject, html) {
 // а описание и фото — просьбой (requests), правим руками. Признак —
 // form.managed у карточки: form пишет только суперпользователь
 // (scripts/card-to-form.mjs), подрядчик в карточку не пишет никогда.
-const MANAGED_KEYS = ['priceMode', 'priceFrom', 'priceNote', 'filters', 'contacts', 'videos', 'requests'];
+// 07.11 (Никита): владелец сам ставит портрет, строку под именем (tagline,
+// до 80 знаков) и короткое «О себе» (intro, до 600 знаков) — оно встаёт
+// первым абзацем текста визитки; остальной текст по-прежнему наш.
+const MANAGED_KEYS = ['priceMode', 'priceFrom', 'priceNote', 'filters', 'contacts', 'videos', 'requests', 'tagline', 'intro'];
+const MANAGED_TAGLINE_MAX = 80;
+const MANAGED_INTRO_MAX = 600;
 
 /** карточка правки, если она в режиме «ведём мы»; иначе null */
 function managedCard(app, rev) {
@@ -612,6 +617,8 @@ function lockManaged(form, data) {
   const out = JSON.parse(JSON.stringify(form || {}));
   for (const k of MANAGED_KEYS) if (data && k in data) out[k] = data[k];
   out.managed = true;
+  if ('tagline' in out) out.tagline = str(out.tagline, MANAGED_TAGLINE_MAX);
+  if ('intro' in out) out.intro = str(out.intro, MANAGED_INTRO_MAX);
   // тарифы у этих карточек — в тексте визитки, их правим мы
   out.tariffs = [];
   if (out.priceMode !== 'request') out.priceMode = 'one';
@@ -640,8 +647,11 @@ function submitProblems(rev, managed) {
   if (photos < MIN_PHOTOS) problems.push(`загрузите не меньше ${MIN_PHOTOS} фото (сейчас ${photos})`);
   if (textLength(data) < MIN_ABOUT) problems.push(`напишите текст карточки подробнее — от ${MIN_ABOUT} знаков`);
   else if (!looksLikeText(data)) problems.push('в тексте карточки должны быть слова — напишите о себе по-настоящему');
-  // у «ведём мы» текст наш, владелец его не правит — как и с контактами ниже
-  if (!managed && emojiInText(data)) problems.push('уберите смайлики из описания — на сайте их не будет');
+  // у «ведём мы» текст наш — проверяем только то, что владелец пишет сам
+  // (строку под именем и «О себе», 07.11), как и с контактами ниже
+  if (managed ? hasEmoji(data.tagline) || hasEmoji(data.intro) : emojiInText(data)) {
+    problems.push('уберите смайлики из описания — на сайте их не будет');
+  }
   const price = priceFromOf(data);
   if (price !== null && price > MAX_PRICE) problems.push('проверьте цену — больше 50 млн ₽ не бывает');
   if (tariffsOf(data).some((t) => t.price !== null && t.price > MAX_PRICE)) problems.push('проверьте цены в прайсе');
@@ -649,7 +659,7 @@ function submitProblems(rev, managed) {
   if (!str(contacts.phone)) problems.push('укажите телефон в блоке «Контакты» — клиент откроет его кнопкой');
   // у карточки «ведём мы» текст наш, владелец его не правит — проверяем
   // только то, что он вписал сам (просьбы нам — не витрина, их не трогаем)
-  const hit = managed ? findContact({ priceNote: data.priceNote, filters: data.filters }, '') : findContact(data, '');
+  const hit = managed ? findContact({ priceNote: data.priceNote, filters: data.filters, tagline: data.tagline, intro: data.intro }, '') : findContact(data, '');
   if (hit) {
     problems.push(
       `в разделе «${fieldLabel(hit.path)}» ${hit.what}. Телефон, почту и ссылки на соцсети можно добавлять только в раздел «Контакты»`
@@ -768,11 +778,11 @@ function vendorUpdateRevision(e) {
     throw new BadRequestError('Из кабинета карточку можно сохранить черновиком или отправить на проверку.');
   }
 
-  // «ведём мы»: фото, портрет и обложку меняем мы по просьбе, из анкеты
-  // доходит только разрешённое — остальное всегда как в карточке
+  // «ведём мы»: фото и обложку меняем мы по просьбе, портрет владелец ставит
+  // сам (07.11); из анкеты доходит только разрешённое — остальное как в карточке
   const managed = isNewCard ? null : managedCard(e.app, r);
   if (managed) {
-    denyExtra(body, ['data', 'status']);
+    denyExtra(body, ['data', 'status', 'avatar']);
     r.set('data', lockManaged(jsonOf(managed, 'form'), jsonOf(r, 'data')));
   }
 
@@ -974,12 +984,27 @@ function approveManaged(app, rev, card) {
   card.set('version', card.getInt('version') + 1);
   card.set('form', data);
   card.set('contacts', data.contacts && typeof data.contacts === 'object' ? data.contacts : {});
+  // портрет владельца (07.11): новый файл ревизии → карточке, имя сохраняем
+  // (сервис фото, как в approve); не загружал — у карточки остаётся прежний
+  const avatar = rev.getString('avatar');
+  if (avatar && avatar !== card.getString('avatar')) {
+    const fsys = app.newFilesystem();
+    try {
+      card.set('avatar', fsys.getReuploadableFile(rev.baseFilesPath() + '/' + avatar, true));
+      app.save(card);
+    } finally {
+      fsys.close();
+    }
+  }
   const page = jsonOf(card, 'page');
   page.ownerEdits = {
     priceMode: data.priceMode,
     priceFrom: priceFromOf(data),
     priceNote: str(data.priceNote, 300),
     filters: data.filters && typeof data.filters === 'object' ? data.filters : {},
+    tagline: str(data.tagline, MANAGED_TAGLINE_MAX),
+    intro: str(data.intro, MANAGED_INTRO_MAX),
+    avatar: card.getString('avatar'),
     version: card.getInt('version'),
   };
   card.set('page', page);

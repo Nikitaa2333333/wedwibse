@@ -125,6 +125,13 @@ async function ourCard(rec: PbRecord, next: Reg): Promise<Specialist | null> {
     const a = await one(p.avatar);
     if (a) card.avatar = a; else delete card.avatar;
   }
+  // портрет, который владелец «ведём мы» поставил сам (07.11): файл карточки
+  // в базе; он же идёт в полный кадр «О себе» — прежний наш портрет уже не он
+  const own = (rec.page as { ownerEdits?: { avatar?: string } } | undefined)?.ownerEdits?.avatar;
+  if (own) {
+    const a = await remoteKey(rec, own, next);
+    if (a) { card.avatar = a; card.portrait = a; }
+  }
   return card;
 }
 
