@@ -68,6 +68,10 @@ export function openDialog(opts: DialogOptions): { dlg: HTMLDialogElement; close
 
   lockPage();
   dlg.showModal();
+  // showModal ставит фокус на первую кнопку (обычно крестик) — на айфоне вокруг неё вставало кольцо
+  // фокуса (Никита 07.11). Фокус — на само окно; поле с autofocus или .focus() из экрана — своё
+  dlg.tabIndex = -1;
+  if (!dlg.querySelector('[autofocus]')) dlg.focus();
   return { dlg, close };
 }
 
@@ -116,6 +120,12 @@ export function toast(text: string, bad = false, ms = 1600, action?: ToastAction
     el.append(b);
   }
   el.classList.toggle('c-toast--bad', bad);
+  // открыта клавиатура (видимая область заметно ниже окна) — тост к верху видимой области:
+  // внизу его закрывали клавиатура и панель смайликов (Никита 07.11, «Смайлики не добавляем»)
+  const vv = window.visualViewport;
+  const kb = !!vv && vv.height < window.innerHeight - 120;
+  el.classList.toggle('c-toast--kb', kb);
+  el.style.top = kb ? `${Math.round(vv!.offsetTop + 12)}px` : '';
   el.classList.remove('is-on');
   void el.offsetWidth; // перезапуск анимации кружка на новом тосте
   el.classList.add('is-on');

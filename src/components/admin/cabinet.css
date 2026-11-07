@@ -151,6 +151,8 @@ details[open].c-row > summary .c-row__go { transform: rotate(90deg); }
 .c-row__title { font-weight: 500; font-size: 15px; line-height: 20px; overflow-wrap: anywhere; }
 /* вопрос в «Помощи» и раскрывающиеся строки — крупнее ответа: заголовок 17/600, ответ 16/400 (Никита 06.11) */
 details.c-row > summary .c-row__title { font-size: 17px; line-height: 22px; font-weight: 600; }
+/* документы в профиле — строка списка, а не заголовок: обычный кегль (Никита 07.11: «шрифт слишком большой») */
+[data-docs] details.c-row > summary .c-row__title { font-size: 16px; line-height: 21px; font-weight: 500; }
 .c-row__sub { font-size: var(--adm-fs-sm); line-height: 16px; color: var(--adm-text-2); overflow-wrap: anywhere; }
 .c-row__sub--bad { color: var(--st-bad-text); }
 /* пустой раздел до первой попытки отправить — серым, не ошибкой (Никита, 02.11) */
@@ -166,7 +168,11 @@ details.c-row > summary .c-row__ic { flex: none; }
 textarea.a-field__input { height: auto; min-height: 160px; padding: 12px 14px; line-height: 1.5; resize: vertical; }
 /* описание одним полем — под вставку готового текста */
 /* ссылка на видео: поле и крестик в строку */
-.c-vrow { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px; }
+.c-vrow { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 4px; }
+/* ссылка на ролик принята — зелёная галочка у поля (Никита 07.11) */
+.c-vrow__ok { display: grid; place-items: center; width: 28px; height: 28px; color: var(--st-ok-text); }
+.c-vrow__ok svg { width: 22px; height: 22px; }
+.c-vnote { padding-inline: var(--s-4); }
 .c-add-link { justify-self: start; }
 select.a-field__input { appearance: none; background-image: var(--adm-chevron-down); background-repeat: no-repeat; background-position: right 14px center; background-size: 20px 20px; padding-right: 44px; } /* тонкий шеврон вместо двух треугольников (05.11, HIG: Pop-up buttons) */
 .c-grid2 { display: grid; gap: var(--s-3); grid-template-columns: minmax(0, 1fr); }
@@ -180,13 +186,15 @@ select.a-field__input { appearance: none; background-image: var(--adm-chevron-do
 .c-q__empty { font-size: var(--adm-fs-sm); font-weight: 400; color: var(--st-bad-text); }
 .c-q__hint { font-size: var(--adm-fs-sm); font-weight: 400; color: var(--adm-text-2); }
 .c-opts { display: flex; flex-wrap: wrap; gap: 6px; }
+/* капсулы ответов крупнее и заполняют строку целиком — без «дыр» справа (Никита 07.11) */
 .c-opt {
-  height: 36px;
+  flex: 1 1 auto;
+  height: 44px;
   padding: 0 14px;
   border: 0 !important;
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--adm-bg) !important;
-  font-size: var(--adm-fs) !important;
+  font-size: 16px !important;
   white-space: nowrap;
 }
 .c-opt[aria-pressed="true"] { background: var(--adm-dark) !important; border-color: var(--adm-dark) !important; color: var(--adm-on-dark); }
@@ -390,19 +398,26 @@ select.a-field__input { appearance: none; background-image: var(--adm-chevron-do
 /* ---------- способ цены: три в ряд, сегментом ---------- */
 .c-seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 12px; background: var(--adm-bg); }
 .c-seg button { height: 36px; border-radius: 9px; font-weight: 500; font-size: var(--adm-fs); color: var(--adm-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 6px; }
-.c-seg button[aria-pressed="true"] { background: var(--adm-card); color: var(--adm-text); font-weight: 600; box-shadow: var(--adm-shadow-xs), var(--adm-shadow-md); } /* HIG: Segmented controls — белый ползунок на сером */
+/* выбранный способ — чёрной капсулой без тени на светло-сером (Никита 07.11, по образцу «All / Personal / Groups»;
+   заменяет белый ползунок с тенью от 05.11) */
+.c-seg button { border-radius: 999px; transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out); }
+.c-seg button[aria-pressed="true"] { background: var(--cab-ink); color: var(--adm-on-dark); font-weight: 600; box-shadow: none; }
 
 /* ---------- тариф — сразу карточкой с визитки (StoryText .tariff):
    заполняют саму карточку, поля без рамок и подписей ---------- */
 .c-tcard { display: grid; gap: var(--s-3); padding: var(--s-5); border-radius: var(--radius-card); background: var(--surface); color: var(--ink); font-family: var(--font-sans); } /* site-preview */
 .c-tcard input, .c-tcard textarea { width: 100%; min-width: 0; border: 0; padding: 0; background: none; font: inherit; color: inherit; outline: none; }
-.c-tcard input::placeholder, .c-tcard textarea::placeholder { color: color-mix(in srgb, var(--ink) 45%, transparent); } /* site-preview */
+.c-tcard input::placeholder, .c-tcard textarea::placeholder { color: var(--adm-placeholder); } /* пример в пустом поле — серым, не чёрным (Никита 07.11) */
 /* главное в тарифе — название (Никита 05.11). Селектор с .c-tcard: общее `.c-tcard input { font: inherit }`
    сильнее одиночного класса и сбрасывало размер названия до 16 px */
 .c-tcard .c-tcard__name { font-size: 22px; line-height: 28px; font-weight: 600; }
 .c-tcard__price { display: flex; align-items: baseline; gap: var(--s-1); flex-wrap: wrap; }
-.c-tcard .c-tcard__price input:first-child { width: auto; max-width: 9ch; font-size: 16px; font-weight: 500; }
-.c-tcard .c-tcard__price span { font-size: 16px; font-weight: 500; }
+.c-tcard__sum { display: inline-flex; align-items: baseline; gap: 4px; }
+.c-tcard .c-tcard__sum input { width: 5ch; min-width: 2ch; max-width: 12ch; font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+/* «за что» в тарифе — компактные капсулы, без растяжки на строку */
+.c-tcard .c-opt { flex: 0 0 auto; height: 36px; font-size: 15px !important; }
+.c-tcard .c-tcard__sum span { font-size: 17px; font-weight: 600; }
+.c-tcard .c-opts { margin-top: -4px; }
 .c-tcard__unit { flex: 1 1 140px; width: auto; margin-left: var(--s-2); font-size: var(--fs-small) !important; }
 .c-tcard__inc { resize: vertical; font-size: var(--fs-small); line-height: var(--lh-body); }
 .c-tcard .c-item__tools { margin-top: calc(-1 * var(--s-2)); }
@@ -501,11 +516,12 @@ html:has(.cab), html:has(.cab) body { background: var(--adm-bg); }
 /* цена: переключатель способа — белой плашкой; готовые «за что» — в той же
    плашке, что поле (Никита, 02.11: чипы висели на фоне и сливались с ним) */
 .c-form > .c-seg { padding: 4px; border-radius: 999px; background: var(--adm-line); }
+.c-seg button { height: 40px; }
 .c-form > .c-seg button { height: 40px; border-radius: 999px; font-size: 15px; }
 .c-card--chips { display: grid; gap: var(--s-3); }
 /* тариф — белая плашка кабинета, а не кремовая карточка сайта */
 .c-form .c-tcard { border-radius: var(--cab-sheet-radius); background: var(--adm-card); color: var(--adm-text); font-family: inherit; padding: var(--s-4); }
-.c-form .c-tcard input::placeholder, .c-form .c-tcard textarea::placeholder { color: var(--adm-text-2); }
+.c-form .c-tcard input::placeholder, .c-form .c-tcard textarea::placeholder { color: var(--adm-placeholder); } /* пример — серым (07.11) */
 
 /* ---------- 05.11.2026, сверка cabinet-ui ---------- */
 /* ошибка загрузки с «Повторить» (правило 4) */
@@ -541,7 +557,7 @@ html:has(.cab), html:has(.cab) body { background: var(--adm-bg); }
 .c-todo--bad .c-todo__h { color: var(--st-bad-strong); }
 .c-todo--bad .c-chipbtn { background: var(--st-bad-bg); color: var(--st-bad-strong); }
 /* опасное — подальше от остального (правило 23): отбивка перед блоком удаления */
-.c-cat--far { margin-top: 0; } /* все группы профиля — на одном расстоянии --cab-gap (Никита 05.11) */
+.c-cat--far { margin-top: var(--s-4); } /* «Удалить карточку» и «Выйти» — отдельно от остального профиля (Никита 07.11) */
 /* окно подтверждения: воздух между текстом и кнопками (Никита, 05.11: «прижимается») */
 .c-dialog--confirm .c-dialog__body { display: grid; gap: var(--s-4); padding-top: var(--s-6); }
 .c-dialog--confirm h2 { padding-right: 44px; }
@@ -730,7 +746,7 @@ html:has(.cab), html:has(.cab) body { background: var(--adm-bg); }
 
 /* подсказка в окне Диска (не та ссылка, только ролики) — тёмным, не красным: это не ошибка (как у Apple) */
 .c-error.c-yd-note { color: var(--adm-text); }
-.c-yd-status { margin-top: var(--s-2); padding: 10px 14px; border-radius: 14px; background: var(--adm-bg); font-weight: 500; } /* ход забора — в окне над кадрами */
+.c-yd-status { margin: 0 0 var(--s-2); font-size: 15px; line-height: 20px; font-weight: 500; text-align: center; } /* ход забора — над прибитой кнопкой */
 /* капсула «Aa» — без тени, выделена цветом (Никита 05.11: «тень не хочу, инструмент
    выделить»): тёмная, как наши кнопки, знаки белые; выбранное — белая капсула внутри */
 .c-notes-bar__main, .c-notes-bar__styles { background: var(--cab-ink); box-shadow: none; }
@@ -745,3 +761,12 @@ html:has(.cab), html:has(.cab) body { background: var(--adm-bg); }
 .c-empty-center { display: grid; justify-items: center; align-content: center; gap: var(--s-4); min-height: calc(100svh - var(--cab-tabs-h) - env(safe-area-inset-bottom) - 120px); padding: 0 var(--s-4) 14svh; text-align: center; }
 .c-empty-center p { margin: 0; max-width: 32ch; }
 .c-sheet-area > .c-rows:has(> .c-empty-center) { background: none; border-radius: 0; }
+
+/* почта для заявок в профиле: адрес и карандаш — видно, что можно изменить; правка в окне (Никита 07.11) */
+.c-mailedit { display: grid; gap: 2px; min-width: 0; padding: 0; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.c-mailedit__v { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.c-mailedit__v > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.c-mailedit__v svg { width: 16px; height: 16px; flex: none; }
+.c-mailform { gap: var(--s-2); }
+.c-mailform .a-field__input { height: 48px; padding-inline: var(--s-3); border-radius: 12px; background: var(--adm-bg); font-size: 17px; }
+.c-mailform__acts { display: grid; gap: var(--s-2); margin-top: var(--s-2); }

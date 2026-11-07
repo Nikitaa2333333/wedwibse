@@ -7,23 +7,24 @@
 // Удалить можно только новую карточку, ещё не опубликованную; с проверки
 // её сначала отзываем — это делает само окно.
 import { api, esc, errText } from './cabinet-api';
-import { openDialog, X_ICON } from './cab-ui';
+import { openDialog } from './cab-ui';
 import { textLength, NBSP } from './cabinet-form';
 
 export function confirmDelete(rev: any, onDone: () => void) {
   const title = String(rev.data?.name || '').trim() || 'карточку без названия';
   const n = (rev.photos ?? []).length;
   const lose = [n && `${n}${NBSP}фото`, textLength(rev.data ?? {}) && 'текст', 'ответы анкеты'].filter(Boolean).join(', ');
+  // окно-предупреждение по HIG (Alerts), как alertBox: узкое по центру, заголовок и последствия,
+  // кнопки одной ширины столбиком; без крестика — выбор называют кнопки (Никита 07.11: «не в нашем стиле»)
   const { dlg } = openDialog({
-    cls: 'c-dialog--confirm',
+    cls: 'c-alert',
     html: `<div class="c-dialog__body">
-      <button class="c-dialog__x" type="button" data-close aria-label="Закрыть">${X_ICON}</button>
       <h2 class="a-h2">Удалить «${esc(title)}»?</h2>
       <p>Пропадут ${lose}. Вернуть карточку будет нельзя</p>
       <p class="c-error" data-del-error hidden></p>
-      <div class="c-actions c-actions--confirm">
+      <div class="c-alert__acts">
         <button class="a-btn a-btn--lg c-btn-danger" type="button" data-del-ok>Удалить карточку</button>
-        <button class="a-btn a-btn--lg c-add-btn" type="button" data-close>Оставить</button>
+        <button class="a-btn a-btn--lg" type="button" data-close>Оставить</button>
       </div>
     </div>`,
   });

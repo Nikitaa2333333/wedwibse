@@ -59,7 +59,7 @@ import AdminShell from '../../../components/admin/AdminShell.astro';
       acts.innerHTML = `<div class="a-tiles">${tiles.map((t) => {
             const urgent = (t.left ?? DEADLINE_MIN) < URGENT_MIN;
             const note = t.left !== undefined ? leftText(t.left) : '';
-            return `<a class="a-tile" href="${t.href}"><span class="a-tile__ic${t.n ? ` a-tile__ic--${t.tone}` : ''}">${ic(t.icon, '')}</span><b class="a-tile__n">${t.n}</b><span class="a-tile__label">${t.label}</span>${note ? `<span class="a-tile__note${urgent ? ' a-tile__note--urgent' : ''}">${note}</span>` : ''}</a>`;
+            return `<a class="a-tile${t.n ? ` a-tile--${t.tone}` : ''}" href="${t.href}"><span class="a-tile__ic">${ic(t.icon, '')}</span><b class="a-tile__n">${t.n}</b><span class="a-tile__label">${t.label}</span>${note ? `<span class="a-tile__note${urgent ? ' a-tile__note--urgent' : ''}">${note}</span>` : ''}</a>`;
           }).join('')}</div>`;
       const rows = [
         ...c.newReview.sort((a, b) => (leftMin(a) ?? 0) - (leftMin(b) ?? 0)).map((r) => taskRow(r, { task: 'Проверить', tone: 'check' })),
