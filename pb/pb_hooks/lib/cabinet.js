@@ -1554,7 +1554,16 @@ function vendorUpdateAccount(e) {
   // куда присылать заявки: только известные ключи и только нужных типов;
   // Telegram и MAX — лишь при подключённом входе (бот пишет тем, кто приходил)
   if (body && 'notify' in body) {
-    const n = body.notify && typeof body.notify === 'object' ? body.notify : {};
+    // JSON-поле записи PocketBase кладёт в тело запроса сырыми байтами
+    // (types.JSONRaw), а не объектом: n.email читался как undefined, и почта
+    // для заявок не включалась никогда (Никита, 07.11). Приводим к объекту.
+    let n = body.notify;
+    if (n && typeof n === 'object' && !('email' in n || 'telegram' in n || 'max' in n || 'emailTo' in n)) {
+      try { n = JSON.parse(toString(n)); } catch (_) { n = {}; }
+    } else if (typeof n === 'string') {
+      try { n = JSON.parse(n); } catch (_) { n = {}; }
+    }
+    if (!n || typeof n !== 'object') n = {};
     const emailTo = str(n.emailTo, 200);
     if (emailTo && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailTo)) throw new BadRequestError('Проверьте почту для заявок.');
     const r = e.record;

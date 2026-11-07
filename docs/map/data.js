@@ -3271,6 +3271,15 @@ window.MAP = {
  ],
  "issues": [
   {
+   "t": "Почта для заявок не включалась в профиле: хук видел notify сырыми байтами",
+   "sev": "high",
+   "area": "Кабинет",
+   "fix": "07.11: notify приводится к объекту (JSON.parse(toString)), тест «почта для заявок включается»; PR, ждёт выкладки",
+   "where": "pb/pb_hooks/lib/cabinet.js vendorUpdateAccount",
+   "s": "bad",
+   "src": "сессия 07.11.2026"
+  },
+  {
    "t": "Фото с Яндекс Диска не забираются: /download отвечает 429 вразнобой (7 из 9 кадров)",
    "sev": "high",
    "area": "cabinet",

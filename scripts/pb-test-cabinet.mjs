@@ -248,6 +248,12 @@ res = await call(A.token, 'PATCH', `/api/collections/vendors/records/${A.id}`, {
 check('имя меняется', res.status === 200, res.text);
 res = await call(B.token, 'GET', `/api/collections/vendors/records/${A.id}`);
 check('чужая учётка не видна', res.status === 404, res.text);
+// 07.11: почта для заявок не включалась вовсе — хук видел notify сырыми байтами
+res = await call(A.token, 'PATCH', `/api/collections/vendors/records/${A.id}`, { notify: { telegram: true, max: false, email: true, emailTo: 'zayavki@example.com' } });
+check('почта для заявок включается', res.json?.notify?.email === true && res.json?.notify?.emailTo === 'zayavki@example.com' &&
+  res.json?.notify?.telegram === false, res.text);
+res = await call(A.token, 'PATCH', `/api/collections/vendors/records/${A.id}`, { notify: { email: true, emailTo: 'не почта' } });
+check('кривая почта для заявок не принимается', refused(res) && says(res, 'почту'), res.text);
 
 console.log('\nмоя карточка');
 res = await call(A.token, 'GET', '/api/wed/my-cards');
