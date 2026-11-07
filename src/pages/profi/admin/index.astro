@@ -16,12 +16,20 @@ import AdminShell from '../../../components/admin/AdminShell.astro';
     <div class="sk-card a-card a-card--flush" aria-busy="true" aria-label="Загружаем"><div class="sk-row"><span class="sk sk--thumb"></span><span class="sk-row__body"><span class="sk sk--line"></span><span class="sk sk--line sk--short"></span></span><span class="sk sk--pill"></span></div><div class="sk-row"><span class="sk sk--thumb"></span><span class="sk-row__body"><span class="sk sk--line"></span><span class="sk sk--line sk--short"></span></span><span class="sk sk--pill"></span></div><div class="sk-row"><span class="sk sk--thumb"></span><span class="sk-row__body"><span class="sk sk--line"></span><span class="sk sk--line sk--short"></span></span><span class="sk sk--pill"></span></div></div>
   </section>
 
+  {/* Два списка по смыслу (Никита 07.11): что ждёт модератора (срок проверки) и кому написать
+      (давно не трогали). Тех, кто заполняет прямо сейчас, в сводке нет — они в «Заявках». */}
   <section class="a-card a-card--flush">
     <div class="a-card__head">
-      <h2 class="a-h2">Новые заявки</h2>
-      <a class="a-more" href="/profi/admin/zayavki/">Все</a>
+      <h2 class="a-h2">Ждут проверки</h2>
     </div>
     <div class="a-tasks" data-ov-fresh></div>
+  </section>
+  <section class="a-card a-card--flush" data-ov-stale-box hidden>
+    <div class="a-card__head">
+      <h2 class="a-h2">Можно написать</h2>
+      <a class="a-more" href="/profi/admin/zayavki/#draft">Все</a>
+    </div>
+    <div class="a-tasks" data-ov-stale></div>
   </section>
 
 </AdminShell>
@@ -46,14 +54,15 @@ import AdminShell from '../../../components/admin/AdminShell.astro';
         return xs.length ? Math.min(...xs) : undefined;
       };
       const nNew = c.newReview.length, nEdit = c.editReview.length, nDraft = c.drafts.length;
+      const stale = c.drafts.filter((r: any) => idleDays(r) >= STALE_DAYS).sort((a: any, b: any) => idleDays(b) - idleDays(a));
       // плитки 2×2 как в Напоминаниях Apple: значок, крупное число, подпись (Никита 05.11)
       const tiles = [
         // цвет значка — смысл, как у статусов (Никита 06.11, 07.11): проверить — синий, не закончены — серый,
         // жалобы — красный; пусто (0) — серый, чтобы цвет звал только туда, где есть дело
         { n: nNew, label: 'Новые карточки', left: soon(c.newReview), href: '/profi/admin/zayavki/#review', icon: 'partners', tone: 'info' },
         { n: nEdit, label: 'Правки', left: soon(c.editReview), href: '/profi/admin/moderaciya/', icon: 'moderation', tone: 'info' },
-        // ждём подрядчика — серым (07.11); под числом — сколько давно не трогали (можно написать)
-        { n: nDraft, label: 'Не закончены', href: '/profi/admin/zayavki/#draft', icon: 'catalog', tone: 'none', note: (() => { const k = c.drafts.filter((r: any) => idleDays(r) >= STALE_DAYS).length; return k ? `${k} давно не трогали` : ''; })() },
+        // кому написать: незаконченные, которые давно не трогали (07.11); заполняющих сейчас не считаем
+        { n: stale.length, label: 'Можно написать', href: '/profi/admin/zayavki/#draft', icon: 'catalog', tone: 'none', note: nDraft > stale.length ? `ещё ${nDraft - stale.length} ${nDraft - stale.length === 1 ? 'заполняет' : 'заполняют'}` : '' },
         { n: 0, label: 'Жалобы', href: '/profi/admin/zhaloby/', icon: 'complaints', tone: 'bad' },
       ] as { n: number; label: string; left?: number; href: string; icon: keyof typeof ADMIN_ICONS; tone: string; note?: string }[];
       // плитки стоят всегда (ноль — тоже ответ), как смарт-списки в Напоминаниях
@@ -62,11 +71,16 @@ import AdminShell from '../../../components/admin/AdminShell.astro';
             const note = t.left !== undefined ? leftText(t.left) : t.note ?? '';
             return `<a class="a-tile${t.n ? ` a-tile--${t.tone}` : ''}" href="${t.href}"><span class="a-tile__ic">${ic(t.icon, '')}</span><b class="a-tile__n">${t.n}</b><span class="a-tile__label">${t.label}</span>${note ? `<span class="a-tile__note${urgent ? ' a-tile__note--urgent' : ''}">${note}</span>` : ''}</a>`;
           }).join('')}</div>`;
-      const rows = [
-        ...c.newReview.sort((a, b) => (leftMin(a) ?? 0) - (leftMin(b) ?? 0)).map((r) => taskRow(r, { task: 'Проверить', tone: 'check' })),
-        ...c.drafts.map((r) => taskRow(r, { task: 'Не закончена', tone: 'wait', fill: true })),
-      ];
-      fresh.innerHTML = rows.join('') || '<p class="a-empty">Новых заявок нет. Они появятся, когда подрядчик заведёт карточку в кабинете</p>';
+      // ждут проверки: новые карточки и правки вместе, по сроку — у всех «осталось N ч»
+      const review = [...c.newReview, ...c.editReview].sort((a, b) => (leftMin(a) ?? 0) - (leftMin(b) ?? 0));
+      fresh.innerHTML = review.map((r) => taskRow(r, { task: 'Проверить', tone: 'check' })).join('') || '<p class="a-empty">Проверять нечего. Карточки и правки появятся здесь, когда подрядчик отправит их на проверку</p>';
+      // можно написать: давно не трогали — у всех «N дней без правок»
+      const staleBox = document.querySelector<HTMLElement>('[data-ov-stale-box]');
+      const staleList = document.querySelector<HTMLElement>('[data-ov-stale]');
+      if (staleBox && staleList) {
+        staleBox.hidden = !stale.length;
+        staleList.innerHTML = stale.map((r) => taskRow(r, { task: 'Не закончена', tone: 'wait', fill: true })).join('');
+      }
     } catch (err) {
       acts.innerHTML = failBox(`Не загрузилось. ${errText(err)}`);
       fresh.innerHTML = '';
