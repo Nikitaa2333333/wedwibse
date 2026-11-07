@@ -151,6 +151,8 @@
 .c-dialog { box-sizing: border-box; border: 0; padding: 0; margin: auto auto 0; width: 100%; max-width: 560px; max-height: 88vh; border-radius: var(--cab-sheet-radius) var(--cab-sheet-radius) 0 0; background: var(--adm-card); color: var(--adm-text); overflow-x: clip; overflow-y: auto; overscroll-behavior: contain; }
 @media (min-width: 640px) { .c-dialog { margin: auto; border-radius: var(--cab-sheet-radius); } }
 .c-dialog::backdrop { background: var(--adm-backdrop); }
+.c-dialog:focus { outline: none; }
+.c-dialog__x:focus:not(:focus-visible) { outline: none; }
 .c-dialog__body { position: relative; display: grid; gap: var(--s-4); min-width: 0; overflow-wrap: anywhere; padding: var(--s-6) var(--s-4) calc(var(--s-4) + env(safe-area-inset-bottom)); }
 .c-dialog__x { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--adm-bg); color: var(--adm-text); }
 .c-dialog__x svg { width: 18px; height: 18px; }
@@ -189,6 +191,8 @@
 .c-toast__fill { position: absolute; inset: 0; z-index: -1; background: var(--adm-on-dark-soft); transform: scaleX(0); transform-origin: left center; pointer-events: none; }
 .c-toast.is-on .c-toast__fill { animation: toast-fill var(--ms) linear forwards; }
 @keyframes toast-fill { to { transform: scaleX(1); } }
+/* при открытой клавиатуре — сверху видимой области (top ставит toast()) */
+.c-toast.c-toast--kb { bottom: auto !important; } /* !important: иначе правило ПК с bottom растянет тост между top и bottom */
 /* действие в тосте — капсулой; «Повторить» со значком круговой стрелки.
    Тост живёт вне .adm — браузерную рамку кнопки снимаем явно (было «2px outset») */
 .c-toast button, .c-progress-pill button { border: 0; font: inherit; cursor: pointer; }

@@ -218,7 +218,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
 
   /** раздел ещё не начат — плитка серая (Никита 06.11); начат, но не дотянут — чёрная с подсказкой */
   const isFresh = (x: { key: string; done: boolean; optional?: boolean; sub: string }) =>
-    !x.done && !x.optional && (/^пусто/.test(x.sub) || (x.key === 'voprosy' && /^0 из/.test(x.sub)) || (x.key === 'prays' && x.sub === 'нет тарифа с ценой' && !(data.tariffs ?? []).some((t: any) => t?.name || t?.price)));
+    (x.key === 'video' && !x.done) || !x.done && !x.optional && (/^пусто/.test(x.sub) || (x.key === 'voprosy' && /^0 из/.test(x.sub)) || (x.key === 'prays' && x.sub === 'нет тарифа с ценой' && !(data.tariffs ?? []).some((t: any) => t?.name || t?.price)));
 
   function renderOverview() {
     const st = cardState(rev.status, !isNew());
@@ -668,6 +668,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
           <div class="c-items">${vs.map((v: any, i: number) => `
             <div class="c-vrow">
               <input class="a-field__input" data-bind="videos.${i}.url" type="url" inputmode="url" value="${esc(v.url)}" placeholder="https://disk.yandex.ru/…" aria-label="Ссылка на видео" />
+              <span class="c-vrow__ok" data-vok="${i}" aria-label="ссылка принята" ${/^https?:\/\/\S+\.\S+/.test(String(v.url ?? '')) ? '' : 'hidden'}>${tick}</span>
               ${vs.length > 1 || v.url ? `<button class="c-tool" type="button" data-remove="videos" data-i="${i}" aria-label="Убрать">${X_ICON}</button>` : ''}
             </div>`).join('')}</div>
           ${vs.length < MAX_VIDEOS ? `<button class="c-add" type="button" data-add="videos">${ADD_IC}Добавить ссылку</button>` : ''}` };
@@ -714,10 +715,12 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
             <div class="c-items">${ts.map((t: any, i: number) => `
               <div class="c-tcard">
                 <input class="c-tcard__name" data-bind="tariffs.${i}.name" value="${esc(t.name)}" placeholder="Название тарифа" aria-label="Название тарифа" />
+                ${/* ₽ приклеен к числу (поле по ширине содержимого); «за что» — выбором из вариантов категории,
+                     не свободным полем: туда вписывали цифры (Никита 07.11) */''}
                 <div class="c-tcard__price">
-                  <input data-bind="tariffs.${i}.price" inputmode="numeric" value="${esc(money(t.price))}" placeholder="Цена" aria-label="Цена, ₽" size="7" /><span>₽</span>
-                  <input class="c-tcard__unit" data-bind="tariffs.${i}.unit" value="${esc(t.unit)}" placeholder="${priceUnits(kind, rev.categorySlug)[0]}" aria-label="Цена указана за" />
+                  <label class="c-tcard__sum"><input data-bind="tariffs.${i}.price" inputmode="numeric" value="${esc(money(t.price))}" placeholder="Цена" aria-label="Цена, ₽" /><span>₽</span></label>
                 </div>
+                ${unitChips(`tariffs.${i}.unit`, t.unit)}
                 <textarea class="c-tcard__inc" data-bind="tariffs.${i}.includes" rows="4" placeholder="Что входит — каждый пункт с новой строки:&#10;10 часов съёмки&#10;500 кадров в обработке&#10;онлайн-галерея" aria-label="Что входит">${esc(t.includes)}</textarea>
                 ${tools('tariffs', i, ts.length)}
               </div>`).join('')}</div>
@@ -761,12 +764,25 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     }
   }
 
+  /** поле по точной ширине набранного (или подсказки): меряем тем же шрифтом скрытым span */
+  function fitWidth(el: HTMLInputElement) {
+    const m = document.createElement('span');
+    const cs = getComputedStyle(el);
+    m.style.cssText = `position:absolute;visibility:hidden;white-space:pre;font:${cs.font};font-variant-numeric:tabular-nums;letter-spacing:${cs.letterSpacing}`;
+    m.textContent = el.value || el.placeholder;
+    document.body.append(m);
+    el.style.width = `${Math.ceil(m.getBoundingClientRect().width) + 2}px`;
+    m.remove();
+  }
+
   function renderSection(key: SectionKey) {
     const b = sectionBody(key);
     view.innerHTML = `
       <div class="c-head">
         <div class="c-head__top"><a class="c-back" href="${url()}">${icon('back')} ${esc(data.name || 'Анкета')}</a><span class="c-saved" data-savemark aria-live="polite"></span></div>
-        <h1 class="a-h1 c-title">${b.title}${PREVIEWABLE.includes(key) && kind === 'specialist' ? ` <button class="c-help" type="button" data-preview="${key}" aria-label="Как это выглядит на сайте">?</button>` : ''}</h1>
+        ${/* «?» — только там, где есть подсказка (Никита 07.11): фото и тарифы; нажатие возвращает закрытую
+             подсказку-баннер (как подсказки TipKit у Apple). Превью раздела — кнопкой «Как на сайте» на обзоре */''}
+        <h1 class="a-h1 c-title">${b.title}${key === 'foto' || (key === 'prays' && priceMode() === 'tariffs') ? ` <button class="c-help" type="button" data-hint-again="${key}" aria-label="Показать подсказку">?</button>` : ''}</h1>
         ${b.lead ? `<p class="a-lead">${b.lead}</p>` : ''}
         ${locked() ? '<p class="c-reason c-reason--info">Карточка на проверке — менять её сейчас нельзя.</p>' : ''}
       </div>
@@ -778,6 +794,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     if (key === 'foto') renderPhotos();
     if (key === 'kontakty') bindPhone();
     if (key === 'tekst') bindNotes();
+    view.querySelectorAll<HTMLInputElement>('.c-tcard__sum input').forEach(fitWidth);
   }
 
   /** поле «Описания» как Заметки: строки ↔ разделы базы */
@@ -883,11 +900,18 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         <span class="c-thint__card c-thint__card--2"><i></i><b></b></span>
         <span class="c-thint__card c-thint__card--3"><i></i><b></b></span>
       </span>
-      <span class="c-hint__text"><b>Два-три тарифа — пара сравнит</b><span>Название, цена и что входит. В каталоге покажем «от» самого недорогого</span></span>
+      <span class="c-hint__text"><b>Тарифы на выбор</b><span>До ${MAX_TARIFFS}: название, цена и что входит. В каталоге покажем цену самого недорогого</span></span>
       <button class="c-hint__close" type="button" aria-label="Понятно" data-tariff-hint-close>${X_ICON}</button>
     </div>`;
   }
   view.addEventListener('click', (e) => {
+    const again = (e.target as HTMLElement).closest<HTMLElement>('[data-hint-again]');
+    if (again) {
+      try { localStorage.removeItem(again.dataset.hintAgain === 'foto' ? HINT_KEY : TARIFF_HINT_KEY); } catch {}
+      renderSection(again.dataset.hintAgain as SectionKey);
+      view.querySelector('.c-hint:not([hidden])')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
     if (!(e.target as HTMLElement).closest('[data-tariff-hint-close]')) return;
     try { localStorage.setItem(TARIFF_HINT_KEY, '1'); } catch {}
     view.querySelector('[data-tariff-hint]')?.remove();
@@ -1021,12 +1045,12 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       <input class="a-field__input c-yd-url" type="url" inputmode="url" placeholder="https://disk.yandex.ru/d/…" aria-label="Ссылка на папку" data-yd-url />
       <p class="c-error" data-yd-error hidden></p>
       <p class="a-field__note" data-yd-info hidden></p>
-      <p class="a-field__note c-yd-status" data-yd-status role="status" hidden></p>
       <div class="c-yd-head" data-yd-tools hidden><button class="c-chipbtn" type="button" data-yd-all>Отметить все</button></div>
       <div class="c-photos c-yd-grid" data-yd-grid></div>
       ${/* кнопка прибита к низу окна и появляется с первой отметкой — раньше она пряталась
            под сеткой кадров, и было непонятно, добавились фото или нет (Никита 06.11) */''}
-      <div class="c-yd-bar" data-yd-bar hidden><button class="a-btn a-btn--primary a-btn--lg a-btn--block" type="button" data-yd-go>Добавить</button></div>
+      ${/* ход забора — у прибитой кнопки, всегда перед глазами (Никита 07.11) */''}
+      <div class="c-yd-bar" data-yd-bar hidden><p class="c-yd-status" data-yd-status role="status" hidden></p><button class="a-btn a-btn--primary a-btn--lg a-btn--block" type="button" data-yd-go>Добавить</button></div>
     </div>`,
     });
     const $ = <T extends HTMLElement>(s: string) => dlg.querySelector<T>(s)!;
@@ -1128,12 +1152,13 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       sync();
       const todo = [...picked];
       const skipped: string[] = [];
+      const skippedPaths: string[] = [];
       let done = 0;
       let had = 0; // уже были в карточке (сервер: already) — например, после перезагрузки отметили те же кадры
       let stop = false;
       const bar = progress('Забираем с Диска', () => { stop = true; });
       // ход — в самом окне, над кадрами: пока окно открыто, оно лежит поверх капсулы внизу
-      const say = () => { status.textContent = `Забираем ${done} из ${todo.length}. Окно можно закрыть — загрузка продолжится, кадры появятся в анкете`; status.hidden = false; };
+      const say = () => { status.textContent = `Забрали ${done} из ${todo.length}. Окно можно закрыть — загрузка продолжится`; status.hidden = false; };
       say();
       go.textContent = 'Забираем…';
       // в анкете виден свежий набор кадров, даже если окно уже закрыли
@@ -1151,7 +1176,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
           say();
           sync();
           go.textContent = 'Забираем…';
-          for (const s of r.skipped ?? []) skipped.push(items.find((it) => it.path === s.path)?.name ?? s.path);
+          for (const s of r.skipped ?? []) { skipped.push(items.find((it) => it.path === s.path)?.name ?? s.path); skippedPaths.push(s.path); }
           refresh();
         }
         bar.done();
@@ -1160,9 +1185,12 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
         busy = false;
         if (skipped.length) {
           status.hidden = true;
-          if (!dlg.open) toast(`Добавлено ${done}. Не получилось забрать ${skipped.length} — попробуйте ещё раз`, true);
-          fail(`Добавлено ${done}. Не получилось забрать: ${skipped.join(', ')} — попробуйте ещё раз или загрузите с телефона.`);
+          // по-человечески, без имён файлов (Никита 07.11): сколько забрали, сколько нет и что делать;
+          // незабранные остаются отмеченными — «Добавить» пробует их ещё раз
+          if (!dlg.open) toast(`Добавлено ${done} из ${todo.length}. ${skipped.length} фото не забрались — откройте окно Диска и попробуйте ещё раз`, true);
+          fail(`Добавлено ${done} из ${todo.length}. ${skipped.length}${NBSP}фото не забрались — они остались отмечены, нажмите «Добавить» ещё раз. Не выйдет — загрузите их с телефона`);
           picked.length = 0;
+          picked.push(...skippedPaths.filter((p) => !imported.has(p)));
           sync();
           return;
         }
@@ -1263,11 +1291,19 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       const digits = t.value.replace(/\D/g, '');
       t.value = digits ? num(Number(digits)) : '';
       setPath(t.dataset.bind, digits);
+      // цена тарифа: поле по ширине числа — «₽» стоит вплотную (Никита 07.11)
+      if (t.closest('.c-tcard__sum')) fitWidth(t);
     } else setPath(t.dataset.bind, t.value);
     const count = view.querySelector('[data-count]');
     if (count) count.textContent = countText();
     // «за что» набрали руками — подсветка готовых вариантов следует за текстом
     view.querySelectorAll<HTMLElement>(`[data-unit="${t.dataset.bind}"]`).forEach((o) => o.setAttribute('aria-pressed', String(o.dataset.v === t.value)));
+    // ссылка на ролик похожа на ссылку — галочка у поля и строка «что дальше»
+    if (t.dataset.bind.startsWith('videos.')) {
+      const okUrl = (v: string) => /^https?:\/\/\S+\.\S+/.test(v.trim());
+      const ok = view.querySelector<HTMLElement>(`[data-vok="${t.dataset.bind.split('.')[1]}"]`);
+      if (ok) ok.hidden = !okUrl(t.value);
+    }
     later();
   });
 

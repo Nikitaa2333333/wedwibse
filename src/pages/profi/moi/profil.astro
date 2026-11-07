@@ -53,7 +53,7 @@ import maxMark from '../../../assets/profi/max-mark.webp';
           </div>
           <div class="c-row" data-ch="email">
             <span class="c-row__ic"><AdminIcon name="mail" /></span>
-            <span class="c-row__body"><span class="c-row__title">Почта</span><input class="c-inline-input" type="email" inputmode="email" autocomplete="email" placeholder="впишите почту для заявок" aria-label="Почта для заявок" data-email-to /></span>
+            <button class="c-row__body c-mailedit" type="button" data-email-edit aria-label="Изменить почту для заявок"><span class="c-row__title">Почта</span><span class="c-row__sub c-mailedit__v"><span data-email-to></span><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.2 5.3l3.5 3.5M4.5 19.5l1-4.2L16.3 4.5a1.5 1.5 0 0 1 2.1 0l1.1 1.1a1.5 1.5 0 0 1 0 2.1L8.7 18.5l-4.2 1Z"/></svg></span></button>
             <span class="c-ch-ctl" data-ctl></span>
             <span></span>
           </div>
@@ -80,7 +80,7 @@ import maxMark from '../../../assets/profi/max-mark.webp';
 <script>
   import { api, esc, requireSession, saveSession, errText } from '../../../lib/cabinet-api';
   import { confirmDelete } from '../../../lib/cabinet-delete';
-  import { toast } from '../../../lib/cab-ui';
+  import { toast, openDialog, X_ICON } from '../../../lib/cab-ui';
   import { fieldError, clearFieldError } from '../../../lib/form-check';
   import { ADMIN_ICONS } from '../../../lib/admin-icons';
   const docIcon = `<svg viewBox="0 0 24 24" aria-hidden="true">${ADMIN_ICONS.text}</svg>`;
@@ -96,13 +96,13 @@ import maxMark from '../../../assets/profi/max-mark.webp';
       // вход и уведомления: переключатели сохраняются сразу, почта — через секунду
       const box = root.querySelector<HTMLElement>('[data-notify]')!;
       const err = box.querySelector<HTMLElement>('[data-notify-error]')!;
-      const emailTo = box.querySelector<HTMLInputElement>('[data-email-to]')!;
+      const emailTo = box.querySelector<HTMLElement>('[data-email-to]')!;
       type Ch = 'telegram' | 'max' | 'email';
       const linked: Record<Ch, boolean> = { telegram: !!me.telegramId, max: !!me.maxId, email: true };
       // по умолчанию (настройки ещё не трогали) — заявки идут в мессенджер входа
       const n = { telegram: linked.telegram, max: linked.max, email: false, emailTo: '', ...(me.notify ?? {}) };
       if (!n.emailTo) n.emailTo = String(me.email ?? '');
-      emailTo.value = n.emailTo;
+      emailTo.textContent = n.emailTo || 'впишите почту';
       const NAME: Record<Ch, string> = { telegram: 'Telegram', max: 'MAX', email: 'почту' };
       const paint = () => box.querySelectorAll<HTMLElement>('[data-ch]').forEach((row) => {
         const ch = row.dataset.ch as Ch;
@@ -121,44 +121,60 @@ import maxMark from '../../../assets/profi/max-mark.webp';
         // присылать ли заявки, говорит сам тумблер
         if (sub) sub.textContent = 'вход подключён';
       });
-      const saveNotify = async () => {
+      // сохранили, а сервер вернул переключатель выключенным — говорим об этом тостом, а не молча
+      // откатываем (Никита 07.11: «тумблер возвращается назад» без объяснения)
+      const saveNotify = async (asked?: Ch) => {
         err.hidden = true;
+        const want = asked ? n[asked] : undefined;
         try {
-          me.notify = (await api('vendor', 'PATCH', `/api/collections/vendors/records/${me.id}`, { notify: n })).notify;
-          Object.assign(n, me.notify);
-        } catch (x) { err.textContent = errText(x); err.hidden = false; }
+          const saved = (await api('vendor', 'PATCH', `/api/collections/vendors/records/${me.id}`, { notify: n })).notify;
+          if (saved && typeof saved === 'object') { me.notify = saved; Object.assign(n, saved); }
+          if (asked && want && !n[asked]) toast(`Не включилось: сервер не сохранил ${NAME[asked]}. Попробуйте ещё раз или напишите нам`, true);
+        } catch (x) {
+          if (asked) n[asked] = !n[asked];
+          toast(`Не сохранилось. ${errText(x)}`, true, undefined, { label: 'Повторить', fn: () => { if (asked) n[asked] = !n[asked]; paint(); saveNotify(asked); } });
+        }
         paint();
       };
       box.addEventListener('click', (e) => {
         const sw = (e.target as HTMLElement).closest<HTMLButtonElement>('.c-switch');
         if (!sw || sw.disabled) return;
         const ch = sw.closest<HTMLElement>('[data-ch]')!.dataset.ch as Ch;
-        // без адреса — сразу курсор в поле почты (открывается клавиатура), без облачка (Никита 06.11:
-        // «куда вписать?» — поле прямо в этой строке, под словом «Почта»)
-        if (ch === 'email' && (!n.emailTo || !emailOk())) {
-          emailTo.focus();
-          if (n.emailTo) fieldError(emailTo, 'В адресе ошибка, пример: name@mail.ru', emailTo.closest<HTMLElement>('.c-row') ?? undefined);
-          return;
-        }
+        // без адреса — сразу окно «Почта для заявок» (Никита 07.11: правка почты была неочевидной)
+        if (ch === 'email' && !n.emailTo) { editEmail(true); return; }
         n[ch] = !n[ch];
         paint();
-        saveNotify();
+        saveNotify(ch);
       });
-      let t = 0;
-      // почта: формат проверяем при уходе из поля (правило 18), ошибка — облачком;
-      // с ошибкой в адресе не сохраняем
-      const emailOk = () => !emailTo.value.trim() || emailTo.checkValidity();
-      emailTo.addEventListener('input', () => {
-        clearFieldError(emailTo);
-        n.emailTo = emailTo.value.trim();
-        if (!n.emailTo) n.email = false;
-        paint();
-        clearTimeout(t);
-        if (emailOk()) t = window.setTimeout(saveNotify, 900);
-      });
-      emailTo.addEventListener('blur', () => {
-        if (!emailOk()) fieldError(emailTo, 'В адресе ошибка, пример: name@mail.ru', emailTo.closest<HTMLElement>('.c-row') ?? undefined);
-      });
+      // почта для заявок — отдельным окном с полем и «Сохранить»: адрес виден в строке, рядом карандаш
+      function editEmail(turnOn = false) {
+        const { dlg, close } = openDialog({ html: `
+          <form class="c-dialog__body c-mailform" data-mail-form novalidate>
+            <button class="c-dialog__x" type="button" data-close aria-label="Закрыть">${X_ICON}</button>
+            <h2 class="a-h2">Почта для заявок</h2>
+            <p>Сюда придут заявки от пар, если переключатель почты включён</p>
+            <input class="a-field__input" type="email" inputmode="email" autocomplete="email" placeholder="name@mail.ru" aria-label="Почта для заявок" value="${esc(n.emailTo)}" data-mail-in />
+            <div class="c-mailform__acts">
+              <button class="a-btn a-btn--primary a-btn--lg a-btn--block" type="submit">Сохранить</button>
+              <button class="a-btn a-btn--lg a-btn--block" type="button" data-close>Отмена</button>
+            </div>
+          </form>` });
+        const inp = dlg.querySelector<HTMLInputElement>('[data-mail-in]')!;
+        inp.addEventListener('input', () => clearFieldError(inp));
+        inp.focus();
+        dlg.querySelector<HTMLFormElement>('[data-mail-form]')!.addEventListener('submit', (ev) => {
+          ev.preventDefault();
+          const v = inp.value.trim();
+          if (!v || !inp.checkValidity()) return fieldError(inp, v ? 'В адресе ошибка, пример: name@mail.ru' : 'Впишите почту, куда присылать заявки');
+          n.emailTo = v;
+          if (turnOn) n.email = true;
+          emailTo.textContent = v;
+          close();
+          paint();
+          saveNotify(turnOn ? 'email' : undefined);
+        });
+      }
+      box.querySelector('[data-email-edit]')!.addEventListener('click', () => editEmail());
       paint();
       // вернулись после «Подключить» (tg-login → afterLogin, ?linked=…): сказать, что вышло
       const justLinked = new URLSearchParams(location.search).get('linked');

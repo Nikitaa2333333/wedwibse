@@ -36,6 +36,25 @@ export function whenText(d: string): string {
   return t.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }).replace(/\s/g, NBSP);
 }
 
+// НЕ ЗАКОНЧЕНА: важнее не процент, а пауза (Никита 07.11, эксперимент). Писать подрядчику имеет смысл,
+// когда карточку давно не трогали; кто только что заполнял и ищет фото — не дёргаем.
+export const STALE_DAYS = 2;
+/** дней без правок (0 — сегодня) */
+export const idleDays = (r: any) => {
+  const d0 = new Date(); d0.setHours(0, 0, 0, 0);
+  const d1 = new Date(at(r.updated)); d1.setHours(0, 0, 0, 0);
+  return Math.max(0, Math.round((d0.getTime() - d1.getTime()) / 864e5));
+};
+const daysWord = (n: number) => (n % 10 === 1 && n % 100 !== 11 ? 'день' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 'дня' : 'дней');
+/** строка под именем у черновика: «сегодня в 12:38» / «вчера» / «3 дня без правок» (полужирным) */
+export function idleText(r: any): { text: string; stale: boolean } {
+  const n = idleDays(r);
+  if (n === 0) return { text: whenText(r.updated), stale: false };
+  if (n < STALE_DAYS) return { text: 'вчера', stale: false };
+  // коротко, в строку влезает; полужирным — «пора написать»
+  return { text: `${n}${NBSP}${daysWord(n)} без правок`, stale: true };
+}
+
 /** заполненность черновика, %: обязательные разделы анкеты (без «Вопросов» — у них свой набор на категорию) */
 export function fillPct(r: any): number {
   const keys = (SECTIONS[r.kind as 'venue' | 'specialist'] ?? []).filter((s) => !s.optional && s.key !== 'voprosy');
@@ -54,7 +73,10 @@ let cache: { t: number; p: Promise<any[]> } | null = null;
 export function loadRevisions(force = false): Promise<any[]> {
   if (!session('moderator')) return Promise.resolve([]);
   if (!force && cache && Date.now() - cache.t < 20000) return cache.p;
-  const since = new Date(Date.now() - 30 * 864e5).toISOString().replace('T', ' ');
+  // одобренные — только за сегодня (Никита 07.11): решённое не висит в «Проверено» неделями;
+  // вернутые остаются, пока подрядчик не исправит
+  const day0 = new Date(); day0.setHours(0, 0, 0, 0);
+  const since = day0.toISOString().replace('T', ' ');
   const filter = `status != "approved" || reviewedAt >= "${since}"`;
   const p = api('moderator', 'GET', `/api/collections/revisions/records?perPage=500&sort=-updated&expand=owner&filter=${encodeURIComponent(filter)}`)
     .then((res) => res.items as any[]);
@@ -81,7 +103,9 @@ export function counts(revs: any[]) {
 // задача → цвет статуса (05.11): проверить — серый, нейтральный (Никита: «не выделять голубым»),
 // одобрили — зелёный, вернули — красный, не закончена — жёлтый. Было: проверить зелёным (27.10) —
 // рядом с «Одобрили» путалось.
-const TONE = { check: '', ok: ' status--ok', wait: ' status--warn', bad: ' status--bad', none: '' } as const;
+// цвет статуса в админке — один цвет на один смысл (Никита 07.11): «Проверить» (ждёт модератора) — синий,
+// «Не закончена» (ждём подрядчика, не наше дело) — серый, «Одобрили» — зелёный, «Вернули» — красный
+const TONE = { check: ' status--info', ok: ' status--ok', wait: '', bad: ' status--bad', none: '' } as const;
 
 // ПРОСМОТРЕННОЕ (Никита 06.11): заявку или правку, которую модератор уже открыл, список
 // приглушает целиком — как просмотренную заявку у подрядчика (--adm-text-seen). Помним в
@@ -104,10 +128,12 @@ export function taskRow(r: any, o: { task: string; tone: 'check' | 'ok' | 'wait'
   const href = `/profi/admin/moderaciya/pravka/?id=${encodeURIComponent(r.id)}`;
   const name = String(r.data?.name || '').trim() || 'Без названия';
   const left = leftMin(r);
-  const pill = `<span class="status${TONE[o.tone]}">${esc(o.task)}${o.fill ? `<span class="status__n">${fillPct(r)}${NBSP}%</span>` : ''}</span>`;
+  // у черновика вместо процента — пауза без правок (эксперимент 07.11); процент оставлен в fillPct на случай возврата
+  const pill = `<span class="status${TONE[o.tone]}">${esc(o.task)}</span>`;
+  const idle = o.fill ? idleText(r) : null;
   const when = left !== undefined
     ? `<span class="${left < URGENT_MIN ? 'a-task__urgent' : ''}">${leftText(left)}</span>`
-    : whenText(r.updated);
+    : idle ? `<span class="${idle.stale ? 'a-task__stale' : ''}">${idle.text}</span>` : whenText(r.updated);
   // data-astro-reload: переходом ClientRouter разбор не запускался (26.10)
   const seen = seenMap()[r.id] === r.updated;
   return `<a class="a-task${seen ? ' a-task--seen' : ''}" href="${href}" data-astro-reload>`
