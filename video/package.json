@@ -5,8 +5,11 @@
   "type": "module",
   "scripts": {
     "studio": "remotion studio",
-    "render": "remotion render Promo out/promo.mp4",
-    "still": "remotion still Promo out/still.png --frame=45"
+    "capture": "node scripts/capture.mjs",
+    "render": "npm run render:v && npm run render:h",
+    "render:v": "remotion render PromoVertical out/promo-9x16.mp4",
+    "render:h": "remotion render PromoWide out/promo-16x9.mp4",
+    "still": "remotion still PromoVertical out/still.png --frame=45"
   },
   "dependencies": {
     "@remotion/cli": "4.0.538",
