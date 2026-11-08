@@ -1,0 +1,202 @@
+---
+// СТРАНИЦА ПЛОЩАДКИ ЦЕЛИКОМ (08.11.2026 вынесена из ploshchadki/[slug].astro):
+// её рисуют и сайт (/moskva/ploshchadki/[slug]/), и превью анкеты площадки
+// до одобрения (/profi/prevyu/) — превью не врёт, пока это одна страница.
+// preview — черновик: noindex и строка «Черновик…» над первым экраном.
+// Страница ничего не знает про конкретную площадку — только про тип Venue.
+// Между первым экраном и контактами тело страницы — СПИСОК БЛОКОВ
+// (lib/venue-blocks.ts): порядок и набор секций задают данные площадки.
+import Layout from '../layouts/Layout.astro';
+import SiteHeader from './SiteHeader.astro';
+import VenueHero from './VenueHero.astro';
+import StatsStrip from './StatsStrip.astro';
+import ScrollyScenes from './ScrollyScenes.astro';
+import VenueStatement from './VenueStatement.astro';
+import VenueTerms from './VenueTerms.astro';
+import VenueRules from './VenueRules.astro';
+import VenueDocs from './VenueDocs.astro';
+import FaqBlock from './FaqBlock.astro';
+import VenueContacts from './VenueContacts.astro';
+import BookingSheet from './BookingSheet.astro';
+import StickyCta from './StickyCta.astro';
+import Reviews from './Reviews.astro';
+import ReelsRow from './ReelsRow.astro';
+import HallsIndex from './HallsIndex.astro';
+import VenueHalls from './VenueHalls.astro';
+import BottomDock from './BottomDock.astro';
+import StoryText from './StoryText.astro';
+import RelatedCards from './RelatedCards.astro';
+import type { Venue } from '../data/venues';
+import { similarVenues } from '../lib/similar';
+import { venueCard } from '../lib/similar-cards';
+import { venueReviews } from '../data/venue-reviews';
+import { reelsOfVenue } from '../data/reels';
+import { venueBlocks } from '../lib/venue-blocks';
+
+interface Props {
+  venue: Venue;
+  preview?: boolean;
+}
+const { venue, preview = false } = Astro.props;
+
+// Отзывы есть не у каждой площадки — блок и строка фактов в первом
+// экране появляются только там, где им есть что показать.
+const reviews = venueReviews(venue.slug);
+
+const blocks = venueBlocks(venue);
+const reels = reelsOfVenue(venue.slug);
+---
+
+<Layout title={venue.seo.title} description={venue.seo.description} ogImage={venue.seo.ogImage} noindex={preview}>
+  {/* Шапка без телефона площадки: контактов партнёра на странице нет
+      совсем (см. VenueContacts) — заявка идёт через нас. */}
+  <SiteHeader />
+
+  {preview && (
+    <p class="draft-bar">Черновик — так площадка будет выглядеть на сайте после проверки. Эту страницу видите только вы.</p>
+  )}
+
+  <main class="venue" data-venue-slug={preview ? undefined : venue.slug}>
+    <VenueHero venue={venue} />
+
+    {
+      blocks.map((block) => {
+        switch (block.type) {
+          case 'stats':
+            return <StatsStrip items={block.items} />;
+
+          case 'scenes':
+            return (
+              <ScrollyScenes title={block.title} scenes={block.scenes} />
+            );
+
+          case 'statement':
+            return (
+              <VenueStatement
+                title={block.title}
+                body={block.body}
+                facts={block.facts}
+                dark={block.dark}
+              />
+            );
+
+          case 'terms':
+            return (
+              <VenueTerms
+                title={block.title ?? 'Сколько стоит и как забронировать'}
+                terms={block.terms}
+                included={block.included}
+                extras={block.extras}
+              />
+            );
+
+          case 'rules':
+            return (
+              <VenueRules
+                title={block.title ?? 'Что важно знать заранее'}
+                rules={block.rules}
+              />
+            );
+
+          case 'docs':
+            return (
+              <VenueDocs
+                title={block.title ?? 'Техническое сопровождение'}
+                lead={
+                  block.lead ??
+                  'Спецификации площадки одним файлом: что за оборудование стоит в зале, какой свет и звук уже есть и что подрядчикам нужно привезти с собой. Пригодится ведущему, диджею и техдиректору при подготовке.'
+                }
+                docs={block.docs}
+              />
+            );
+
+          // ОТЗЫВЫ — блок тот же, что на карточке подрядчика; без отзывов
+          // в venue-reviews.ts секция просто не рисуется.
+          case 'reviews':
+            return (
+              reviews && (
+                <Reviews
+                  reviews={reviews.items}
+                  rating={reviews.rating}
+                  ratings={reviews.ratings}
+                  total={reviews.total}
+                />
+              )
+            );
+
+          case 'reels':
+            return <ReelsRow reels={reels} title={block.title} section />;
+
+          // ЗАЛЫ КОМПЛЕКСА (усадьба с несколькими площадками): оглавление
+          // плиткой и секции залов по якорям. Без venue.halls оба блока
+          // не рисуются — данные площадки без залов их и не заказывают.
+          case 'halls-index':
+            return (
+              venue.halls?.length && (
+                <HallsIndex
+                  title={block.title ?? 'Какой зал под вашу свадьбу'}
+                  lead={block.lead}
+                  halls={venue.halls}
+                />
+              )
+            );
+
+          case 'halls':
+            return venue.halls?.length && <VenueHalls halls={venue.halls} />;
+
+          // РАССКАЗ ПЛОЩАДКИ её же структурой — общий модуль с подрядчиком
+          case 'story':
+            return <StoryText sections={block.sections} block />;
+
+          case 'faq':
+            return (
+              <FaqBlock
+                title={block.title ?? 'Что спрашивают чаще всего'}
+                items={block.items}
+              />
+            );
+        }
+      })
+    }
+
+    <VenueContacts venue={venue} />
+
+    <!-- ПОХОЖИЕ ПЛОЩАДКИ — самый конец страницы, после заявки: не выбрал
+         эту — вот соседи по типу, месту, вместимости и чеку. Считаются на
+         сборке из ленты каталога (lib/similar.ts), новая площадка попадает
+         сюда сама, без отдельного шага. -->
+    <RelatedCards title="Похожие площадки" cards={similarVenues(venue.slug).map(venueCard)} />
+  </main>
+
+  <!-- Плавающая кнопка заявки: всплывает, когда кнопка первого экрана
+       ушла за верх экрана (StickyCta). Кнопок в финальном блоке больше
+       нет — эта закрывает всю страницу ниже первого экрана. -->
+  <StickyCta label="Забронировать" />
+
+  <!-- ЗАЯВКА: шторка поднимается кнопкой «Забронировать» из первого экрана
+       и кнопкой «Заказать» из финального блока. Лежит вне <main>: это
+       накладка поверх страницы, а не её раздел. -->
+  <BookingSheet subject={venue.name} />
+
+  <BottomDock active="venues" />
+</Layout>
+
+<style>
+  /* Место под нижнюю полосу навигации — как на визитке подрядчика
+     (.profile). Без него последний блок страницы ложился почти вплотную
+     к доку, а с плавающей капсулой заявки — прямо под неё. Запас под саму
+     капсулу добавляет body (--float-cta-space). */
+  .venue { padding-bottom: var(--dock-space); }
+</style>
+
+<script>
+  // ОТМЕТКА «УЖЕ СМОТРЕЛ» — открыли карточку, значит на карте её метка
+  // дальше идёт погасшей (реф. ЦИАН, см. lib/seen и VenueMap).
+  // Ставится на самой странице площадки, а не по клику на метке: клик
+  // по метке на ПК только поднимает карточку-превью поверх карты —
+  // это ещё не «смотрел».
+  import { markSeen, seenId } from '../lib/seen';
+
+  const slug = document.querySelector<HTMLElement>('[data-venue-slug]')?.dataset.venueSlug;
+  if (slug) markSeen(seenId('venue', slug));
+</script>
