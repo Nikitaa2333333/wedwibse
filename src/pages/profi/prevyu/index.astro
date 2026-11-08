@@ -54,7 +54,8 @@ try {
   }));
 
   if (res.kind === 'venue') {
-    venue = venueFromPage(p, { slug: p.slug || 'prevyu', name: p.name, photos }) as Venue;
+    const byName = new Map(names.map((n: string, i: number) => [n, photos[i]]));
+    venue = venueFromPage(p, { slug: p.slug || 'prevyu', name: p.name, photos, fileOf: (n: string) => byName.get(n) }) as Venue;
   } else card = {
     ...cardFromPage(p, { slug: p.slug || 'prevyu', categorySlug: p.categorySlug, name: p.name, photos }),
     category: SPECIALIST_CATEGORIES.find((c) => c.slug === p.categorySlug)?.label ?? p.categorySlug,

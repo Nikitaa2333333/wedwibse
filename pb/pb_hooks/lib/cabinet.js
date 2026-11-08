@@ -971,6 +971,15 @@ function approve(app, rev) {
   // только теперь (PocketBase дописывает к ним случайный суффикс)
   const saved = photosOf(card);
   const coverIndex = Math.max(0, names.indexOf(rev.getString('cover')));
+  // фото залов (08.11) — имена файлов ревизии; у карточки набор в том же
+  // порядке, имя обычно то же (сохраняем при копировании), но сверяем по месту
+  if (kind === 'venue' && Array.isArray(data.halls)) {
+    const rename = {};
+    names.forEach((n, i) => { if (saved[i]) rename[n] = saved[i]; });
+    data.halls = data.halls.map((h) => (h && Array.isArray(h.photos)
+      ? Object.assign({}, h, { photos: h.photos.map((n) => rename[n]).filter((n) => !!n) })
+      : h));
+  }
   card.set('page', buildPage(kind, card, data, saved, coverIndex));
   app.save(card);
 
