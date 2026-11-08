@@ -6,15 +6,18 @@
 // Пушей нет — всё идёт через сайт (Никита). Логотип — с главной (logo-unicase), в начале и в конце.
 // Мелкие служебные подписи сайта в кадр не берём (capture.mjs их прячет).
 import React from 'react';
-import { AbsoluteFill, Img, staticFile, useCurrentFrame } from 'remotion';
+import { AbsoluteFill, Img, staticFile } from 'remotion';
 import R from '../public/ui/rects.json';
 import { BRAND } from './brand';
 import { LEAD_RECT, LeadCard, LeadsScreen, INTEREST_RECT, InterestSheet, MyCardsScreen } from './promo/cabinet';
-import { easeInOut, kf, press, prog } from './promo/motion';
+import { Tempo, easeInOut, kf, press, prog, useT } from './promo/motion';
 import { IslandPill, Lift, Phone3D, Pose } from './promo/phone3d';
 import { Logo, SCREEN_H, SCREEN_W, Tap, Words, useLayout, useTheme } from './promo/stage';
 
-export const DEMO_DURATION = 960; // 32 с
+// Темп: Никита 08.11 — «слишком быстро, не успеваю прочитать». Ключи — в своих кадрах (960),
+// TempoContext растягивает их в 1,6 раза: ролик идёт ~51 с.
+const RATE = 0.625;
+export const DEMO_DURATION = Math.ceil(960 / RATE);
 
 const S = (p: string) => staticFile(p);
 const HEART = 'M2 9.1371C2 14 6.01943 16.5914 8.96173 18.9109C10 19.7294 11 20.5 12 20.5C13 20.5 14 19.7294 15.0383 18.9109C17.9806 16.5914 22 14 22 9.1371C22 4.27416 16.4998 0.825464 12 5.50063C7.50016 0.825464 2 4.27416 2 9.1371Z';
@@ -32,8 +35,12 @@ const Crop: React.FC<{ src: string; r: { x: number; y: number; w: number; h: num
   </div>
 );
 
-export const Demo: React.FC = () => {
-  const f = useCurrentFrame();
+export const Demo: React.FC = () => (
+  <Tempo rate={RATE}><DemoScene /></Tempo>
+);
+
+const DemoScene: React.FC = () => {
+  const f = useT();
   const L = useLayout();
   const th = useTheme([[478, 0], [498, 1], [796, 1], [822, 0]]);
   const ink = th.ink;
@@ -42,11 +49,11 @@ export const Demo: React.FC = () => {
   // ——— поза телефона ———
   const pose: Pose = {
     x: L.phone.cx,
-    y: L.phone.cy + kf(f, [[40, 700], [110, 0], [122, 0], [146, 150], [188, 150], [206, 0], [366, 0], [380, L.wide ? 0 : -110], [470, L.wide ? 0 : -110], [490, 0], [790, 0], [846, 1500]]),
-    s: kf(f, [[40, b * 0.55], [110, b], [122, b], [146, b * 1.9], [188, b * 1.9], [206, b * 1.02], [262, b * 1.02], [278, b * 1.5], [350, b * 1.5], [366, b * 1.1], [790, b * 1.1], [846, b * 0.8]]),
-    rx: kf(f, [[40, 24], [110, 8], [122, 8], [146, 30], [188, 32], [206, 4], [262, 4], [278, 12], [350, 12], [366, 10], [790, 10], [846, 18]]),
-    ry: kf(f, [[40, -58], [110, -16], [122, -16], [146, 10], [188, 16], [206, -6], [262, -6], [278, 14], [350, 14], [366, -14], [468, -14], [492, 90], [493, -90], [520, -14], [638, -14], [662, 16], [790, 16], [846, 55]]),
-    rz: kf(f, [[40, -9], [110, -3], [122, -3], [146, -12], [188, -9], [206, 0], [262, 0], [278, -3], [350, -3], [366, 2], [638, 2], [662, -3], [790, -3], [846, -8]]),
+    y: L.phone.cy + kf(f, [[44, 760], [112, 0], [122, 0], [146, 150], [188, 150], [206, 0], [366, 0], [380, L.wide ? 0 : -110], [470, L.wide ? 0 : -110], [490, 0], [790, 0], [846, 1500]]),
+    s: kf(f, [[44, b * 0.72], [112, b], [122, b], [146, b * 1.9], [188, b * 1.9], [206, b * 1.02], [262, b * 1.02], [278, b * 1.5], [350, b * 1.5], [366, b * 1.1], [790, b * 1.1], [846, b * 0.8]]),
+    rx: kf(f, [[44, 24], [112, 8], [122, 8], [146, 30], [188, 32], [206, 4], [262, 4], [278, 12], [350, 12], [366, 10], [790, 10], [846, 18]]),
+    ry: kf(f, [[44, -40], [112, -16], [122, -16], [146, 10], [188, 16], [206, -6], [262, -6], [278, 14], [350, 14], [366, -14], [468, -14], [492, 90], [493, -90], [520, -14], [638, -14], [662, 16], [790, 16], [846, 55]]),
+    rz: kf(f, [[44, -8], [112, -3], [122, -3], [146, -12], [188, -9], [206, 0], [262, 0], [278, -3], [350, -3], [366, 2], [638, 2], [662, -3], [790, -3], [846, -8]]),
     fx: kf(f, [[262, 195], [278, 240], [350, 240], [366, 195]]),
     fy: kf(f, [[122, 422], [146, 470], [188, 470], [206, 422], [262, 422], [278, 150], [350, 150], [366, 422]]),
   };
@@ -132,7 +139,7 @@ export const Demo: React.FC = () => {
 
   // ——— логотип ———
   const logoIn = prog(f, 2, 26);
-  const logoOut = prog(f, 32, 52, easeInOut);
+  const logoOut = prog(f, 34, 52, easeInOut);
   const endIn = prog(f, 896, 920);
 
   return (
@@ -143,9 +150,9 @@ export const Demo: React.FC = () => {
         </AbsoluteFill>
       )}
 
-      {f >= 40 && f < 850 && <Phone3D pose={pose} lifted={lifted} island={islandEl} dark={th.d > 0.5}>{screen}</Phone3D>}
+      {f >= 42 && f < 850 && <Phone3D pose={pose} lifted={lifted} island={islandEl} dark={th.d > 0.5} opacity={prog(f, 42, 66)}>{screen}</Phone3D>}
 
-      <Words text="Свадебный каталог Москвы и области" from={54} to={124} ink={ink} />
+      <Words text="Свадебный каталог Москвы и области" from={70} to={126} ink={ink} />
       <Words text="Пары выбирают глазами" from={198} to={266} ink={ink} />
       <Words text="Сохраняют в избранное" from={272} to={362} ink={ink} />
       <Words text="И оставляют заявку" from={368} to={474} ink={ink} />

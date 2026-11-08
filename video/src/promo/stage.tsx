@@ -2,9 +2,9 @@
 // касание, «вырванный» из экрана элемент. Экран телефона — в CSS px сайта (390 × 844),
 // как снимки scripts/capture.mjs: координаты кнопок из rects.json ложатся один в один.
 import React from 'react';
-import { AbsoluteFill, Easing, interpolate, interpolateColors, useCurrentFrame, useVideoConfig } from 'remotion';
+import { AbsoluteFill, Easing, interpolate, interpolateColors, useVideoConfig } from 'remotion';
 import { BRAND } from '../brand';
-import { easeInOut, easeOut, kf, prog } from './motion';
+import { easeInOut, easeOut, kf, prog, useT } from './motion';
 
 export const SCREEN_W = 390;
 export const SCREEN_H = 844;
@@ -29,7 +29,7 @@ export function useLayout(): Layout {
 // ——— фон: бумага ↔ тёмная тема (кабинет) ———
 export interface Theme { bg: string; ink: string; glow: string; d: number }
 export function useTheme(darkKeys: [number, number][]): Theme {
-  const f = useCurrentFrame();
+  const f = useT();
   const d = kf(f, darkKeys);
   return {
     bg: interpolateColors(d, [0, 1], [BRAND.cream, BRAND.darkPaper]),
@@ -67,7 +67,7 @@ export const Phone: React.FC<{ cam: Cam; children: React.ReactNode; opacity?: nu
 
 // ——— касание пальцем: кольцо расходится от точки (координаты экрана) ———
 export const Tap: React.FC<{ x: number; y: number; at: number }> = ({ x, y, at }) => {
-  const f = useCurrentFrame();
+  const f = useT();
   if (f < at - 6 || f > at + 18) return null;
   const pre = prog(f, at - 6, at);
   const t = prog(f, at, at + 18);
@@ -103,7 +103,7 @@ export const Pull: React.FC<{ cam: Cam; rect: { x: number; y: number; w: number;
 // Уход — вся фраза растворяется и чуть уходит вверх. Кривая — мягкий expo-out.
 const EXPO = Easing.bezier(0.16, 1, 0.3, 1);
 export const Words: React.FC<{ text: string; from: number; to: number; ink: string; sub?: string; size?: number; centered?: boolean }> = ({ text, from, to, ink, sub, size, centered }) => {
-  const f = useCurrentFrame();
+  const f = useT();
   const L = useLayout();
   if (f < from || f > to + 2) return null;
   const fs = size ?? L.text.size;

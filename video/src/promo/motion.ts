@@ -26,3 +26,13 @@ export const typed = (text: string, f: number, a: number, b: number) =>
 
 /** «нажатие»: кнопка проседает и возвращается вокруг кадра t */
 export const press = (f: number, t: number) => 1 - 0.06 * kf(f, [[t - 4, 0], [t, 1], [t + 6, 0]]);
+
+// ——— темп сцены ———
+// Ключи сцены пишутся в «своих» кадрах; TempoContext растягивает время (0.62 — в 1,6 раза
+// медленнее). Время дробное, поэтому движение остаётся плавным, а не ступеньками.
+import React, { createContext, useContext } from 'react';
+import { useCurrentFrame } from 'remotion';
+export const TempoContext = createContext(1);
+export const useT = () => useCurrentFrame() * useContext(TempoContext);
+export const Tempo: React.FC<{ rate: number; children: React.ReactNode }> = ({ rate, children }) =>
+  React.createElement(TempoContext.Provider, { value: rate }, children);
