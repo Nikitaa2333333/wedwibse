@@ -6,9 +6,10 @@ import { mkdirSync } from 'node:fs';
 const [id = 'PromoVertical', ...frames] = process.argv.slice(2);
 const serveUrl = await bundle({ entryPoint: new URL('../src/index.ts', import.meta.url).pathname, publicDir: new URL('../public', import.meta.url).pathname });
 const browserExecutable = process.env.REMOTION_CHROME || null;
-const composition = await selectComposition({ serveUrl, id, browserExecutable });
+const chromiumOptions = { gl: 'swangle' };
+const composition = await selectComposition({ serveUrl, id, browserExecutable, chromiumOptions });
 mkdirSync('out/stills', { recursive: true });
 for (const fr of frames.map(Number)) {
-  await renderStill({ serveUrl, composition, frame: fr, output: `out/stills/${id}-${String(fr).padStart(4, '0')}.png`, scale: 0.4, browserExecutable });
+  await renderStill({ serveUrl, composition, frame: fr, output: `out/stills/${id}-${String(fr).padStart(4, '0')}.png`, scale: Number(process.env.SCALE || 0.4), browserExecutable, chromiumOptions, timeoutInMilliseconds: 120000 });
   console.log('ok', fr);
 }

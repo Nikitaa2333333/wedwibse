@@ -7,3 +7,5 @@ Config.setVideoImageFormat('jpeg');
 Config.setCodec('h264');
 // фото и шрифты сайта — из его же папок, без копий
 Config.setPublicDir('./public');
+// 3D-модель телефона — WebGL; в облаке GPU нет, рендерим программно (SwiftShader)
+if (process.env.REMOTION_CHROME) Config.setChromiumOpenGlRenderer('swangle');

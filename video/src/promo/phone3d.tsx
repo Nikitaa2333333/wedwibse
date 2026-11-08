@@ -2,7 +2,9 @@
 // повороты по трём осям. Экран — в CSS px сайта (390 × 844). Элементы интерфейса можно
 // приподнять над стеклом (Lift) — они выходят к зрителю в перспективе, как у Apple.
 import React from 'react';
+import { useVideoConfig } from 'remotion';
 import { BRAND } from '../brand';
+import { PhoneModel } from './model';
 import { SCREEN_H, SCREEN_W } from './stage';
 
 export interface Pose {
@@ -17,27 +19,30 @@ const BEZEL = 12;
 const R_OUT = 64;
 const R_SCREEN = 52;
 
-export const Phone3D: React.FC<{ pose: Pose; children: React.ReactNode; lifted?: React.ReactNode; island?: React.ReactNode; opacity?: number; dark?: boolean; perspective?: number }> = ({ pose, children, lifted, island, opacity = 1, dark, perspective = 2600 }) => {
+export const Phone3D: React.FC<{ pose: Pose; children: React.ReactNode; lifted?: React.ReactNode; island?: React.ReactNode; opacity?: number; dark?: boolean; perspective?: number; model?: boolean }> = ({ pose, children, lifted, island, opacity = 1, dark, perspective = 2600, model = true }) => {
+  const vc = useVideoConfig();
   const { x, y, s, rx, ry, rz, fx, fy } = pose;
   // блик ходит по стеклу вслед за поворотом
   const glare = 50 + ry * 2.2 + rx * 0.8;
   const W = SCREEN_W + BEZEL * 2;
   const H = SCREEN_H + BEZEL * 2;
+  const T = `translate3d(${x}px, ${y}px, 0) rotateX(${rx}deg) rotateY(${ry}deg) rotateZ(${rz}deg) scale3d(${s}, ${s}, ${s}) translate3d(${-fx}px, ${-fy}px, 0)`;
   return (
-    <div style={{ position: 'absolute', inset: 0, perspective, perspectiveOrigin: `${x}px ${y}px`, opacity }}>
+    // перспектива из центра кадра — так же стоит камера 3D-модели (model.tsx)
+    <div style={{ position: 'absolute', inset: 0, perspective, perspectiveOrigin: `${vc.width / 2}px ${vc.height / 2}px`, opacity }}>
       {/* тень на «полу»: под телефоном, без поворота */}
       <div style={{ position: 'absolute', left: x - (fx - SCREEN_W / 2) * s - SCREEN_W * s * 0.42, top: y + (SCREEN_H - fy) * s * 0.96, width: SCREEN_W * s * 0.84, height: 70 * s,
         borderRadius: '50%', background: dark ? 'rgba(0,0,0,0.55)' : 'rgba(69,50,42,0.22)', filter: `blur(${36 * s}px)`, transform: `rotate(${rz}deg)` }} />
-      <div style={{ position: 'absolute', left: 0, top: 0, transformStyle: 'preserve-3d',
-        transform: `translate3d(${x}px, ${y}px, 0) rotateX(${rx}deg) rotateY(${ry}deg) rotateZ(${rz}deg) scale3d(${s}, ${s}, ${s}) translate3d(${-fx}px, ${-fy}px, 0)` }}>
-        {/* корпус: слои с отступом по глубине — на повороте видна грань */}
-        {Array.from({ length: EDGE }, (_, i) => (
+      {model && <PhoneModel css={T} perspective={perspective} />}
+      <div style={{ position: 'absolute', left: 0, top: 0, transformStyle: 'preserve-3d', transform: T }}>
+        {/* корпус: слои с отступом по глубине — на повороте видна грань (без модели) */}
+        {!model && Array.from({ length: EDGE }, (_, i) => (
           <div key={i} style={{ position: 'absolute', left: -BEZEL, top: -BEZEL, width: W, height: H, borderRadius: R_OUT,
             transform: `translateZ(${-(i + 1) * 1.4}px)`, background: `linear-gradient(${120 + ry}deg, #9a948f, #1c1917 30%, #c9c3bd 50%, #1c1917 70%, #6e6862)` }} />
         ))}
         {/* лицевая рамка */}
-        <div style={{ position: 'absolute', left: -BEZEL, top: -BEZEL, width: W, height: H, borderRadius: R_OUT, background: '#0d0b0a',
-          boxShadow: 'inset 0 0 0 1.5px rgba(255,255,255,0.18), inset 0 0 0 4px #1a1614' }} />
+        {!model && <div style={{ position: 'absolute', left: -BEZEL, top: -BEZEL, width: W, height: H, borderRadius: R_OUT, background: '#0d0b0a',
+          boxShadow: 'inset 0 0 0 1.5px rgba(255,255,255,0.18), inset 0 0 0 4px #1a1614' }} />}
         {/* экран */}
         <div style={{ position: 'absolute', left: 0, top: 0, width: SCREEN_W, height: SCREEN_H, borderRadius: R_SCREEN, overflow: 'hidden', transform: 'translateZ(0.5px)', background: '#fff', isolation: 'isolate' }}>
           {children}

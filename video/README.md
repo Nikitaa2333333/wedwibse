@@ -29,6 +29,20 @@ npm run render                       # ролик → out/promo.mp4
 | `scripts/link-assets.sh` | `video/public/{venues,specialists,reels,fonts}` → папки сайта |
 | `out/` | готовые ролики (в git не идут) |
 
+## 3D-модель телефона
+
+`public/models/phone.glb` — «iPhone 16 - Free», автор Wes (sketchfab.com/wimell),
+https://sketchfab.com/3d-models/iphone-16-free-d58591e88a824dfd8cef0af616273b02,
+лицензия Sketchfab Standard: в ролике можно, файл отдельно не распространяем — поэтому
+в git его нет. Скачать GLB со страницы модели и положить по этому пути.
+Модель рисует Three.js (`src/promo/model.tsx`), экран поверх — наш DOM (`phone3d.tsx`).
+Без GPU рендер идёт программно (`swangle`, remotion.config.ts): ~2 с на кадр.
+
+## Снимки сайта и раскадровка
+
+- `npm run capture` — снимки сайта с дев-сервера (`npx astro dev --port 4327` в корне) → `public/ui/`.
+- `node scripts/stills.mjs DemoVertical 100 200 …` → `out/stills/`, `python3 scripts/sheet.py DemoVertical out/sb.jpg` — лист раскадровки.
+
 ## Материал
 
 - Фото площадок: `src/assets/venues/<slug>/…` → в ролике `staticFile('venues/<slug>/…')`.
