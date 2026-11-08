@@ -61,51 +61,64 @@ const { halls } = Astro.props;
               <h2 class="hall__title">{hall.name}</h2>
             </header>
 
-            {/* Три числа, по которым зал сравнивают с соседями */}
+            {/* Три числа, по которым зал сравнивают с соседями. Зал из анкеты
+                кабинета (08.11) приходит без части полей — пустое не рисуем,
+                нулей и пустых таблиц на странице нет */}
             <dl class="hall__stats">
-              <div class="hall__stat">
-                <dd class="hall__val">{hall.areaM2}<span class="hall__unit"> м²</span></dd>
-                <dt class="hall__lbl t-caption">{hall.areaNote ?? 'площадь зала'}</dt>
-              </div>
-              <div class="hall__stat">
-                <dd class="hall__val">{hall.banquet}</dd>
-                <dt class="hall__lbl t-caption">гостей на банкете</dt>
-              </div>
-              <div class="hall__stat">
-                <dd class="hall__val">{hall.buffet}</dd>
-                <dt class="hall__lbl t-caption">гостей на фуршете</dt>
-              </div>
+              {hall.areaM2 > 0 && (
+                <div class="hall__stat">
+                  <dd class="hall__val">{hall.areaM2}<span class="hall__unit"> м²</span></dd>
+                  <dt class="hall__lbl t-caption">{hall.areaNote ?? 'площадь зала'}</dt>
+                </div>
+              )}
+              {hall.banquet > 0 && (
+                <div class="hall__stat">
+                  <dd class="hall__val">{hall.banquet}</dd>
+                  <dt class="hall__lbl t-caption">гостей на банкете</dt>
+                </div>
+              )}
+              {hall.buffet > 0 && (
+                <div class="hall__stat">
+                  <dd class="hall__val">{hall.buffet}</dd>
+                  <dt class="hall__lbl t-caption">гостей на фуршете</dt>
+                </div>
+              )}
             </dl>
 
-            <table class="tariff">
-              <caption class="tariff__caption t-caption">Аренда зала 10:00–23:00 и минимальный заказ по меню</caption>
-              <thead>
-                <tr>
-                  <th scope="col">День</th>
-                  <th scope="col">Аренда</th>
-                  <th scope="col">Заказ от</th>
-                </tr>
-              </thead>
-              <tbody>
-                {hall.tariff.map((t) => (
+            {hall.tariff.length > 0 && (
+              <table class="tariff">
+                <caption class="tariff__caption t-caption">{hall.tariffNote ?? 'Аренда зала 10:00–23:00 и минимальный заказ по меню'}</caption>
+                <thead>
                   <tr>
-                    <th scope="row">{t.day}</th>
-                    <td>{t.rent}</td>
-                    <td>{t.deposit}</td>
+                    <th scope="col">День</th>
+                    <th scope="col">Аренда</th>
+                    <th scope="col">Заказ от</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {hall.tariff.map((t) => (
+                    <tr>
+                      <th scope="row">{t.day}</th>
+                      <td>{t.rent}</td>
+                      <td>{t.deposit}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
 
             <div class="hall__text">
-              <p class="hall__included">
-              <span class="hall__included-label">В аренду входит: </span>
-              {hall.included.join(', ')}
-              </p>
+              {hall.price && <p class="hall__included"><span class="hall__included-label">Аренда или депозит: </span>от {hall.price}</p>}
+              {hall.included.length > 0 && (
+                <p class="hall__included">
+                <span class="hall__included-label">В аренду входит: </span>
+                {hall.included.join(', ')}
+                </p>
+              )}
               {hall.body.map((p) => <p class="hall__p">{p}</p>)}
             </div>
 
-            <a class="hall__up t-small" href="#zaly">Все залы ↑</a>
+            {halls.length > 1 && <a class="hall__up t-small" href="#zaly">Все залы ↑</a>}
           </div>
         </div>
       </div>

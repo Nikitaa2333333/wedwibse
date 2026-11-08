@@ -242,6 +242,9 @@ select.a-field__input { appearance: none; background-image: var(--adm-chevron-do
 /* ---------- фото ---------- */
 .c-photos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 @media (min-width: 640px) { .c-photos { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+/* фото зала под полями зала (08.11): мелкие, это напоминание, а не галерея */
+.c-photos--mini { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-bottom: 8px; }
+@media (min-width: 640px) { .c-photos--mini { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
 .c-photo { position: relative; aspect-ratio: 4 / 5; border-radius: 10px; overflow: hidden; background: var(--adm-bg); -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 /* перетаскивание (bindPhotoDrag): плитка над остальными, остальные стоят */
 .c-photo.is-drag { z-index: 3; box-shadow: var(--adm-shadow-lift); }

@@ -6,8 +6,8 @@
 //
 // Своих разделов не досочиняем: страница — то, что площадка сама написала
 // в анкете (Основное, Залы, Условия, Описание, Вопросы), блоками VenueBlock.
-// Залы в анкете без фото — поэтому они идут пунктами рассказа, а не секциями
-// с рельсом кадров (блок `halls` у площадок конвейера).
+// Зал с фото (выбраны в анкете из загруженных, 08.11) — секцией блока `halls`,
+// как у площадок конвейера; зал без фото — пунктом рассказа.
 // Чистый .mjs без зависимостей.
 
 import { storyOf } from './cabinet-card.mjs';
@@ -40,6 +40,7 @@ export function hallsOf(p) {
       area: int(h?.area),
       priceFrom: int(h?.priceFrom),
       note: str(h?.note),
+      photos: Array.isArray(h?.photos) ? h.photos.map(String) : [],
     }))
     .filter((h) => h.name);
 }
@@ -85,8 +86,10 @@ function placeOf(address) {
 /**
  * page (форма buildPage, source: 'cabinet') + готовые пути кадров → Venue.
  * photos — уже в порядке показа: обложка первой (orderedPhotos).
+ * fileOf(имя файла) → путь кадра для фото залов (имена в page.halls[].photos);
+ * кадр, которого больше нет в карточке, отбрасывается.
  */
-export function venueFromPage(p, { slug, name, photos }) {
+export function venueFromPage(p, { slug, name, photos, fileOf = () => undefined }) {
   const title = str(p.name) || str(name);
   const halls = hallsOf(p);
   const cap = capacity(p, halls);
@@ -120,9 +123,29 @@ export function venueFromPage(p, { slug, name, photos }) {
     check && { label: 'Чек на гостя', value: `от ${rub(check)}` },
   ].filter(Boolean);
 
-  const hallSection = halls.length && {
-    title: halls.length === 1 ? 'Зал' : 'Залы',
-    items: halls.map((h) => {
+  // зал с фото — секция с кадром (блоки halls-index и halls, как у площадок
+  // конвейера); зал без фото — пунктом списка (08.11)
+  const withShots = halls.map((h) => ({ ...h, shots: h.photos.map(fileOf).filter(Boolean) }));
+  const shown = withShots.filter((h) => h.shots.length);
+  const listed = withShots.filter((h) => !h.shots.length);
+  const venueHalls = shown.map((h, i) => ({
+    id: String(i + 1),
+    name: h.name,
+    kicker: '',
+    photos: h.shots,
+    alt: `${title}, ${h.name} — фото зала`,
+    areaM2: h.area,
+    banquet: h.banquet,
+    buffet: h.buffet,
+    tariff: [],
+    ...(h.priceFrom ? { price: rub(h.priceFrom) } : {}),
+    included: [],
+    body: h.note ? h.note.split(/\n\s*\n/).map((x) => x.replace(/\s+/g, ' ').trim()).filter(Boolean) : [],
+  }));
+
+  const hallSection = listed.length && {
+    title: shown.length ? 'Ещё залы' : listed.length === 1 ? 'Зал' : 'Залы',
+    items: listed.map((h) => {
       const list = [
         h.banquet && `банкет до ${num(h.banquet)} гостей`,
         h.buffet && `фуршет до ${num(h.buffet)} гостей`,
@@ -147,6 +170,8 @@ export function venueFromPage(p, { slug, name, photos }) {
   const blocks = [];
   if (stats.length) blocks.push({ type: 'stats', items: stats });
   if (rest.length) blocks.push({ type: 'story', sections: rest });
+  if (venueHalls.length > 1) blocks.push({ type: 'halls-index', title: 'Залы' });
+  if (venueHalls.length) blocks.push({ type: 'halls' });
   if (hallSection) blocks.push({ type: 'story', sections: [hallSection] });
   if (termRows.length) {
     blocks.push({
@@ -177,6 +202,7 @@ export function venueFromPage(p, { slug, name, photos }) {
     meta,
     stats,
     blocks,
+    ...(venueHalls.length ? { halls: venueHalls } : {}),
     scenes: [],
     terms: [{ title: 'Коротко', rows: termRows }],
     included: [],
