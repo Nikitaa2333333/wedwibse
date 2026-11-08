@@ -735,6 +735,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
           ? { title: role(), lead: '', html: `
               ${field('Название площадки', 'name', data.name)}
               ${field('Адрес', 'address', data.address, { placeholder: 'Москва, улица, дом — или посёлок и шоссе' })}
+              ${field('Ссылка на вас в Яндекс Картах', 'contacts.maps', data.contacts?.maps, { type: 'url', placeholder: 'https://yandex.ru/maps/org/…', note: 'Откройте свою организацию в Яндекс Картах, нажмите «Поделиться» и скопируйте ссылку. По ней поставим точку на нашей карте и покажем рейтинг' })}
               <div class="c-grid2">
                 ${field('Аренда от, ₽', 'rentFrom', data.rentFrom, { mode: 'numeric', note: 'За день; нет аренды — оставьте пустым' })}
                 ${field('Средний чек от, ₽ на гостя', 'checkFrom', data.checkFrom, { mode: 'numeric' })}
