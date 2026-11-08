@@ -31,6 +31,11 @@ const rentFrom = (hall: VenueHall) =>
   hall.tariff
     .map((t) => ({ n: Number(t.rent.replace(/\D/g, '')), s: t.rent }))
     .sort((a, b) => a.n - b.n)[0]?.s;
+// строка фактов плитки: зал из анкеты (08.11) может прийти без гостей или цены
+const facts = (hall: VenueHall) => {
+  const rent = rentFrom(hall) ?? hall.price;
+  return [hall.banquet > 0 && `до ${withCount(hall.banquet, GUESTS)}`, rent && `от ${rent}`].filter(Boolean).join(' · ');
+};
 ---
 
 <section class="hidx section" id="zaly">
@@ -59,9 +64,7 @@ const rentFrom = (hall: VenueHall) =>
                 {hall.kicker}
               </span>
               <span class="htile__name">{hall.name}</span>
-              <span class="htile__facts t-small">
-                до {withCount(hall.banquet, GUESTS)} · от {rentFrom(hall)}
-              </span>
+              {facts(hall) && <span class="htile__facts t-small">{facts(hall)}</span>}
             </span>
           </a>
         </li>

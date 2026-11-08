@@ -25,6 +25,8 @@ const MAX_PHOTOS = 50;
 const MAX_CARDS = 3;
 /** ссылок на видео в карточке (cabinet-form.ts, MAX_VIDEOS) */
 const MAX_VIDEOS = 5;
+/** ссылка на организацию в Яндекс Картах — копия MAPS_URL из src/lib/cabinet-form.ts */
+const MAPS_URL = /^https:\/\/(?:(?:www\.)?yandex\.(?:ru|com|by|kz)\/maps\/|yandex\.ru\/maps\/-\/|maps\.yandex\.ru\/|ya\.cc\/)\S+$/i;
 /** ревизия ещё не закрыта модератором */
 const OPEN_FILTER = '(status = "draft" || status = "review" || status = "rejected")';
 const SITE_URL = ($os.getenv('SITE_URL') || 'https://wed-secrets.ru').replace(/\/$/, '');
@@ -653,6 +655,13 @@ function submitProblems(rev, managed) {
   if (managed ? hasEmoji(data.tagline) || hasEmoji(data.intro) : emojiInText(data)) {
     problems.push('уберите смайлики из описания — на сайте их не будет');
   }
+  // Яндекс Карты (08.11): по ссылке ставим точку на карте и берём рейтинг;
+  // поле не обязательное, но чужая ссылка в нём — ошибка (та же проверка — cabinet-form.ts, MAPS_URL)
+  // лежит в contacts.maps: блок контактов проверка «контакты в тексте» пропускает
+  const maps = str(data.contacts && data.contacts.maps, 500);
+  if (kind === 'venue' && maps && !MAPS_URL.test(maps)) {
+    problems.push('проверьте ссылку на Яндекс Карты — нужна ссылка на вашу организацию из кнопки «Поделиться»');
+  }
   const price = priceFromOf(data);
   if (price !== null && price > MAX_PRICE) problems.push('проверьте цену — больше 50 млн ₽ не бывает');
   if (tariffsOf(data).some((t) => t.price !== null && t.price > MAX_PRICE)) problems.push('проверьте цены в прайсе');
@@ -971,6 +980,15 @@ function approve(app, rev) {
   // только теперь (PocketBase дописывает к ним случайный суффикс)
   const saved = photosOf(card);
   const coverIndex = Math.max(0, names.indexOf(rev.getString('cover')));
+  // фото залов (08.11) — имена файлов ревизии; у карточки набор в том же
+  // порядке, имя обычно то же (сохраняем при копировании), но сверяем по месту
+  if (kind === 'venue' && Array.isArray(data.halls)) {
+    const rename = {};
+    names.forEach((n, i) => { if (saved[i]) rename[n] = saved[i]; });
+    data.halls = data.halls.map((h) => (h && Array.isArray(h.photos)
+      ? Object.assign({}, h, { photos: h.photos.map((n) => rename[n]).filter((n) => !!n) })
+      : h));
+  }
   card.set('page', buildPage(kind, card, data, saved, coverIndex));
   app.save(card);
 

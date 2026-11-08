@@ -204,12 +204,14 @@ function feedOf(rec: PbRecord & Record<string, any>, venue: Venue): FeedVenue {
 async function cabinetVenue(rec: PbRecord, next: Reg): Promise<Venue | null> {
   const names = orderedPhotos(rec.page, rec.photos ?? []);
   const photos: string[] = [];
+  const byName = new Map<string, string>();
   for (let i = 0; i < names.length; i += 4) {
-    const keys = await Promise.all(names.slice(i, i + 4).map((n: string) => remoteKey(rec, n, next)));
-    photos.push(...(keys.filter(Boolean) as string[]));
+    const part = names.slice(i, i + 4);
+    const keys = await Promise.all(part.map((n: string) => remoteKey(rec, n, next)));
+    keys.forEach((k, j) => { if (k) { photos.push(k); byName.set(part[j], k); } });
   }
   if (!photos.length) return null;
-  return venueFromPage(rec.page, { slug: rec.slug, name: rec.name, photos }) as Venue;
+  return venueFromPage(rec.page, { slug: rec.slug, name: rec.name, photos, fileOf: (n: string) => byName.get(n) }) as Venue;
 }
 
 async function loadVenues(next: Reg) {

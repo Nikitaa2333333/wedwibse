@@ -622,6 +622,63 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       </div>`;
   }).join('');
 
+  // ФОТО ЗАЛА (08.11): кадры выбираются из уже загруженных в «Фото» — отдельной
+  // загрузки и своего потолка у зала нет. На сайте зал с фото — секция с рядом
+  // кадров (как у площадок конвейера), без фото — пунктом списка (lib/cabinet-venue.mjs)
+  const hallNames = (h: any): string[] => (Array.isArray(h?.photos) ? h.photos : []).filter((n: string) => (rev.photos ?? []).includes(n));
+  const hallPhotos = (h: any, i: number) => {
+    const names = hallNames(h);
+    return `
+      <div class="a-field">
+        <span class="a-field__label">Фото зала</span>
+        ${names.length ? `<div class="c-photos c-photos--mini">${names.slice(0, 5).map((n) => `<span class="c-photo"><img src="${fileUrl(rev, n, { thumb: '200x0', token })}" alt="" loading="lazy" /></span>`).join('')}</div>` : ''}
+        ${locked() ? '' : (rev.photos ?? []).length
+          ? `<button class="c-link" type="button" data-hall-photos="${i}">${names.length ? `Изменить — выбрано ${names.length}` : 'Выбрать из загруженных'}</button>`
+          : '<span class="a-field__note">Сначала загрузите фото в разделе «Фото» — здесь выберете кадры этого зала</span>'}
+      </div>`;
+  };
+
+  /** окно выбора кадров зала: отметка нажатием, номер — порядок на странице */
+  function openHallPhotos(i: number) {
+    const hall = data.halls?.[i];
+    if (!hall) return;
+    const all: string[] = rev.photos ?? [];
+    const picked = hallNames(hall);
+    const { dlg, close } = openDialog({
+      html: `<div class="c-dialog__body">
+      <button class="c-dialog__x" type="button" data-close aria-label="Закрыть">${X_ICON}</button>
+      <h2 class="a-h2">Фото зала${hall.name ? ` «${esc(hall.name)}»` : ''}</h2>
+      <p class="a-lead">Отметьте кадры этого зала. Первый отмеченный встанет первым</p>
+      <div class="c-photos c-yd-grid">${all.map((n) => `
+        <button class="c-photo c-yd-pick" type="button" aria-pressed="false" data-hp="${esc(n)}">
+          <img src="${fileUrl(rev, n, { thumb: '400x0', token })}" alt="" loading="lazy" />
+          <span class="c-yd-pick__n" aria-hidden="true"></span>
+        </button>`).join('')}</div>
+      <div class="c-yd-bar"><button class="a-btn a-btn--primary a-btn--lg a-btn--block" type="button" data-hp-done>Готово</button></div>
+    </div>`,
+    });
+    const sync = () => dlg.querySelectorAll<HTMLElement>('[data-hp]').forEach((b) => {
+      const k = picked.indexOf(b.dataset.hp!);
+      b.setAttribute('aria-pressed', String(k !== -1));
+      b.querySelector('.c-yd-pick__n')!.textContent = k === -1 ? '' : String(k + 1);
+    });
+    dlg.addEventListener('click', (e) => {
+      const t = (e.target as HTMLElement).closest<HTMLElement>('[data-hp], [data-hp-done]');
+      if (!t) return;
+      if (t.dataset.hp) {
+        const k = picked.indexOf(t.dataset.hp);
+        if (k === -1) picked.push(t.dataset.hp); else picked.splice(k, 1);
+        sync();
+        return;
+      }
+      hall.photos = [...picked];
+      close();
+      renderSection('zaly');
+      later();
+    });
+    sync();
+  }
+
   const tools = (list: string, i: number, n: number) => `
     <div class="c-item__tools">
       <button class="c-tool c-tool--up" type="button" data-move="${list}" data-i="${i}" data-d="-1" aria-label="Выше" ${i === 0 ? 'disabled' : ''}>${icon('back')}</button>
@@ -678,6 +735,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
           ? { title: role(), lead: '', html: `
               ${field('Название площадки', 'name', data.name)}
               ${field('Адрес', 'address', data.address, { placeholder: 'Москва, улица, дом — или посёлок и шоссе' })}
+              ${field('Ссылка на вас в Яндекс Картах', 'contacts.maps', data.contacts?.maps, { type: 'url', placeholder: 'https://yandex.ru/maps/org/…', note: 'Откройте свою организацию в Яндекс Картах, нажмите «Поделиться» и скопируйте ссылку. По ней поставим точку на нашей карте и покажем рейтинг' })}
               <div class="c-grid2">
                 ${field('Аренда от, ₽', 'rentFrom', data.rentFrom, { mode: 'numeric', note: 'За день; нет аренды — оставьте пустым' })}
                 ${field('Средний чек от, ₽ на гостя', 'checkFrom', data.checkFrom, { mode: 'numeric' })}
@@ -772,7 +830,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       }
       case 'zaly': {
         const hs = data.halls ?? [];
-        return { title: 'Залы', lead: 'Каждый зал — своя секция на странице площадки: вместимость и цена.', html: `
+        return { title: 'Залы', lead: 'Каждый зал — своя секция на странице площадки: фото, вместимость и цена.', html: `
           <div class="c-items">${hs.map((h: any, i: number) => `
             <div class="c-item">
               ${field('Название зала', `halls.${i}.name`, h.name, { placeholder: 'Стеклянный зал' })}
@@ -783,6 +841,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
                 ${field('Аренда или депозит от, ₽', `halls.${i}.priceFrom`, h.priceFrom, { mode: 'numeric' })}
               </div>
               ${field('Коротко о зале', `halls.${i}.note`, h.note, { area: true, placeholder: 'Панорамные окна, выход на веранду' })}
+              ${hallPhotos(h, i)}
               ${tools('halls', i, hs.length)}
             </div>`).join('')}</div>
           <button class="c-add" type="button" data-add="halls">${ADD_IC}Добавить зал</button>` };
@@ -1393,6 +1452,10 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       derive();
       renderSection('osnovnoe');
       later();
+      return;
+    }
+    if (b.dataset.hallPhotos) {
+      openHallPhotos(Number(b.dataset.hallPhotos));
       return;
     }
     if (b.dataset.pmode) {
