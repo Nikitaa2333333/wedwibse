@@ -1,0 +1,129 @@
+{
+  "slug": "kozina",
+  "categorySlug": "stilisty",
+  "category": "Стилисты и визажисты",
+  "name": "Любовь Козина",
+  "avatar": "/specialists/stilisty/avatars/kozina.webp",
+  "portrait": "/specialists/stilisty/kozina/portrait.webp",
+  "photos": [
+    "/specialists/stilisty/kozina/gal/p14.webp",
+    "/specialists/stilisty/kozina/gal/p22.webp",
+    "/specialists/stilisty/kozina/gal/p20.webp",
+    "/specialists/stilisty/kozina/gal/p24.webp",
+    "/specialists/stilisty/kozina/gal/p38.webp",
+    "/specialists/stilisty/kozina/gal/p41.webp",
+    "/specialists/stilisty/kozina/gal/p40.webp",
+    "/specialists/stilisty/kozina/gal/p18.webp",
+    "/specialists/stilisty/kozina/gal/p19.webp",
+    "/specialists/stilisty/kozina/gal/p21.webp",
+    "/specialists/stilisty/kozina/gal/p25.webp",
+    "/specialists/stilisty/kozina/gal/p28.webp",
+    "/specialists/stilisty/kozina/gal/p29.webp",
+    "/specialists/stilisty/kozina/gal/p32.webp",
+    "/specialists/stilisty/kozina/gal/p36.webp",
+    "/specialists/stilisty/kozina/gal/p37.webp",
+    "/specialists/stilisty/kozina/gal/p39.webp",
+    "/specialists/stilisty/kozina/gal/p31.webp",
+    "/specialists/stilisty/kozina/gal/p17.webp",
+    "/specialists/stilisty/kozina/gal/p11.webp",
+    "/specialists/stilisty/kozina/gal/p10.webp",
+    "/specialists/stilisty/kozina/gal/p23.webp",
+    "/specialists/stilisty/kozina/gal/p35.webp",
+    "/specialists/stilisty/kozina/gal/p33.webp",
+    "/specialists/stilisty/kozina/gal/p12.webp",
+    "/specialists/stilisty/kozina/gal/p13.webp"
+  ],
+  "tagline": "Свадебные образы и макияж для невест",
+  "bio": "Свадебный стилист и визажист. В профессии с 2020 года: собираю девушек на любые мероприятия и важные события, работала на конкурсах красоты «Мисис Россия» и «Королева Москвы».\n\nПровожу обучения «Сам себе визажист».",
+  "gender": "ж",
+  "priceFrom": 7000,
+  "priceNote": "образ в студии; с выездом по Подольску — 12 000 ₽, по Москве — 18 000 ₽",
+  "age": "25–35",
+  "experienceYears": 6,
+  "cities": [
+    "цао",
+    "сао",
+    "свао",
+    "вао",
+    "юво",
+    "юао",
+    "юзао",
+    "зао",
+    "сзао",
+    "mo",
+    "вне-мо"
+  ],
+  "aboutTitle": "О стилисте",
+  "story": [
+    {
+      "lead": "Свадебный стилист и визажист Любовь Козина.",
+      "text": [
+        "В профессии с 2020 года. Собираю девушек на любые мероприятия и важные события, работала на конкурсах красоты «Мисис Россия» и «Королева Москвы».",
+        "Провожу обучения: «Сам себе визажист»."
+      ]
+    },
+    {
+      "title": "Услуги и стоимость",
+      "list": [
+        "Образ в студии — 7 000 ₽",
+        "Образ с выездом по Подольску — 12 000 ₽",
+        "Образ с выездом по Москве — 18 000 ₽",
+        "Репетиция образа — 7 000 ₽, проводится в студии"
+      ]
+    }
+  ],
+  "filters": {
+    "city": [
+      "цао",
+      "сао",
+      "свао",
+      "вао",
+      "юво",
+      "юао",
+      "юзао",
+      "зао",
+      "сзао",
+      "mo",
+      "вне-мо"
+    ],
+    "service": [
+      "makeup",
+      "hair",
+      "bridal-look",
+      "escort",
+      "styling"
+    ],
+    "minBudget": "0-10",
+    "onSite": "yes"
+  },
+  "packageIncludes": [
+    "Макияж",
+    "Причёска",
+    "Свадебный образ",
+    "Сопровождение невесты",
+    "Стайлинг"
+  ],
+  "quote": "Образ в студии — 7 000 ₽, с выездом по Подольску — 12 000 ₽, по Москве — 18 000 ₽.",
+  "offers": [
+    {
+      "title": "Образ в студии — 7 000 ₽",
+      "text": "Свадебный образ в студии."
+    },
+    {
+      "title": "Выезд по Подольску — 12 000 ₽",
+      "text": "Образ с выездом по Подольску."
+    },
+    {
+      "title": "Выезд по Москве — 18 000 ₽",
+      "text": "Образ с выездом по Москве."
+    },
+    {
+      "title": "Репетиция — 7 000 ₽",
+      "text": "Репетиция образа проходит в студии."
+    },
+    {
+      "title": "Обучение «Сам себе визажист»",
+      "text": "Провожу обучения, как сделать макияж самой."
+    }
+  ]
+}
