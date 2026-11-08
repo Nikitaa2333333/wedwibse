@@ -162,12 +162,12 @@ const DemoScene: React.FC = () => {
       {f >= 53 && f < 850 && <Phone3D pose={pose} lifted={lifted} island={islandEl} dark={th.d > 0.5} opacity={prog(f, 53, 72)}>{screen}</Phone3D>}
 
       <Words text="Свадебный каталог Москвы и области" from={70} to={126} ink={ink} />
-      <Words text="Пары выбирают глазами" from={198} to={266} ink={ink} />
-      <Words text="Сохраняют в избранное" from={272} to={362} ink={ink} />
+      <Words text="Здесь пары собирают свою свадьбу" from={198} to={266} ink={ink} />
+      <Words text="Сохраняют понравившихся" from={272} to={362} ink={ink} />
       <Words text="И оставляют заявку" from={368} to={474} ink={ink} />
-      <Words text="Заявка — сразу в кабинете" from={504} to={632} ink={ink} />
-      <Words text="Вы видите интерес пар" from={642} to={784} ink={ink} />
-      <Words text="Ваша площадка — следующая" from={834} to={892} ink={ink} size={150} centered />
+      <Words text="Заявка приходит в ваш кабинет" from={504} to={632} ink={ink} />
+      <Words text="Видна вся статистика" from={642} to={784} ink={ink} />
+      <Words text="Ваша карточка — следующая" from={834} to={892} ink={ink} size={150} centered />
 
       {f >= 894 && (
         <AbsoluteFill style={{ display: 'grid', placeContent: 'center', justifyItems: 'center', gap: L.wide ? 56 : 72, color: ink, fontFamily: BRAND.sans }}>
