@@ -50,9 +50,9 @@ const DemoScene: React.FC = () => {
   const pose: Pose = {
     x: L.phone.cx,
     y: L.phone.cy + kf(f, [[44, 760], [112, 0], [122, 0], [146, 150], [188, 150], [206, 0], [366, 0], [380, L.wide ? 0 : -110], [470, L.wide ? 0 : -110], [490, 0], [790, 0], [846, 1500]]),
-    s: kf(f, [[44, b * 0.72], [112, b], [122, b], [146, b * 1.9], [188, b * 1.9], [206, b * 1.02], [262, b * 1.02], [278, b * 1.5], [350, b * 1.5], [366, b * 1.1], [790, b * 1.1], [846, b * 0.8]]),
-    rx: kf(f, [[44, 24], [112, 8], [122, 8], [146, 30], [188, 32], [206, 4], [262, 4], [278, 12], [350, 12], [366, 10], [790, 10], [846, 18]]),
-    ry: kf(f, [[44, -40], [112, -16], [122, -16], [146, 10], [188, 16], [206, -6], [262, -6], [278, 14], [350, 14], [366, -14], [468, -14], [492, 90], [493, -90], [520, -14], [638, -14], [662, 16], [790, 16], [846, 55]]),
+    s: kf(f, [[44, b * 0.72], [112, b], [122, b], [146, b * 1.9], [188, b * 1.9], [206, b * 1.02], [262, b * 1.02], [278, b * 1.5], [350, b * 1.5], [366, b * 1.1], [476, b * 1.1], [490, b * 1.02], [506, b * 1.1], [790, b * 1.1], [846, b * 0.8]]),
+    rx: kf(f, [[44, 14], [112, 6], [122, 6], [146, 16], [188, 18], [206, 4], [262, 4], [278, 8], [350, 8], [366, 6], [790, 6], [846, 10]]),
+    ry: kf(f, [[44, -14], [112, -9], [122, -9], [146, 7], [188, 10], [206, -4], [262, -4], [278, 9], [350, 9], [366, -9], [468, -9], [502, 9], [638, 9], [662, -9], [790, -9], [846, 6]]),
     rz: kf(f, [[44, -8], [112, -3], [122, -3], [146, -12], [188, -9], [206, 0], [262, 0], [278, -3], [350, -3], [366, 2], [638, 2], [662, -3], [790, -3], [846, -8]]),
     fx: kf(f, [[262, 195], [278, 240], [350, 240], [366, 195]]),
     fy: kf(f, [[122, 422], [146, 470], [188, 470], [206, 422], [262, 422], [278, 150], [350, 150], [366, 422]]),
@@ -63,11 +63,11 @@ const DemoScene: React.FC = () => {
   const open = prog(f, 218, 244, easeInOut);
   const sheet = prog(f, 398, 420, easeInOut);
   const saved = prog(f, 285, 292);
-  const cabinet = f >= 493;
+  const cabinet = f >= 484;
   const toCards = prog(f, 640, 660, easeInOut);
   const plus = prog(f, 700, 712);
 
-  const screen = !cabinet ? (
+  const siteLayer = (
     <>
       {f < 248 && (
         <div style={{ position: 'absolute', inset: 0, background: BRAND.cream }}>
@@ -88,10 +88,19 @@ const DemoScene: React.FC = () => {
         </div>
       )}
     </>
-  ) : (
+  );
+  const cabLayer = (
     <>
       <div style={{ position: 'absolute', inset: 0, transform: `translateX(${-30 * toCards}%)` }}><LeadsScreen callScale={press(f, 580)} /></div>
       {toCards > 0 && <div style={{ position: 'absolute', inset: 0, transform: `translateX(${(1 - toCards) * 100}%)` }}><MyCardsScreen saved={f >= 700 ? 13 : 12} plus={plus} thumb="venues/led/hero-main.webp" /></div>}
+    </>
+  );
+  // переход сайт → кабинет: без переворота ребром (грань не показываем) — кабинет въезжает сбоку
+  const swap = prog(f, 484, 502, easeInOut);
+  const screen = (
+    <>
+      {f < 502 && <div style={{ position: 'absolute', inset: 0, transform: `translateX(${-30 * swap}%)` }}>{siteLayer}</div>}
+      {f >= 484 && <div style={{ position: 'absolute', inset: 0, transform: `translateX(${(1 - swap) * 100}%)`, boxShadow: '-20px 0 40px rgba(0,0,0,0.15)' }}>{cabLayer}</div>}
     </>
   );
 

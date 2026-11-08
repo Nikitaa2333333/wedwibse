@@ -12,7 +12,7 @@ export interface Pose {
   fx: number; fy: number; // точка экрана (CSS px), которая стоит в (x, y)
 }
 
-const EDGE = 9; // слоёв корпуса: толщина видна на повороте
+const EDGE = 5; // слоёв корпуса: тонкая грань, на малых поворотах почти не видна
 const BEZEL = 12;
 const R_OUT = 64;
 const R_SCREEN = 52;
@@ -33,7 +33,7 @@ export const Phone3D: React.FC<{ pose: Pose; children: React.ReactNode; lifted?:
         {/* корпус: слои с отступом по глубине — на повороте видна грань */}
         {Array.from({ length: EDGE }, (_, i) => (
           <div key={i} style={{ position: 'absolute', left: -BEZEL, top: -BEZEL, width: W, height: H, borderRadius: R_OUT,
-            transform: `translateZ(${-(i + 1) * 2}px)`, background: `linear-gradient(${120 + ry}deg, #6b625b, #2b2521 40%, #8a8079 55%, #2b2521 75%, #4a423c)` }} />
+            transform: `translateZ(${-(i + 1) * 1.4}px)`, background: `linear-gradient(${120 + ry}deg, #9a948f, #1c1917 30%, #c9c3bd 50%, #1c1917 70%, #6e6862)` }} />
         ))}
         {/* лицевая рамка */}
         <div style={{ position: 'absolute', left: -BEZEL, top: -BEZEL, width: W, height: H, borderRadius: R_OUT, background: '#0d0b0a',
