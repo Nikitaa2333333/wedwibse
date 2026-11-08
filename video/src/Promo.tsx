@@ -84,9 +84,10 @@ export const Promo: React.FC = () => {
       {f < 1134 ? (
         <Btn dark h={SUBMIT_RECT.h} style={{ width: '100%', transform: `scale(${press(f, 1130)})`, fontFamily: CAB.font }}>Отправить на проверку</Btn>
       ) : (
-        <div style={{ width: '100%', height: '100%', borderRadius: 999, background: CAB.card, display: 'grid', placeItems: 'center' }}>
-          {f < 1152 ? <Chip kind="info" style={{ fontFamily: CAB.font, transform: `scale(${0.8 + 0.2 * prog(f, 1134, 1144)})` }}>На проверке</Chip>
-            : <Chip kind="ok" style={{ fontFamily: CAB.font, transform: `scale(${0.8 + 0.2 * prog(f, 1152, 1162)})` }}>На сайте</Chip>}
+        // кнопка сворачивается в одну плашку статуса — без белой подложки (Никита 08.11)
+        <div style={{ display: 'grid', placeItems: 'center' }}>
+          {f < 1152 ? <Chip kind="info" style={{ fontFamily: CAB.font, transform: `scale(${1.6 * (0.8 + 0.2 * prog(f, 1134, 1144))})` }}>На проверке</Chip>
+            : <Chip kind="ok" style={{ fontFamily: CAB.font, transform: `scale(${1.6 * (0.8 + 0.2 * prog(f, 1152, 1162))})` }}>На сайте</Chip>}
         </div>
       )}
       <Tap x={SUBMIT_RECT.w / 2} y={SUBMIT_RECT.h / 2} at={1130} />
@@ -228,7 +229,7 @@ export const Promo: React.FC = () => {
         <Tap x={28} y={24} at={748} />
       </Pull>
       <Pull cam={cam} rect={PILL_RECT} t={tPill} scale={ps(2.6, 2.0)} radius={22}><ProgressPill pct={pct} /></Pull>
-      <Pull cam={cam} rect={SUBMIT_RECT} t={tSubmit} scale={ps(2.4, 1.8)} radius={999}>{submit}</Pull>
+      <Pull cam={cam} rect={SUBMIT_RECT} t={tSubmit} scale={ps(2.4, 1.8)} radius={999} shadow={f < 1134}>{submit}</Pull>
 
       {f >= 1288 && (
         <div style={{ position: 'absolute', inset: 0, display: 'grid', placeContent: 'center', justifyItems: 'center', gap: L.wide ? 56 : 72, color: th.ink, fontFamily: BRAND.sans }}>

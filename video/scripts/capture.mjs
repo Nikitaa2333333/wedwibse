@@ -55,6 +55,9 @@ for (const slug of ['villa-barvikha', 'led']) {
   await p.screenshot({ path: OUT + `venue-${slug}.png` });
   if (slug === 'villa-barvikha') {
     rects.bookBtn = await rect(p, '[data-booking-open]');
+    rects.heart = await rect(p, '.hero-btn[data-save]');
+    // в шторке — только поля и кнопка: служебные подписи в ролик не берём (Никита 08.11)
+    await p.addStyleTag({ content: '.field__note, .booking__legal { display: none !important; }' });
     await p.click('[data-booking-open]');
     await p.waitForTimeout(700);
     await p.fill('[data-booking-form] input[name=name]', 'Мария');

@@ -27,13 +27,16 @@ export function useLayout(): Layout {
 }
 
 // ——— фон: бумага ↔ тёмная тема (кабинет) ———
-export interface Theme { bg: string; ink: string }
+export interface Theme { bg: string; ink: string; glow: string; d: number }
 export function useTheme(darkKeys: [number, number][]): Theme {
   const f = useCurrentFrame();
   const d = kf(f, darkKeys);
   return {
     bg: interpolateColors(d, [0, 1], [BRAND.cream, BRAND.darkPaper]),
     ink: interpolateColors(d, [0, 1], [BRAND.chocolate, BRAND.darkInk]),
+    // светлое пятно за телефоном — мягкий студийный свет
+    glow: interpolateColors(d, [0, 1], ['#fffaf3', '#3a322c']),
+    d,
   };
 }
 
@@ -77,7 +80,7 @@ export const Tap: React.FC<{ x: number; y: number; at: number }> = ({ x, y, at }
 
 // ——— элемент, вырванный из экрана на сцену ———
 // rect — где он лежит на экране (CSS px); t — 0 на месте, 1 крупно в точке to.
-export const Pull: React.FC<{ cam: Cam; rect: { x: number; y: number; w: number; h: number }; t: number; scale: number; to?: { x: number; y: number }; radius?: number; children: React.ReactNode }> = ({ cam, rect, t, scale, to, radius = 0, children }) => {
+export const Pull: React.FC<{ cam: Cam; rect: { x: number; y: number; w: number; h: number }; t: number; scale: number; to?: { x: number; y: number }; radius?: number; shadow?: boolean; children: React.ReactNode }> = ({ cam, rect, t, scale, to, radius = 0, shadow = true, children }) => {
   const L = useLayout();
   if (t <= 0.001) return null;
   const from = toStage(L, cam, rect.x + rect.w / 2, rect.y + rect.h / 2);
@@ -88,7 +91,7 @@ export const Pull: React.FC<{ cam: Cam; rect: { x: number; y: number; w: number;
   return (
     <div style={{ position: 'absolute', left: 0, top: 0, width: rect.w, height: rect.h, transformOrigin: '50% 50%',
       transform: `translate(${x - rect.w / 2}px, ${y - rect.h / 2}px) scale(${s})`, borderRadius: radius, overflow: 'hidden',
-      boxShadow: `0 ${18 * t}px ${50 * t}px rgba(20,14,10,${0.22 * t})`, zIndex: 40 }}>
+      boxShadow: shadow ? `0 ${18 * t}px ${50 * t}px rgba(20,14,10,${0.22 * t})` : 'none', zIndex: 40 }}>
       {children}
     </div>
   );
