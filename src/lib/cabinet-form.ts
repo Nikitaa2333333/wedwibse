@@ -37,6 +37,14 @@ export const MAX_TARIFFS = 5;
 export const MIN_PHOTOS = 8;
 export const MAX_PHOTOS = 50;
 export const MIN_TEXT = 150;
+/**
+ * Ссылка на организацию в Яндекс.Картах (площадка, 08.11): из неё берём точку
+ * на нашей карте, рейтинг и отзывы (скилл venue-page, фаза 1а). Подходят полная
+ * ссылка на организацию и короткая из кнопки «Поделиться»; та же проверка — в хуке.
+ * Лежит в data.contacts.maps: блок контактов проверка «контакты в тексте» пропускает.
+ */
+export const MAPS_URL = /^https:\/\/(?:(?:www\.)?yandex\.(?:ru|com|by|kz)\/maps\/|yandex\.ru\/maps\/-\/|maps\.yandex\.ru\/|ya\.cc\/)\S+$/i;
+
 /** карточек на одну учётку — то же число в хуке (pb/pb_hooks/lib/cabinet.js, MAX_CARDS) */
 export const MAX_CARDS = 3;
 
