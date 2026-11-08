@@ -917,6 +917,14 @@ function approve(app, rev) {
     const stale = staleProblem(app, rev);
     if (stale) throw new BadRequestError(stale + ' Верните правку подрядчику: пусть откроет карточку заново.');
     if (kind === 'specialist' && jsonOf(card, 'form').managed === true) return approveManaged(app, rev, card);
+    // Площадка, заведённая нами (страница конвейера venue-page, не 'cabinet'):
+    // её page — блоки VenueBlock, а кадры связаны с src/assets через photoIndex.
+    // Одобрение анкеты заменило бы и то и другое формой кабинета и стёрло
+    // страницу. «Ведём мы» для площадок ещё нет — правку переносим руками (08.11).
+    const page = jsonOf(card, 'page');
+    if (kind === 'venue' && Object.keys(page).length && page.source !== 'cabinet') {
+      throw new BadRequestError('Эту площадку ведём мы: страница собрана из наших материалов, одобрение анкеты её перезапишет. Перенесите правку руками в данные площадки.');
+    }
   } else {
     if (slugTaken(app, kind, rev.getString('categorySlug'), rev.getString('slug'), rev.id)) {
       throw new BadRequestError(`Адрес «${rev.getString('slug')}» уже занят — поменяйте slug в ревизии.`);
@@ -1103,7 +1111,6 @@ function previewLink(e) {
     throw new NotFoundError('Анкета не найдена.');
   }
   if (rev.getString('owner') !== e.auth.id) throw new ForbiddenError('Это не ваша анкета.');
-  if (rev.getString('kind') !== 'specialist') throw new BadRequestError('Превью площадки пока нет — оно появится вместе со страницами площадок из кабинета.');
   const t = $security.createJWT({ rev: rev.id }, previewSecret(), PREVIEW_TTL);
   return e.json(200, { url: `/profi/prevyu/?t=${encodeURIComponent(t)}` });
 }
@@ -1126,13 +1133,16 @@ function previewData(e) {
   const { rev, t } = previewRevision(e);
   const data = jsonOf(rev, 'data');
   const names = photosOf(rev);
-  // revision подставляется вместо карточки: slug, категория и портрет у неё свои
-  const page = buildPage('specialist', rev, data, names, Math.max(0, names.indexOf(rev.getString('cover'))));
+  // revision подставляется вместо карточки: slug, категория и портрет у неё свои;
+  // площадка (08.11) — тем же buildPage, страницу рисует components/VenuePage
+  const kind = rev.getString('kind') === 'venue' ? 'venue' : 'specialist';
+  const page = buildPage(kind, rev, data, names, Math.max(0, names.indexOf(rev.getString('cover'))));
   // Файлы ревизии закрыты. Раньше здесь выдавался ключ владельца на чтение
   // файлов — он уходил в адреса картинок страницы и открывал ВСЕ закрытые
   // файлы подрядчика (аудит 05.11). Теперь кадры отдаёт previewFile по той же
   // 15-минутной ссылке и только кадры этой анкеты; ключа наружу нет.
   return e.json(200, {
+    kind,
     page,
     status: rev.getString('status'),
     files: `/api/wed/preview-file?t=${encodeURIComponent(t)}&n=`,

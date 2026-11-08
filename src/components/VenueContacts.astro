@@ -46,10 +46,12 @@ const { contacts } = venue;
             <dt class="rows__label">Адрес</dt>
             <dd class="rows__value">{contacts.address}</dd>
           </div>
-          <div class="rows__row">
-            <dt class="rows__label">Рядом</dt>
-            <dd class="rows__value">{contacts.addressNote}</dd>
-          </div>
+          {contacts.addressNote && (
+            <div class="rows__row">
+              <dt class="rows__label">Рядом</dt>
+              <dd class="rows__value">{contacts.addressNote}</dd>
+            </div>
+          )}
         </dl>
       </div>
 
@@ -65,7 +67,8 @@ const { contacts } = venue;
       </figure>
     </div>
 
-    <div class="cta__bottom">
+    {/* у площадки из кабинета маршрутов нет (анкета их не спрашивает) — блока тоже */}
+    {contacts.routes.length > 0 && <div class="cta__bottom">
       <div>
         <h3 class="cta__sub">Как добраться</h3>
         <dl class="rows">
@@ -80,7 +83,7 @@ const { contacts } = venue;
         </dl>
       </div>
 
-    </div>
+    </div>}
   </div>
 </section>
 
@@ -93,6 +96,8 @@ const { contacts } = venue;
     gap: var(--section-gap-tight) var(--s-8);
     margin-bottom: var(--section-gap-tight);
   }
+  /* без «Как добраться» нижний отступ даёт сама секция */
+  .cta__top:last-child { margin-bottom: 0; }
 
   .cta__title {
     font-size: var(--fs-h1);

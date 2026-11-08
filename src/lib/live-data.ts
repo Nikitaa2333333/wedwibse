@@ -13,6 +13,7 @@
 import type { ImageMetadata } from 'astro';
 import { inferRemoteSize } from 'astro:assets';
 import { cardFromPage, orderedPhotos } from './cabinet-card.mjs';
+import { venueFromPage } from './cabinet-venue.mjs';
 import { catalogImage, catalogEntries, setCatalogImages, hasLocalImage } from './images';
 import { applyLive, type OwnerEdits, type Specialist } from '../data/specialists';
 import { applyLiveVenues, type Venue } from '../data/venues';
@@ -182,14 +183,33 @@ function feedOf(rec: PbRecord & Record<string, any>, venue: Venue): FeedVenue {
     kind: 'venue',
     slug: rec.slug,
     name: rec.name || venue.name,
-    city: rec.city || (venue as any).city || 'Москва',
-    type: (venue as any).kicker || 'Площадка',
+    // у площадки из кабинета бирка «Тип · Топоним» (cabinet-venue.mjs): в карточку
+    // каталога тип и место идут порознь, как у записанных руками
+    ...(rec.page?.source === 'cabinet'
+      ? { city: rec.city || venue.kicker.split(' · ')[1] || 'Москва', type: venue.kicker.split(' · ')[0] }
+      : { city: rec.city || (venue as any).city || 'Москва', type: (venue as any).kicker || 'Площадка' }),
     capacityMax: cap,
     capacity: cap ? `до ${cap} гостей` : 'вместимость по запросу',
     ...(check ? { checkFrom: check } : {}),
     avgCheck: check ? `от ${priceFmt.format(check)} ₽` : 'чек по запросу',
     media: [...new Set(photos)].slice(0, 4),
   } as FeedVenue;
+}
+
+/**
+ * Площадка из кабинета (page.source = 'cabinet', форма buildPage) → Venue.
+ * Кадры — файлы карточки в базе, как у подрядчика из кабинета (cabinetCard).
+ * null — ни один кадр не замерился.
+ */
+async function cabinetVenue(rec: PbRecord, next: Reg): Promise<Venue | null> {
+  const names = orderedPhotos(rec.page, rec.photos ?? []);
+  const photos: string[] = [];
+  for (let i = 0; i < names.length; i += 4) {
+    const keys = await Promise.all(names.slice(i, i + 4).map((n: string) => remoteKey(rec, n, next)));
+    photos.push(...(keys.filter(Boolean) as string[]));
+  }
+  if (!photos.length) return null;
+  return venueFromPage(rec.page, { slug: rec.slug, name: rec.name, photos }) as Venue;
 }
 
 async function loadVenues(next: Reg) {
@@ -202,7 +222,11 @@ async function loadVenues(next: Reg) {
     if (!rec.slug || !rec.page) continue;
     // одна битая запись не останавливает обновление всего каталога (05.11.2026)
     try {
-      let venue = (await mapVenueImages(rec, rec.page, next)) as Venue | null;
+      // площадка из кабинета — своя форма page, её переводим в Venue;
+      // площадка конвейера — page уже Venue, меняем только пути кадров
+      let venue = (rec.page.source === 'cabinet'
+        ? await cabinetVenue(rec, next)
+        : await mapVenueImages(rec, rec.page, next)) as Venue | null;
       if (venue) lastVenues.set(rec.slug, venue);
       else {
         // кадр не замерился — прошлая удачная версия площадки, а без неё площадку пропускаем

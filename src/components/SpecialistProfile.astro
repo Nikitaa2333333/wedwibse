@@ -221,15 +221,7 @@ const saveData = JSON.stringify({
     padding-bottom: var(--dock-space);
   }
 
-  /* Превью анкеты: одна строка над первым экраном, чтобы черновик
-     не путали с опубликованной карточкой. Цвет — отметка состояния. */
-  .draft-bar {
-    padding: var(--s-3) var(--gutter);
-    background: var(--accent);
-    color: var(--brand-fg);
-    font-size: var(--fs-small);
-    line-height: var(--lh-snug);
-  }
+  /* .draft-bar (строка «Черновик» превью) — в global.css: она же у площадки (VenuePage) */
 
   /* Подписи первого экрана здесь больше нет: имя, специальность, рейтинг
      и портрет собирает сам HeroStage из пропов. Своя верстка на этом
