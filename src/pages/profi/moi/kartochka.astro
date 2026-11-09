@@ -865,7 +865,7 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
             ${field('Цена от, ₽', 'priceFrom', data.priceFrom, { mode: 'numeric', placeholder: '40 000' })}
             <div class="c-card c-card--chips">
               ${/* подсказка в поле не повторяет вариант из капсул: «за проект» серым читалось как выбранное (06.11) */''}
-              ${field('Цена указана за', 'priceNote', data.priceNote, { placeholder: 'или впишите свой вариант' })}
+              ${field('Цена указана за', 'priceNote', data.priceNote, { grow: 'line', placeholder: 'или впишите свой вариант' })}
               ${unitChips('priceNote', data.priceNote)}
             </div>` : ''}
           ${mode === 'tariffs' ? `
@@ -1557,7 +1557,10 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
     if (b.dataset.unit) {
       setPath(b.dataset.unit, b.dataset.v);
       const inp = view.querySelector<HTMLInputElement>(`[data-bind="${b.dataset.unit}"]`);
-      if (inp) inp.value = b.dataset.v!;
+      if (inp) {
+        inp.value = b.dataset.v!;
+        if (inp.matches('textarea[data-grow]')) grow(inp as unknown as HTMLTextAreaElement);
+      }
       view.querySelectorAll<HTMLElement>(`[data-unit="${b.dataset.unit}"]`).forEach((o) => o.setAttribute('aria-pressed', String(o === b)));
       later();
       return;
