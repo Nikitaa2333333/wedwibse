@@ -807,12 +807,12 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
     if (!managed()) return null;
     if (ourVenue()) return ourVenueBody(key);
     if (key === 'osnovnoe') return { title: role(), lead: '', html: `
-      <div class="c-card">
-        <p class="a-field__label">Имя</p><p>${esc(data.name)}</p>
-      </div>
+      <dl class="c-card c-ro">
+        <div class="c-ro__row"><dt class="c-ro__label">Имя</dt><dd class="c-ro__value">${esc(data.name)}</dd></div>
+      </dl>
       ${field('Строка под именем', 'tagline', data.tagline, { grow: 'line', placeholder: 'Репортаж без постановки, плёнка по желанию', note: kind === 'venue' ? 'Одна фраза, до 80 знаков — её видно в каталоге' : 'Одна фраза, до 80 знаков. Профессию не пишите — она стоит перед фразой сама', max: 80 })}
       ${avatarField()}
-      ${requestField('text', 'Что ещё поправить', 'Например: имя — «Михаил Галкин, ведущий»')}` };
+      ${requestField('text', 'Что ещё поправить', 'Например: писать имя иначе или поменять название студии')}` };
     if (key === 'tekst') {
       // текст «ведём мы» правим только мы (Никита 09.11): поле «Коротко о себе»
       // (первый абзац) убрано — оторванный от продолжения абзац правили невпопад,
@@ -846,10 +846,10 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
     if (key === 'osnovnoe') {
       const opts = VENUE_QUESTIONS.find((q) => q.key === 'type')?.options ?? [];
       return { title: role(), lead: '', html: `
-        <div class="c-card">
-          <p class="a-field__label">Название</p><p>${esc(data.name)}</p>
-          ${data.address ? `<p class="a-field__label">Адрес</p><p>${esc(data.address)}</p>` : ''}
-        </div>
+        <dl class="c-card c-ro">
+          <div class="c-ro__row"><dt class="c-ro__label">Название</dt><dd class="c-ro__value">${esc(data.name)}</dd></div>
+          ${data.address ? `<div class="c-ro__row"><dt class="c-ro__label">Адрес</dt><dd class="c-ro__value">${esc(data.address)}</dd></div>` : ''}
+        </dl>
         <div class="c-q">
           <span class="c-q__label">Тип площадки</span>
           <div class="c-opts">${opts.map((o) => `<button class="c-opt" type="button" aria-pressed="${data.type === o.value}" data-vtype="${esc(o.value)}">${esc(o.label)}</button>`).join('')}</div>
@@ -864,7 +864,7 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
       const rows: any[] = data.rows ?? [];
       const groups = [...new Set(rows.map((r) => r.group))];
       // группа строк — плашкой, как зал в «Тарифах залов» (одна плашка на объект)
-      return { title: 'Цены и условия', lead: `Строки со страницы: поменяйте значение — подпись строки остаётся нашей. <a href="${page}" target="_blank" rel="noopener">Посмотреть на странице</a>`, html: rows.length ? `
+      return { title: 'Цены и условия', lead: `Цены и условия с вашей страницы. Меняйте значения — названия строк останутся как есть. <a href="${page}" target="_blank" rel="noopener">Посмотреть на странице</a>`, html: rows.length ? `
         <div class="c-items">${groups.map((g) => `
           <div class="c-item">
             <p class="c-q__label">${esc(g)}</p>
