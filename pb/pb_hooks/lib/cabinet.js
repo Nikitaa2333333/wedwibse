@@ -1079,6 +1079,20 @@ function applyData(kind, card, data) {
  * venue-page / specialist-page (source: 'cabinet'): такие карточки рисует
  * сервер прямо из базы (docs/cabinet/CABINET.md, раздел 11), в src/ их не выгружаем.
  */
+/**
+ * Точка площадки (09.11): подрядчик подтвердил или сам поставил её на карте в анкете
+ * (src/lib/geo-pick.ts) — это его данные, не ответ геокодера (условия Яндекса, docs/MAPS-SETUP.md).
+ * Вне Москвы и области (та же рамка — GEO_BOX в geo-pick.ts) — не берём.
+ */
+function geoOf(data) {
+  const g = data.contacts && data.contacts.geo;
+  if (!g || typeof g !== 'object') return null;
+  const lat = Number(g.lat);
+  const lon = Number(g.lon);
+  if (!isFinite(lat) || !isFinite(lon) || lat < 54 || lat > 57.5 || lon < 35 || lon > 40.5) return null;
+  return { lat: Math.round(lat * 1e6) / 1e6, lon: Math.round(lon * 1e6) / 1e6 };
+}
+
 function buildPage(kind, card, data, photos, coverIndex) {
   const common = {
     source: 'cabinet',
@@ -1102,6 +1116,8 @@ function buildPage(kind, card, data, photos, coverIndex) {
     return common;
   }
   common.address = str(data.address, 300);
+  const geo = geoOf(data);
+  if (geo) common.geo = geo;
   common.halls = Array.isArray(data.halls) ? data.halls : [];
   common.terms = data.terms && typeof data.terms === 'object' ? data.terms : {};
   for (const key of ['capacityBanquet', 'capacityBuffet', 'checkFrom', 'rentFrom']) common[key] = int(data[key]);

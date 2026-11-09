@@ -369,6 +369,12 @@ select.a-field__input { appearance: none; background-image: var(--adm-chevron-do
 .c-add-btn svg { width: 18px; height: 18px; }
 
 /* портрет */
+/* точка площадки на карте (lib/geo-pick): карта, под ней подсказка и капсула «Точка верная» */
+.c-geo { display: grid; gap: 8px; }
+.c-geo__map { height: 240px; border-radius: var(--adm-radius-md); overflow: hidden; background: var(--adm-bg); }
+.c-geo__acts { display: flex; flex-wrap: wrap; gap: 12px; }
+.c-geo__acts:not(:has(:not([hidden]))) { display: none; }
+@media (min-width: 1024px) { .c-geo__map { height: 300px; } }
 .c-ava { display: flex; align-items: center; gap: var(--s-3); cursor: pointer; justify-self: start; }
 .c-ava__img { width: 112px; height: 112px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: var(--adm-bg); color: var(--adm-text-2); flex: none; }
 .c-ava__img img { width: 100%; height: 100%; object-fit: cover; display: block; }

@@ -222,6 +222,8 @@ export function venueFromPage(p, { slug, name, photos, fileOf = () => undefined 
       hours: '',
       routes: [],
       links: [],
+      // точка, которую подрядчик поставил в анкете (хук geoOf): по ней площадка встаёт на карту каталога
+      ...(p.geo && Number.isFinite(p.geo.lat) && Number.isFinite(p.geo.lon) ? { geo: { lat: p.geo.lat, lon: p.geo.lon } } : {}),
     },
     seo: {
       title: `${title} — свадебная площадка${place ? `, ${place}` : ''} | WED Secrets`,
