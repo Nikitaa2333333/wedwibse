@@ -182,6 +182,13 @@ details[open].c-row > summary .c-row__go { transform: rotate(90deg); }
 .c-row--card .c-row__thumb { width: 72px; height: 90px; border-radius: 12px; }
 .c-row--card .c-row__title { font-size: 18px; line-height: 24px; font-weight: 600; }
 .c-row--card .c-row__sub { font-size: var(--adm-fs); line-height: var(--adm-lh); }
+/* «Площадка» в выборе категории — крупно, отдельный путь анкеты (Никита 09.11): заголовок как у
+   групп ниже («Ведущие»), значок 52 px */
+.c-row--lead { padding-block: 20px; gap: var(--s-4); }
+.c-row--lead .c-row__ic { width: 52px; height: 52px; border-radius: 14px; color: var(--adm-text); }
+.c-row--lead .c-row__ic svg { width: 28px; height: 28px; }
+.c-row--lead .c-row__title { font-size: var(--adm-fs-h2); line-height: 28px; font-weight: 600; }
+.c-row--lead .c-row__sub { font-size: var(--adm-fs); line-height: var(--adm-lh); }
 .c-row__body { display: grid; gap: 2px; min-width: 0; }
 .c-row__title { font-weight: 500; font-size: 15px; line-height: 20px; overflow-wrap: anywhere; }
 /* вопрос в «Помощи» и раскрывающиеся строки — крупнее ответа: заголовок 17/600, ответ 16/400 (Никита 06.11) */
@@ -198,7 +205,7 @@ details.c-row > summary .c-row__ic { flex: none; }
 .c-row__go { width: 18px; height: 18px; color: var(--adm-text-2); }
 
 /* ---------- поля ---------- */
-.c-form { display: grid; gap: var(--cab-gap); }
+.c-form { display: grid; gap: var(--cab-gap-field); }
 .a-field__note { font-size: var(--adm-fs-sm); line-height: 16px; color: var(--adm-text-2); }
 textarea.a-field__input { height: auto; min-height: 160px; padding: 12px 14px; line-height: 1.5; resize: vertical; }
 /* описание одним полем — под вставку готового текста */
@@ -237,7 +244,7 @@ select.a-field__input { appearance: none; background-image: var(--adm-chevron-do
 @media (hover: hover) { .c-opt[aria-pressed="false"]:hover { background: var(--adm-line) !important; } }
 
 /* ---------- блоки, которые добавляют (разделы текста, пакеты, залы) ---------- */
-.c-items { display: grid; gap: var(--cab-gap); }
+.c-items { display: grid; gap: var(--cab-gap-field); }
 .c-item { display: grid; gap: var(--s-3); }
 .c-item__tools { display: flex; align-items: center; gap: 4px; justify-content: flex-end; }
 .c-tool { width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; color: var(--adm-text-2); }
@@ -381,13 +388,14 @@ select.a-field__input { appearance: none; background-image: var(--adm-chevron-do
 .c-geo__acts:not(:has(:not([hidden]))) { display: none; }
 .c-geo__map[hidden] { display: none; }
 /* подсказки адреса под полем — всплывающий список (тень только у всплывающего) */
-.a-field:has(> .c-suggest) { position: relative; }
-/* подсказки адреса: серая подложка и тень окна — отделяются от белой плашки поля (Никита 09.11: «всё сливается») */
-.c-suggest { position: absolute; left: 0; right: 0; top: 100%; z-index: 20; margin-top: 8px; display: grid; gap: 2px; padding: 6px; background: var(--adm-bg); border-radius: var(--adm-radius-md); box-shadow: var(--adm-shadow-lg); }
+/* подсказки адреса — выкатываются ВНУТРИ плашки поля, как список под полем поиска в iOS (Никита 09.11:
+   всплывающий слой поверх соседних плашек «сливался», серая подложка давала «флаг»). Плашка растёт вниз,
+   строки через тонкую линию, без своей подложки и тени */
+.c-suggest { display: grid; margin-top: 8px; }
 .c-suggest[hidden] { display: none; }
-.c-suggest__item { min-height: 44px; padding: 10px 12px; border: 0; border-radius: var(--adm-radius-md); background: none; color: var(--adm-text); font: inherit; font-size: 16px; line-height: 1.3; text-align: left; cursor: pointer; }
-.c-suggest__item { background: var(--adm-card); }
-@media (hover: hover) { .c-suggest__item:hover { background: var(--adm-card); box-shadow: var(--adm-shadow-xs); } }
+.c-suggest__item { min-height: 44px; padding: 11px 0; border: 0; border-top: 1px solid var(--adm-line); border-radius: 0; background: none; color: var(--adm-text); font: inherit; font-size: 16px; line-height: 1.3; text-align: left; cursor: pointer; }
+.c-suggest__item:active { color: var(--adm-link); }
+@media (hover: hover) { .c-suggest__item:hover { color: var(--adm-link); } }
 @media (min-width: 1024px) { .c-geo__map { height: 300px; } }
 .c-ava { display: flex; align-items: center; gap: var(--s-3); cursor: pointer; justify-self: start; }
 .c-ava__img { width: 112px; height: 112px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: var(--adm-bg); color: var(--adm-text-2); flex: none; }
@@ -485,7 +493,7 @@ select.a-field__input { appearance: none; background-image: var(--adm-chevron-do
 .c-tcard .c-item__tools { margin-top: calc(-1 * var(--s-2)); }
 
 /* между плашками-полями в сетке (аренда / чек у площадки) — тот же шаг */
-.c-form > .c-grid2 { gap: var(--cab-gap); }
+.c-form > .c-grid2 { gap: var(--cab-gap-field); }
 
 /* ---------- разделы анкеты плитками (Никита, 02.11: «крупнее, в плиточках,
    в две колонки, ровненько») ---------- */
@@ -700,6 +708,14 @@ html:has(.cab), html:has(.cab) body { background: var(--adm-bg); }
 .c-row--lead .status { justify-self: end; }
 
 /* значок Яндекс Диска у кнопки и в заголовке окна */
+/* «Добавить с Яндекс Диска» — плашкой в цвете Диска (Никита 09.11): логотип, действие, подсказка внутри, шеврон */
+.c-yd-plate { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--s-3); width: 100%; padding: 14px var(--adm-pad); border: 0; border-radius: var(--cab-sheet-radius); background: var(--brand-yadisk-bg); color: var(--adm-text); font: inherit; text-align: left; cursor: pointer; }
+.c-yd-plate__logo { width: 32px; height: 32px; display: block; }
+.c-yd-plate__body { display: grid; gap: 2px; min-width: 0; }
+.c-yd-plate__t { font-size: 17px; line-height: 22px; font-weight: 600; color: var(--adm-text); } /* синий на голубом не проходит контраст — цвет несут подложка, знак и шеврон */
+.c-yd-plate__s { font-size: var(--adm-fs-sm); line-height: 18px; color: var(--adm-text); }
+.c-yd-plate .c-row__go { color: var(--brand-yadisk); }
+@media (hover: hover) { .c-yd-plate:hover { background: color-mix(in srgb, var(--brand-yadisk) 14%, var(--adm-card)); } }
 .c-add__brand { width: 22px; height: 22px; flex: none; display: block; } /* значок Диска — после текста, без круга (Никита 05.11) */
 .c-yd-title { display: flex; align-items: center; gap: 10px; padding-right: 44px; }
 .c-yd-title img { width: 28px; height: 28px; flex: none; }

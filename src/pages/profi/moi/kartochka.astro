@@ -933,7 +933,11 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
               </div>` };
       case 'foto':
         return { title: 'Фото', lead: `От ${MIN_PHOTOS} до ${MAX_PHOTOS} кадров, лучше вертикальные: каталог смотрят с телефона`, html: `<div class="c-hint" data-drag-hint hidden></div><div class="c-photos" data-photos></div><p class="c-ok" data-upload hidden></p><p class="c-error" data-photo-error hidden></p>
-          ${locked() ? '' : `<button class="c-add" type="button" data-yadisk>${ADD_IC}Добавить с Яндекс Диска<img class="c-add__brand" src="${cfg.ydIcon}" alt="" width="22" height="22" /></button><p class="a-field__note">Много фото — удобнее ссылкой на папку: выберите кадры, мы заберём оригиналы</p>`}` };
+          ${locked() ? '' : `<button class="c-yd-plate" type="button" data-yadisk>
+            <img class="c-yd-plate__logo" src="${cfg.ydIcon}" alt="" width="32" height="32" />
+            <span class="c-yd-plate__body"><span class="c-yd-plate__t">Добавить с Яндекс Диска</span><span class="c-yd-plate__s">Много фото — удобнее ссылкой на папку: выберите кадры, мы заберём оригиналы</span></span>
+            ${go}
+          </button>`}` };
       case 'video': {
         // Евгений, 31.10: ссылка на ролик — своим разделом. Ролик на карточку
         // ставим мы (docs/VIDEO.md: пережатие, постер), подрядчик даёт только ссылку
@@ -1005,7 +1009,7 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
       }
       case 'zaly': {
         const hs = data.halls ?? [];
-        return { title: 'Залы', lead: 'Каждый зал — своя секция на странице площадки: фото, вместимость и цена.', html: `
+        return { title: 'Залы', lead: 'Несколько залов, веранда или шатёр — опишите каждый: у него будет своя секция на странице. Зал один — раздел можно пропустить', html: `
           <div class="c-items">${hs.map((h: any, i: number) => `
             <div class="c-item">
               ${field('Название зала', `halls.${i}.name`, h.name, { placeholder: 'Стеклянный зал' })}
