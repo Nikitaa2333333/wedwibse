@@ -124,7 +124,7 @@ const QUESTIONS = Object.fromEntries(
   import { fieldError, clearFieldError } from '../../../../lib/form-check';
 
   const LABELS: [string, string][] = [
-    ['name', 'Название'], ['tagline', 'Строка под именем'], ['intro', 'Коротко о себе (первый абзац)'], ['address', 'Адрес'], ['mapsUrl', 'Яндекс Карты'], ['rentFrom', 'Аренда от'],
+    ['name', 'Название'], ['tagline', 'Строка под именем'], ['intro', 'Коротко о себе (первый абзац)'], ['address', 'Адрес'], ['mapsUrl', 'Яндекс Карты'], ['geo', 'Точка на карте'], ['rentFrom', 'Аренда от'],
     ['checkFrom', 'Средний чек от'], ['capacityBanquet', 'Гостей до'], ['about', 'О себе'], ['priceFrom', 'Цена от'], ['priceNote', 'Цена указана за'],
   ];
   /** ответ на вопрос словами: значения фильтра → подписи вариантов */
@@ -208,13 +208,15 @@ const QUESTIONS = Object.fromEntries(
       $('[data-pr-title]').textContent = d.name || 'Без названия';
       if (!cardId) {
         $<HTMLAnchorElement>('[data-pr-back]').href = '/profi/admin/zayavki/';
-        $('[data-pr-back-label]').textContent = 'Заявки';
+        $('[data-pr-back-label]').textContent = 'Новые карточки';
       }
       // без точек-разделителей (Никита 05.11): что это — первой строкой, кто прислал — второй
       $('[data-pr-lead]').innerHTML = `${esc(role)}, ${cardId ? 'правка опубликованной карточки' : 'новая карточка'}<br>Прислал(а): ${esc(rev.expand?.owner?.name || rev.expand?.owner?.email || 'без имени')}`;
 
       // Яндекс Карты лежат в контактах (contacts.maps, 08.11) — показываем строкой рядом с адресом
-      const val = (o: any, k: string) => (k === 'mapsUrl' ? o?.contacts?.maps : o?.[k]) ?? '';
+      // точка, которую подрядчик поставил в анкете (09.11) — «широта, долгота»
+      const geoText = (g: any) => (g && Number.isFinite(g.lat) && Number.isFinite(g.lon) ? `${g.lat}, ${g.lon}` : '');
+      const val = (o: any, k: string) => (k === 'mapsUrl' ? o?.contacts?.maps : k === 'geo' ? geoText(o?.contacts?.geo) : o?.[k]) ?? '';
       const rows = LABELS.filter(([k]) => val(d, k) !== '' || (was && val(was, k) !== '')).map(([k, label]) => {
         const now = String(val(d, k));
         const before = was ? String(val(was, k)) : null;
@@ -222,7 +224,10 @@ const QUESTIONS = Object.fromEntries(
         // суммы — с разрядами и ₽ (правило 24)
         // ссылка на Яндекс Карты — открывается: по ней модератор ставит точку и берёт отзывы (08.11)
         const fmt = (v: string) => (MONEY_KEYS.includes(k) && Number(v) > 0 ? rub(Number(v))
-          : k === 'mapsUrl' && /^https:\/\//.test(v) ? `<a class="c-link" href="${esc(v)}" target="_blank" rel="noopener noreferrer">${esc(v)}</a>` : esc(v));
+          : k === 'mapsUrl' && /^https:\/\//.test(v) ? `<a class="c-link" href="${esc(v)}" target="_blank" rel="noopener noreferrer">${esc(v)}</a>`
+          // точку модератор проверяет глазами на Яндекс Картах
+          : k === 'geo' && v ? (([lat, lon]) => `<a class="c-link" href="https://yandex.ru/maps/?pt=${lon},${lat}&z=17&l=map" target="_blank" rel="noopener noreferrer">Посмотреть точку на Яндекс Картах</a>`)(v.split(', '))
+          : esc(v));
         return `<dt>${label}</dt><dd>${changed ? `<span class="pr__was">${fmt(before!) || EMPTY}</span><span class="pr__now">${fmt(now) || EMPTY}</span>` : fmt(now) || EMPTY}</dd>`;
       });
       // текст разделами — как написал подрядчик

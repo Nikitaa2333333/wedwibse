@@ -17,7 +17,7 @@ import AdminIcon from './AdminIcon.astro';
 import './base.css';
 import './admin.css';
 
-export type AdminSection = 'overview' | 'partners' | 'moderation' | 'catalog' | 'complaints';
+export type AdminSection = 'overview' | 'leads' | 'partners' | 'moderation' | 'catalog' | 'complaints';
 
 interface Props {
   title: string;
@@ -28,9 +28,13 @@ interface Props {
 const { title, section, bare = false } = Astro.props;
 
 // счётчик (`count`) — сколько ждёт действия; число ставит скрипт из базы
-const items: { key: AdminSection; href: string; label: string; count?: boolean; tone?: 'info' | 'ok' | 'bad'; gap?: boolean }[] = [
+// tab — короче для нижнего меню телефона: шесть разделов в 390 px
+const items: { key: AdminSection; href: string; label: string; tab?: string; count?: boolean; tone?: 'info' | 'ok' | 'bad'; gap?: boolean }[] = [
   { key: 'overview', href: '/profi/admin/', label: 'Сводка' },
-  { key: 'partners', href: '/profi/admin/zayavki/', label: 'Заявки', count: true, tone: 'bad' },
+  // заявки пар с сайта (07.11, docs/cabinet/LEADS-ADMIN.md); счётчик — новые (status = new)
+  { key: 'leads', href: '/profi/admin/zayavki-par/', label: 'Заявки пар', tab: 'Заявки', count: true, tone: 'info' },
+  // новые карточки подрядчиков; адрес /zayavki/ остался с тех пор, как раздел звался «Заявки»
+  { key: 'partners', href: '/profi/admin/zayavki/', label: 'Новые карточки', tab: 'Новые', count: true, tone: 'bad' },
   { key: 'moderation', href: '/profi/admin/moderaciya/', label: 'Модерация', count: true, tone: 'info' },
   { key: 'catalog', href: '/profi/admin/katalog/', label: 'Карточки' },
   // Жалобы важны меньше — отдельно, внизу меню; в базе их пока нет — без счётчика
@@ -38,7 +42,7 @@ const items: { key: AdminSection; href: string; label: string; count?: boolean; 
 ];
 ---
 
-<Layout title={`${title} — Админка Wed Secrets`} description="Админка Wed Secrets: заявки партнёров, модерация, карточки, жалобы.">
+<Layout title={`${title} — Админка Wed Secrets`} description="Админка Wed Secrets: заявки пар, новые карточки, модерация, карточки, жалобы.">
   <Fragment slot="head">
     <meta name="robots" content="noindex, nofollow" />
     <link rel="preload" href="/fonts/inter-cyrillic.woff2" as="font" type="font/woff2" crossorigin />
@@ -86,7 +90,7 @@ const items: { key: AdminSection; href: string; label: string; count?: boolean; 
         {items.map((it) => (
           <a class="c-tab" href={it.href} aria-current={it.key === section ? 'page' : undefined}>
             <span class="c-tab__ic"><AdminIcon name={it.key} />{it.count && <span class={`c-tab__n${it.tone === 'info' ? ' c-tab__n--info' : ''}`} data-nav-n={it.key} hidden></span>}</span>
-            <span>{it.label}</span>
+            <span>{it.tab ?? it.label}</span>
           </a>
         ))}
       </nav>
@@ -99,6 +103,7 @@ const items: { key: AdminSection; href: string; label: string; count?: boolean; 
   // ClientRouter меняет страницу без перезагрузки — привязки заново на каждой
   import { session, saveSession } from '../../lib/cabinet-api';
   import { loadRevisions, counts, setNavCount } from '../../lib/admin-live';
+  import { loadLeads, newCount } from '../../lib/admin-leads';
   document.addEventListener('astro:page-load', () => {
     if (document.querySelector('.adm')) bindAdminTables();
     const s = session('moderator');
@@ -108,6 +113,7 @@ const items: { key: AdminSection; href: string; label: string; count?: boolean; 
       setNavCount('partners', c.newReview.length);
       setNavCount('moderation', c.editReview.length);
     }).catch(() => {});
+    if (s) loadLeads().then((ls) => setNavCount('leads', newCount(ls))).catch(() => {});
     const user = document.querySelector<HTMLAnchorElement>('[data-adm-user]');
     if (!user || !s) return;
     const name = s.record.name || s.record.email || 'Модератор';

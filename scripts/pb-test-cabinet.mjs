@@ -206,8 +206,16 @@ check('правка уходит на проверку', res.status === 200, res
 res = await call(null, 'GET', `/api/collections/specialists/records/${cardId}`);
 check('пока правка на проверке, карточка на сайте', res.json?.status === 'published' && res.json?.tagline === '', res.text);
 
-res = await call(M.token, 'PATCH', `/api/collections/revisions/records/${edit.id}`, { status: 'rejected', rejectReason: 'Уберите плёнку' });
-check('возврат с причиной', res.status === 200 && res.json.status === 'rejected', res.text);
+// замечания к кадрам (remarkPhotos): только из фото этой правки
+res = await call(M.token, 'PATCH', `/api/collections/revisions/records/${edit.id}`, { status: 'rejected', rejectReason: 'Уберите плёнку', remarkPhotos: ['chuzhoe.jpg'] });
+check('отметить чужой кадр нельзя', refused(res) && says(res, 'кадр'), res.text);
+const marked = [edit.photos[1], edit.photos[4]];
+res = await call(M.token, 'PATCH', `/api/collections/revisions/records/${edit.id}`, { status: 'rejected', rejectReason: 'Уберите плёнку', remarkPhotos: marked });
+check('возврат с причиной и отмеченными кадрами', res.status === 200 && res.json.status === 'rejected' && JSON.stringify(res.json.remarkPhotos) === JSON.stringify(marked), res.text);
+res = await call(A.token, 'GET', '/api/wed/my-cards');
+check('подрядчик видит отмеченные кадры', JSON.stringify(res.json?.items?.[0]?.revision?.remarkPhotos) === JSON.stringify(marked), res.text);
+res = await call(A.token, 'PATCH', `/api/collections/revisions/records/${edit.id}`, { remarkPhotos: [] });
+check('подрядчик не снимает замечания сам', refused(res), res.text);
 
 res = await call(A.token, 'PATCH', `/api/collections/revisions/records/${edit.id}`, { data: { ...edit.data, tagline: 'Репортаж' }, status: 'review' });
 check('исправленная правка уходит снова', res.status === 200, res.text);
@@ -223,6 +231,8 @@ res = await call(M.token, 'PATCH', `/api/collections/revisions/records/${edit.id
 check('правка одобрена', res.status === 200, res.text);
 res = await call(null, 'GET', `/api/collections/specialists/records/${cardId}`);
 check('карточка обновилась', res.json?.tagline === 'Репортаж' && res.json?.version === 2 && res.json?.photos?.length === 8, res.text);
+res = await call(SU, 'GET', `/api/collections/revisions/records/${edit.id}`);
+check('после одобрения замечаний к кадрам нет', Array.isArray(res.json?.remarkPhotos) && res.json.remarkPhotos.length === 0, JSON.stringify(res.json?.remarkPhotos));
 
 console.log('\nвидео');
 res = await call(A.token, 'POST', '/api/collections/video_requests/records', { owner: A.id, specialist: cardId, url: 'https://example.com/v.mp4' });
@@ -384,6 +394,41 @@ if (!BOT) {
   check('Telegram подключён к той же учётке', res.status === 200 && res.json.record?.id === A.id && res.json.record?.telegramId === tgB, res.text);
   res = await call(A.token, 'POST', '/api/wed/link', { tg: tgUser() });
   check('Telegram учётки с карточкой не перехватить', res.status === 400, res.text);
+}
+
+// ---------- заявки пар (docs/cabinet/LEADS-ADMIN.md, 07.11) ----------
+// Шлёт уведомление в чат модераторов, если базе дан MAX_CHAT_ID/TG_CHAT_ID —
+// на боевой базе раздел запускать только с LEADS_TEST=1.
+if (!/193\.124|wed-secrets/.test(URL_) || process.env.LEADS_TEST === '1') {
+  console.log('\nзаявки пар');
+  const card = (await call(null, 'GET', `/api/collections/specialists/records/${cardId}`)).json;
+  const cardHref = `https://wed-secrets.ru/moskva/podryadchiki/${card?.categorySlug}/${card?.slug}/`;
+  const tag = `Тест заявки ${stamp}`;
+  res = await call(null, 'POST', '/api/wed/lead', { name: tag, phone: '+7 900 000-00-01', message: `Карточка: ${card?.name}`, sourceUrl: cardHref, consent: true });
+  check('заявка с карточки принята', res.status === 200, res.text);
+  res = await call(null, 'POST', '/api/wed/lead', {
+    name: tag, phone: '+7 900 000-00-02', message: 'Всем сразу',
+    cards: [{ name: card?.name, url: cardHref }, { name: 'Чужой адрес', url: 'https://wed-secrets.ru/blog/' }], consent: true,
+  });
+  check('заявка группой принята', res.status === 200 && res.json?.count === 2, res.text);
+
+  const mine = (await call(SU, 'GET', `/api/collections/leads/records?perPage=50&sort=created&filter=${encodeURIComponent(`name = "${tag}"`)}`)).json?.items ?? [];
+  cleanup.leads.push(...mine.map((x) => x.id));
+  const [one, g1, g2] = mine;
+  check('с карточки: source и связь с карточкой', one?.source === 'card' && one?.specialist === cardId && !one?.batch, JSON.stringify(one));
+  check('группой: source, общий batch, связь по адресу', g1?.source === 'favorites' && g2?.source === 'favorites' && !!g1?.batch &&
+    g1.batch === g2.batch && g1.specialist === cardId && !g2.specialist && !g2.venue, JSON.stringify([g1, g2]));
+
+  res = await call(null, 'GET', '/api/collections/leads/records');
+  check('гость заявок не читает', res.status !== 200 || (res.json?.items ?? []).length === 0, res.text);
+  res = await call(A.token, 'GET', '/api/collections/leads/records');
+  check('подрядчик заявок не читает, даже свои', res.status !== 200 || (res.json?.items ?? []).length === 0, res.text);
+  res = await call(A.token, 'PATCH', `/api/collections/leads/records/${one?.id}`, { status: 'done' });
+  check('подрядчик статус не меняет', refused(res), res.text);
+  res = await call(M.token, 'GET', `/api/collections/leads/records?filter=${encodeURIComponent(`name = "${tag}"`)}&expand=specialist`);
+  check('модератор видит заявки с карточкой', res.status === 200 && res.json.items.length === 3 && res.json.items.some((x) => x.expand?.specialist?.id === cardId), res.text);
+  res = await call(M.token, 'PATCH', `/api/collections/leads/records/${one?.id}`, { status: 'in-progress' });
+  check('модератор меняет статус', res.status === 200 && res.json.status === 'in-progress', res.text);
 }
 
 // ---------- вход через MAX ----------

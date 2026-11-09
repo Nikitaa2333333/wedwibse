@@ -852,7 +852,7 @@ function moderateRevision(e) {
   // только статус и причина. Иначе вместе с одобрением можно подменить
   // карточку (specialist/venue + baseVersion), владельца, текст или фото.
   if (!e.hasSuperuserAuth()) {
-    denyExtra(e.requestInfo().body, ['status', 'rejectReason']);
+    denyExtra(e.requestInfo().body, ['status', 'rejectReason', 'remarkPhotos']);
     if (to !== from && to !== 'approved' && to !== 'rejected') {
       throw new BadRequestError('Модератор может одобрить правку или вернуть её с причиной.');
     }
@@ -865,6 +865,7 @@ function moderateRevision(e) {
     // не сохранилось ничего, и повторное одобрение не споткнётся о версию.
     // Письмо — уже после, через основной app: транзакционный к этому
     // моменту закрыт, и письмо через него молча не ушло бы.
+    r.set('remarkPhotos', []);
     const app = e.app;
     app.runInTransaction((txApp) => {
       approve(txApp, r);
@@ -894,6 +895,16 @@ function moderateRevision(e) {
     if (from !== 'review') throw new BadRequestError('Вернуть можно только карточку на проверке.');
     const reason = str(r.getString('rejectReason'));
     if (!reason) throw new BadRequestError('Напишите причину в поле rejectReason — без неё подрядчик не поймёт, что исправить.');
+    // кадры, которые надо заменить (необязательно): только из фото этой ревизии
+    const photos = photosOf(r);
+    let marked = [];
+    try { marked = JSON.parse(r.getString('remarkPhotos') || '[]'); } catch (_) {}
+    if (!Array.isArray(marked)) marked = [];
+    marked = marked.map(String).filter((n, i, a) => a.indexOf(n) === i);
+    if (marked.some((n) => photos.indexOf(n) === -1)) throw new BadRequestError('Отмеченного кадра нет среди фото карточки — обновите страницу.');
+    r.set('remarkPhotos', marked);
+    const nums = marked.map((n) => photos.indexOf(n) + 1).sort((a, b) => a - b);
+    const fix = nums.length ? `Заменить: фото ${nums.join(', ')}` : '';
     r.set('reviewedAt', new DateTime());
     e.next();
     const data = jsonOf(r, 'data');
@@ -904,10 +915,10 @@ function moderateRevision(e) {
         title: str(data.name, 120),
         lines: ['Мы посмотрели карточку и вернули её на доработку. Вот что поправить:'],
         reason,
-        after: ['Поправьте в кабинете и отправьте на проверку снова.'],
+        after: [...(fix ? [fix + '.'] : []), 'Поправьте в кабинете и отправьте на проверку снова.'],
       }),
       `Карточку «${str(data.name, 120)}» вернули на доработку.
-Что исправить: ${reason}
+Что исправить: ${reason}${fix ? '\n' + fix : ''}
 Поправьте в кабинете и отправьте на проверку снова.`);
     return;
   }
@@ -1080,6 +1091,20 @@ function applyData(kind, card, data) {
  * venue-page / specialist-page (source: 'cabinet'): такие карточки рисует
  * сервер прямо из базы (docs/cabinet/CABINET.md, раздел 11), в src/ их не выгружаем.
  */
+/**
+ * Точка площадки (09.11): подрядчик подтвердил или сам поставил её на карте в анкете
+ * (src/lib/geo-pick.ts) — это его данные, не ответ геокодера (условия Яндекса, docs/MAPS-SETUP.md).
+ * Вне Москвы и области (та же рамка — GEO_BOX в geo-pick.ts) — не берём.
+ */
+function geoOf(data) {
+  const g = data.contacts && data.contacts.geo;
+  if (!g || typeof g !== 'object') return null;
+  const lat = Number(g.lat);
+  const lon = Number(g.lon);
+  if (!isFinite(lat) || !isFinite(lon) || lat < 54 || lat > 57.5 || lon < 35 || lon > 40.5) return null;
+  return { lat: Math.round(lat * 1e6) / 1e6, lon: Math.round(lon * 1e6) / 1e6 };
+}
+
 function buildPage(kind, card, data, photos, coverIndex) {
   const common = {
     source: 'cabinet',
@@ -1103,6 +1128,8 @@ function buildPage(kind, card, data, photos, coverIndex) {
     return common;
   }
   common.address = str(data.address, 300);
+  const geo = geoOf(data);
+  if (geo) common.geo = geo;
   common.halls = Array.isArray(data.halls) ? data.halls : [];
   common.terms = data.terms && typeof data.terms === 'object' ? data.terms : {};
   for (const key of ['capacityBanquet', 'capacityBuffet', 'checkFrom', 'rentFrom']) common[key] = int(data[key]);
@@ -1577,7 +1604,7 @@ function myCards(e) {
         categorySlug: kind === 'venue' ? '' : c.getString('categorySlug'),
         status: c.getString('status'),
         url: cardUrl(kind, c.getString('categorySlug'), c.getString('slug')),
-        revision: open ? { id: open.id, status: open.getString('status'), rejectReason: open.getString('rejectReason') } : null,
+        revision: open ? { id: open.id, status: open.getString('status'), rejectReason: open.getString('rejectReason'), remarkPhotos: [].concat(Array.isArray(jsonOf(open, 'remarkPhotos')) ? jsonOf(open, 'remarkPhotos') : []) } : null,
       });
     }
   }
@@ -1622,6 +1649,11 @@ function vendorUpdateAccount(e) {
 // Форма на карточке (BookingSheet) без входа → POST /api/wed/lead. Служебное
 // (статус, связь с учёткой невесты) из запроса не берём. Частоту держит
 // rate limit маршрута (миграция 1762200000).
+// Срез в админке (07.11, docs/cabinet/LEADS-ADMIN.md) держится на полях, а не
+// на тексте: source — откуда (card / favorites), batch — общий номер одной
+// отправки из избранного, venue / specialist — карточка по адресу (cardOfUrl ниже).
+// Те же правила один раз прошли по старым заявкам (миграция 1762600000).
+
 function createLead(e) {
   const body = e.requestInfo().body || {};
   const name = str(body.name, 120);
@@ -1634,12 +1666,14 @@ function createLead(e) {
   const eventDate = /^\d{4}-\d{2}-\d{2}$/.test(str(body.eventDate)) ? str(body.eventDate) + ' 12:00:00.000Z' : '';
   const col = e.app.findCollectionByNameOrId('leads');
   const linked = [];
-  const save = (app, msg, url) => {
+  const save = (app, msg, url, batch) => {
     const r = new Record(col);
     r.set('kind', 'client');
     r.set('name', name);
     r.set('phone', phone);
     r.set('message', msg);
+    r.set('source', batch ? 'favorites' : 'card');
+    if (batch) r.set('batch', batch);
     if (/^https?:\/\//.test(url)) r.set('sourceUrl', url);
     // заявка — к своей карточке по адресу страницы (07.11): по связи её видит
     // владелец в кабинете (myLeads) и считает срез админка (LEADS-ADMIN.md)
@@ -1661,8 +1695,9 @@ function createLead(e) {
       .slice(0, 50);
     if (!cards.length) throw new BadRequestError('Отметьте, кому написать.');
     // все или ничего: половина заявок без второй половины — хуже ошибки
+    const batch = $security.randomString(15);
     e.app.runInTransaction((tx) => {
-      for (const c of cards) save(tx, `Карточка: ${c.name}\nИз избранного, всем сразу (${cards.length})\n${message}`.trim(), c.url);
+      for (const c of cards) save(tx, `Карточка: ${c.name}\nИз избранного, всем сразу (${cards.length})\n${message}`.trim(), c.url, batch);
     });
     const list = cards.map((c) => `— ${c.name}${c.url ? ` ${c.url}` : ''}`).join('\n');
     const text = `Заявка из избранного, ${cards.length} карточ.\n${name}, ${phone}\n${message}\n${list}`;
@@ -1672,7 +1707,7 @@ function createLead(e) {
     return e.json(200, { ok: true, count: cards.length });
   }
 
-  save(e.app, message, sourceUrl);
+  save(e.app, message, sourceUrl, '');
   const text = `Заявка с сайта\n${name}, ${phone}\n${message}\n${sourceUrl}`;
   telegram(text);
   mailUs(`Заявка с сайта: ${name}`, text);
