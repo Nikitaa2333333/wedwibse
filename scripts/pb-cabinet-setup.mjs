@@ -58,6 +58,41 @@ if (cmd === 'moderator') {
   });
   // ключ показывается один раз: в базе только его хэш
   console.log(`${card.name}: ${SITE}/profi/vhod/?invite=${key}`);
+} else if (cmd === 'test-invite') {
+  // Тестовые ссылки для своей проверки (Никита 09.11): та же ссылка, что владельцу, но
+  // с пометкой «тест» и в отдельном файле research/test-links.csv. Площадке — снимок записи
+  // в research/venue-before-test/, по нему release venue:<slug> вернёт всё как было.
+  //   node scripts/pb-cabinet-setup.mjs test-invite <kat>/<slug>|venue:<slug> …
+  // После проверки: release тех же карточек, затем боевые ссылки заново.
+  const { mkdir, writeFile } = await import('node:fs/promises');
+  await mkdir('research/venue-before-test', { recursive: true });
+  const rows = [['карточка', 'имя', 'тестовая ссылка']];
+  for (const ref of args) {
+    const venue = ref.startsWith('venue:');
+    const [cat, slug] = venue ? ['', ref.slice(6)] : ref.split('/');
+    const card = venue
+      ? await api.first('venues', `slug = "${slug}"`)
+      : await api.first('specialists', `categorySlug = "${cat}" && slug = "${slug}"`);
+    if (!card) { console.log(`${ref}: нет в базе`); continue; }
+    if (card.owner) { console.log(`${ref}: уже у владельца — не трогаю`); continue; }
+    if (card.form?.managed !== true) { console.log(`${ref}: нет анкеты «ведём мы» — пропуск`); continue; }
+    if (venue) {
+      const snap = { type: card.type, checkFrom: card.checkFrom, capacityBanquet: card.capacityBanquet, form: card.form, contacts: card.contacts, page: card.page }; // version не откатываем — растёт дальше
+      await writeFile(`research/venue-before-test/${slug}.json`, JSON.stringify(snap));
+    }
+    const key = randomBytes(24).toString('base64url');
+    await api.create('invites', {
+      tokenHash: createHash('sha256').update(key).digest('hex'),
+      [venue ? 'venue' : 'specialist']: card.id,
+      expiresAt: new Date(Date.now() + 3 * 86400000).toISOString().replace('T', ' '),
+      note: 'тест Никиты 09.11',
+    });
+    rows.push([ref, card.name, `${SITE}/profi/vhod/?invite=${key}`]);
+    console.log(`${ref}: тестовая ссылка выдана`);
+  }
+  await mkdir('research', { recursive: true });
+  await writeFile('research/test-links.csv', '﻿' + rows.map((r) => r.map((x) => `"${String(x).replace(/"/g, '""')}"`).join(';')).join('\r\n') + '\r\n');
+  console.log(`\n${rows.length - 1} тестовых ссылок → research/test-links.csv`);
 } else if (cmd === 'release') {
   // Отвязать карточку «ведём мы» от учётки после теста (пилот, 03.11):
   // владелец снимается, правки и ревизии теста удаляются, анкета — заново
@@ -67,6 +102,24 @@ if (cmd === 'moderator') {
   const { readFile } = await import('node:fs/promises');
   const { cardToForm } = await import('./card-to-form.mjs');
   for (const ref of args) {
+    // площадка (09.11): запись возвращается из снимка, снятого test-invite до теста —
+    // одобрение правки меняет type, checkFrom, capacityBanquet, form, contacts, page
+    if (ref.startsWith('venue:')) {
+      const slug = ref.slice(6);
+      const card = await api.first('venues', `slug = "${slug}"`);
+      if (!card) { console.log(`${ref}: нет в базе`); continue; }
+      let snap;
+      try { snap = JSON.parse(await readFile(`research/venue-before-test/${slug}.json`, 'utf8')); } catch {
+        console.log(`${ref}: нет снимка research/venue-before-test/${slug}.json — не трогаю (выдавайте тест через test-invite)`); continue;
+      }
+      const revs = (await api.list('revisions', `filter=${encodeURIComponent(`venue = "${card.id}"`)}`))?.items ?? [];
+      for (const r of revs) await api.remove('revisions', r.id);
+      const invs = (await api.list('invites', `filter=${encodeURIComponent(`venue = "${card.id}"`)}`))?.items ?? [];
+      for (const i of invs) await api.remove('invites', i.id);
+      await api.update('venues', card.id, { owner: '', ...snap });
+      console.log(`${ref}: отвязана и возвращена из снимка (ревизий ${revs.length}, приглашений ${invs.length})`);
+      continue;
+    }
     const [cat, slug] = ref.split('/');
     const card = await api.first('specialists', `categorySlug = "${cat}" && slug = "${slug}"`);
     if (!card) { console.log(`${ref}: нет в базе`); continue; }
