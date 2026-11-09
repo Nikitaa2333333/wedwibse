@@ -175,6 +175,18 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
       ${icon('next')}
     </button>`;
   };
+  /** «Ваша страница на индивидуальном ведении» — чёрная плашка с искрами (Никита 09.11).
+   *  Нажатие — «Написать об изменениях»; на проверке — без действия, только знак ведения */
+  const SPARK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2c.5 4.6 2.4 7.5 10 10-7.6 2.5-9.5 5.4-10 10-.5-4.6-2.4-7.5-10-10 7.6-2.5 9.5-5.4 10-10Z"/></svg>';
+  const vipPlate = () => {
+    const t = requestsText();
+    const open = rev.status !== 'review';
+    return `<${open ? 'button type="button" data-write-changes' : 'div'} class="c-vip">
+      <span class="c-vip__sparks" aria-hidden="true">${[1, 2, 3, 4, 5].map((i) => `<i class="c-vip__s${i}">${SPARK}</i>`).join('')}</span>
+      <span class="c-vip__t">Ваша страница на индивидуальном ведении</span>
+      ${open ? `<span class="c-vip__sub">${t ? `Ваше сообщение: ${esc(t.length > 80 ? `${t.slice(0, 80)}…` : t)}` : 'Написать об изменениях — текст, фото, что угодно'}</span>${icon('next')}` : ''}
+    </${open ? 'button' : 'div'}>`;
+  };
   function openWriteChanges(onDone: () => void) {
     const { dlg, close } = openDialog({
       html: `<div class="c-dialog__body">
@@ -374,7 +386,8 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
       </div>
       <div class="c-sheet-area">
       ${/* возврат — плашкой во всю ширину, как плитки (Никита 05.11) */''}
-      ${managed() && rev.status !== 'review' && !mnoteHidden() ? `<div class="c-note-wide c-note-wide--info c-note-wide--x" role="note" data-mnote><p>${ourVenue() ? MANAGED_VENUE_NOTE : MANAGED_NOTE}</p><button class="c-note-x" type="button" aria-label="Скрыть" data-mnote-x>${X_ICON}</button></div>` : ''}
+      ${/* «ведём мы» — чёрная плашка наверху (Никита 09.11): отличает индивидуальное ведение и
+           ведёт в «Написать об изменениях»; прежняя голубая плашка «заводили мы» убрана */ managed() ? vipPlate() : ''}
       <div class="c-tiles">
         ${states.map((x) => `
           <a class="c-row c-tile${isFresh(x) ? ' c-tile--fresh' : ''}" href="${url(x.key)}" data-tile="${x.key}">
@@ -388,7 +401,6 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
               : `<span class="c-tile__sub c-row__sub">${esc(x.sub)}</span>`}
           </a>`).join('')}
       </div>
-      ${managed() && rev.status !== 'review' ? writeBtn() : ''}
       ${/* Панель прибита к низу: «Отправить на проверку» и под ней превью.
            Полосы «Осталось» нет (Никита 05.11): что сделать — в самих плитках,
            отдельным начертанием подсказки (c-tile__todo), не как данные. */''}
@@ -896,6 +908,55 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
     return null;
   }
 
+  /** строка-перечень «свадьбы · выездные церемонии · …» — метками (Никита 09.11): свободным
+   *  полем точки-разделители терялись при правке. Хранится той же строкой через « · » */
+  const TAG_SEP = /\s·\s/;
+  const tagsOf = (v: string) => v.split(TAG_SEP).map((x) => x.trim()).filter(Boolean);
+  // какие строки — перечни, решаем один раз по тому, что пришло: убрал метки до одной — строка
+  // остаётся метками, а не превращается в поле
+  let tagRows: Set<number> | null = null;
+  const isTagRow = (i: number) => {
+    if (!tagRows) tagRows = new Set((data.rows ?? []).map((r: any, j: number) => (TAG_SEP.test(String(r?.value ?? '')) ? j : -1)).filter((j: number) => j >= 0));
+    return tagRows.has(i);
+  };
+  const tagValue = (bind: string) => String(bind.split('.').reduce((o: any, k) => (o == null ? o : o[k]), data) ?? '');
+  function setTags(bind: string, items: string[]) {
+    setPath(bind, items.join(' · '));
+    later();
+    renderSection('usloviya');
+  }
+  view.addEventListener('click', (e) => {
+    const x = (e.target as HTMLElement).closest<HTMLElement>('[data-tag-x]');
+    if (!x || locked()) return;
+    const bind = x.closest<HTMLElement>('[data-tags]')!.dataset.tags!;
+    const items = tagsOf(tagValue(bind));
+    items.splice(Number(x.dataset.tagX), 1);
+    setTags(bind, items);
+  });
+  const addTag = (inp: HTMLInputElement) => {
+    const t = inp.value.replace(/·/g, ' ').trim();
+    if (!t) return;
+    const bind = inp.closest<HTMLElement>('[data-tags]')!.dataset.tags!;
+    setTags(bind, [...tagsOf(tagValue(bind)), t]);
+    view.querySelector<HTMLInputElement>(`[data-tags="${bind}"] [data-tag-add]`)?.focus();
+  };
+  view.addEventListener('keydown', (e) => {
+    const inp = (e.target as HTMLElement).closest<HTMLInputElement>('[data-tag-add]');
+    if (inp && e.key === 'Enter') { e.preventDefault(); addTag(inp); }
+  });
+  view.addEventListener('focusout', (e) => {
+    const inp = (e.target as HTMLElement).closest?.('[data-tag-add]') as HTMLInputElement | null;
+    if (inp && inp.value.trim()) addTag(inp);
+  });
+  const tagsField = (label: string, bind: string, value: string) => `
+    <div class="a-field c-tags" data-tags="${bind}">
+      <span class="a-field__label">${label}</span>
+      <div class="c-tags__list">
+        ${tagsOf(value).map((t, j) => `<span class="c-tag">${esc(t)}${locked() ? '' : `<button type="button" data-tag-x="${j}" aria-label="Убрать «${esc(t)}»">${X_ICON}</button>`}</span>`).join('')}
+        ${locked() ? '' : '<input class="c-tags__add" type="text" enterkeyhint="done" placeholder="Добавить" maxlength="60" data-tag-add />'}
+      </div>
+    </div>`;
+
   /** экраны площадки «ведём мы»; null — обычный экран (контакты) */
   function ourVenueBody(key: SectionKey): { title: string; lead: string; html: string } | null {
     const page = `/moskva/ploshchadki/${rev.slug}/`;
@@ -925,7 +986,7 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
         <div class="c-items">${groups.map((g) => `
           <div class="c-item">
             <p class="c-q__label">${esc(g)}</p>
-            ${rows.map((r, i) => (r.group === g ? field(esc(r.label), `rows.${i}.value`, r.value, { grow: 'line', max: 300 }) : '')).join('')}
+            ${rows.map((r, i) => (r.group !== g ? '' : isTagRow(i) ? tagsField(esc(r.label), `rows.${i}.value`, String(r.value)) : field(esc(r.label), `rows.${i}.value`, r.value, { grow: 'line', max: 300 }))).join('')}
           </div>`).join('')}</div>` : writeBtn() };
     }
     if (key === 'zaly') {
@@ -1093,7 +1154,7 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
           ${field('Парковка', 'terms.parking', data.terms?.parking, { placeholder: 'Своя, бесплатная, 30 мест' })}
           ${field('Что ещё важно знать', 'terms.more', data.terms?.more, { area: true, placeholder: 'Депозит, пробковый сбор, декор, ночёвка' })}` };
       case 'kontakty':
-        return { title: 'Контакты', lead: 'Пара видит их по кнопке «Показать контакты».', html: `
+        return { title: 'Контакты', lead: 'На сайте их не видно: пары оставляют заявку, она приходит вам в «Заявки».', html: `
           ${phoneField(data.contacts?.phone, data.contacts?.phoneCountry)}
           ${field('Telegram', 'contacts.telegram', data.contacts?.telegram, { placeholder: '@ник или ссылка t.me/…' })}
           <div class="a-field">
