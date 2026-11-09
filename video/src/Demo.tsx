@@ -1,8 +1,8 @@
 // ПРОМО ДЛЯ ПОДРЯДЧИКОВ И ПЛОЩАДОК (сценарий Никиты 09.11.2026), ~88 с.
 // Часть 1 — глазами пары: каталог, сохраняют понравившиеся (иконки специалистов), заявка.
 // Часть 2 — кабинет: заявка пришла, видна вся статистика.
-// Часть 3 — «добавьте вашу карточку»: описание свободным текстом, фото ссылкой на Яндекс Диск,
-// видео ссылкой → готов сайт-презентация → его найдут в Яндексе и Google → мы продвигаем.
+// Часть 3 — «добавьте вашу карточку»: описание свободным текстом, фото ссылкой на Яндекс Диск
+// → ваша страница — ваша презентация → её найдут в Яндексе и Google → мы её продвигаем.
 // Телефон — настоящая 3D-модель (model.tsx) под живым экраном, грань не показываем.
 // Пушей нет — всё через сайт. Логотип с главной — в начале и в конце. Звук — public/sfx (sfx.py).
 import React from 'react';
@@ -107,7 +107,6 @@ const SFX: [string, number, number][] = [
   ['chime', 506, 0.5], ['chime', 1248, 0.4],
   ...typingTicks(870, 935).map((s) => ['tick', s, 0.35] as [string, number, number]),
   ...typingTicks(1008, 1026).map((s) => ['tick', s, 0.35] as [string, number, number]),
-  ...typingTicks(1150, 1166).map((s) => ['tick', s, 0.35] as [string, number, number]),
   ...Array.from({ length: 9 }, (_, i) => ['tick', 1043 + i * 3, 0.5] as [string, number, number]),
 ];
 const Sound: React.FC = () => {
@@ -176,7 +175,7 @@ const DemoScene: React.FC = () => {
   const tiles: TileState[] = [
     { key: 'main', title: 'Основное', ic: 'user', sub: 'LЁD, Новая Рига', done: true },
     { key: 'photo', title: 'Фото', ic: 'photo', sub: f >= 1124 ? '9 фото' : 'пусто', done: f >= 1124 },
-    { key: 'video', title: 'Видео', ic: 'video', sub: f >= 1180 ? '1 ролик' : 'по желанию', done: f >= 1180, optional: f < 1180 },
+    { key: 'video', title: 'Видео', ic: 'video', sub: 'по желанию', optional: true },
     { key: 'halls', title: 'Залы', ic: 'halls', sub: '1 зал, до 60 гостей', done: true },
     { key: 'terms', title: 'Условия', ic: 'chat', sub: 'Кухня, алкоголь', done: true },
     { key: 'desc', title: 'Описание', ic: 'doc', sub: f >= 940 ? 'заполнено' : 'пусто', done: f >= 940 },
@@ -238,22 +237,6 @@ const DemoScene: React.FC = () => {
       </FieldCard>
     </CabScreen>
   );
-  const video = (
-    <CabScreen>
-      <EditorHead title="Видео" back="LЁD" />
-      <FieldCard label="Ссылка на ролик" h={128} style={{ position: 'absolute', left: 4, top: 104, width: 382 }}>
-        <div style={{ height: 48, borderRadius: 14, background: CAB.bg, display: 'flex', alignItems: 'center', padding: '0 14px', fontSize: 16, color: f < 1150 ? CAB.placeholder : CAB.text }}>
-          {f < 1150 ? 'https://disk.yandex.ru/…' : typed('disk.yandex.ru/i/led-film', f, 1150, 1166)}
-        </div>
-      </FieldCard>
-      <div style={{ position: 'absolute', left: 4, top: 240, width: 382, height: 230, borderRadius: 24, overflow: 'hidden', opacity: prog(f, 1170, 1182), transform: `scale(${0.96 + 0.04 * prog(f, 1170, 1182)})` }}>
-        <Img src={S('venues/led/gal/g14.webp')} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        <div style={{ position: 'absolute', left: '50%', top: '50%', width: 64, height: 64, marginLeft: -32, marginTop: -32, borderRadius: 32, background: 'rgba(255,255,255,0.92)', display: 'grid', placeItems: 'center' }}>
-          <svg width={26} height={26} viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z" fill={CAB.ink} /></svg>
-        </div>
-      </div>
-    </CabScreen>
-  );
   const ledScroll = kf(f, [[1292, 0], [1368, 1500], [1460, 1500], [1530, 3200]]);
   const cabLayer = (
     <>
@@ -261,8 +244,7 @@ const DemoScene: React.FC = () => {
       {toCards > 0 && f < 808 && <div style={{ position: 'absolute', inset: 0, transform: `translateX(${(1 - toCards) * 100}%)` }}><MyCardsScreen saved={f >= 700 ? 13 : 12} plus={plus} thumb="venues/led/hero-main.webp" /></div>}
       {f >= 792 && f < 866 && <Slide f={f} at={792}>{editor}</Slide>}
       {f >= 850 && f < 961 && <Slide f={f} at={850}>{desc}</Slide>}
-      {f >= 945 && f < 1144 && <Slide f={f} at={945}>{photos}</Slide>}
-      {f >= 1128 && f < 1212 && <Slide f={f} at={1128}>{video}</Slide>}
+      {f >= 945 && f < 1212 && <Slide f={f} at={945}>{photos}</Slide>}
       {f >= 1196 && f < 1290 && <Slide f={f} at={1196} from={-1}>{editor}</Slide>}
       {/* готовый сайт-презентация: страница LЁD листается */}
       {f >= 1264 && (
@@ -359,11 +341,10 @@ const DemoScene: React.FC = () => {
       <Words text="Вы видите интерес каждой пары" sub="Просмотры, сохранения, заявки — вся статистика" from={642} to={786} ink={ink} />
       <Words text="Добавьте вашу карточку" from={796} to={848} ink={ink} />
       <Words text="Расскажите о себе в свободной форме" from={856} to={942} ink={ink} />
-      <Words text="Фото — просто ссылкой на Яндекс Диск" from={950} to={1124} ink={ink} />
-      <Words text="Видео — тоже ссылкой" from={1134} to={1196} ink={ink} />
-      <Words text="Готов ваш сайт-презентация" from={1272} to={1368} ink={ink} />
-      <Words text="Его найдут в Яндексе и Google" from={1374} to={1458} ink={ink} />
-      <Words text="А мы продвигаем вашу карточку" sub="Лента главной, подборки в блоге, каталог и фильтры" from={1464} to={1552} ink={ink} />
+      <Words text="Прикрепите ссылку на Яндекс Диск" sub="Все фото загрузятся сами" from={950} to={1192} ink={ink} />
+      <Words text="Ваша страница — ваша презентация" from={1272} to={1368} ink={ink} />
+      <Words text="Её найдут в Яндексе и Google" from={1374} to={1458} ink={ink} />
+      <Words text="А мы её продвигаем" sub="Лента главной, подборки в блоге, каталог и фильтры" from={1464} to={1552} ink={ink} />
 
       {f >= 1582 && (
         <AbsoluteFill style={{ display: 'grid', placeContent: 'center', justifyItems: 'center', gap: L.wide ? 56 : 72, color: ink, fontFamily: BRAND.sans }}>
