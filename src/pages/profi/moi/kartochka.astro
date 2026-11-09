@@ -718,14 +718,14 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
     return `
       <div class="a-field">
         <span class="a-field__label">Фото зала</span>
-        ${names.length ? `<div class="c-photos c-photos--mini">${names.slice(0, 5).map((n) => `<span class="c-photo"><img src="${fileUrl(rev, n, { thumb: '200x0', token })}" alt="" loading="lazy" /></span>`).join('')}</div>` : ''}
+        ${names.length ? `<div class="c-photos c-photos--mini">${names.slice(0, 1).map((n) => `<span class="c-photo"><img src="${fileUrl(rev, n, { thumb: '200x0', token })}" alt="" loading="lazy" /></span>`).join('')}</div>` : ''}
         ${locked() ? '' : (rev.photos ?? []).length
           ? names.length
-            ? `<button class="c-link" type="button" data-hall-photos="${i}">Изменить — выбрано ${names.length}</button>`
+            ? `<button class="c-link" type="button" data-hall-photos="${i}">Заменить кадр</button>`
             // ничего не выбрано — мелкий ряд загруженных кадров, чтобы было понятно, из чего выбирать (Никита 09.11)
             : `<button class="c-hall-pick" type="button" data-hall-photos="${i}">
                 <span class="c-hall-pick__row">${(rev.photos ?? []).slice(0, 6).map((n: string) => `<img src="${fileUrl(rev, n, { thumb: '200x0', token })}" alt="" loading="lazy" />`).join('')}</span>
-                <span class="c-link">Выбрать из загруженных</span>
+                <span class="c-link">Выбрать кадр из загруженных</span>
               </button>`
           : '<span class="a-field__note">Сначала загрузите фото в разделе «Фото» — здесь выберете кадры этого зала</span>'}
       </div>`;
@@ -736,12 +736,12 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
     const hall = data.halls?.[i];
     if (!hall) return;
     const all: string[] = rev.photos ?? [];
-    const picked = hallNames(hall);
+    const picked = hallNames(hall).slice(0, 1);
     const { dlg, close } = openDialog({
       html: `<div class="c-dialog__body">
       <button class="c-dialog__x" type="button" data-close aria-label="Закрыть">${X_ICON}</button>
       <h2 class="a-h2">Фото зала${hall.name ? ` «${esc(hall.name)}»` : ''}</h2>
-      <p class="a-lead">Отметьте кадры этого зала. Первый отмеченный встанет первым</p>
+      <p class="a-lead">Выберите один кадр — он встанет у зала на странице</p>
       <div class="c-photos c-yd-grid">${all.map((n) => `
         <button class="c-photo c-yd-pick" type="button" aria-pressed="false" data-hp="${esc(n)}">
           <img src="${fileUrl(rev, n, { thumb: '400x0', token })}" alt="" loading="lazy" />
@@ -759,8 +759,9 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
       const t = (e.target as HTMLElement).closest<HTMLElement>('[data-hp], [data-hp-done]');
       if (!t) return;
       if (t.dataset.hp) {
+        // один кадр на зал (Никита 09.11): сайт показывает у зала один кадр — нажатие заменяет выбор
         const k = picked.indexOf(t.dataset.hp);
-        if (k === -1) picked.push(t.dataset.hp); else picked.splice(k, 1);
+        picked.splice(0, picked.length, ...(k === -1 ? [t.dataset.hp] : []));
         sync();
         return;
       }
