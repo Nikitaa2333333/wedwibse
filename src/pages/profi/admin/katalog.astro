@@ -114,7 +114,7 @@ const gaps = (r: (typeof rows)[number]) => [
 <script>
   import { api, esc, session, errText } from '../../../lib/cabinet-api';
   import { later, toast } from '../../../lib/cab-ui';
-  import { failBox } from '../../../lib/admin-live';
+  import { failBox, coverHtml, coverToken } from '../../../lib/admin-live';
 
   const REV: Record<string, string> = { draft: 'черновик', review: 'на проверке', rejected: 'вернули' };
   document.addEventListener('astro:page-load', async () => {
@@ -125,9 +125,10 @@ const gaps = (r: (typeof rows)[number]) => [
     const list = box.querySelector<HTMLElement>('[data-cab-list]')!;
     const roles: Record<string, string> = JSON.parse(box.dataset.roles!);
     const role = (kind: string, cat: string) => (kind === 'venue' ? 'Площадка' : roles[cat] ?? cat);
-    const row = (name: string, sub: string, actions: string) => `
+    // обложка вместо буквы (Никита 08.11): карточка — открытые файлы, ревизия — токен модератора
+    const row = (rec: any, name: string, sub: string, actions: string) => `
       <div class="a-task a-cabrow">
-        <span class="a-task__cover a-task__cover--empty" aria-hidden="true">${esc(name.slice(0, 1))}</span>
+        ${coverHtml(rec, name)}
         <span class="a-task__body"><span class="a-task__name">${esc(name)}</span><span class="a-task__fill">${sub}</span></span>
         <span class="a-cabrow__act">${actions}</span>
       </div>`;
@@ -140,6 +141,8 @@ const gaps = (r: (typeof rows)[number]) => [
           api('moderator', 'GET', `/api/collections/specialists/records?perPage=200&sort=-updated&filter=${encodeURIComponent('owner != ""')}`),
           api('moderator', 'GET', `/api/collections/venues/records?perPage=200&sort=-updated&filter=${encodeURIComponent('owner != ""')}`),
         ]);
+        // токен и для снятых с сайта: их файлы без него закрыты
+        await coverToken([...revs.items, ...specs.items, ...vens.items]);
         // колонка «Владелец» в общей таблице: у карточки есть вход владельца
         const owned = new Set([...specs.items.map((x: any) => `specialist:${x.slug}`), ...vens.items.map((x: any) => `venue:${x.slug}`)]);
         document.querySelectorAll<HTMLElement>('#cat tr[data-key]').forEach((tr) => {
@@ -148,12 +151,12 @@ const gaps = (r: (typeof rows)[number]) => [
         const rows: string[] = [];
         for (const c of [...specs.items.map((x: any) => ({ ...x, kind: 'specialist' })), ...vens.items.map((x: any) => ({ ...x, kind: 'venue' }))]) {
           const on = c.status === 'published';
-          rows.push(row(c.name || 'Без названия', `${esc(role(c.kind, c.categorySlug))}, ${on ? 'на сайте' : c.status === 'archived' ? 'снята с сайта' : esc(c.status)}`,
+          rows.push(row(c, c.name || 'Без названия', `${esc(role(c.kind, c.categorySlug))}, ${on ? 'на сайте' : c.status === 'archived' ? 'снята с сайта' : esc(c.status)}`,
             on ? btn('Снять с сайта', c.kind, c.id, 'archive') : c.status === 'archived' ? btn('Удалить совсем', c.kind, c.id, 'delete') : ''));
         }
         for (const r of revs.items) {
           const who = r.expand?.owner?.name || r.expand?.owner?.email || '';
-          rows.push(row(r.data?.name || 'Без названия', `${esc(role(r.kind, r.categorySlug))}, новая, ${REV[r.status] ?? esc(r.status)}`, btn('Удалить', 'revision', r.id)));
+          rows.push(row(r, r.data?.name || 'Без названия', `${esc(role(r.kind, r.categorySlug))}, новая, ${REV[r.status] ?? esc(r.status)}`, btn('Удалить', 'revision', r.id)));
         }
         list.innerHTML = rows.join('') || '<p class="a-empty">Карточек из кабинета пока нет. Они появятся, когда подрядчик заведёт карточку сам</p>';
       } catch (err) {

@@ -9,7 +9,7 @@
 //                 не закончили (черновик), вернули;
 //   «Модерация» — правки ОПУБЛИКОВАННЫХ карточек: на проверке и проверено.
 // Жалоб в базе пока нет (CABINET.md §17 — не подключено), счётчика нет.
-import { api, esc, session } from './cabinet-api';
+import { api, esc, session, fileToken, fileUrl } from './cabinet-api';
 import { SECTIONS, sectionState, NBSP } from './cabinet-form';
 
 /** срок ответа — 24 часа с отправки (docs/cabinet/CABINET.md, STAGE2) */
@@ -79,7 +79,8 @@ export function loadRevisions(force = false): Promise<any[]> {
   const since = day0.toISOString().replace('T', ' ');
   const filter = `status != "approved" || reviewedAt >= "${since}"`;
   const p = api('moderator', 'GET', `/api/collections/revisions/records?perPage=500&sort=-updated&expand=owner&filter=${encodeURIComponent(filter)}`)
-    .then((res) => res.items as any[]);
+    // токен для обложек строк — заодно с загрузкой списка (coverToken ниже)
+    .then(async (res) => { await coverToken(res.items); return res.items as any[]; });
   cache = { t: Date.now(), p };
   p.catch(() => { cache = null; });
   return p;
@@ -124,6 +125,24 @@ export function markSeen(id: string, updated: string) {
   } catch {}
 }
 
+// ОБЛОЖКИ В СПИСКАХ (Никита 08.11: буквы вместо фото): кадры ревизии закрыты,
+// открываются токеном модератора — его берём один раз на список (coverToken)
+let coverTok = '';
+/** перед taskRow: токен для обложек, если у кого-то из списка есть фото */
+export async function coverToken(items: any[]): Promise<void> {
+  if (coverTok || !items.some((r) => r.photos?.length)) return;
+  try { coverTok = await fileToken('moderator'); } catch { coverTok = ''; }
+}
+/** обложка строки: выбранная обложка, иначе первый кадр; нет фото — буква */
+export function coverHtml(r: any, name: string, token = coverTok): string {
+  const photos: string[] = r.photos ?? [];
+  // ревизия: имя обложки (cover); карточка из кабинета: номер кадра в page.cover
+  const n = r.cover && photos.includes(r.cover) ? r.cover : photos[typeof r.page?.cover === 'number' ? r.page.cover : 0] ?? photos[0];
+  return n && (token || r.collectionName !== 'revisions')
+    ? `<img class="a-task__cover" src="${fileUrl(r, n, { thumb: '200x0', token })}" alt="" loading="lazy" />`
+    : `<span class="a-task__cover a-task__cover--empty" aria-hidden="true">${esc(name.slice(0, 1))}</span>`;
+}
+
 export function taskRow(r: any, o: { task: string; tone: 'check' | 'ok' | 'wait' | 'bad' | 'none'; fill?: boolean }): string {
   const href = `/profi/admin/moderaciya/pravka/?id=${encodeURIComponent(r.id)}`;
   const name = String(r.data?.name || '').trim() || 'Без названия';
@@ -137,7 +156,7 @@ export function taskRow(r: any, o: { task: string; tone: 'check' | 'ok' | 'wait'
   // data-astro-reload: переходом ClientRouter разбор не запускался (26.10)
   const seen = seenMap()[r.id] === r.updated;
   return `<a class="a-task${seen ? ' a-task--seen' : ''}" href="${href}" data-astro-reload>`
-    + `<span class="a-task__cover a-task__cover--empty" aria-hidden="true">${esc(name.slice(0, 1))}</span>`
+    + coverHtml(r, name)
     + `<span class="a-task__body"><span class="a-task__name">${esc(name)}</span><span class="a-task__sub">${when}</span></span>`
     + `${pill}</a>`;
 }

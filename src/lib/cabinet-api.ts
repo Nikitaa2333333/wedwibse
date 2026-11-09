@@ -142,6 +142,34 @@ export async function api<T = any>(role: Role | null, method: string, path: stri
   return json as T;
 }
 
+/**
+ * Загрузка файлов с ходом (09.11): fetch не сообщает, сколько ушло, поэтому
+ * XHR с upload.onprogress. onPart(0…1) — доля отправленного этой порции.
+ * Ошибки — те же ApiError, что у api().
+ */
+export async function apiUpload<T = any>(role: Role, path: string, body: FormData, onPart: (part: number) => void): Promise<T> {
+  if (import.meta.env.DEV && (await import('./cabinet-demo')).demoOn()) {
+    onPart(1);
+    return (await import('./cabinet-demo')).demoApi('PATCH', path, body);
+  }
+  const s = session(role);
+  return new Promise<T>((resolve, reject) => {
+    const x = new XMLHttpRequest();
+    x.open('PATCH', PB_URL + path);
+    if (s) x.setRequestHeader('authorization', s.token);
+    x.upload.onprogress = (e) => { if (e.lengthComputable) onPart(e.loaded / e.total); };
+    x.onerror = () => reject(new ApiError(0, humanError(0, null), 'xhr error'));
+    x.onload = () => {
+      let json: any = null;
+      try { json = x.responseText ? JSON.parse(x.responseText) : null; } catch {}
+      if (x.status >= 200 && x.status < 300) return resolve(json as T);
+      if (x.status === 401) saveSession(role, null);
+      reject(new ApiError(x.status, humanError(x.status, json), x.responseText));
+    };
+    x.send(body);
+  });
+}
+
 /** демо-кадр (дев): градиент-заглушка, синхронно — без загрузки модуля демо */
 function demoPic(name: string): string {
   const h = [...name].reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 360, 7);

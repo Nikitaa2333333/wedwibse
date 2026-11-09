@@ -370,6 +370,9 @@ const popular = groups.flatMap((g) =>
       btn.addEventListener('click', () => {
         inputs.forEach((input) => { input.checked = false; });
         applyFilters();
+        // локацию шапки (ScopePicker) сбрасываем вместе с фильтрами: иначе она
+        // запомнена в браузере и возвращалась при следующем заходе (Никита 08.11)
+        document.dispatchEvent(new CustomEvent('filters:reset'));
       })
     );
 

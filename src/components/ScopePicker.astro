@@ -190,6 +190,23 @@ const options = [{ value: '', label: ALL_LABEL }, ...cities.options];
       })
     );
 
+    // «Сбросить» в фильтрах — сбрасывает и локацию, вместе с запомненной
+    document.addEventListener('filters:reset', () => {
+      radios.forEach((r, i) => { r.checked = i === 0; });
+      if (chip) chip.textContent = ALL_LABEL;
+      try { localStorage.removeItem(STORE_KEY); } catch {}
+    });
+    // город сняли или сменили в самих фильтрах — запомненная локация следом
+    document.addEventListener('change', (e) => {
+      const t = e.target as HTMLElement;
+      if (!t.matches?.('[data-filter-key="city"]')) return;
+      const on = document.querySelector<HTMLInputElement>('[data-filter-key="city"]:checked');
+      const radio = radios.find((r) => r.value === (on?.value ?? '')) ?? radios[0];
+      radios.forEach((r) => { r.checked = r === radio; });
+      if (chip) chip.textContent = on ? labelOf(radio) : ALL_LABEL;
+      try { if (on) localStorage.setItem(STORE_KEY, on.value); else localStorage.removeItem(STORE_KEY); } catch {}
+    });
+
     // Локация переносится между страницами каталога. Словарь городов у разделов
     // разный (у площадок — города, у ведущих — округа), поэтому чужое значение
     // молча игнорируем: раздел просто открывается без фиксации.

@@ -2,8 +2,8 @@
 // РАЗБОР ПРАВКИ ИЗ БАЗЫ — ?id=<ревизия> (сквозная проверка, STAGE2.md).
 // Поля «было → стало», фото черновика (закрыты, открываются токеном
 // модератора), одобрить / вернуть с причиной. Одобрение переносит
-// правку в карточку одной транзакцией (хук moderateRevision); на сайт
-// карточка выходит со следующей выкладкой. Решение — с «Отменить» на
+// правку в карточку одной транзакцией (хук moderateRevision); сайт рисует
+// карточку из базы — она видна через секунды (сайт из базы, 05.11). Решение — с «Отменить» на
 // 6 секунд (lib/cab-ui.ts → later): экран меняется сразу, запрос уходит потом.
 // Сюда ведут и «Заявки» (новая карточка), и «Модерация» (правка).
 import AdminShell from '../../../../components/admin/AdminShell.astro';
@@ -161,7 +161,7 @@ const QUESTIONS = Object.fromEntries(
     // (Никита 06.11: «пилюля в плашке»); заголовком — что и когда, ниже текст модератора
     const decision = (status: string, at: string, reason?: string) => {
       const what = status === 'rejected' ? 'Вернули' : status === 'approved' ? 'Одобрили' : REV_STATUS[status]?.label ?? '';
-      const text = status === 'rejected' ? esc(reason || '') : status === 'approved' ? 'Карточка опубликована в базе. На сайте появится со следующей выкладкой' : '';
+      const text = status === 'rejected' ? esc(reason || '') : status === 'approved' ? 'Карточка опубликована — на сайте видна сразу' : '';
       return `<span class="pr__state-h">${what} ${when(at)}</span>${text ? `<span class="pr__state-text">${text}</span>` : ''}`;
     };
 

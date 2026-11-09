@@ -580,7 +580,7 @@ html:has(.cab), html:has(.cab) body { background: var(--adm-bg); }
 .c-todo--bad .c-todo__h { color: var(--st-bad-strong); }
 .c-todo--bad .c-chipbtn { background: var(--st-bad-bg); color: var(--st-bad-strong); }
 /* опасное — подальше от остального (правило 23): отбивка перед блоком удаления */
-.c-cat--far { margin-top: var(--s-4); } /* «Удалить карточку» и «Выйти» — отдельно от остального профиля (Никита 07.11) */
+.c-cat--far { margin-top: var(--s-6); } /* «Удалить карточку» и «Выйти» — отдельно от остального профиля (Никита 07.11) */
 /* окно подтверждения: воздух между текстом и кнопками (Никита, 05.11: «прижимается») */
 .c-dialog--confirm .c-dialog__body { display: grid; gap: var(--s-4); padding-top: var(--s-6); }
 .c-dialog--confirm h2 { padding-right: 44px; }
@@ -693,6 +693,8 @@ html:has(.cab), html:has(.cab) body { background: var(--adm-bg); }
    «на проверке» стояло узкой плашкой в шапке, а того же смысла плашки в других местах — до краёв) */
 .c-note-wide { margin: 0; padding: 16px; border-radius: var(--cab-sheet-radius); line-height: 1.4; color: var(--adm-text); }
 .c-note-wide--info { background: var(--st-info-bg); }
+/* «Карточка на сайте» — опубликовано, правок нет (08.11): зелёный = порядок */
+.c-note-wide--ok { background: var(--st-ok-bg); }
 .c-note-wide:has(.c-clock) { display: flex; align-items: flex-start; gap: 12px; }
 .c-note-wide p { margin: 0; }
 /* плашку можно закрыть крестиком (Никита 07.11) — справа сверху, текст его не заходит */
@@ -700,6 +702,7 @@ html:has(.cab), html:has(.cab) body { background: var(--adm-bg); }
 .c-note-x { position: absolute; top: 8px; right: 8px; display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--adm-text); cursor: pointer; }
 .c-note-x svg { width: 16px; height: 16px; }
 .c-note-wide .c-note-wide__h { display: block; font-weight: 600; color: var(--st-info-strong); }
+.c-note-wide--ok .c-note-wide__h { color: var(--st-ok-strong); }
 /* «на проверке» — часы, у которых медленно идут стрелки: ждём ответа (Никита 06.11).
    linear здесь — ход времени, как у кружка-таймера; без движения при reduce motion */
 .c-clock { flex: none; width: 24px; height: 24px; color: var(--st-info-strong); }
@@ -775,7 +778,7 @@ html:has(.cab), html:has(.cab) body { background: var(--adm-bg); }
 .c-error.c-yd-note { color: var(--adm-text); }
 /* ход забора — над прибитой кнопкой; отступ до кнопки заметно больше межстрочного
    (Никита 07.11: «прижалось»), две строки переносятся ровно */
-.c-yd-status { margin: var(--s-1) 0 var(--s-4); font-size: 15px; line-height: 20px; font-weight: 500; text-align: center; text-wrap: balance; }
+.c-yd-status { margin: var(--s-3) 0 var(--s-4); /* не липнет к кадрам над полосой (Никита 08.11) */ font-size: 15px; line-height: 20px; font-weight: 500; text-align: center; text-wrap: balance; }
 /* капсула «Aa» — без тени, выделена цветом (Никита 05.11: «тень не хочу, инструмент
    выделить»): тёмная, как наши кнопки, знаки белые; выбранное — белая капсула внутри */
 .c-notes-bar__main, .c-notes-bar__styles { background: var(--cab-ink); box-shadow: none; }
