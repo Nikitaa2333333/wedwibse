@@ -150,6 +150,15 @@ export const REELS: Reel[] = [
   { slug: 'go-show-predskazaniya', src: '/reels/go-show-predskazaniya.mp4', alt: 'Персонаж с предсказаниями общается с гостями в холле', author: 'go-show', sound: true },
   { slug: 'go-show-zerkalnoe', src: '/reels/go-show-zerkalnoe.mp4', alt: 'Зеркальное шоу: артист в зеркальном костюме на сцене в лучах света', author: 'go-show', sound: true },
   { slug: 'go-show-drakon', src: '/reels/go-show-drakon.mp4', alt: 'Дракон в зеркальном костюме и залп конфетти', author: 'go-show', sound: true },
+  { slug: 'kozina-showreel', src: '/reels/kozina-showreel.mp4', alt: 'Подборка свадебных образов: невеста в кружевной фате и вечерние макияжи', author: 'kozina', sound: true },
+  { slug: 'kozina-bride', src: '/reels/kozina-bride.mp4', alt: 'Невеста с локонами и букетом пионов в платье с открытыми плечами', author: 'kozina', sound: true },
+  { slug: 'kozina-veil', src: '/reels/kozina-veil.mp4', alt: 'Собранная причёска с жемчужными шпильками и фатой', author: 'kozina', sound: true },
+  { slug: 'kozina-lace', src: '/reels/kozina-lace.mp4', alt: 'Светлые локоны и невеста в кружевном платье у зеркала', author: 'kozina', sound: true },
+  { slug: 'kozina-waves', src: '/reels/kozina-waves.mp4', alt: 'Полураспущенные волны со спины к платью с открытыми плечами', author: 'kozina', sound: true },
+  { slug: 'pokrovskaya-stage', src: '/reels/pokrovskaya-stage.mp4', alt: 'Саксофонистка в чёрном на сцене с клетчатым полом и цветным светом', author: 'pokrovskaya', sound: true },
+  { slug: 'pokrovskaya-hall', src: '/reels/pokrovskaya-hall.mp4', alt: 'Саксофонистка в розовом платье играет в зимнем саду перед гостями', author: 'pokrovskaya', sound: true },
+  { slug: 'pokrovskaya-party', src: '/reels/pokrovskaya-party.mp4', alt: 'Саксофон в зале с картинами и синтезатором', author: 'pokrovskaya', sound: true },
+  { slug: 'pokrovskaya-red', src: '/reels/pokrovskaya-red.mp4', alt: 'Саксофонистка в красной юбке играет в банкетном зале', author: 'pokrovskaya', sound: true },
 ];
 
 /** Есть ли у ролика звук — по пути файла: разметка (PhotoRail, HeroStage,

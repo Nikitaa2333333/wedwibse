@@ -1,0 +1,148 @@
+{
+  "slug": "odri",
+  "categorySlug": "konditery",
+  "category": "Кондитеры",
+  "name": "Ольга Дериболот",
+  "avatar": "/specialists/konditery/avatars/odri.webp",
+  "portrait": "/specialists/konditery/odri/portrait.webp",
+  "photos": [
+    "/specialists/konditery/odri/gal/p01.webp",
+    "/specialists/konditery/odri/gal/p02.webp",
+    "/specialists/konditery/odri/gal/p03.webp",
+    "/specialists/konditery/odri/gal/p04.webp",
+    "/specialists/konditery/odri/gal/p05.webp",
+    "/specialists/konditery/odri/gal/p06.webp",
+    "/specialists/konditery/odri/gal/p07.webp",
+    "/specialists/konditery/odri/gal/p08.webp",
+    "/specialists/konditery/odri/gal/p09.webp",
+    "/specialists/konditery/odri/gal/p10.webp",
+    "/specialists/konditery/odri/gal/p11.webp",
+    "/specialists/konditery/odri/gal/p12.webp",
+    "/specialists/konditery/odri/gal/p13.webp",
+    "/specialists/konditery/odri/gal/p14.webp",
+    "/specialists/konditery/odri/gal/p15.webp",
+    "/specialists/konditery/odri/gal/p16.webp",
+    "/specialists/konditery/odri/gal/p17.webp",
+    "/specialists/konditery/odri/gal/p18.webp",
+    "/specialists/konditery/odri/gal/p19.webp",
+    "/specialists/konditery/odri/gal/p20.webp",
+    "/specialists/konditery/odri/gal/p21.webp",
+    "/specialists/konditery/odri/gal/p22.webp",
+    "/specialists/konditery/odri/gal/p23.webp",
+    "/specialists/konditery/odri/gal/p24.webp",
+    "/specialists/konditery/odri/gal/p25.webp",
+    "/specialists/konditery/odri/gal/p26.webp",
+    "/specialists/konditery/odri/gal/p27.webp",
+    "/specialists/konditery/odri/gal/p28.webp",
+    "/specialists/konditery/odri/gal/p29.webp",
+    "/specialists/konditery/odri/gal/p30.webp",
+    "/specialists/konditery/odri/gal/p31.webp",
+    "/specialists/konditery/odri/gal/p32.webp",
+    "/specialists/konditery/odri/gal/p33.webp",
+    "/specialists/konditery/odri/gal/p34.webp",
+    "/specialists/konditery/odri/gal/p35.webp",
+    "/specialists/konditery/odri/gal/p36.webp",
+    "/specialists/konditery/odri/gal/p37.webp",
+    "/specialists/konditery/odri/gal/p38.webp",
+    "/specialists/konditery/odri/gal/p40.webp",
+    "/specialists/konditery/odri/gal/p41.webp",
+    "/specialists/konditery/odri/gal/p42.webp",
+    "/specialists/konditery/odri/gal/p43.webp",
+    "/specialists/konditery/odri/gal/p44.webp",
+    "/specialists/konditery/odri/gal/p45.webp",
+    "/specialists/konditery/odri/gal/p46.webp",
+    "/specialists/konditery/odri/gal/p47.webp",
+    "/specialists/konditery/odri/gal/p48.webp",
+    "/specialists/konditery/odri/gal/p50.webp"
+  ],
+  "tagline": "Кондитерская студия «Одри»: свадебные торты",
+  "bio": "Меня зовут Ольга Дериболот, я основатель кондитерской студии «Одри». Создаю свадебные торты и десерты, которые становятся не просто украшением праздничного стола, а настоящей частью вашей особенной истории.\n\nПочти 10 лет в кондитерском деле. Каждый заказ — отдельная история, в которой важна каждая деталь: от первого эскиза до последнего штриха декора. Сама доставляю свадебные торты до площадки по Москве и Московской области.",
+  "gender": "ж",
+  "priceFrom": 3500,
+  "priceNote": "за килограмм, декор рассчитывается отдельно",
+  "experienceYears": 9,
+  "cities": [
+    "цао",
+    "сао",
+    "свао",
+    "вао",
+    "юво",
+    "юао",
+    "юзао",
+    "зао",
+    "сзао",
+    "mo"
+  ],
+  "aboutTitle": "Обо мне",
+  "story": [
+    {
+      "lead": "Свадебные торты и десерты. Красота, которую хочется запомнить. Вкус, к которому хочется вернуться."
+    },
+    {
+      "text": [
+        "Меня зовут Ольга Дериболот, я основатель кондитерской студии «Одри». Я создаю свадебные торты и десерты, которые становятся не просто украшением праздничного стола, а настоящей частью вашей особенной истории.",
+        "Почти 10 лет в кондитерском деле. Создаю не просто торты, а сладкие шедевры, которые становятся украшением самых важных моментов жизни. Авторские торты на дни рождения, свадьбы и корпоративные мероприятия — с любовью к деталям, безупречным вкусом и вниманием к каждому заказу.",
+        "Для меня каждый заказ — это отдельная история, в которой важна каждая деталь: от первого эскиза до последнего штриха декора. Я создаю десерты с любовью к своему делу, вниманием к вашим пожеланиям и пониманием того, насколько важен каждый момент вашего праздника."
+      ]
+    },
+    {
+      "title": "Доставка",
+      "text": [
+        "Лично доставляю свадебные торты до вашей праздничной площадки по Москве и Московской области, чтобы всё доехало бережно и вовремя."
+      ]
+    },
+    {
+      "title": "Стоимость",
+      "text": [
+        "3 500 ₽/кг, декор рассчитывается отдельно."
+      ]
+    },
+    {
+      "lead": "Ваша история. Ваш стиль. И моё мастерство."
+    }
+  ],
+  "filters": {
+    "city": [
+      "цао",
+      "сао",
+      "свао",
+      "вао",
+      "юво",
+      "юао",
+      "юзао",
+      "зао",
+      "сзао",
+      "mo"
+    ],
+    "delivery": "yes",
+    "priceKg": "3-4",
+    "productType": [
+      "wedding-cake",
+      "mini-desserts"
+    ],
+    "options": [
+      "custom-design"
+    ]
+  },
+  "packageIncludes": [
+    "Свадебные торты",
+    "Десерты к празднику",
+    "Эскиз под вашу свадьбу",
+    "Личная доставка до площадки по Москве и МО"
+  ],
+  "quote": "3 500 ₽ за килограмм, декор рассчитывается отдельно. Торт до площадки привожу сама.",
+  "offers": [
+    {
+      "title": "Свадебный торт — 3 500 ₽/кг",
+      "text": "Декор рассчитывается отдельно, под эскиз конкретной свадьбы."
+    },
+    {
+      "title": "От эскиза до декора",
+      "text": "Каждая деталь обсуждается заранее: от первого эскиза до последнего штриха."
+    },
+    {
+      "title": "Доставка лично",
+      "text": "Сама привожу торт на площадку по Москве и Московской области."
+    }
+  ]
+}
