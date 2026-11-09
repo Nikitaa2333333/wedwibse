@@ -77,6 +77,8 @@ const QUESTIONS = Object.fromEntries(
   .pr__fields :global(.pr__line + .pr__line) { margin-top: var(--s-1); } /* 8 — «дыра», 0 — «слиплось» (06.11) */
   :global(.pr__was) { display: block; text-decoration: line-through; background: var(--diff-del); }
   :global(.pr__now) { background: var(--diff-add); }
+  /* «было → стало» по строкам (контакты, ответы, 09.11) — блоком, как зачёркнутое */
+  :global(.pr__now:has(span)) { display: block; }
   .pr__photos { margin-top: var(--s-3); list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; } /* три колонки, как у подрядчика: модератору хватит, быстрее пролистать */
   :global(.pr__photos img) { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-radius: var(--radius-card); display: block; }
   .pr__side { display: grid; gap: var(--s-3); align-content: start; }
@@ -203,7 +205,9 @@ const QUESTIONS = Object.fromEntries(
         // конвейера — только плоские поля
         was = card.page?.source === 'cabinet' ? card.page : card;
         // «ведём мы»: прежнее «Коротко о себе» лежит в анкете карточки (07.11)
-        if (card.form?.managed) was = { ...was, intro: card.form.intro ?? '' };
+        // и всё прежнее у «ведём мы» — в анкете карточки (form = последнее одобренное): плоские поля
+        // карточки не знают «за что», ответов и контактов — «пусто → …» горело без правки (Никита 09.11)
+        if (card.form?.managed) was = { ...was, ...card.form, intro: card.form.intro ?? '' };
       }
       markSeen(rev.id, rev.updated);
       const d = rev.data ?? {};
@@ -242,8 +246,17 @@ const QUESTIONS = Object.fromEntries(
       const answered = qs.filter((q: any) => answer(qs, q.key, d.filters?.[q.key]));
       // ответы таблицей (Никита 06.11): вопрос слева, ответ справа, строки через тонкую линию;
       // несколько вариантов — каждый своей строкой в правой колонке
-      const vals = (q: any) => answers(qs, q.key, d.filters[q.key]).map((x: string) => `<span>${esc(x)}</span>`).join('');
-      if (qs.length) rows.push(`<dt>Вопросы: ${answered.length} из ${qs.length}</dt><dd>${answered.length ? `<span class="pr__qt">${answered.map((q: any) => `<span class="pr__q"><span class="pr__q-l">${esc(q.label)}</span><span class="pr__q-v">${vals(q)}</span></span>`).join('')}</span>` : EMPTY}</dd>`);
+      // изменённый ответ — «было → стало», как у полей выше (Никита 09.11: пилюли трогал — не подсветилось)
+      const ansOf = (src: any, q: any) => (src?.filters ? answers(qs, q.key, src.filters[q.key]) : []) as string[];
+      const vals = (q: any) => {
+        const now = ansOf(d, q);
+        const before = was ? ansOf(was, q) : now;
+        const show = (xs: string[]) => xs.map((x) => `<span>${esc(x)}</span>`).join('') || EMPTY;
+        return JSON.stringify(before) === JSON.stringify(now) ? show(now)
+          : `<span class="pr__was">${show(before)}</span><span class="pr__now">${show(now)}</span>`;
+      };
+      const touched = qs.filter((q: any) => answer(qs, q.key, d.filters?.[q.key]) || (was && ansOf(was, q).length));
+      if (qs.length) rows.push(`<dt>Вопросы: ${answered.length} из ${qs.length}</dt><dd>${touched.length ? `<span class="pr__qt">${touched.map((q: any) => `<span class="pr__q"><span class="pr__q-l">${esc(q.label)}</span><span class="pr__q-v">${vals(q)}</span></span>`).join('')}</span>` : EMPTY}</dd>`);
       const tariffs = (d.tariffs ?? []).filter((t: any) => t?.name || t?.price);
       if (tariffs.length) {
         const p = priceFrom(d);
@@ -265,8 +278,13 @@ const QUESTIONS = Object.fromEntries(
       const c = d.contacts ?? {};
       // контакты — каждый своей строкой с воздухом между ними (Никита 06.11: «слиплось»), телефон с пробелами
       const tel = (v: string) => { const m = String(v).replace(/\D/g, '').match(/^7(\d{3})(\d{3})(\d{2})(\d{2})$/); return m ? `+7\u00a0${m[1]}\u00a0${m[2]}-${m[3]}-${m[4]}` : v; };
-      const cs = [c.phone && tel(c.phone), c.telegram && `Telegram ${c.telegram}`, c.max && `MAX ${tel(c.max)}`, c.site, c.email].filter(Boolean) as string[];
-      rows.push(`<dt>Контакты (скрыты, за кнопкой)</dt><dd>${cs.map((x) => `<span class="pr__line">${esc(x)}</span>`).join('') || EMPTY}</dd>`);
+      const contactLines = (o: any) => [o.phone && tel(o.phone), o.telegram && `Telegram ${o.telegram}`, o.max && `MAX ${tel(o.max)}`, o.site, o.email].filter(Boolean) as string[];
+      const cs = contactLines(c);
+      // контакты — «было → стало» (Никита 09.11: добавил телефон — не подсветилось)
+      const csWas = was ? contactLines(was.contacts ?? {}) : cs;
+      const contactHtml = (xs: string[]) => xs.map((x) => `<span class="pr__line">${esc(x)}</span>`).join('') || EMPTY;
+      rows.push(`<dt>Контакты (скрыты, за кнопкой)</dt><dd>${csWas.join('|') === cs.join('|') ? contactHtml(cs)
+        : `<span class="pr__was">${contactHtml(csWas)}</span><span class="pr__now">${contactHtml(cs)}</span>`}</dd>`);
       // карточка «ведём мы» (пилот, 03.11): одобрение меняет только цену,
       // вопросы, контакты и видео; текст и фото — просьбы, делаем руками в JSON
       if (d.managed) {
