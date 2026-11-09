@@ -59,20 +59,15 @@ const WAYS = [
         <!-- Обещание формы — крупно и обычным тоном (заказчик, 21.09.2026):
              это главная мысль шторки, а не сноска. Серого текста в форме
              не осталось вовсе: блёклая строка читается браком печати. -->
+        {/* СУПЕРМИНИМАЛЬНО (Никита 09.11): с органики заявку должен оставить любой —
+            одно поле «Телефон», звоним мы. Имя, способ связи, дата и комментарий сняты;
+            сценарий невесты (контакты подрядчика после заявки и т. п.) — BACKLOG, позже */}
         <p class="booking__note t-lead" data-booking-note>
-          Контакты нужны один раз: при следующей заявке они уже будут в полях.
+          Оставьте телефон — мы свяжемся с вами.
         </p>
-
-        <p class="booking__subject t-small">
-          Заявка по карточке <span class="booking__name">{subject}</span>
-        </p>
+        <span class="booking__name" hidden>{subject}</span>
 
         <div class="booking__fields">
-          <label class="field">
-            <span class="field__label">Как вас зовут</span>
-            <input class="input" type="text" name="name" autocomplete="name" placeholder="Имя" required />
-          </label>
-
           <label class="field">
             <span class="field__label">Телефон</span>
             <input
@@ -84,29 +79,6 @@ const WAYS = [
               placeholder="+7 900 000-00-00"
               required
             />
-          </label>
-
-          <fieldset class="field booking__ways">
-            <legend class="field__label">Как удобно связаться</legend>
-            <div class="field__opts">
-              {WAYS.map((w, i) => (
-                <label class="chip-opt">
-                  <input class="chip-opt__input" type="radio" name="way" value={w.value} checked={i === 0} />
-                  <span class="chip">{w.label}</span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-
-          <label class="field">
-            <span class="field__label">Дата свадьбы</span>
-            <input class="input" type="date" name="date" />
-            <span class="field__note">Не выбрали — ничего страшного, обсудим</span>
-          </label>
-
-          <label class="field">
-            <span class="field__label">Что уточнить</span>
-            <textarea class="input" name="comment" rows="3" placeholder="Сколько гостей, что важно, вопросы по смете"></textarea>
           </label>
         </div>
       </div>
@@ -128,8 +100,7 @@ const WAYS = [
             берёт на себя шапка шторки — иначе два заголовка подряд. */}
         <p class="booking__done-mark" aria-hidden="true"><Icon name="check" /></p>
         <p class="booking__done-text t-lead">
-          Менеджер свяжется выбранным способом и уточнит дату и детали.
-          Контакты мы запомнили — по следующей карточке хватит одного касания.
+          Спасибо! Скоро позвоним и всё расскажем.
         </p>
       </div>
       <footer class="sheet__foot">
@@ -227,17 +198,9 @@ const WAYS = [
 
     // Знакомого человека форма встречает заполненной и говорит «проверьте»,
     // а не «оставьте»: это и есть обещанное «один раз».
+    // телефон с прошлой заявки — уже в поле, отправка в одно касание
     const known = read();
-    if (known.name || known.phone) {
-      form.querySelector<HTMLInputElement>('[name="name"]')!.value = known.name ?? '';
-      form.querySelector<HTMLInputElement>('[name="phone"]')!.value = known.phone ?? '';
-      if (known.way) {
-        const way = form.querySelector<HTMLInputElement>(`[name="way"][value="${known.way}"]`);
-        if (way) way.checked = true;
-      }
-      title.textContent = 'Проверьте данные';
-      note.textContent = 'Контакты мы запомнили с прошлой заявки — поправьте, если что-то изменилось.';
-    }
+    if (known.phone) form.querySelector<HTMLInputElement>('[name="phone"]')!.value = known.phone;
 
     // Кнопки заказа по всей странице (первый экран, финальный блок площадки)
     // остаются настоящими ссылками на #zayavka: без JS человек попадает в
@@ -252,7 +215,6 @@ const WAYS = [
     const error = sheet.querySelector<HTMLElement>('[data-booking-error]')!;
     const submit = form.querySelector<HTMLButtonElement>('[type="submit"]')!;
     const subject = sheet.querySelector('.booking__name')?.textContent?.trim() ?? '';
-    const WAY_LABEL: Record<string, string> = { telegram: 'Telegram', whatsapp: 'WhatsApp', call: 'звонок' };
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -263,16 +225,12 @@ const WAYS = [
       try {
         // карточку называем словами и адресом страницы: у статичной
         // страницы нет id записи в базе, а по адресу её найдёт любой
+        // имя хук требует — форма его больше не спрашивает (минимальная заявка, 09.11):
+        // берём с прошлой заявки, если было, иначе «Без имени»; звоним мы
         await api(null, 'POST', '/api/wed/lead', {
-          name: get('name'),
+          name: known.name || 'Без имени',
           phone: get('phone'),
-          message: [
-            `Карточка: ${subject}`,
-            `Связаться: ${WAY_LABEL[get('way')] ?? get('way')}`,
-            get('date') && `Дата свадьбы: ${get('date')}`,
-            get('comment'),
-          ].filter(Boolean).join('\n'),
-          eventDate: get('date'),
+          message: [`Карточка: ${subject}`, 'Связаться: звонок'].join('\n'),
           sourceUrl: location.href.split('#')[0],
           consent: true,
         });
@@ -285,14 +243,7 @@ const WAYS = [
       submit.disabled = false;
       try { (window as any).ym?.(113797542, 'reachGoal', 'lead'); } catch {}
       try {
-        localStorage.setItem(
-          STORE_KEY,
-          JSON.stringify({
-            name: String(data.get('name') ?? ''),
-            phone: String(data.get('phone') ?? ''),
-            way: String(data.get('way') ?? ''),
-          })
-        );
+        localStorage.setItem(STORE_KEY, JSON.stringify({ ...known, phone: String(data.get('phone') ?? '') }));
       } catch {}
 
       form.hidden = true;
@@ -307,8 +258,7 @@ const WAYS = [
         if (!done.hidden) {
           done.hidden = true;
           form.hidden = false;
-          title.textContent = 'Проверьте данные';
-          note.textContent = 'Контакты мы запомнили с прошлой заявки — поправьте, если что-то изменилось.';
+          title.textContent = 'Оставить заявку';
         }
       })
     );
