@@ -819,14 +819,21 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
   };
 
   /** портрет: тот же выбор файла с кадрированием, что в обычной анкете */
+  // «Подровнять» (Никита 09.11): тот же круг кадрирования, но с уже стоящим портретом —
+  // сдвинуть и приблизить без новой загрузки
   const avatarField = () => `
     <div class="a-field">
       <span class="a-field__label">Портрет</span>
-      <label class="c-ava">
-        <span class="c-ava__img" data-ava>${rev.avatar ? `<img src="${fileUrl(rev, rev.avatar, { thumb: '200x200', token })}" alt="" />` : icon('profile')}</span>
-        <span class="c-chipbtn">${rev.avatar ? 'Заменить фото' : 'Загрузить фото'}</span>
-        <input type="file" accept="image/jpeg,image/png,image/webp" hidden data-avatar />
-      </label>
+      <div class="c-ava-row">
+        <label class="c-ava" for="c-ava-file">
+          <span class="c-ava__img" data-ava>${rev.avatar ? `<img src="${fileUrl(rev, rev.avatar, { thumb: '200x200', token })}" alt="" />` : icon('profile')}</span>
+        </label>
+        <div class="c-ava-acts">
+          <label class="c-chipbtn" for="c-ava-file">${rev.avatar ? 'Заменить фото' : 'Загрузить фото'}</label>
+          ${rev.avatar && !locked() ? '<button class="c-chipbtn" type="button" data-ava-recrop>Подровнять</button>' : ''}
+        </div>
+        <input id="c-ava-file" type="file" accept="image/jpeg,image/png,image/webp" hidden data-avatar />
+      </div>
     </div>`;
 
   /** карточка «ведём мы»: имя и основной текст — просьбой; портрет, строку
@@ -954,14 +961,7 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
                   : field('Имя', 'firstName', data.firstName, { placeholder: 'Елена' }) + field('Фамилия', 'lastName', data.lastName, { placeholder: 'Каморина' })}
               </div>
               ${field('Строка под именем', 'tagline', data.tagline, { grow: 'line', placeholder: 'Репортаж без постановки, плёнка по желанию', note: 'Одна фраза, до 80 знаков. Профессию не пишите — она стоит перед фразой сама', max: 80 })}
-              <div class="a-field">
-                <span class="a-field__label">Портрет</span>
-                <label class="c-ava">
-                  <span class="c-ava__img" data-ava>${rev.avatar ? `<img src="${fileUrl(rev, rev.avatar, { thumb: '200x200', token })}" alt="" />` : icon('profile')}</span>
-                  <span class="c-chipbtn">${rev.avatar ? 'Заменить фото' : 'Загрузить фото'}</span>
-                  <input type="file" accept="image/jpeg,image/png,image/webp" hidden data-avatar />
-                </label>
-              </div>` };
+              ${avatarField()}` };
       case 'foto':
         return { title: 'Фото', lead: `От ${MIN_PHOTOS} до ${MAX_PHOTOS} кадров, лучше вертикальные: каталог смотрят с телефона`, html: `<div class="c-hint" data-drag-hint hidden></div><div class="c-photos" data-photos></div><p class="c-ok" data-upload hidden></p><p class="c-error" data-photo-error hidden></p>
           ${locked() ? '' : `<button class="c-yd-plate" type="button" data-yadisk>
@@ -1711,6 +1711,24 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
     const t = e.target as HTMLInputElement;
     if (t.matches('[data-pfiles]') && t.files?.length) await upload([...t.files]);
     if (t.matches('[data-avatar]') && t.files?.[0]) await uploadAvatar(t.files[0]);
+  });
+
+  // «Подровнять»: берём текущий портрет файлом и открываем тот же круг кадрирования
+  view.addEventListener('click', async (e) => {
+    const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-ava-recrop]');
+    if (!b || !rev.avatar) return;
+    b.disabled = true;
+    try {
+      if (!token) token = await fileToken('vendor');
+      const r = await fetch(fileUrl(rev, rev.avatar, { token }));
+      if (!r.ok) throw new Error(`портрет не загрузился (${r.status})`);
+      const blob = await r.blob();
+      await uploadAvatar(new File([blob], 'avatar.jpg', { type: blob.type || 'image/jpeg' }));
+    } catch (x) {
+      toast(`Не открылось. ${errText(x)}`, true);
+    } finally {
+      b.disabled = false;
+    }
   });
 
   view.addEventListener('click', async (e) => {

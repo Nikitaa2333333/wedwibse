@@ -400,6 +400,10 @@ select.a-field__input { appearance: none; background-image: var(--adm-chevron-do
 @media (hover: hover) { .c-suggest__item:hover { color: var(--adm-link); } }
 @media (min-width: 1024px) { .c-geo__map { height: 300px; } }
 .c-ava { display: flex; align-items: center; gap: var(--s-3); cursor: pointer; justify-self: start; }
+/* портрет и «Подровнять» (09.11): круг слева, справа столбиком «Заменить фото» и «Подровнять» */
+.c-ava-row { display: flex; align-items: center; gap: var(--s-3); }
+.c-ava-acts { display: grid; justify-items: start; gap: var(--s-2); }
+.c-ava-acts label { cursor: pointer; }
 .c-ava__img { width: 112px; height: 112px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: var(--adm-bg); color: var(--adm-text-2); flex: none; }
 .c-ava__img img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .c-ava__img svg { width: 28px; height: 28px; }
