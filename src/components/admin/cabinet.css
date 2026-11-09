@@ -688,10 +688,10 @@ html:has(.cab), html:has(.cab) body { background: var(--adm-bg); }
 .c-head__right { display: flex; align-items: center; gap: 8px; flex: none; }
 /* «Как на сайте» — ссылкой (Никита 09.11): без капсулы, подчёркнутый текст со значком
    глаза; зона касания 44 px остаётся (::before у .c-chipbtn) */
-.c-head__act { gap: 6px; padding: 0; background: none; font-size: var(--cab-fs-label); font-weight: 500; }
+.c-head__act { gap: 5px; padding: 0; background: none; font-size: 14px; font-weight: 500; } /* мельче «Мои карточки»: «назад» важнее (Никита 09.11) */
 .c-head__act span { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
 @media (hover: hover) { .c-head__act:hover { background: none; } .c-head__act:hover span { text-decoration-thickness: 2px; } }
-.c-head__act svg { width: 18px; height: 18px; }
+.c-head__act svg { width: 16px; height: 16px; }
 
 /* значок группы — залитый, как в Настройках iOS: белый знак на цветном скруглённом квадрате */
 .c-cat__ic { background: var(--adm-bg); color: var(--adm-text); border-radius: 9px; } /* залитый знак на сером, не цветной (Никита 05.11) */
