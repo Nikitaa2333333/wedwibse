@@ -25,13 +25,16 @@ const questions = Object.fromEntries(
   ]),
 );
 const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_STRUCTURE };
+// ключ JS API Карт — тот же публичный браузерный ключ, что у карты каталога
+// (VenueMap): защищён списком доменов в кабинете Яндекса, читается из секрета на сборке
+const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
 ---
 
 <CabinetShell title="Анкета" section="cards">
   <div class="cab-col" data-anketa>
     <div data-view aria-busy="true" aria-label="Загружаем"><div class="sk-head"><span class="sk sk--line sk--short"></span><span class="sk sk--title"></span><span class="sk sk--bar"></span></div><div class="sk-tiles"><div class="sk-tile"><span class="sk sk--ic"></span><span class="sk sk--line" style="width:55%;height:18px;margin-top:12px"></span><span class="sk sk--line"></span></div><div class="sk-tile"><span class="sk sk--ic"></span><span class="sk sk--line" style="width:55%;height:18px;margin-top:12px"></span><span class="sk sk--line"></span></div><div class="sk-tile"><span class="sk sk--ic"></span><span class="sk sk--line" style="width:55%;height:18px;margin-top:12px"></span><span class="sk sk--line"></span></div><div class="sk-tile"><span class="sk sk--ic"></span><span class="sk sk--line" style="width:55%;height:18px;margin-top:12px"></span><span class="sk sk--line"></span></div><div class="sk-tile"><span class="sk sk--ic"></span><span class="sk sk--line" style="width:55%;height:18px;margin-top:12px"></span><span class="sk sk--line"></span></div><div class="sk-tile"><span class="sk sk--ic"></span><span class="sk sk--line" style="width:55%;height:18px;margin-top:12px"></span><span class="sk sk--line"></span></div></div></div>
   </div>
-  <script type="application/json" id="anketa-config" set:html={JSON.stringify({ roles, kickerRoles, questions, structures, ydIcon: ydIcon.src })} />
+  <script type="application/json" id="anketa-config" set:html={JSON.stringify({ roles, kickerRoles, questions, structures, ydIcon: ydIcon.src, mapsKey })} />
 </CabinetShell>
 
 <script>
@@ -42,6 +45,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
   import { mountNotes, blocksHtml } from '../../../lib/notes-editor';
   import { sectionsToBlocks, blocksToSections, plural } from '../../../lib/notes-model';
   import { fieldError, clearFieldError } from '../../../lib/form-check';
+  import { mountGeoPick } from '../../../lib/geo-pick';
   import { PHONE_COUNTRIES, DEFAULT_PHONE_COUNTRY, findCountry, flagSrc, nationalDigits, isComplete, fullE164, attachPhoneField } from '../../../lib/phone';
   import {
     SECTIONS, VENUE_QUESTIONS, VENUE_TERMS, MAX_PHOTOS, MAX_VIDEOS, MIN_PHOTOS, MIN_TEXT,
@@ -794,7 +798,16 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
           ? { title: role(), lead: '', html: `
               ${field('Название площадки', 'name', data.name, { placeholder: 'Лофт «Причал»' })}
               ${field('Адрес', 'address', data.address, { placeholder: 'Москва, улица, дом — или посёлок и шоссе' })}
-              ${field('Ссылка на вас в Яндекс Картах', 'contacts.maps', data.contacts?.maps, { type: 'url', placeholder: 'https://yandex.ru/maps/org/…', note: 'Откройте свою организацию в Яндекс Картах, нажмите «Поделиться» и скопируйте ссылку. По ней поставим точку на нашей карте и покажем рейтинг' })}
+              ${field('Ссылка на вас в Яндекс Картах', 'contacts.maps', data.contacts?.maps, { type: 'url', placeholder: 'https://yandex.ru/maps/org/…', note: 'Откройте свою организацию в Яндекс Картах, нажмите «Поделиться» и скопируйте ссылку. По ней покажем рейтинг' })}
+              <div class="a-field c-geo" data-geo>
+                <span class="a-field__label">Точка на карте</span>
+                <div class="c-geo__map" data-geo-map></div>
+                <span class="a-field__note" data-geo-note aria-live="polite"></span>
+                <div class="c-geo__acts">
+                  <button type="button" class="c-chipbtn" data-geo-ok hidden>Точка верная</button>
+                  <button type="button" class="c-chipbtn" data-geo-again hidden>Найти по адресу заново</button>
+                </div>
+              </div>
               <div class="c-grid2">
                 ${field('Аренда от, ₽', 'rentFrom', data.rentFrom, { mode: 'numeric', placeholder: '150 000', note: 'По желанию. Самая низкая аренда за день; аренды нет — оставьте пустым' })}
                 ${field('Средний чек от, ₽ на гостя', 'checkFrom', data.checkFrom, { mode: 'numeric', placeholder: '5 000', note: 'По желанию. Сколько в среднем стоит банкет на одного гостя: по нему пары ищут площадку' })}
@@ -866,7 +879,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
             ${field('Цена от, ₽', 'priceFrom', data.priceFrom, { mode: 'numeric', placeholder: '40 000' })}
             <div class="c-card c-card--chips">
               ${/* подсказка в поле не повторяет вариант из капсул: «за проект» серым читалось как выбранное (06.11) */''}
-              ${field('Цена указана за', 'priceNote', data.priceNote, { placeholder: 'или впишите свой вариант' })}
+              ${field('Цена указана за', 'priceNote', data.priceNote, { grow: 'line', placeholder: 'или впишите свой вариант' })}
               ${unitChips('priceNote', data.priceNote)}
             </div>` : ''}
           ${mode === 'tariffs' ? `
@@ -957,7 +970,26 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     if (key === 'foto') renderPhotos();
     if (key === 'kontakty') bindPhone();
     if (key === 'tekst') bindNotes();
+    if (key === 'osnovnoe' && kind === 'venue') bindGeo();
     view.querySelectorAll<HTMLInputElement>('.c-tcard__sum input').forEach(fitWidth);
+  }
+
+  /** точка площадки: предварительная метка по ссылке/адресу, сохраняем только подтверждённую (lib/geo-pick) */
+  function bindGeo() {
+    const root = view.querySelector<HTMLElement>('[data-geo]');
+    if (!root || !cfg.mapsKey) { root?.remove(); return; }
+    const val = (b: string) => view.querySelector<HTMLInputElement>(`[data-bind="${b}"]`)?.value ?? '';
+    const pick = mountGeoPick({
+      root,
+      apiKey: cfg.mapsKey,
+      value: data.contacts?.geo ?? null,
+      address: () => val('address'),
+      link: () => val('contacts.maps'),
+      readOnly: locked(),
+      onChange: (g) => { setPath('contacts.geo', g); later(); },
+    });
+    // адрес дописали — новая метка, когда человек ушёл из поля (правило 18: не на каждый символ)
+    view.querySelectorAll<HTMLInputElement>('[data-bind="address"], [data-bind="contacts.maps"]').forEach((i) => i.addEventListener('change', pick.refresh));
   }
 
   /** поле «Описания» как Заметки: строки ↔ разделы базы */
@@ -1539,7 +1571,10 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     if (b.dataset.unit) {
       setPath(b.dataset.unit, b.dataset.v);
       const inp = view.querySelector<HTMLInputElement>(`[data-bind="${b.dataset.unit}"]`);
-      if (inp) inp.value = b.dataset.v!;
+      if (inp) {
+        inp.value = b.dataset.v!;
+        if (inp.matches('textarea[data-grow]')) grow(inp as unknown as HTMLTextAreaElement);
+      }
       view.querySelectorAll<HTMLElement>(`[data-unit="${b.dataset.unit}"]`).forEach((o) => o.setAttribute('aria-pressed', String(o === b)));
       later();
       return;

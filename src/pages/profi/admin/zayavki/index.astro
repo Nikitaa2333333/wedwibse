@@ -1,5 +1,5 @@
 ---
-// ЗАЯВКИ — НОВЫЕ карточки из кабинета: подрядчик или площадка завели учётку
+// НОВЫЕ КАРТОЧКИ (до 07.11 раздел звался «Заявки»; заявки пар — /zayavki-par/) — из кабинета: подрядчик или площадка завели учётку
 // и заполняют анкету (ревизия без venue/specialist). Вкладки: «На проверке» —
 // отправили, ждут решения (срок 24 ч); «Не закончили» — звоним или пишем;
 // «Вернули» — ждём исправления. Правки уже опубликованных — в «Модерации».
@@ -16,13 +16,13 @@ const tabs = [
 ];
 ---
 
-<AdminShell title="Заявки" section="partners">
+<AdminShell title="Новые карточки" section="partners">
   <div class="a-title">
-    <h1 class="a-h1">Заявки</h1>
+    <h1 class="a-h1">Новые карточки</h1>
   </div>
 
   <section class="a-card a-card--flush">
-    <nav class="a-tabs" aria-label="Статус заявки">
+    <nav class="a-tabs" aria-label="Статус карточки">
       {tabs.map((t) => (
         <a class:list={['a-tabs__item', { 'is-active': t.v === 'review' }]} href={`#${t.v}`} data-filter-tab="ap" data-value={t.v}>
           {t.label} <span class="a-tabs__n" data-ap-n={t.v}></span>

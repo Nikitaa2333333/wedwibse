@@ -40,6 +40,7 @@ import AdminShell from '../../../components/admin/AdminShell.astro';
   import { openDialog } from '../../../lib/cab-ui';
   import { loadRevisions, counts, leftMin, leftText, taskRow, failBox, URGENT_MIN, DEADLINE_MIN, idleDays, STALE_DAYS } from '../../../lib/admin-live';
   import { ADMIN_ICONS } from '../../../lib/admin-icons';
+  import { loadLeads, newCount, sendCount, at } from '../../../lib/admin-leads';
 
   const ic = (name: keyof typeof ADMIN_ICONS, cls: string) => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${ADMIN_ICONS[name]}</svg>`;
 
@@ -49,7 +50,9 @@ import AdminShell from '../../../components/admin/AdminShell.astro';
     const fresh = document.querySelector<HTMLElement>('[data-ov-fresh]');
     if (!acts || !fresh) return;
     try {
-      const c = counts(await loadRevisions(force));
+      // заявки пар — отдельным запросом; не загрузились — плитка «нет данных», сводка не падает
+      const [revs, leads] = await Promise.all([loadRevisions(force), loadLeads(force).catch(() => null)]);
+      const c = counts(revs);
       const soon = (rs: any[]) => {
         const xs = rs.map(leftMin).filter((x): x is number => x !== undefined);
         return xs.length ? Math.min(...xs) : undefined;
@@ -65,12 +68,17 @@ import AdminShell from '../../../components/admin/AdminShell.astro';
         // кому написать: незаконченные, которые давно не трогали (07.11); заполняющих сейчас не считаем
         { n: stale.length, label: 'Можно написать', href: '/profi/admin/zayavki/#draft', icon: 'catalog', tone: 'none', note: nDraft > stale.length ? `ещё ${nDraft - stale.length} ${nDraft - stale.length === 1 ? 'заполняет' : 'заполняют'}` : '' },
         { n: 0, label: 'Жалобы', href: '/profi/admin/zhaloby/', icon: 'complaints', tone: 'bad' },
-      ] as { n: number; label: string; left?: number; href: string; icon: keyof typeof ADMIN_ICONS; tone: string; note?: string }[];
+      ] as { n: number | null; label: string; left?: number; href: string; icon: keyof typeof ADMIN_ICONS; tone: string; note?: string; wide?: boolean }[];
+      // заявки пар (07.11, docs/cabinet/LEADS-ADMIN.md): сколько новых, ниже — сколько пришло сегодня
+      const day0 = new Date(); day0.setHours(0, 0, 0, 0);
+      const today = leads ? sendCount(leads.filter((l) => l.status !== 'spam' && at(l.created) >= day0.getTime())) : 0;
+      tiles.unshift({ n: leads ? newCount(leads) : null, label: 'Заявки пар', href: '/profi/admin/zayavki-par/#new', icon: 'leads', tone: 'info', wide: true,
+        note: !leads ? 'нет данных' : today ? `${today} сегодня` : 'сегодня не было' });
       // плитки стоят всегда (ноль — тоже ответ), как смарт-списки в Напоминаниях
       acts.innerHTML = `<div class="a-tiles">${tiles.map((t) => {
             const urgent = (t.left ?? DEADLINE_MIN) < URGENT_MIN;
             const note = t.left !== undefined ? leftText(t.left) : t.note ?? '';
-            return `<a class="a-tile${t.n ? ` a-tile--${t.tone}` : ''}" href="${t.href}"><span class="a-tile__ic">${ic(t.icon, '')}</span><b class="a-tile__n">${t.n}</b><span class="a-tile__label">${t.label}</span>${note ? `<span class="a-tile__note${urgent ? ' a-tile__note--urgent' : ''}">${note}</span>` : ''}</a>`;
+            return `<a class="a-tile${t.n ? ` a-tile--${t.tone}` : ''}${t.wide ? ' a-tile--wide' : ''}" href="${t.href}"><span class="a-tile__ic">${ic(t.icon, '')}</span><b class="a-tile__n">${t.n ?? '—'}</b><span class="a-tile__label">${t.label}</span>${note ? `<span class="a-tile__note${urgent ? ' a-tile__note--urgent' : ''}">${note}</span>` : ''}</a>`;
           }).join('')}</div>`;
       // ждут проверки: новые карточки и правки вместе, по сроку — у всех «осталось N ч»
       const review = [...c.newReview, ...c.editReview].sort((a, b) => (leftMin(a) ?? 0) - (leftMin(b) ?? 0));
