@@ -944,10 +944,14 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
         const vs = data.videos?.length ? data.videos : [{}];
         return { title: 'Видео', lead: 'Ссылка на ролик: Яндекс Диск, Google Диск, YouTube, VK Видео или Rutube. Подготовим и поставим его на карточку сами.', html: `
           <div class="c-items">${vs.map((v: any, i: number) => `
+            ${/* плашкой с подписью, как остальные поля: голое поле читалось узкой полоской (Никита 09.11) */ ''}
+            <div class="a-field">
+            <span class="a-field__label">${vs.length > 1 ? `Ссылка на ролик ${i + 1}` : 'Ссылка на ролик'}</span>
             <div class="c-vrow">
               <input class="a-field__input" data-bind="videos.${i}.url" type="url" inputmode="url" value="${esc(v.url)}" placeholder="https://disk.yandex.ru/…" aria-label="Ссылка на видео" />
               <span class="c-vrow__ok" data-vok="${i}" aria-label="ссылка принята" ${/^https?:\/\/\S+\.\S+/.test(String(v.url ?? '')) ? '' : 'hidden'}>${tick}</span>
               ${vs.length > 1 || v.url ? `<button class="c-tool" type="button" data-remove="videos" data-i="${i}" aria-label="Убрать">${X_ICON}</button>` : ''}
+            </div>
             </div>`).join('')}</div>
           ${vs.length < MAX_VIDEOS ? `<button class="c-add" type="button" data-add="videos">${ADD_IC}Добавить ссылку</button>` : ''}` };
       }
@@ -1009,7 +1013,8 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
       }
       case 'zaly': {
         const hs = data.halls ?? [];
-        return { title: 'Залы', lead: 'Несколько залов, веранда или шатёр — опишите каждый: у него будет своя секция на странице. Зал один — раздел можно пропустить', html: `
+        return { title: 'Залы', lead: 'У каждого зала — своя секция на странице. Зал один — раздел можно пропустить', html: `
+          ${hallsHint()}
           <div class="c-items">${hs.map((h: any, i: number) => `
             <div class="c-item">
               ${field('Название зала', `halls.${i}.name`, h.name, { placeholder: 'Стеклянный зал' })}
@@ -1064,7 +1069,7 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
       <div class="c-head">
         ${/* «?» — только там, где есть подсказка (Никита 07.11): фото и тарифы; нажатие возвращает закрытую
              подсказку-баннер (как подсказки TipKit у Apple). Превью раздела — кнопкой «Как на сайте» на обзоре */''}
-        <h1 class="a-h1 c-title">${b.title}${key === 'foto' || (key === 'prays' && priceMode() === 'tariffs') ? ` <button class="c-help" type="button" data-hint-again="${key}" aria-label="Показать подсказку">?</button>` : ''}</h1>
+        <h1 class="a-h1 c-title">${b.title}${key === 'foto' || key === 'zaly' || (key === 'prays' && priceMode() === 'tariffs') ? ` <button class="c-help" type="button" data-hint-again="${key}" aria-label="Показать подсказку">?</button>` : ''}</h1>
         ${b.lead ? `<p class="a-lead">${b.lead}</p>` : ''}
         ${locked() ? '<p class="c-reason c-reason--info">Карточка на проверке — менять её сейчас нельзя.</p>' : ''}
       </div>
@@ -1215,10 +1220,25 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
       <button class="c-hint__close" type="button" aria-label="Понятно" data-tariff-hint-close>${X_ICON}</button>
     </div>`;
   }
+  /** Подсказка к залам (Никита 09.11): что считать залом. Баннер закрывается, «?» у заголовка возвращает */
+  const HALLS_HINT_KEY = 'wed-cab-hint-halls';
+  function hallsHint(): string {
+    try { if (localStorage.getItem(HALLS_HINT_KEY)) return ''; } catch {}
+    return `<div class="c-hint c-hint--text" data-halls-hint>
+      <span class="c-hint__text"><b>Что считать залом</b><span>Любое место, где проходит банкет или церемония: отдельный зал, веранда, шатёр, терраса, площадка у воды. У каждого — свои гости, площадь, цена и кадр</span></span>
+      <button class="c-hint__close" type="button" aria-label="Понятно" data-halls-hint-close>${X_ICON}</button>
+    </div>`;
+  }
   view.addEventListener('click', (e) => {
+    if ((e.target as HTMLElement).closest('[data-halls-hint-close]')) {
+      try { localStorage.setItem(HALLS_HINT_KEY, '1'); } catch {}
+      view.querySelector('[data-halls-hint]')?.remove();
+      return;
+    }
     const again = (e.target as HTMLElement).closest<HTMLElement>('[data-hint-again]');
     if (again) {
-      try { localStorage.removeItem(again.dataset.hintAgain === 'foto' ? HINT_KEY : TARIFF_HINT_KEY); } catch {}
+      const k = again.dataset.hintAgain;
+      try { localStorage.removeItem(k === 'foto' ? HINT_KEY : k === 'zaly' ? HALLS_HINT_KEY : TARIFF_HINT_KEY); } catch {}
       renderSection(again.dataset.hintAgain as SectionKey);
       view.querySelector('.c-hint:not([hidden])')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;

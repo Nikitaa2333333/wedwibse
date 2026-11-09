@@ -24,7 +24,7 @@ const MAP = {
   complaints: 'danger-triangle-linear',
   // показатели и разделы экранов
   cards: 'layers-linear',
-  venue: 'buildings-2-linear', // площадка в выборе категории (Никита 09.11). ВНИМАНИЕ: перегон затирает ручные значки в admin-icons.ts (флажок, сердце и др.)
+  venue: 'map-point-linear', // площадка в выборе категории (Никита 09.11). ВНИМАНИЕ: перегон затирает ручные значки в admin-icons.ts (флажок, сердце и др.)
   profile: 'user-rounded-linear',
   noContacts: 'phone-linear',
   photo: 'gallery-linear',

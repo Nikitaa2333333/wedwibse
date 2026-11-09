@@ -184,11 +184,12 @@ details[open].c-row > summary .c-row__go { transform: rotate(90deg); }
 .c-row--card .c-row__sub { font-size: var(--adm-fs); line-height: var(--adm-lh); }
 /* «Площадка» в выборе категории — крупно, отдельный путь анкеты (Никита 09.11): заголовок как у
    групп ниже («Ведущие»), значок 52 px */
-.c-row--lead { padding-block: 20px; gap: var(--s-4); }
-.c-row--lead .c-row__ic { width: 52px; height: 52px; border-radius: 14px; color: var(--adm-text); }
-.c-row--lead .c-row__ic svg { width: 28px; height: 28px; }
-.c-row--lead .c-row__title { font-size: var(--adm-fs-h2); line-height: 28px; font-weight: 600; }
-.c-row--lead .c-row__sub { font-size: var(--adm-fs); line-height: var(--adm-lh); }
+/* имя .c-row--big: .c-row--lead уже занят строкой заявки (две колонки) — строка разваливалась (09.11) */
+.c-row--big { padding-block: 20px; gap: var(--s-4); }
+.c-row--big .c-row__ic { width: 52px; height: 52px; border-radius: 14px; color: var(--adm-text); }
+.c-row--big .c-row__ic svg { width: 28px; height: 28px; }
+.c-row--big .c-row__title { font-size: var(--adm-fs-h2); line-height: 28px; font-weight: 600; }
+.c-row--big .c-row__sub { font-size: var(--adm-fs); line-height: var(--adm-lh); }
 .c-row__body { display: grid; gap: 2px; min-width: 0; }
 .c-row__title { font-weight: 500; font-size: 15px; line-height: 20px; overflow-wrap: anywhere; }
 /* вопрос в «Помощи» и раскрывающиеся строки — крупнее ответа: заголовок 17/600, ответ 16/400 (Никита 06.11) */
@@ -549,6 +550,7 @@ html:has(.cab), html:has(.cab) body { background: var(--adm-bg); }
    Только transform/opacity; при reduced-motion — стоит на месте (guard). */
 .c-hint { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--s-3); padding: var(--s-3) var(--s-3) var(--s-3) var(--s-4); border-radius: var(--cab-sheet-radius); background: var(--adm-card); }
 .c-hint[hidden] { display: none; }
+.c-hint--text { grid-template-columns: minmax(0, 1fr) auto; } /* подсказка без анимации-примера (залы, 09.11) */
 .c-hint__demo { position: relative; width: 98px; height: 42px; }
 .c-hint__tile { position: absolute; top: 0; width: 30px; height: 42px; border-radius: 6px; background: var(--adm-bg) center / cover no-repeat; }
 .c-hint__tile--1 { left: 0; animation: c-hint-shift 3.2s var(--ease-out) infinite; }
