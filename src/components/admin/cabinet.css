@@ -374,6 +374,13 @@ select.a-field__input { appearance: none; background-image: var(--adm-chevron-do
 .c-geo__map { height: 240px; border-radius: var(--adm-radius-md); overflow: hidden; background: var(--adm-bg); }
 .c-geo__acts { display: flex; flex-wrap: wrap; gap: 12px; }
 .c-geo__acts:not(:has(:not([hidden]))) { display: none; }
+.c-geo__map[hidden] { display: none; }
+/* подсказки адреса под полем — всплывающий список (тень только у всплывающего) */
+.a-field:has(> .c-suggest) { position: relative; }
+.c-suggest { position: absolute; left: 0; right: 0; top: 100%; z-index: 20; margin-top: 4px; display: grid; padding: 6px; background: var(--adm-card); border-radius: var(--adm-radius-md); box-shadow: var(--adm-shadow-tip); }
+.c-suggest[hidden] { display: none; }
+.c-suggest__item { min-height: 44px; padding: 10px 12px; border: 0; border-radius: var(--adm-radius-md); background: none; color: var(--adm-text); font: inherit; font-size: 16px; line-height: 1.3; text-align: left; cursor: pointer; }
+@media (hover: hover) { .c-suggest__item:hover { background: var(--adm-bg); } }
 @media (min-width: 1024px) { .c-geo__map { height: 300px; } }
 .c-ava { display: flex; align-items: center; gap: var(--s-3); cursor: pointer; justify-self: start; }
 .c-ava__img { width: 112px; height: 112px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: var(--adm-bg); color: var(--adm-text-2); flex: none; }

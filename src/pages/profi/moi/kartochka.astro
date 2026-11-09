@@ -797,17 +797,16 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
         return kind === 'venue'
           ? { title: role(), lead: '', html: `
               ${field('Название площадки', 'name', data.name, { placeholder: 'Лофт «Причал»' })}
-              ${field('Адрес', 'address', data.address, { placeholder: 'Москва, улица, дом — или посёлок и шоссе' })}
-              ${field('Ссылка на вас в Яндекс Картах', 'contacts.maps', data.contacts?.maps, { type: 'url', placeholder: 'https://yandex.ru/maps/org/…', note: 'Откройте свою организацию в Яндекс Картах, нажмите «Поделиться» и скопируйте ссылку. По ней покажем рейтинг' })}
+              ${field('Адрес', 'address', data.address, { placeholder: 'Начните вводить: город, улица, дом' })}
               <div class="a-field c-geo" data-geo>
                 <span class="a-field__label">Точка на карте</span>
-                <div class="c-geo__map" data-geo-map></div>
+                <div class="c-geo__map" data-geo-map hidden></div>
                 <span class="a-field__note" data-geo-note aria-live="polite"></span>
                 <div class="c-geo__acts">
                   <button type="button" class="c-chipbtn" data-geo-ok hidden>Точка верная</button>
-                  <button type="button" class="c-chipbtn" data-geo-again hidden>Найти по адресу заново</button>
                 </div>
               </div>
+              ${field('Ссылка на вас в Яндекс Картах', 'contacts.maps', data.contacts?.maps, { type: 'url', placeholder: 'https://yandex.ru/maps/org/…', note: 'По желанию. Откройте площадку в Яндекс Картах, нажмите «Поделиться» и скопируйте ссылку — по ней покажем рейтинг' })}
               <div class="c-grid2">
                 ${field('Аренда от, ₽', 'rentFrom', data.rentFrom, { mode: 'numeric', placeholder: '150 000', note: 'По желанию. Самая низкая аренда за день; аренды нет — оставьте пустым' })}
                 ${field('Средний чек от, ₽ на гостя', 'checkFrom', data.checkFrom, { mode: 'numeric', placeholder: '5 000', note: 'По желанию. Сколько в среднем стоит банкет на одного гостя: по нему пары ищут площадку' })}
@@ -974,22 +973,30 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
     view.querySelectorAll<HTMLInputElement>('.c-tcard__sum input').forEach(fitWidth);
   }
 
-  /** точка площадки: предварительная метка по ссылке/адресу, сохраняем только подтверждённую (lib/geo-pick) */
+  /** точка площадки: адрес из подсказок → метка → подрядчик подтверждает или двигает (lib/geo-pick) */
   function bindGeo() {
     const root = view.querySelector<HTMLElement>('[data-geo]');
-    if (!root || !cfg.mapsKey) { root?.remove(); return; }
-    const val = (b: string) => view.querySelector<HTMLInputElement>(`[data-bind="${b}"]`)?.value ?? '';
-    const pick = mountGeoPick({
-      root,
-      apiKey: cfg.mapsKey,
-      value: data.contacts?.geo ?? null,
-      address: () => val('address'),
-      link: () => val('contacts.maps'),
-      readOnly: locked(),
-      onChange: (g) => { setPath('contacts.geo', g); later(); },
+    const input = view.querySelector<HTMLInputElement>('[data-bind="address"]');
+    if (root && input && cfg.mapsKey) {
+      mountGeoPick({
+        root,
+        input,
+        apiKey: cfg.mapsKey,
+        value: data.contacts?.geo ?? null,
+        readOnly: locked(),
+        onChange: (g) => { setPath('contacts.geo', g); later(); },
+      });
+    } else root?.remove();
+    // «Поделиться» в Картах копирует «Название, адрес https://…» — оставляем только ссылку
+    // (проба 09.11: в поле лежал текст «Технопарк Обнинск Университетская ул., …»)
+    const maps = view.querySelector<HTMLInputElement>('[data-bind="contacts.maps"]');
+    maps?.addEventListener('change', () => {
+      const url = maps.value.match(/https?:\/\/\S+/)?.[0];
+      if (url && url !== maps.value.trim()) {
+        maps.value = url;
+        maps.dispatchEvent(new Event('input', { bubbles: true }));
+      }
     });
-    // адрес дописали — новая метка, когда человек ушёл из поля (правило 18: не на каждый символ)
-    view.querySelectorAll<HTMLInputElement>('[data-bind="address"], [data-bind="contacts.maps"]').forEach((i) => i.addEventListener('change', pick.refresh));
   }
 
   /** поле «Описания» как Заметки: строки ↔ разделы базы */
