@@ -9,6 +9,9 @@ const FACES: [string, string, string, string][] = [
   ['Onest', 'onest-latin.woff2', '100 900', LAT],
   ['Cormorant', 'cormorant-cyrillic.woff2', '300 700', CYR],
   ['Cormorant', 'cormorant-latin.woff2', '300 700', LAT],
+  // Inter — шрифт кабинета: экраны кабинета в ролике собраны в его системе
+  ['Inter', 'inter-cyrillic.woff2', '100 900', CYR],
+  ['Inter', 'inter-latin.woff2', '100 900', LAT],
 ];
 
 const handle = delayRender('шрифты');
