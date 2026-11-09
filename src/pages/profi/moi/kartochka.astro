@@ -33,7 +33,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
 </CabinetShell>
 
 <script>
-  import { api, esc, fileToken, fileUrl, requireSession, errText } from '../../../lib/cabinet-api';
+  import { api, apiUpload, esc, fileToken, fileUrl, requireSession, errText } from '../../../lib/cabinet-api';
   import { ADMIN_ICONS } from '../../../lib/admin-icons';
   import { openDialog, toast, X_ICON, later as undoable, progress, alertBox } from '../../../lib/cab-ui';
   import { mountNotes, blocksHtml } from '../../../lib/notes-editor';
@@ -59,6 +59,35 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
   const s = requireSession('vendor');
 
   let rev: any = null;
+  // СЛЕПОК КАРТОЧКИ НА САЙТЕ (Никита 08.11): у одобренной карточки сразу горела
+  // «Отправить изменения на проверку» — нажал, и ушла правка без изменений.
+  // base — анкета и фото черновика в момент, когда правку начали (база кладёт
+  // в него ровно то, что на сайте; сама анкета карточки подрядчику закрыта —
+  // в ней контакты). Пока черновик с ним совпадает — «Карточка на сайте», кнопки нет.
+  // Слепок живёт в браузере (localStorage); нет его — кнопка видна, как раньше.
+  type Snap = { form: any; photos: string[]; avatar: string; cover: string };
+  let base: Snap | null = null;
+  const snapKey = () => `wed-cab-base-${rev.id}`;
+  const snapNow = (): Snap => ({ form: norm(data) ?? {}, photos: [...(rev.photos ?? [])], avatar: rev.avatar || '', cover: rev.cover || rev.photos?.[0] || '' });
+  /** пустое не считается: автосохранение пустого поля — не правка */
+  const norm = (v: any): any => {
+    if (v == null || v === '') return undefined;
+    if (Array.isArray(v)) { const a = v.map(norm).filter((x) => x !== undefined); return a.length ? a : undefined; }
+    if (typeof v === 'object') {
+      const o: any = {};
+      for (const k of Object.keys(v).sort()) { const x = norm(v[k]); if (x !== undefined) o[k] = x; }
+      return Object.keys(o).length ? o : undefined;
+    }
+    return typeof v === 'number' ? String(v) : v;
+  };
+  const sameAsSite = () => {
+    if (!base || isNew()) return false;
+    const photos: string[] = rev.photos ?? [];
+    return JSON.stringify(norm(data) ?? {}) === JSON.stringify(base.form)
+      && photos.join('|') === base.photos.join('|')
+      && (rev.avatar || '') === base.avatar
+      && (rev.cover || photos[0] || '') === base.cover;
+  };
   let data: any = {};
   let kind: Kind = 'specialist';
   let questions: Question[] = [];
@@ -192,6 +221,10 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       return `<span class="c-tile__ava"><img src="${fileUrl(rev, rev.avatar, { thumb: '200x200', token })}" alt="" /></span>`;
     }
     const photos: string[] = rev.photos ?? [];
+    // у площадки портрета нет — в «Основном» её обложка (Никита 08.11)
+    if (key === 'osnovnoe' && kind === 'venue' && photos.length && token) {
+      return `<span class="c-tile__ava"><img src="${fileUrl(rev, photos[0], { thumb: '200x200', token })}" alt="" /></span>`;
+    }
     if (key === 'foto' && photos.length && token) {
       return `<span class="c-tile__stack">${photos.slice(0, 3).map((n) => `<img src="${fileUrl(rev, n, { thumb: '200x0', token })}" alt="" loading="lazy" />`).join('')}</span>`;
     }
@@ -215,13 +248,6 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     ];
     return guess.find(([re, k]) => re.test(r) && SECTIONS[kind].some((x) => x.key === k))?.[1];
   }
-  function rejectBox(): string {
-    return `<div class="c-reject" role="note">
-      <p class="c-reject__h">${TODO_IC}Вернули на исправление</p>
-      <p class="c-reject__text">${esc(rev.rejectReason)}</p>
-    </div>`;
-  }
-
   /** раздел ещё не начат — плитка серая (Никита 06.11); начат, но не дотянут — чёрная с подсказкой */
   const isFresh = (x: { key: string; done: boolean; optional?: boolean; sub: string }) =>
     (x.key === 'video' && !x.done) || !x.done && !x.optional && (/^пусто/.test(x.sub) || (x.key === 'voprosy' && /^0 из/.test(x.sub)) || (x.key === 'prays' && x.sub === 'нет тарифа с ценой' && !(data.tariffs ?? []).some((t: any) => t?.name || t?.price)));
@@ -240,16 +266,27 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     // Теперь она в «Профиле», внизу (profil.astro, lib/cabinet-delete.ts).
     const title = data.name || role();
     const siteUrl = kind === 'venue' ? `/moskva/ploshchadki/${rev.slug}/` : `/moskva/podryadchiki/${rev.categorySlug}/${rev.slug}/`;
+    // СОСТОЯНИЕ КАРТОЧКИ — заливкой всей шапки (Никита 09.11): на сайте — зелёная,
+    // на проверке — синяя, вернули — красная. Отдельных плашек под шапкой больше нет
+    const CLOCK = '<span class="c-clock" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><path class="c-clock__h" d="M12 12 9.2 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path class="c-clock__m" d="M12 12V6.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>';
+    const tone = rev.status === 'review'
+      ? { cls: 'info', h: 'Карточка на проверке', t: 'Ответим в течение 24 часов. Пока она на проверке, менять её нельзя; можно отозвать', ic: CLOCK }
+      : rev.status === 'rejected' && rev.rejectReason
+      ? { cls: 'bad', h: 'Вернули на исправление', t: esc(rev.rejectReason), ic: TODO_IC }
+      : rev.status === 'approved'
+      ? { cls: 'ok', h: 'Карточка одобрена', t: 'Она уже на сайте', ic: '' }
+      : rev.status === 'draft' && sameAsSite()
+      ? { cls: 'ok', h: 'Карточка на сайте', t: 'Здесь то, что сейчас видят пары. Изменений пока нет', ic: '' }
+      : null;
     view.innerHTML = `
-      <div class="c-head">
-        <div class="c-head__top"><a class="c-back" href="/profi/moi/">${icon('back')} Мои карточки</a><span class="c-head__right">${rev.status !== 'approved' ? `<button class="c-chipbtn c-head__act" type="button" data-preview><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Как на сайте</button>` : ''}</span></div>
+      <div class="c-head${tone ? ` c-head--tone c-head--${tone.cls}` : ''}">
+        <div class="c-head__top"><a class="c-back" href="/profi/moi/">${icon('back')} Мои карточки</a><span class="c-head__right">${rev.status !== 'approved' ? `<button class="c-chipbtn c-head__act" type="button" data-preview><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><span>Как на сайте</span></button>` : ''}</span></div>
         <h1 class="a-h1">${esc(title)}</h1>
+        ${tone ? `<div class="c-head__state" role="note">${tone.ic}<div><span class="c-head__state-h">${tone.h}</span><span>${tone.t}</span></div></div>` : ''}
         ${/* полосы и «Заполнено N из 6» нет (Никита 06.11): что не начато — видно по самим плиткам (серые), что готово — галочка */''}
       </div>
       <div class="c-sheet-area">
       ${/* возврат — плашкой во всю ширину, как плитки (Никита 05.11) */''}
-      ${rev.status === 'rejected' && rev.rejectReason ? rejectBox() : ''}
-      ${rev.status === 'review' ? `<div class="c-note-wide c-note-wide--info" role="note"><span class="c-clock" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><path class="c-clock__h" d="M12 12 9.2 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path class="c-clock__m" d="M12 12V6.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span><div><span class="c-note-wide__h">Карточка на проверке</span><span>Ответим в течение 24 часов. Пока она на проверке, менять её нельзя; можно отозвать</span></div></div>` : ''}
       ${managed() && rev.status !== 'review' && !mnoteHidden() ? `<div class="c-note-wide c-note-wide--info c-note-wide--x" role="note" data-mnote><p>${MANAGED_NOTE}</p><button class="c-note-x" type="button" aria-label="Скрыть" data-mnote-x>${X_ICON}</button></div>` : ''}
       <div class="c-tiles">
         ${states.map((x) => `
@@ -273,6 +310,10 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
           ? '<button class="a-btn a-btn--lg" type="button" data-withdraw>Отозвать с проверки</button>'
           : rev.status === 'approved'
             ? `<a class="a-btn a-btn--lg" href="${siteUrl}" target="_blank" rel="noopener" data-site-link hidden>Открыть на сайте</a><p class="c-reason c-reason--info" data-site-wait>Карточка одобрена и выходит на сайт — обычно это несколько минут.</p>`
+            : sameAsSite()
+            // правок нет — отправлять нечего: кнопки нет, есть ссылка на саму карточку (08.11)
+            ? `<a class="a-btn a-btn--lg" href="${siteUrl}" target="_blank" rel="noopener">Открыть на сайте</a>
+               <p class="c-bar__hint">Чтобы что-то поменять, откройте раздел и поправьте. Тогда появится кнопка «Отправить изменения на проверку»</p>`
             // «Отправить на проверку» — а что отправит, непонятно (Никита 07.11):
             // у опубликованной — «изменения», и строкой ниже, что будет дальше
             : `<button class="a-btn a-btn--primary a-btn--lg${missing.length ? ' c-btn-locked' : ''}" type="button" data-submit ${missing.length ? 'aria-disabled="true"' : ''}>${missing.length ? icon('lock') : ''}${isNew() ? 'Отправить на проверку' : 'Отправить изменения на проверку'}</button>
@@ -536,7 +577,11 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
   function countText(): string {
     const n = textLength(data);
     const w = `${num(n)} ${plural(n, 'знак', 'знака', 'знаков')}`;
-    return n < MIN_TEXT ? `${w}, нужно от ${num(MIN_TEXT)}` : w;
+    if (n < MIN_TEXT) return `${w}, нужно от ${num(MIN_TEXT)}`;
+    // длинный текст без единого заголовка — «простыня» (Никита 08.11): подсказываем
+    // разбить на разделы; совет, не запрет — отправке не мешает
+    const titled = (data.sections ?? []).some((x: any) => String(x?.title ?? '').trim());
+    return n > 600 && !titled ? `${w}. Разбейте текст на разделы с заголовками, так его дочитают: поставьте курсор в строку и выберите «Заголовок» в «Aa»` : w;
   }
 
   // телефон с кодом страны — механика сайта клиники (lib/phone.ts)
@@ -733,12 +778,12 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       case 'osnovnoe':
         return kind === 'venue'
           ? { title: role(), lead: '', html: `
-              ${field('Название площадки', 'name', data.name)}
+              ${field('Название площадки', 'name', data.name, { placeholder: 'Лофт «Причал»' })}
               ${field('Адрес', 'address', data.address, { placeholder: 'Москва, улица, дом — или посёлок и шоссе' })}
               ${field('Ссылка на вас в Яндекс Картах', 'contacts.maps', data.contacts?.maps, { type: 'url', placeholder: 'https://yandex.ru/maps/org/…', note: 'Откройте свою организацию в Яндекс Картах, нажмите «Поделиться» и скопируйте ссылку. По ней поставим точку на нашей карте и покажем рейтинг' })}
               <div class="c-grid2">
-                ${field('Аренда от, ₽', 'rentFrom', data.rentFrom, { mode: 'numeric', note: 'За день; нет аренды — оставьте пустым' })}
-                ${field('Средний чек от, ₽ на гостя', 'checkFrom', data.checkFrom, { mode: 'numeric' })}
+                ${field('Аренда от, ₽', 'rentFrom', data.rentFrom, { mode: 'numeric', placeholder: '150 000', note: 'По желанию. Самая низкая аренда за день; аренды нет — оставьте пустым' })}
+                ${field('Средний чек от, ₽ на гостя', 'checkFrom', data.checkFrom, { mode: 'numeric', placeholder: '5 000', note: 'По желанию. Сколько в среднем стоит банкет на одного гостя: по нему пары ищут площадку' })}
               </div>` }
           : { title: role(), lead: '', html: `
               <div class="c-seg c-seg--2">${[['person', 'Человек'], ['team', 'Студия или команда']].map(([v, l]) => `<button type="button" aria-pressed="${(data.team ? 'team' : 'person') === v}" data-team="${v}">${l}</button>`).join('')}</div>
@@ -835,10 +880,10 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
             <div class="c-item">
               ${field('Название зала', `halls.${i}.name`, h.name, { placeholder: 'Стеклянный зал' })}
               <div class="c-grid2">
-                ${field('Банкет, гостей до', `halls.${i}.banquet`, h.banquet, { mode: 'numeric' })}
-                ${field('Фуршет, гостей до', `halls.${i}.buffet`, h.buffet, { mode: 'numeric' })}
-                ${field('Площадь, м²', `halls.${i}.area`, h.area, { mode: 'numeric' })}
-                ${field('Аренда или депозит от, ₽', `halls.${i}.priceFrom`, h.priceFrom, { mode: 'numeric' })}
+                ${field('Банкет, гостей до', `halls.${i}.banquet`, h.banquet, { mode: 'numeric', placeholder: '120' })}
+                ${field('Фуршет, гостей до', `halls.${i}.buffet`, h.buffet, { mode: 'numeric', placeholder: '200' })}
+                ${field('Площадь, м²', `halls.${i}.area`, h.area, { mode: 'numeric', placeholder: '300' })}
+                ${field('Аренда или депозит от, ₽', `halls.${i}.priceFrom`, h.priceFrom, { mode: 'numeric', placeholder: '150 000' })}
               </div>
               ${field('Коротко о зале', `halls.${i}.note`, h.note, { area: true, placeholder: 'Панорамные окна, выход на веранду' })}
               ${hallPhotos(h, i)}
@@ -847,7 +892,7 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
           <button class="c-add" type="button" data-add="halls">${ADD_IC}Добавить зал</button>` };
       }
       case 'usloviya':
-        return { title: 'Условия', lead: 'Что пара спросит первым. Ответы уйдут в блок условий на странице.', html: `
+        return { title: 'Условия', lead: '', html: `
           ${choices(VENUE_TERMS, 'terms')}
           ${field('До скольки можно гулять', 'terms.until', data.terms?.until, { placeholder: 'До 23:00 в зале, на веранде до 22:00' })}
           ${field('Парковка', 'terms.parking', data.terms?.parking, { placeholder: 'Своя, бесплатная, 30 мест' })}
@@ -1269,9 +1314,10 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       // в анкете виден свежий набор кадров, даже если окно уже закрыли
       const refresh = () => { if (new URLSearchParams(location.search).get('s') === 'foto' && !dlg.open && view.querySelector('[data-photos]')) renderPhotos(); };
       try {
-        for (let i = 0; i < todo.length && !stop; i += 5) {
+        // по два кадра за запрос (09.11): по пять ход на маленьких пачках стоял на нуле до конца
+        for (let i = 0; i < todo.length && !stop; i += 2) {
           bar.update(`Забираем с Диска: ${done} из ${todo.length},`, done, todo.length);
-          const part = todo.slice(i, i + 5);
+          const part = todo.slice(i, i + 2);
           const r = await api('vendor', 'POST', '/api/wed/yadisk/import', { revision: rev.id, url: link, paths: part });
           rev = r.record;
           done += r.added;
@@ -1318,11 +1364,13 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     $<HTMLInputElement>('[data-yd-url]').focus();
   }
 
-  async function photoPatch(body: any) {
+  async function photoPatch(body: any, onPart?: (part: number) => void) {
     const err = view.querySelector<HTMLElement>('[data-photo-error]')!;
     err.hidden = true;
     try {
-      rev = await api('vendor', 'PATCH', `/api/collections/revisions/records/${rev.id}`, body);
+      rev = onPart && body instanceof FormData
+        ? await apiUpload('vendor', `/api/collections/revisions/records/${rev.id}`, body, onPart)
+        : await api('vendor', 'PATCH', `/api/collections/revisions/records/${rev.id}`, body);
       if (rev.photos?.length && !token) token = await fileToken('vendor');
       savedAt = time();
       justSaved = true;
@@ -1352,9 +1400,12 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       if (!queue.length) return;
       const fd = new FormData();
       queue.forEach((f) => fd.append('photos+', f, f.name));
-      await photoPatch(fd);
-      sent += queue.length;
-      bar.update(`Загружаем фото: ${sent} из ${total},`, sent, total);
+      // ход по байтам (09.11): раньше процент двигался только после всей пачки
+      // до 15 МБ — на нескольких кадрах с телефона всё время стояло «0 %»
+      const n = queue.length;
+      await photoPatch(fd, (part) => bar.update('Загружаем фото', sent + part * n, total));
+      sent += n;
+      bar.update('Загружаем фото', sent, total);
       queue = [];
       size = 0;
     };
@@ -1637,6 +1688,18 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       if (!data.sections?.length && data.about) data.sections = [{ title: '', body: data.about }];
       questions = kind === 'venue' ? VENUE_QUESTIONS : cfg.questions[rev.categorySlug] ?? [];
       if (rev.photos?.length || rev.avatar) token = await fileToken('vendor');
+      if (!isNew() && rev.status === 'draft') {
+        try { base = JSON.parse(localStorage.getItem(snapKey()) || 'null'); } catch { base = null; }
+        // черновик правки не трогали (сохранён в те же секунды, что создан базой
+        // из карточки) — значит, в нём ровно то, что на сайте: это и есть слепок.
+        // Открытый черновик с правками база отдаёт тот же — его время уже другое
+        const t = (v: string) => new Date(String(v).replace(' ', 'T')).getTime();
+        const untouched = rev.created && rev.updated && t(rev.updated) - t(rev.created) < 20000;
+        if (!base && untouched) {
+          base = snapNow();
+          try { localStorage.setItem(snapKey(), JSON.stringify(base)); } catch {}
+        }
+      }
       route();
     } catch (err) {
       view.innerHTML = `<p class="c-error">${esc(errText(err))}</p><a class="c-link" href="/profi/moi/">К моим карточкам</a>`;

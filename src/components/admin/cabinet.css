@@ -35,6 +35,25 @@
    текста плашек */
 .cab .c-head, .cab .a-title { padding: var(--s-3) var(--s-4) var(--s-2); }
 .cab .c-head .a-lead { color: var(--adm-text-2); }
+/* СОСТОЯНИЕ КАРТОЧКИ — заливкой всей шапки экрана (Никита 09.11): от верха экрана
+   и до краёв, скругление снизу как у плашек. Цвет — смысл (--st-*): на сайте —
+   зелёный, на проверке — синий, вернули — красный. Заголовок состояния — сильным
+   оттенком того же цвета, пояснение — обычным текстом */
+.cab .c-head--tone {
+  margin: calc(-1 * (var(--cab-gap) + env(safe-area-inset-top))) calc(-1 * var(--cab-gap)) 0;
+  padding: calc(var(--s-3) + var(--cab-gap) + env(safe-area-inset-top)) calc(var(--s-4) + var(--cab-gap)) var(--s-4);
+  border-radius: 0 0 var(--cab-sheet-radius) var(--cab-sheet-radius);
+}
+.c-head--ok { background: var(--st-ok-bg); }
+.c-head--info { background: var(--st-info-bg); }
+.c-head--bad { background: var(--st-bad-bg); }
+.c-head__state { display: flex; align-items: flex-start; gap: 12px; line-height: 1.4; color: var(--adm-text); }
+.c-head__state > div { display: grid; gap: 2px; }
+.c-head__state svg { width: 22px; height: 22px; flex: none; }
+.c-head__state-h { font-weight: 600; }
+.c-head--ok .c-head__state-h { color: var(--st-ok-strong); }
+.c-head--info .c-head__state-h, .c-head--info .c-clock { color: var(--st-info-strong); }
+.c-head--bad .c-head__state-h, .c-head--bad .c-head__state svg { color: var(--st-bad-strong); }
 
 .c-sheet-area { display: flex; flex-direction: column; gap: var(--cab-gap); --c-bar-bg: var(--adm-bg); }
 .c-sheet-area .a-card { padding: 0; border-radius: 0; background: none; }
@@ -580,7 +599,7 @@ html:has(.cab), html:has(.cab) body { background: var(--adm-bg); }
 .c-todo--bad .c-todo__h { color: var(--st-bad-strong); }
 .c-todo--bad .c-chipbtn { background: var(--st-bad-bg); color: var(--st-bad-strong); }
 /* опасное — подальше от остального (правило 23): отбивка перед блоком удаления */
-.c-cat--far { margin-top: var(--s-4); } /* «Удалить карточку» и «Выйти» — отдельно от остального профиля (Никита 07.11) */
+.c-cat--far { margin-top: var(--cab-gap-far); } /* «Удалить карточку» и «Выйти» — отдельно от остального профиля (Никита 07.11) */
 /* окно подтверждения: воздух между текстом и кнопками (Никита, 05.11: «прижимается») */
 .c-dialog--confirm .c-dialog__body { display: grid; gap: var(--s-4); padding-top: var(--s-6); }
 .c-dialog--confirm h2 { padding-right: 44px; }
@@ -667,8 +686,12 @@ html:has(.cab), html:has(.cab) body { background: var(--adm-bg); }
 
 /* «Как на сайте» — капсулой в верхней строке справа, рядом со статусом (второстепенное действие экрана — в шапке, HIG) */
 .c-head__right { display: flex; align-items: center; gap: 8px; flex: none; }
-.c-head__act { gap: 6px; background: var(--adm-card); }
-.c-head__act svg { width: 18px; height: 18px; }
+/* «Как на сайте» — ссылкой (Никита 09.11): без капсулы, подчёркнутый текст со значком
+   глаза; зона касания 44 px остаётся (::before у .c-chipbtn) */
+.c-head__act { gap: 5px; padding: 0; background: none; font-size: 14px; font-weight: 500; } /* мельче «Мои карточки»: «назад» важнее (Никита 09.11) */
+.c-head__act span { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+@media (hover: hover) { .c-head__act:hover { background: none; } .c-head__act:hover span { text-decoration-thickness: 2px; } }
+.c-head__act svg { width: 16px; height: 16px; }
 
 /* значок группы — залитый, как в Настройках iOS: белый знак на цветном скруглённом квадрате */
 .c-cat__ic { background: var(--adm-bg); color: var(--adm-text); border-radius: 9px; } /* залитый знак на сером, не цветной (Никита 05.11) */
@@ -693,6 +716,8 @@ html:has(.cab), html:has(.cab) body { background: var(--adm-bg); }
    «на проверке» стояло узкой плашкой в шапке, а того же смысла плашки в других местах — до краёв) */
 .c-note-wide { margin: 0; padding: 16px; border-radius: var(--cab-sheet-radius); line-height: 1.4; color: var(--adm-text); }
 .c-note-wide--info { background: var(--st-info-bg); }
+/* «Карточка на сайте» — опубликовано, правок нет (08.11): зелёный = порядок */
+.c-note-wide--ok { background: var(--st-ok-bg); }
 .c-note-wide:has(.c-clock) { display: flex; align-items: flex-start; gap: 12px; }
 .c-note-wide p { margin: 0; }
 /* плашку можно закрыть крестиком (Никита 07.11) — справа сверху, текст его не заходит */
@@ -700,6 +725,7 @@ html:has(.cab), html:has(.cab) body { background: var(--adm-bg); }
 .c-note-x { position: absolute; top: 8px; right: 8px; display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--adm-text); cursor: pointer; }
 .c-note-x svg { width: 16px; height: 16px; }
 .c-note-wide .c-note-wide__h { display: block; font-weight: 600; color: var(--st-info-strong); }
+.c-note-wide--ok .c-note-wide__h { color: var(--st-ok-strong); }
 /* «на проверке» — часы, у которых медленно идут стрелки: ждём ответа (Никита 06.11).
    linear здесь — ход времени, как у кружка-таймера; без движения при reduce motion */
 .c-clock { flex: none; width: 24px; height: 24px; color: var(--st-info-strong); }
@@ -775,7 +801,7 @@ html:has(.cab), html:has(.cab) body { background: var(--adm-bg); }
 .c-error.c-yd-note { color: var(--adm-text); }
 /* ход забора — над прибитой кнопкой; отступ до кнопки заметно больше межстрочного
    (Никита 07.11: «прижалось»), две строки переносятся ровно */
-.c-yd-status { margin: var(--s-1) 0 var(--s-4); font-size: 15px; line-height: 20px; font-weight: 500; text-align: center; text-wrap: balance; }
+.c-yd-status { margin: var(--s-3) 0 var(--s-4); /* не липнет к кадрам над полосой (Никита 08.11) */ font-size: 15px; line-height: 20px; font-weight: 500; text-align: center; text-wrap: balance; }
 /* капсула «Aa» — без тени, выделена цветом (Никита 05.11: «тень не хочу, инструмент
    выделить»): тёмная, как наши кнопки, знаки белые; выбранное — белая капсула внутри */
 .c-notes-bar__main, .c-notes-bar__styles { background: var(--cab-ink); box-shadow: none; }

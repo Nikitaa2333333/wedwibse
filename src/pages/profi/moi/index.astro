@@ -55,12 +55,22 @@ const ROLES = Object.fromEntries(SPECIALIST_CATEGORIES.map((c) => [c.slug, c.rol
           ${go}
         </a>`;
       const rows: string[] = [];
-      for (const c of cards.items) {
+      // обложка опубликованной карточки (Никита 08.11: пустой квадрат у одобренной площадки):
+      // у подрядчика — портрет, у площадки — выбранная обложка; не открылась — пустой квадрат
+      const thumbs = await Promise.all(cards.items.map(async (c: any) => {
+        try {
+          const rec = await api('vendor', 'GET', `/api/collections/${c.kind === 'venue' ? 'venues' : 'specialists'}/records/${c.id}?fields=id,collectionId,photos,avatar,page`);
+          const photos: string[] = rec.photos ?? [];
+          const n = rec.avatar || photos[typeof rec.page?.cover === 'number' ? rec.page.cover : 0] || photos[0];
+          return n ? fileUrl(rec, n, { thumb: '200x200' }) : '';
+        } catch { return ''; }
+      }));
+      for (const [i, c] of cards.items.entries()) {
         const r = c.revision;
         const st = cardState(r?.status, c.status === 'published');
         const sub = role(c.kind, c.categorySlug);
         const href = r ? `/profi/moi/kartochka/?id=${r.id}` : `/profi/moi/kartochka/?card=${c.id}&kind=${c.kind}`;
-        rows.push(row(href, '', c.name, sub, st, r?.status === 'rejected'));
+        rows.push(row(href, thumbs[i], c.name, sub, st, r?.status === 'rejected'));
       }
       for (const r of revs.items) {
         const st = cardState(r.status, false);

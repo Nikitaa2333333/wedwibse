@@ -115,12 +115,13 @@ export function venueFromPage(p, { slug, name, photos, fileOf = () => undefined 
     check && { value: rub(check), label: 'чек на гостя от' },
   ].filter(Boolean).slice(0, 4);
 
+  // гости и чек уже стоят крупными цифрами (stats) — в характеристиках их не
+  // повторяем (Никита 08.11: «до 60 гостей» дважды подряд); чек — только если в цифры не влез
+  const inStats = (label) => stats.some((x) => x.label === label);
   const meta = [
     { label: 'Тип', value: typeLabel },
     address && { label: 'Адрес', value: address },
-    cap.banquet && { label: 'Банкет', value: `до ${num(cap.banquet)} гостей` },
-    cap.buffet && { label: 'Фуршет', value: `до ${num(cap.buffet)} гостей` },
-    check && { label: 'Чек на гостя', value: `от ${rub(check)}` },
+    check && !inStats('чек на гостя от') && { label: 'Чек на гостя', value: `от ${rub(check)}` },
   ].filter(Boolean);
 
   // зал с фото — секция с кадром (блоки halls-index и halls, как у площадок

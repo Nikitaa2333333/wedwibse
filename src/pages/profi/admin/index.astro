@@ -18,13 +18,14 @@ import AdminShell from '../../../components/admin/AdminShell.astro';
 
   {/* Два списка по смыслу (Никита 07.11): что ждёт модератора (срок проверки) и кому написать
       (давно не трогали). Тех, кто заполняет прямо сейчас, в сводке нет — они в «Заявках». */}
-  <section class="a-card a-card--flush">
+  {/* списки — отдельными плашками с воздухом от плиток и друг от друга (Никита 08.11: «всё сливается») */}
+  <section class="a-card a-card--flush a-card--far">
     <div class="a-card__head">
       <h2 class="a-h2">Ждут проверки</h2>
     </div>
     <div class="a-tasks" data-ov-fresh></div>
   </section>
-  <section class="a-card a-card--flush" data-ov-stale-box hidden>
+  <section class="a-card a-card--flush a-card--far" data-ov-stale-box hidden>
     <div class="a-card__head">
       <h2 class="a-h2">Можно написать</h2>
       <a class="a-more" href="/profi/admin/zayavki/#draft">Все</a>

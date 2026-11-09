@@ -548,3 +548,6 @@ html:has(.adm), html:has(.adm) body { background: var(--adm-bg); }
 /* жалобы: текст без плашки */
 .a-plain { padding-inline: var(--s-4); max-width: 46ch; }
 .a-card__note { padding: 0 var(--adm-pad) var(--s-3); }
+
+/* плашка-список отдельно от соседей (Сводка, 08.11) */
+.a-card--far { margin-top: var(--cab-gap-far); }
