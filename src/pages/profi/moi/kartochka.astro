@@ -136,13 +136,14 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
   // экран просто не предлагает лишнего.
   const managed = () => data?.managed === true && !isNew();
   // текст — без «оформили мы» (Никита 07.11: «как будто мы самые главные»); плашку можно закрыть
-  const MANAGED_NOTE = 'Карточка уже заведена администраторами. Вы можете поправить портрет, строку под именем, фото, цену, ответы на вопросы, контакты и добавить видео. Что поменять в тексте, напишите нам — мы быстро поправим.';
+  // без «мы / наше» (Никита 09.11): карточка принадлежит автору — что меняет сам, и где остальное
+  const MANAGED_NOTE = 'Карточка уже на сайте. Меняйте портрет, строку под именем, фото, цену, ответы, контакты и видео. Текст — через «Написать об изменениях».';
   const mnoteKey = () => `wed-cab-mnote-${rev?.venue || rev?.specialist}`;
   // ПЛОЩАДКА «ВЕДЁМ МЫ» (Никита 09.11): страницу держим мы, владелец меняет тип,
   // вместимость, чек, значения строк «Характеристик» и «Условий», тарифы залов,
   // контакты; текст и фото — просьбой. Хук пропускает только это (lockManagedVenue)
   const ourVenue = () => managed() && kind === 'venue';
-  const MANAGED_VENUE_NOTE = 'Страницу площадки заводили мы. Вы можете поменять тип, вместимость, средний чек, цены и условия, тарифы залов и контакты. Что поменять в тексте и фото, напишите нам — поправим сами.';
+  const MANAGED_VENUE_NOTE = 'Страница уже на сайте. Меняйте тип, вместимость, чек, цены и условия, тарифы залов, контакты и фото. Текст и новые фото — через «Написать об изменениях».';
   /** разделы площадки «ведём мы»: те же экраны анкеты, свой набор и свои подписи */
   const ourVenueTiles = () => {
     const rows: any[] = data.rows ?? [];
@@ -152,8 +153,9 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
       { key: 'osnovnoe', title: 'Основное', icon: 'profile', done: true, sub: [TYPE_LABELS[data.type], data.capacityBanquet && `до ${num(Number(data.capacityBanquet))} гостей`, data.checkFrom && `чек от ${rub(Number(data.checkFrom))}`].filter(Boolean).join(', ') || 'тип, гости, чек' },
       { key: 'usloviya', title: 'Цены и условия', icon: 'notes', done: true, sub: `${rows.length} ${plural(rows.length, 'строка', 'строки', 'строк')}` },
       ...(halls.length ? [{ key: 'zaly', title: 'Тарифы залов', icon: 'catalog', done: true, sub: `${halls.length} ${plural(halls.length, 'зал', 'зала', 'залов')}` }] : []),
-      { key: 'foto', title: 'Фото', icon: 'photo', done: true, optional: true, sub: data.requests?.photos ? 'есть просьба' : 'меняем по просьбе' },
-      { key: 'tekst', title: 'Описание', icon: 'text', done: true, optional: true, sub: data.requests?.text ? 'есть просьба' : 'меняем по просьбе' },
+      // фото владелец убирает сам, текст — через «Написать об изменениях» (09.11)
+      { key: 'foto', title: 'Фото', icon: 'photo', done: true, optional: true, sub: (data.hiddenPhotos ?? []).length ? `убрано ${(data.hiddenPhotos ?? []).length}` : 'как на странице' },
+      { key: 'tekst', title: 'Описание', icon: 'text', done: true, optional: true, sub: requestsText() ? 'есть сообщение' : 'как на странице' },
       { key: 'kontakty', title: 'Контакты', icon: 'phone', done: !!String(c.phone ?? '').trim(), sub: [c.phone && 'телефон', c.telegram && 'Telegram', c.site && 'сайт', c.email && 'почта'].filter(Boolean).join(', ') || 'пусто, нужен телефон' },
     ];
   };
