@@ -921,8 +921,12 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
           </div>`).join('')}</div>` };
     }
     if (key === 'foto') {
-      // фото площадки «ведём мы» владелец будет убирать сам, как подрядчик (Никита 09.11) — отдельным шагом с хуками
-      return { title: 'Фото', lead: `<a href="${page}" target="_blank" rel="noopener">Фото на странице</a>`, html: writeBtn() };
+      // фото площадки «ведём мы» владелец убирает сам, как подрядчик (Никита 09.11): кадры —
+      // наша лента из git, «убрать» = скрыть со страницы (hiddenPhotos), файлы не трогаем
+      return { title: 'Фото', lead: `Уберите лишние кадры — со <a href="${page}" target="_blank" rel="noopener">страницы</a> они уйдут после проверки. Новые фото — через «Написать об изменениях»`, html: `
+        <div class="c-photos" data-vphotos><p class="c-empty">Загружаем фото…</p></div>
+        <div data-vphotos-off></div>
+        ${writeBtn()}` };
     }
     if (key === 'tekst') {
       return { title: 'Описание', lead: `<a href="${page}" target="_blank" rel="noopener">Текст на странице</a>`, html: writeBtn() };
@@ -1111,6 +1115,7 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
     view.querySelectorAll<HTMLTextAreaElement>('textarea[data-grow]').forEach(grow);
     if (locked()) view.querySelectorAll<HTMLInputElement>('input, textarea, button.c-opt, button.c-add, button.c-tool, button.c-link').forEach((x) => (x.disabled = true));
     if (key === 'foto') renderPhotos();
+    if (key === 'foto' && ourVenue()) renderVenuePhotos();
     if (key === 'kontakty') bindPhone();
     if (key === 'tekst') bindNotes();
     if (key === 'osnovnoe' && kind === 'venue') bindGeo();
@@ -1187,6 +1192,64 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
     if (!lock) bindPhotoDrag(box);
     dragHint(lock ? [] : names);
   }
+
+  /** фото площадки «ведём мы» (09.11): лента нашей страницы — превью собираются на сборке
+   *  (/profi/foto-ploshchadki/<slug>.json), убранные — в data.hiddenPhotos */
+  let venuePhotoList: { src: string; url: string }[] | null = null;
+  async function renderVenuePhotos() {
+    const box = view.querySelector<HTMLElement>('[data-vphotos]');
+    const offBox = view.querySelector<HTMLElement>('[data-vphotos-off]');
+    if (!box || !offBox) return;
+    if (!venuePhotoList) {
+      try {
+        const r = await fetch(`/profi/foto-ploshchadki/${encodeURIComponent(rev.slug)}.json`);
+        venuePhotoList = r.ok ? ((await r.json()).photos ?? []) : [];
+      } catch {
+        box.innerHTML = '<p class="c-empty c-error">Фото не загрузились — обновите страницу</p>';
+        return;
+      }
+    }
+    const list = venuePhotoList ?? [];
+    const hidden = new Set<string>(data.hiddenPhotos ?? []);
+    const shown = list.filter((p) => !hidden.has(p.src));
+    const off = list.filter((p) => hidden.has(p.src));
+    const lock = locked();
+    box.innerHTML = shown.length ? shown.map((p) => `
+      <div class="c-photo">
+        <img src="${esc(p.url)}" alt="" loading="lazy" draggable="false" />
+        ${lock ? '' : `<div class="c-photo__tools"><button type="button" data-vhide="${esc(p.src)}" aria-label="Убрать">${X_ICON}</button></div>`}
+      </div>`).join('') : '<p class="c-empty">Фото на странице нет</p>';
+    offBox.innerHTML = off.length ? `
+      <p class="c-q__label c-vphotos__h">Убраны со страницы — ${off.length}</p>
+      <div class="c-photos c-photos--mini">${off.map((p) => `
+        <div class="c-photo c-photo--off">
+          <img src="${esc(p.url)}" alt="" loading="lazy" draggable="false" />
+          ${lock ? '' : `<button class="c-photo__back" type="button" data-vshow="${esc(p.src)}">Вернуть</button>`}
+        </div>`).join('')}</div>` : '';
+  }
+  view.addEventListener('click', (e) => {
+    const t = e.target as HTMLElement;
+    const hide = t.closest<HTMLElement>('[data-vhide]')?.dataset.vhide;
+    const show = t.closest<HTMLElement>('[data-vshow]')?.dataset.vshow;
+    if (!hide && !show) return;
+    const cur: string[] = [...(data.hiddenPhotos ?? [])];
+    if (hide) {
+      const left = (venuePhotoList ?? []).filter((p) => !cur.includes(p.src)).length - 1;
+      if (left < MIN_PHOTOS) { toast(`На странице должно остаться не меньше ${MIN_PHOTOS} фото`, true, 3000); return; }
+      data.hiddenPhotos = [...cur, hide];
+      later();
+      renderVenuePhotos();
+      toast('Фото убрано', false, 4000, () => {
+        data.hiddenPhotos = (data.hiddenPhotos ?? []).filter((s: string) => s !== hide);
+        later();
+        renderVenuePhotos();
+      });
+    } else {
+      data.hiddenPhotos = cur.filter((s) => s !== show);
+      later();
+      renderVenuePhotos();
+    }
+  });
 
   /**
    * Кадр во весь экран (Никита, 02.11): лента кадров со свайпом, в полный

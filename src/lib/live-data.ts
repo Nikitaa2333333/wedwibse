@@ -14,7 +14,7 @@ import type { ImageMetadata } from 'astro';
 import { inferRemoteSize } from 'astro:assets';
 import { cardFromPage, orderedPhotos } from './cabinet-card.mjs';
 import { venueFromPage } from './cabinet-venue.mjs';
-import { applyVenueEdits, applyFeedEdits } from './venue-edits.mjs';
+import { applyVenueEdits, applyFeedEdits, hideVenuePhotos } from './venue-edits.mjs';
 import { catalogImage, catalogEntries, setCatalogImages, hasLocalImage } from './images';
 import { applyLive, type OwnerEdits, type Specialist } from '../data/specialists';
 import { applyLiveVenues, type Venue } from '../data/venues';
@@ -228,9 +228,10 @@ async function loadVenues(next: Reg) {
     try {
       // площадка из кабинета — своя форма page, её переводим в Venue;
       // площадка конвейера — page уже Venue, меняем только пути кадров
+      // «ведём мы»: убранные владельцем кадры — до подмены путей на файлы сборки (09.11)
       let venue = (rec.page.source === 'cabinet'
         ? await cabinetVenue(rec, next)
-        : await mapVenueImages(rec, rec.page, next)) as Venue | null;
+        : await mapVenueImages(rec, hideVenuePhotos(rec.page, rec.page.ownerEdits?.hiddenPhotos), next)) as Venue | null;
       // площадка «ведём мы»: правки владельца (строки, тарифы залов) поверх нашей страницы (09.11)
       if (venue && rec.page.source !== 'cabinet') venue = applyVenueEdits(venue, rec.page.ownerEdits) as Venue;
       if (venue) lastVenues.set(rec.slug, venue);

@@ -611,7 +611,17 @@ const MANAGED_KEYS = ['priceMode', 'priceFrom', 'priceNote', 'filters', 'contact
 // средний чек, значения строк «Характеристик» и «Условий» (названия строк наши),
 // тарифы залов по дням, контакты. Текст и фото — просьбой. Анкету (form с
 // rows / hallTariffs) пишет суперпользователь: scripts/pb-cabinet-setup.mjs venue-forms.
-const MANAGED_VENUE_KEYS = ['checkFrom', 'capacityBanquet', 'type', 'rows', 'hallTariffs', 'contacts', 'requests'];
+// hiddenPhotos (09.11): кадры нашей ленты, которые владелец убрал, — пути /venues/…, файлы не трогаем
+const MANAGED_VENUE_KEYS = ['checkFrom', 'capacityBanquet', 'type', 'rows', 'hallTariffs', 'contacts', 'requests', 'hiddenPhotos'];
+
+/** убранные кадры площадки «ведём мы»: только пути из её ленты (page.gallery) */
+function hiddenPhotosOf(v, page) {
+  const own = {};
+  ((page && page.gallery) || []).forEach((g) => { if (g && typeof g.src === 'string') own[g.src] = true; });
+  const out = [];
+  (Array.isArray(v) ? v : []).forEach((s) => { if (typeof s === 'string' && own[s] && out.indexOf(s) === -1) out.push(s); });
+  return out;
+}
 const MANAGED_TAGLINE_MAX = 80;
 const MANAGED_INTRO_MAX = 600;
 
@@ -640,6 +650,8 @@ function lockManagedVenue(form, data) {
   if ('type' in d) out.type = str(d.type, 60);
   if (d.contacts && typeof d.contacts === 'object') out.contacts = d.contacts;
   if (d.requests && typeof d.requests === 'object') out.requests = d.requests;
+  // сверка с лентой — в approveManagedVenue (здесь страницы нет), тут только форма значения
+  if (Array.isArray(d.hiddenPhotos)) out.hiddenPhotos = d.hiddenPhotos.filter((s) => typeof s === 'string' && s.indexOf('/venues/') === 0).slice(0, 300);
   const rows = Array.isArray(out.rows) ? out.rows : [];
   const dr = Array.isArray(d.rows) ? d.rows : [];
   out.rows = rows.map((r, i) => (dr[i] && dr[i].label === r.label ? Object.assign({}, r, { value: str(dr[i].value, 300) || r.value }) : r));
@@ -680,6 +692,76 @@ function requestsText(data) {
     .filter((x) => str(x[1]))
     .map((x) => `${x[0]}: ${str(x[1], 1000)}`)
     .join('\n');
+}
+
+// ---------- цены без модерации (Никита 09.11) ----------
+// Цены «ведём мы» будут менять часто — день ожидания на каждую цифру не нужен.
+// Правка уходит на сайт сразу, если в ней поменялись ТОЛЬКО цифры цен и каждая
+// не дальше чем в PRICE_JUMP раз от прежней (опечатку «4000» вместо «40 000» ловим).
+// Всё остальное (текст, контакты, фото, ответы, сообщение нам) — через модератора.
+const PRICE_JUMP = 3;
+
+/** первое число строки: «от 150 000 ₽» → 150000 */
+function firstNumber(v) {
+  const m = /\d[\d\s ]*/.exec(String(v == null ? '' : v));
+  const n = m ? parseInt(m[0].replace(/[\s ]/g, ''), 10) : NaN;
+  return isFinite(n) && n > 0 ? n : null;
+}
+/** новая цена в разумных пределах от прежней */
+function priceStep(a, b) {
+  const x = firstNumber(a), y = firstNumber(b);
+  if (x === null || y === null) return false;
+  return y <= x * PRICE_JUMP && y * PRICE_JUMP >= x;
+}
+const sameJson = (a, b) => JSON.stringify(a === undefined ? null : a) === JSON.stringify(b === undefined ? null : b);
+/** строка — цена: в значении сумма в рублях */
+const isMoneyText = (v) => /\d/.test(String(v || '')) && /₽|руб/i.test(String(v || ''));
+
+/** true — в правке поменялись только цены, и все в пределах; хоть что-то другое — false */
+function priceOnlyChange(rev, card) {
+  const kind = rev.getString('kind');
+  const form = jsonOf(card, 'form');
+  const data = (kind === 'venue' ? lockManagedVenue : lockManaged)(form, jsonOf(rev, 'data'));
+  const req = data.requests && typeof data.requests === 'object' ? data.requests : {};
+  if (Object.keys(req).some((k) => String(req[k] || '').trim())) return false;
+  let changed = 0;
+  const price = (a, b) => {
+    if (sameJson(a, b)) return true;
+    changed++;
+    return priceStep(a, b);
+  };
+  if (kind === 'venue') {
+    for (const k of ['type', 'capacityBanquet', 'contacts']) if (!sameJson(data[k], form[k])) return false;
+    if (!sameJson(data.hiddenPhotos || [], form.hiddenPhotos || [])) return false;
+    if (!price(form.checkFrom || null, data.checkFrom || null) && !(form.checkFrom == null && data.checkFrom == null)) return false;
+    const fr = form.rows || [], dr = data.rows || [];
+    for (let i = 0; i < fr.length; i++) {
+      const a = fr[i] && fr[i].value, b = dr[i] && dr[i].value;
+      if (sameJson(a, b)) continue;
+      if (!isMoneyText(a) || !isMoneyText(b) || !price(a, b)) return false;
+    }
+    const fh = form.hallTariffs || [], dh = data.hallTariffs || [];
+    for (let i = 0; i < fh.length; i++) {
+      const ft = (fh[i] && fh[i].tariff) || [], dt = (dh[i] && dh[i].tariff) || [];
+      for (let j = 0; j < ft.length; j++) {
+        for (const f of ['rent', 'deposit']) if (!price(ft[j] && ft[j][f], dt[j] && dt[j][f])) return false;
+      }
+    }
+  } else {
+    for (const k of MANAGED_KEYS) {
+      if (k === 'priceFrom' || k === 'tariffPrices' || k === 'requests') continue;
+      if (!sameJson(data[k], form[k])) return false;
+    }
+    if (rev.getString('avatar') && rev.getString('avatar') !== card.getString('avatar')) return false;
+    if (photosOf(rev).join('|') !== photosOf(card).join('|')) return false;
+    if (!price(priceFromOf(form), priceFromOf(data))) return false;
+    const before = {};
+    tariffPricesOf(form.tariffPrices).forEach((t) => { before[t.name] = t.price; });
+    const after = tariffPricesOf(data.tariffPrices);
+    if (after.length !== Object.keys(before).length && !sameJson(form.tariffPrices, data.tariffPrices)) return false;
+    for (const t of after) if (!(t.name in before) || !price(before[t.name], t.price)) return false;
+  }
+  return changed > 0;
 }
 
 // ---------- отправка на модерацию ----------
@@ -860,6 +942,13 @@ function vendorUpdateRevision(e) {
   const submitting = to === 'review';
   if (submitting) {
     const problems = submitProblems(r, !!managed);
+    // площадка «ведём мы» убрала кадры (09.11): на странице остаётся не меньше MIN_PHOTOS
+    if (managed && r.getString('kind') === 'venue') {
+      const page = jsonOf(managed, 'page');
+      const off = hiddenPhotosOf(jsonOf(r, 'data').hiddenPhotos, page).length;
+      const left = ((page && page.gallery) || []).length - off;
+      if (off && left < MIN_PHOTOS) problems.push(`оставьте на странице не меньше ${MIN_PHOTOS} фото (сейчас ${Math.max(0, left)})`);
+    }
     const phone = phoneProblem(e.app, r);
     if (phone) problems.push(phone);
     const video = videoProblem(jsonOf(r, 'data'));
@@ -868,6 +957,22 @@ function vendorUpdateRevision(e) {
     if (stale) problems.push(stale + ' Начните правку заново из карточки.');
     if (problems.length) throw new BadRequestError('Не получилось отправить на проверку: ' + problems.join('; ') + '.');
     r.set('submittedAt', new DateTime());
+  }
+
+  // цены «ведём мы» без модерации (Никита 09.11): только цифры цен в пределах PRICE_JUMP —
+  // одобряем сразу, той же транзакцией, что и модератор (approve); модераторам — уведомление
+  if (submitting && managed && priceOnlyChange(r, managed)) {
+    r.set('status', 'approved');
+    const app = e.app;
+    app.runInTransaction((txApp) => {
+      approve(txApp, r);
+      e.app = txApp;
+      e.next();
+    });
+    e.app = app;
+    const data = jsonOf(r, 'data');
+    telegram(`Цены обновлены сами (без проверки): ${str(data.name, 120)}\n${SITE_URL}/profi/admin/moderaciya/pravka/?id=${r.id}`);
+    return;
   }
 
   e.next();
@@ -1138,6 +1243,7 @@ function approveManagedVenue(app, rev, card) {
     capacityBanquet: int(data.capacityBanquet),
     rows: (data.rows || []).map((r) => ({ at: r.at, label: r.label, value: r.value })),
     hallTariffs: (data.hallTariffs || []).map((h) => ({ id: h.id, tariff: h.tariff })),
+    hiddenPhotos: hiddenPhotosOf(data.hiddenPhotos, page),
     version: card.getInt('version'),
   };
   card.set('page', page);

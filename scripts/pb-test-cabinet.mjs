@@ -779,6 +779,41 @@ console.log('\nвход по почте');
     p.ownerEdits?.rows?.[0]?.value === 'своя, меню от 8 000 ₽' && p.ownerEdits?.hallTariffs?.[0]?.tariff?.[0]?.rent === '90 000 ₽', res.text);
   check('тип, чек и гости — в колонках каталога; фото на месте', c.type === 'loft' && c.checkFrom === 8000 && c.capacityBanquet === 250 &&
     c.photos?.length === 3 && c.form?.managed === true && !c.form?.requests && c.contacts?.phone === '+79160000088', res.text);
+
+  // цены без модерации (09.11): только цифры цен в пределах 3 раз — сразу на сайт
+  res = await call(V.token, 'POST', '/api/wed/edit', { kind: 'venue', card: card.json?.id });
+  const e2 = res.json;
+  cleanup.revisions.push(e2?.id);
+  const h2 = JSON.parse(JSON.stringify(e2.data.hallTariffs));
+  h2[0].tariff[0].rent = '100 000 ₽';
+  await call(V.token, 'PATCH', `/api/collections/revisions/records/${e2?.id}`, { data: { ...e2.data, checkFrom: 9000, hallTariffs: h2 } });
+  res = await call(V.token, 'PATCH', `/api/collections/revisions/records/${e2?.id}`, { status: 'review' });
+  check('правка только цен площадки уходит на сайт без проверки', res.status === 200 && res.json?.status === 'approved', res.text);
+  res = await call(SU, 'GET', `/api/collections/venues/records/${card.json?.id}`);
+  check('новые цены — в правках владельца и в колонке чека', res.json?.checkFrom === 9000 &&
+    res.json?.page?.ownerEdits?.hallTariffs?.[0]?.tariff?.[0]?.rent === '100 000 ₽', res.text);
+
+  // цена выросла больше чем в 3 раза — опечатка? на проверку
+  res = await call(V.token, 'POST', '/api/wed/edit', { kind: 'venue', card: card.json?.id });
+  const e3 = res.json;
+  cleanup.revisions.push(e3?.id);
+  await call(V.token, 'PATCH', `/api/collections/revisions/records/${e3?.id}`, { data: { ...e3.data, checkFrom: 90000 } });
+  res = await call(V.token, 'PATCH', `/api/collections/revisions/records/${e3?.id}`, { status: 'review' });
+  check('цена в 10 раз выше — на проверку, не сразу на сайт', res.status === 200 && res.json?.status === 'review', res.text);
+  await call(V.token, 'PATCH', `/api/collections/revisions/records/${e3?.id}`, { status: 'draft' });
+
+  // фото площадки владелец убирает сам (09.11): скрытые пути — в ownerEdits, меньше 8 оставить нельзя
+  const gallery = Array.from({ length: 10 }, (_, i) => ({ src: `/venues/test/p${i}.webp`, alt: '' }));
+  await call(SU, 'PATCH', `/api/collections/venues/records/${card.json?.id}`, { page: { ...p, ownerEdits: undefined, gallery } });
+  await call(V.token, 'PATCH', `/api/collections/revisions/records/${e3?.id}`, { data: { ...e3.data, checkFrom: 9000, hiddenPhotos: gallery.slice(0, 3).map((g) => g.src) } });
+  res = await call(V.token, 'PATCH', `/api/collections/revisions/records/${e3?.id}`, { status: 'review' });
+  check('убрать столько, что останется меньше 8 фото, нельзя', refused(res) && says(res, 'не меньше'), res.text);
+  await call(V.token, 'PATCH', `/api/collections/revisions/records/${e3?.id}`, { data: { ...e3.data, checkFrom: 9000, hiddenPhotos: [gallery[0].src, '/venues/chuzhoe/x.webp'] } });
+  res = await call(V.token, 'PATCH', `/api/collections/revisions/records/${e3?.id}`, { status: 'review' });
+  check('убранное фото — на проверку (это не цена)', res.status === 200 && res.json?.status === 'review', res.text);
+  res = await call(M.token, 'PATCH', `/api/collections/revisions/records/${e3?.id}`, { status: 'approved' });
+  res = await call(SU, 'GET', `/api/collections/venues/records/${card.json?.id}`);
+  check('убранные кадры — в правках владельца, чужой путь отброшен', JSON.stringify(res.json?.page?.ownerEdits?.hiddenPhotos) === JSON.stringify([gallery[0].src]), res.text);
 }
 
 // ---------- фото с Яндекс Диска (lib/yadisk.js) ----------

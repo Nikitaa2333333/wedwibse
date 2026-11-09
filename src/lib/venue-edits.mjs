@@ -35,6 +35,26 @@ export function applyVenueEdits(venue, e) {
   return v;
 }
 
+/**
+ * Кадры, которые владелец убрал (Никита 09.11: фото «ведём мы» владелец убирает сам).
+ * Работает по нашим путям (/venues/…), поэтому — ДО подмены путей на файлы сборки
+ * (live-data: mapVenueImages). Файлы не удаляем: на них могут ссылаться залы и блоки.
+ * Убранный кадр первого экрана заменяем первым оставшимся из ленты.
+ */
+export function hideVenuePhotos(page, hidden) {
+  const off = new Set((Array.isArray(hidden) ? hidden : []).filter((s) => typeof s === 'string'));
+  if (!off.size || !page || typeof page !== 'object') return page;
+  const v = JSON.parse(JSON.stringify(page));
+  v.gallery = (v.gallery ?? []).filter((g) => !off.has(g?.src));
+  const rest = v.gallery.map((g) => g?.src).filter((s) => typeof s === 'string' && /\.(webp|jpe?g|png)$/i.test(s));
+  if (v.hero && typeof v.hero === 'object') {
+    for (const k of ['image', 'portrait']) {
+      if (off.has(v.hero[k])) v.hero[k] = rest.find((s) => s !== v.hero.image && s !== v.hero.portrait) ?? rest[0] ?? v.hero[k];
+    }
+  }
+  return v;
+}
+
 /** карточка каталога с правками владельца: тип, вместимость, чек (фильтры каталога) */
 export function applyFeedEdits(item, e) {
   if (!e || typeof e !== 'object') return item;
