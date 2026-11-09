@@ -14,6 +14,7 @@ import type { ImageMetadata } from 'astro';
 import { inferRemoteSize } from 'astro:assets';
 import { cardFromPage, orderedPhotos } from './cabinet-card.mjs';
 import { venueFromPage } from './cabinet-venue.mjs';
+import { applyVenueEdits, applyFeedEdits } from './venue-edits.mjs';
 import { catalogImage, catalogEntries, setCatalogImages, hasLocalImage } from './images';
 import { applyLive, type OwnerEdits, type Specialist } from '../data/specialists';
 import { applyLiveVenues, type Venue } from '../data/venues';
@@ -175,7 +176,8 @@ async function mapVenueImages(rec: PbRecord, node: unknown, next: Reg): Promise<
 /** карточка каталога: записанная руками (feed.ts) или собранная из полей базы */
 function feedOf(rec: PbRecord & Record<string, any>, venue: Venue): FeedVenue {
   const hand = STATIC_FEED.find((f) => f.slug === rec.slug);
-  if (hand) return hand;
+  // правки владельца «ведём мы» (тип, вместимость, чек) — поверх записанной руками (09.11)
+  if (hand) return applyFeedEdits(hand, rec.page?.ownerEdits) as FeedVenue;
   const cap = Number(rec.capacityBanquet) || 0;
   const check = Number(rec.checkFrom) || 0;
   const photos = JSON.stringify(venue).match(/"(\/venues\/[^"]+\.(?:webp|jpe?g|png)|https?:\/\/[^"]+\/api\/files\/[^"]+)"/gi)?.map((x) => x.slice(1, -1)) ?? [];
@@ -229,6 +231,8 @@ async function loadVenues(next: Reg) {
       let venue = (rec.page.source === 'cabinet'
         ? await cabinetVenue(rec, next)
         : await mapVenueImages(rec, rec.page, next)) as Venue | null;
+      // площадка «ведём мы»: правки владельца (строки, тарифы залов) поверх нашей страницы (09.11)
+      if (venue && rec.page.source !== 'cabinet') venue = applyVenueEdits(venue, rec.page.ownerEdits) as Venue;
       if (venue) lastVenues.set(rec.slug, venue);
       else {
         // кадр не замерился — прошлая удачная версия площадки, а без неё площадку пропускаем

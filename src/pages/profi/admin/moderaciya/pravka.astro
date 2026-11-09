@@ -119,6 +119,7 @@ const QUESTIONS = Object.fromEntries(
 <script>
   import { api, esc, fileToken, fileUrl, requireSession, REV_STATUS, errText } from '../../../../lib/cabinet-api';
   import { VENUE_QUESTIONS, VENUE_TERMS, priceFrom, rub } from '../../../../lib/cabinet-form';
+  import { applyVenueEdits } from '../../../../lib/venue-edits.mjs';
   import { later, openDialog, X_ICON } from '../../../../lib/cab-ui';
   import { markSeen } from '../../../../lib/admin-live';
   import { fieldError, clearFieldError } from '../../../../lib/form-check';
@@ -194,8 +195,10 @@ const QUESTIONS = Object.fromEntries(
       rev = await api('moderator', 'GET', `/api/collections/revisions/records/${encodeURIComponent(id)}?expand=owner`);
       const cardId = rev.venue || rev.specialist;
       let was: any = null;
+      let cardRec: any = null;
       if (cardId) {
         const card = await api('moderator', 'GET', `/api/collections/${rev.kind === 'venue' ? 'venues' : 'specialists'}/records/${cardId}`);
+        cardRec = card;
         // у карточки из кабинета прежние ответы лежат в page; у карточек
         // конвейера — только плоские поля
         was = card.page?.source === 'cabinet' ? card.page : card;
@@ -268,8 +271,39 @@ const QUESTIONS = Object.fromEntries(
       // вопросы, контакты и видео; текст и фото — просьбы, делаем руками в JSON
       if (d.managed) {
         const r = d.requests ?? {};
-        const asks = [r.text && `Текст: ${r.text}`, r.photos && `Фото: ${r.photos}`].filter(Boolean);
-        rows.unshift(`<dt>Ведём мы — основной текст правим мы</dt><dd>${asks.length ? `Просит поправить — сделать руками в src/data/specialists/${esc(rev.categorySlug)}/${esc(rev.slug)}.json:\n${esc(asks.join('\n'))}` : 'Просьб нет.'}</dd>`);
+        const asks = [r.text && `Текст: ${r.text}`, r.price && `Тарифы и цены: ${r.price}`, r.photos && `Фото: ${r.photos}`].filter(Boolean);
+        const json = rev.kind === 'venue' ? `src/data/venues/${esc(rev.slug)}.json` : `src/data/specialists/${esc(rev.categorySlug)}/${esc(rev.slug)}.json`;
+        rows.unshift(`<dt>Ведём мы — текст и фото правим мы</dt><dd>${asks.length ? `Просит поправить — сделать руками в ${json}:\n${esc(asks.join('\n'))}` : 'Просьб нет.'}</dd>`);
+      }
+      // площадка «ведём мы» (09.11): строки и тарифы залов — «было → стало» против того,
+      // что сейчас на сайте (наша страница с прежними правками владельца)
+      if (d.managed && rev.kind === 'venue' && cardRec?.page) {
+        const cur = applyVenueEdits(cardRec.page, cardRec.page.ownerEdits) as any;
+        const at = (path: string) => String(path).split('.').reduce((o: any, k) => (o == null ? o : o[k]), cur);
+        const pair = (before: string, now: string) => (before && before !== now ? `<span class="pr__was">${esc(before)}</span><span class="pr__now">${esc(now)}</span>` : esc(now));
+        const tl = (v: string) => VENUE_QUESTIONS.find((q) => q.key === 'type')?.options.find((o) => o.value === v)?.label ?? v;
+        if (d.type) rows.push(`<dt>Тип площадки</dt><dd>${pair(tl(cardRec.type), tl(d.type))}</dd>`);
+        for (const r of d.rows ?? []) rows.push(`<dt>${esc(r.group)}: ${esc(r.label)}</dt><dd>${pair(at(r.at)?.value ?? '', r.value)}</dd>`);
+        for (const h of d.hallTariffs ?? []) {
+          const hall = (cur.halls ?? []).find((x: any) => x.id === h.id);
+          const lines = (h.tariff ?? []).map((t: any, i: number) => {
+            const b = hall?.tariff?.[i] ?? {};
+            return `<span class="pr__line">${esc(t.day)}: аренда ${pair(b.rent ?? '', t.rent)}, заказ от ${pair(b.deposit ?? '', t.deposit)}</span>`;
+          });
+          rows.push(`<dt>Тарифы зала «${esc(h.name)}»</dt><dd>${lines.join('')}</dd>`);
+        }
+      }
+      // подрядчик «ведём мы» с тарифами в тексте (09.11): цены — «было → стало»
+      if (d.managed && rev.kind !== 'venue' && Array.isArray(d.tariffPrices) && d.tariffPrices.length) {
+        const story: any[] = cardRec?.page?.story ?? [];
+        const prev = new Map(story.flatMap((x) => x?.tariffs ?? []).map((t: any) => [t.name, Number(String(t.price).replace(/\D/g, '')) || 0]));
+        for (const [n, v] of Object.entries(cardRec?.page?.ownerEdits?.tariffPrices ?? []).map(([, t]: any) => [t.name, t.price])) prev.set(n as string, Number(v));
+        const lines = d.tariffPrices.map((t: any) => {
+          const b = prev.get(t.name);
+          const now = Number(t.price) > 0 ? rub(Number(t.price)) : 'без цены';
+          return `<span class="pr__line">${esc(t.name)}: ${b && b !== Number(t.price) ? `<span class="pr__was">${rub(b)}</span><span class="pr__now">${now}</span>` : now}</span>`;
+        });
+        rows.push(`<dt>Цены тарифов</dt><dd>${lines.join('')}</dd>`);
       }
       // портрет владелец ставит сам (07.11, и «ведём мы», и обычная анкета)
       if (rev.avatar) {
