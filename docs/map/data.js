@@ -2,7 +2,7 @@
 // Обновлять в том же коммите, где закрыт шаг: поменять s (done/work/todo/bad/block) и updated.
 // Собрано 05.11.2026 из STAGE2, CABINET, BACKLOG, кода и аудитов research/audit-2026-11-05.
 window.MAP = {
- "updated": "07.11.2026",
+ "updated": "09.11.2026",
  "stages": [
   {
    "id": "1",
@@ -916,9 +916,9 @@ window.MAP = {
     {
      "t": "Заявки пар в админке: список, статусы, срез (сколько отправлено, по категориям, из избранного)",
      "s": "work",
-     "note": "07.11: сделано локально в ветке claude/leads-admin (D:\\wedwibse-leads): миграция 1762600000 (source, batch, связи; старые заявки размечены), хук, раздел /profi/admin/zayavki-par/, плитка в сводке, тест 148/148; ждёт «выкладывай»",
+     "note": "07.11: сделано в ветке claude/leads-admin (на GitHub с 09.11), ждёт «выкладывай»; разбор аналитики — LEADS-ADMIN.md, «Аналитика»",
      "src": "docs/cabinet/LEADS-ADMIN.md",
-     "date": "07.11.2026"
+     "date": "09.11.2026"
     }
    ]
   },
