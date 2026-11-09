@@ -686,10 +686,11 @@ html:has(.cab), html:has(.cab) body { background: var(--adm-bg); }
 
 /* «Как на сайте» — капсулой в верхней строке справа, рядом со статусом (второстепенное действие экрана — в шапке, HIG) */
 .c-head__right { display: flex; align-items: center; gap: 8px; flex: none; }
-/* «Как на сайте» — без капсулы (Никита 09.11): значок и текст, как «Мои карточки» слева;
-   зона касания 44 px остаётся (::before у .c-chipbtn) */
+/* «Как на сайте» — ссылкой (Никита 09.11): без капсулы, подчёркнутый текст со значком
+   глаза; зона касания 44 px остаётся (::before у .c-chipbtn) */
 .c-head__act { gap: 6px; padding: 0; background: none; font-size: var(--cab-fs-label); font-weight: 500; }
-@media (hover: hover) { .c-head__act:hover { background: none; text-decoration: underline; text-underline-offset: 3px; } }
+.c-head__act span { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+@media (hover: hover) { .c-head__act:hover { background: none; } .c-head__act:hover span { text-decoration-thickness: 2px; } }
 .c-head__act svg { width: 18px; height: 18px; }
 
 /* значок группы — залитый, как в Настройках iOS: белый знак на цветном скруглённом квадрате */
