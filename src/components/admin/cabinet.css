@@ -69,11 +69,12 @@
 .c-form > .c-q,
 .c-form > .c-photos,
 .c-form > .c-items > .c-item,
+.c-form > .c-items > .a-field,
 .c-form > .c-items > .c-vrow {
   background: var(--adm-card);
   border-radius: var(--cab-sheet-radius);
 }
-.c-card, .c-form > .a-field, .c-form > .c-grid2 > .a-field, .c-form > .c-q, .c-form > .c-items > .c-item { padding: 14px var(--s-4); }
+.c-card, .c-form > .a-field, .c-form > .c-grid2 > .a-field, .c-form > .c-q, .c-form > .c-items > .c-item, .c-form > .c-items > .a-field { padding: 14px var(--s-4); } /* ссылка на ролик плашкой — 09.11 */
 .c-form > .c-photos { padding: var(--s-3); }
 .c-form > .c-items > .c-vrow { padding: 6px 6px 6px var(--s-4); }
 .c-sheet-area > .c-rows, .c-cat .c-rows { overflow: hidden; }
