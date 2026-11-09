@@ -248,13 +248,6 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     ];
     return guess.find(([re, k]) => re.test(r) && SECTIONS[kind].some((x) => x.key === k))?.[1];
   }
-  function rejectBox(): string {
-    return `<div class="c-reject" role="note">
-      <p class="c-reject__h">${TODO_IC}Вернули на исправление</p>
-      <p class="c-reject__text">${esc(rev.rejectReason)}</p>
-    </div>`;
-  }
-
   /** раздел ещё не начат — плитка серая (Никита 06.11); начат, но не дотянут — чёрная с подсказкой */
   const isFresh = (x: { key: string; done: boolean; optional?: boolean; sub: string }) =>
     (x.key === 'video' && !x.done) || !x.done && !x.optional && (/^пусто/.test(x.sub) || (x.key === 'voprosy' && /^0 из/.test(x.sub)) || (x.key === 'prays' && x.sub === 'нет тарифа с ценой' && !(data.tariffs ?? []).some((t: any) => t?.name || t?.price)));
@@ -273,17 +266,27 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
     // Теперь она в «Профиле», внизу (profil.astro, lib/cabinet-delete.ts).
     const title = data.name || role();
     const siteUrl = kind === 'venue' ? `/moskva/ploshchadki/${rev.slug}/` : `/moskva/podryadchiki/${rev.categorySlug}/${rev.slug}/`;
+    // СОСТОЯНИЕ КАРТОЧКИ — заливкой всей шапки (Никита 09.11): на сайте — зелёная,
+    // на проверке — синяя, вернули — красная. Отдельных плашек под шапкой больше нет
+    const CLOCK = '<span class="c-clock" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><path class="c-clock__h" d="M12 12 9.2 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path class="c-clock__m" d="M12 12V6.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>';
+    const tone = rev.status === 'review'
+      ? { cls: 'info', h: 'Карточка на проверке', t: 'Ответим в течение 24 часов. Пока она на проверке, менять её нельзя; можно отозвать', ic: CLOCK }
+      : rev.status === 'rejected' && rev.rejectReason
+      ? { cls: 'bad', h: 'Вернули на исправление', t: esc(rev.rejectReason), ic: TODO_IC }
+      : rev.status === 'approved'
+      ? { cls: 'ok', h: 'Карточка одобрена', t: 'Она уже на сайте', ic: '' }
+      : rev.status === 'draft' && sameAsSite()
+      ? { cls: 'ok', h: 'Карточка на сайте', t: 'Здесь то, что сейчас видят пары. Изменений пока нет', ic: '' }
+      : null;
     view.innerHTML = `
-      <div class="c-head">
+      <div class="c-head${tone ? ` c-head--tone c-head--${tone.cls}` : ''}">
         <div class="c-head__top"><a class="c-back" href="/profi/moi/">${icon('back')} Мои карточки</a><span class="c-head__right">${rev.status !== 'approved' ? `<button class="c-chipbtn c-head__act" type="button" data-preview><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Как на сайте</button>` : ''}</span></div>
         <h1 class="a-h1">${esc(title)}</h1>
+        ${tone ? `<div class="c-head__state" role="note">${tone.ic}<div><span class="c-head__state-h">${tone.h}</span><span>${tone.t}</span></div></div>` : ''}
         ${/* полосы и «Заполнено N из 6» нет (Никита 06.11): что не начато — видно по самим плиткам (серые), что готово — галочка */''}
       </div>
       <div class="c-sheet-area">
       ${/* возврат — плашкой во всю ширину, как плитки (Никита 05.11) */''}
-      ${rev.status === 'rejected' && rev.rejectReason ? rejectBox() : ''}
-      ${rev.status === 'draft' && sameAsSite() ? '<div class="c-note-wide c-note-wide--ok" role="note"><span class="c-note-wide__h">Карточка на сайте</span><span>Здесь то, что сейчас видят пары. Изменений пока нет</span></div>' : ''}
-      ${rev.status === 'review' ? `<div class="c-note-wide c-note-wide--info" role="note"><span class="c-clock" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><path class="c-clock__h" d="M12 12 9.2 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path class="c-clock__m" d="M12 12V6.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span><div><span class="c-note-wide__h">Карточка на проверке</span><span>Ответим в течение 24 часов. Пока она на проверке, менять её нельзя; можно отозвать</span></div></div>` : ''}
       ${managed() && rev.status !== 'review' && !mnoteHidden() ? `<div class="c-note-wide c-note-wide--info c-note-wide--x" role="note" data-mnote><p>${MANAGED_NOTE}</p><button class="c-note-x" type="button" aria-label="Скрыть" data-mnote-x>${X_ICON}</button></div>` : ''}
       <div class="c-tiles">
         ${states.map((x) => `

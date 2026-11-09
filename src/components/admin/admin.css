@@ -550,4 +550,4 @@ html:has(.adm), html:has(.adm) body { background: var(--adm-bg); }
 .a-card__note { padding: 0 var(--adm-pad) var(--s-3); }
 
 /* плашка-список отдельно от соседей (Сводка, 08.11) */
-.a-card--far { margin-top: var(--s-4); }
+.a-card--far { margin-top: var(--cab-gap-far); }

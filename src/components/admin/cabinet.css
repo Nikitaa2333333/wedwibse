@@ -35,6 +35,25 @@
    текста плашек */
 .cab .c-head, .cab .a-title { padding: var(--s-3) var(--s-4) var(--s-2); }
 .cab .c-head .a-lead { color: var(--adm-text-2); }
+/* СОСТОЯНИЕ КАРТОЧКИ — заливкой всей шапки экрана (Никита 09.11): от верха экрана
+   и до краёв, скругление снизу как у плашек. Цвет — смысл (--st-*): на сайте —
+   зелёный, на проверке — синий, вернули — красный. Заголовок состояния — сильным
+   оттенком того же цвета, пояснение — обычным текстом */
+.cab .c-head--tone {
+  margin: calc(-1 * (var(--cab-gap) + env(safe-area-inset-top))) calc(-1 * var(--cab-gap)) 0;
+  padding: calc(var(--s-3) + var(--cab-gap) + env(safe-area-inset-top)) calc(var(--s-4) + var(--cab-gap)) var(--s-4);
+  border-radius: 0 0 var(--cab-sheet-radius) var(--cab-sheet-radius);
+}
+.c-head--ok { background: var(--st-ok-bg); }
+.c-head--info { background: var(--st-info-bg); }
+.c-head--bad { background: var(--st-bad-bg); }
+.c-head__state { display: flex; align-items: flex-start; gap: 12px; line-height: 1.4; color: var(--adm-text); }
+.c-head__state > div { display: grid; gap: 2px; }
+.c-head__state svg { width: 22px; height: 22px; flex: none; }
+.c-head__state-h { font-weight: 600; }
+.c-head--ok .c-head__state-h { color: var(--st-ok-strong); }
+.c-head--info .c-head__state-h, .c-head--info .c-clock { color: var(--st-info-strong); }
+.c-head--bad .c-head__state-h, .c-head--bad .c-head__state svg { color: var(--st-bad-strong); }
 
 .c-sheet-area { display: flex; flex-direction: column; gap: var(--cab-gap); --c-bar-bg: var(--adm-bg); }
 .c-sheet-area .a-card { padding: 0; border-radius: 0; background: none; }
@@ -580,7 +599,7 @@ html:has(.cab), html:has(.cab) body { background: var(--adm-bg); }
 .c-todo--bad .c-todo__h { color: var(--st-bad-strong); }
 .c-todo--bad .c-chipbtn { background: var(--st-bad-bg); color: var(--st-bad-strong); }
 /* опасное — подальше от остального (правило 23): отбивка перед блоком удаления */
-.c-cat--far { margin-top: var(--s-6); } /* «Удалить карточку» и «Выйти» — отдельно от остального профиля (Никита 07.11) */
+.c-cat--far { margin-top: var(--cab-gap-far); } /* «Удалить карточку» и «Выйти» — отдельно от остального профиля (Никита 07.11) */
 /* окно подтверждения: воздух между текстом и кнопками (Никита, 05.11: «прижимается») */
 .c-dialog--confirm .c-dialog__body { display: grid; gap: var(--s-4); padding-top: var(--s-6); }
 .c-dialog--confirm h2 { padding-right: 44px; }
