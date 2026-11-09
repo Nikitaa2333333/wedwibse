@@ -22,7 +22,7 @@ const int = (v) => {
 const str = (v) => String(v ?? '').trim();
 
 /** подписи ответов — те же, что в анкете (lib/cabinet-form.ts, VENUE_QUESTIONS / VENUE_TERMS) */
-const TYPE_LABEL = {
+export const TYPE_LABEL = {
   restoran: 'Ресторан', 'banketnyj-zal': 'Банкетный зал', shater: 'Шатёр', veranda: 'Веранда',
   'restoran-pri-otele': 'Ресторан при отеле', 'zagorodnyj-klub': 'Загородный клуб', loft: 'Лофт',
   oranzhereya: 'Оранжерея', usadba: 'Усадьба', 'yaht-klub': 'Яхт-клуб',

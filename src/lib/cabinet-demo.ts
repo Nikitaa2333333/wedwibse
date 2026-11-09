@@ -37,6 +37,20 @@ function seed(): State {
         photos: ['demo-4.jpg', 'demo-5.jpg', 'demo-6.jpg', 'demo-7.jpg', 'demo-8.jpg', 'demo-9.jpg', 'demo-10.jpg', 'demo-11.jpg'],
         data: { name: 'Forest Hall', address: 'Москва, Лесная, 5', halls: [{ name: 'Большой зал', banquet: 120, buffet: 200 }], terms: { kitchen: 'own', alcohol: 'fee' }, contacts: { phone: '+79001234567', phoneCountry: 'RU' }, sections: [{ title: '', body: 'Лофт в зелени на берегу пруда. Панорамные окна, своя кухня, летняя терраса на двести гостей и отдельная комната для сборов невесты.' }] },
       },
+      // площадка «ведём мы» (09.11): анкета как у venue-forms — строки и тарифы залов
+      {
+        ...base, id: 'demo-r3', kind: 'venue', categorySlug: '', slug: 'grebnevo', status: 'draft', venue: 'demo-v3', photos: [],
+        data: {
+          managed: true, name: 'Усадьба Гребнево', address: 'Московская область, Фрязино, Гребнево', type: 'usadba', checkFrom: 7000, capacityBanquet: 350,
+          rows: [
+            { at: 'meta.3', group: 'Характеристики', label: 'Кухня', value: 'ресторан усадьбы, меню от 7 000 ₽ на персону' },
+            { at: 'blocks.4.terms.0.rows.0', group: 'Меню и сборы', label: 'Минимальный заказ по меню', value: 'от 7 000 ₽ на персону' },
+            { at: 'blocks.4.terms.0.rows.2', group: 'Меню и сборы', label: 'Свой алкоголь и напитки', value: 'можно, пробковый сбор 500 ₽ с человека' },
+          ],
+          hallTariffs: [{ id: 'trubetskoy-hall', name: 'Трубецкой Холл', tariff: [{ day: 'Пн–Чт', rent: '80 000 ₽', deposit: '220 000 ₽' }, { day: 'Пятница', rent: '120 000 ₽', deposit: '300 000 ₽' }] }],
+          contacts: { phone: '+79001234567', phoneCountry: 'RU' },
+        },
+      },
     ],
     cards: [{ id: 'demo-c1', kind: 'specialist', categorySlug: 'vedushchie', name: 'Go Show', status: 'published', revision: null }],
     // для админки: заявки и правки других подрядчиков (owner раскрыт, как expand=owner)

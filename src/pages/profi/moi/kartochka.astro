@@ -65,6 +65,8 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
   let rev: any = null;
   /** «ведём мы»: сколько тарифов стоит в тексте страницы (page.story) — тогда цену правим мы */
   let textTariffs = 0;
+  /** тарифы из текста визитки (имя, цена строкой) — подписи полей цен (09.11) */
+  let pageTariffs: { name: string; price: string; unit?: string }[] = [];
   // СЛЕПОК КАРТОЧКИ НА САЙТЕ (Никита 08.11): у одобренной карточки сразу горела
   // «Отправить изменения на проверку» — нажал, и ушла правка без изменений.
   // base — анкета и фото черновика в момент, когда правку начали (база кладёт
@@ -122,12 +124,32 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
   const managed = () => data?.managed === true && !isNew();
   // текст — без «оформили мы» (Никита 07.11: «как будто мы самые главные»); плашку можно закрыть
   const MANAGED_NOTE = 'Карточка уже заведена администраторами. Вы можете поправить портрет, строку под именем, фото, цену, ответы на вопросы, контакты и добавить видео. Что поменять в тексте, напишите нам — мы быстро поправим.';
-  const mnoteKey = () => `wed-cab-mnote-${rev?.specialist}`;
+  const mnoteKey = () => `wed-cab-mnote-${rev?.venue || rev?.specialist}`;
+  // ПЛОЩАДКА «ВЕДЁМ МЫ» (Никита 09.11): страницу держим мы, владелец меняет тип,
+  // вместимость, чек, значения строк «Характеристик» и «Условий», тарифы залов,
+  // контакты; текст и фото — просьбой. Хук пропускает только это (lockManagedVenue)
+  const ourVenue = () => managed() && kind === 'venue';
+  const MANAGED_VENUE_NOTE = 'Страницу площадки заводили мы. Вы можете поменять тип, вместимость, средний чек, цены и условия, тарифы залов и контакты. Что поменять в тексте и фото, напишите нам — поправим сами.';
+  /** разделы площадки «ведём мы»: те же экраны анкеты, свой набор и свои подписи */
+  const ourVenueTiles = () => {
+    const rows: any[] = data.rows ?? [];
+    const halls: any[] = data.hallTariffs ?? [];
+    const c = data.contacts ?? {};
+    return [
+      { key: 'osnovnoe', title: 'Основное', icon: 'profile', done: true, sub: [TYPE_LABELS[data.type], data.capacityBanquet && `до ${num(Number(data.capacityBanquet))} гостей`, data.checkFrom && `чек от ${rub(Number(data.checkFrom))}`].filter(Boolean).join(', ') || 'тип, гости, чек' },
+      { key: 'usloviya', title: 'Цены и условия', icon: 'notes', done: true, sub: `${rows.length} ${plural(rows.length, 'строка', 'строки', 'строк')}` },
+      ...(halls.length ? [{ key: 'zaly', title: 'Тарифы залов', icon: 'catalog', done: true, sub: `${halls.length} ${plural(halls.length, 'зал', 'зала', 'залов')}` }] : []),
+      { key: 'foto', title: 'Фото', icon: 'photo', done: true, optional: true, sub: data.requests?.photos ? 'есть просьба' : 'меняем по просьбе' },
+      { key: 'tekst', title: 'Описание', icon: 'text', done: true, optional: true, sub: data.requests?.text ? 'есть просьба' : 'меняем по просьбе' },
+      { key: 'kontakty', title: 'Контакты', icon: 'phone', done: !!String(c.phone ?? '').trim(), sub: [c.phone && 'телефон', c.telegram && 'Telegram', c.site && 'сайт', c.email && 'почта'].filter(Boolean).join(', ') || 'пусто, нужен телефон' },
+    ];
+  };
+  const TYPE_LABELS: Record<string, string> = Object.fromEntries((VENUE_QUESTIONS.find((q) => q.key === 'type')?.options ?? []).map((o) => [o.value, o.label]));
   const mnoteHidden = () => { try { return localStorage.getItem(mnoteKey()) === '1'; } catch { return false; } };
   /** поле просьбы нам. Кнопки у него нет — и так и задумано: просьба сохраняется
    *  сама и уходит вместе с остальными изменениями (Никита 07.11: «а что-то
    *  появится, кнопка отправки?») — об этом и говорит подпись */
-  const requestField = (key: 'text' | 'price', label: string, placeholder: string) =>
+  const requestField = (key: 'text' | 'price' | 'photos', label: string, placeholder: string) =>
     field(label, `requests.${key}`, data.requests?.[key], { grow: 'area', placeholder, note: 'Сохранится само. Уйдёт нам вместе с остальными изменениями — кнопкой «Отправить изменения на проверку» на странице карточки' });
   const role = () => (kind === 'venue' ? 'Площадка' : cfg.roles[rev.categorySlug] ?? rev.categorySlug);
   const section = () => q.get('s') as SectionKey | null;
@@ -261,7 +283,7 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
   function renderOverview() {
     const st = cardState(rev.status, !isNew());
     const secs = SECTIONS[kind];
-    const states = secs.map((x) => ({ ...x, ...sectionState(x.key, rev, questions) }));
+    const states: any[] = ourVenue() ? ourVenueTiles() : secs.map((x) => ({ ...x, ...sectionState(x.key, rev, questions) }));
     const must = states.filter((x) => !x.optional);
     // Никита, 02.11: пока обязательное не заполнено — кнопка серая, на замке;
     // нажатие — дрожит, пустые плитки краснеют, внизу подсказка, чего нет
@@ -286,14 +308,14 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
       : null;
     view.innerHTML = `
       <div class="c-head${tone ? ` c-head--tone c-head--${tone.cls}` : ''}">
-        <div class="c-head__top"><a class="c-back" href="/profi/moi/">${icon('back')} Мои карточки</a><span class="c-head__right">${rev.status !== 'approved' ? `<button class="c-chipbtn c-head__act" type="button" data-preview><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><span>Как на сайте</span></button>` : ''}</span></div>
+        <div class="c-head__top"><a class="c-back" href="/profi/moi/">${icon('back')} Мои карточки</a><span class="c-head__right">${rev.status !== 'approved' && !ourVenue() ? `<button class="c-chipbtn c-head__act" type="button" data-preview><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><span>Как на сайте</span></button>` : ''}</span></div>
         <h1 class="a-h1">${esc(title)}</h1>
         ${tone ? `<div class="c-head__state" role="note">${tone.ic}<div><span class="c-head__state-h">${tone.h}</span><span>${tone.t}</span></div></div>` : ''}
         ${/* полосы и «Заполнено N из 6» нет (Никита 06.11): что не начато — видно по самим плиткам (серые), что готово — галочка */''}
       </div>
       <div class="c-sheet-area">
       ${/* возврат — плашкой во всю ширину, как плитки (Никита 05.11) */''}
-      ${managed() && rev.status !== 'review' && !mnoteHidden() ? `<div class="c-note-wide c-note-wide--info c-note-wide--x" role="note" data-mnote><p>${MANAGED_NOTE}</p><button class="c-note-x" type="button" aria-label="Скрыть" data-mnote-x>${X_ICON}</button></div>` : ''}
+      ${managed() && rev.status !== 'review' && !mnoteHidden() ? `<div class="c-note-wide c-note-wide--info c-note-wide--x" role="note" data-mnote><p>${ourVenue() ? MANAGED_VENUE_NOTE : MANAGED_NOTE}</p><button class="c-note-x" type="button" aria-label="Скрыть" data-mnote-x>${X_ICON}</button></div>` : ''}
       <div class="c-tiles">
         ${states.map((x) => `
           <a class="c-row c-tile${isFresh(x) ? ' c-tile--fresh' : ''}" href="${url(x.key)}" data-tile="${x.key}">
@@ -759,6 +781,7 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
    *  Фото — обычный раздел анкеты (sectionBody), здесь его нет. */
   function managedBody(key: SectionKey): { title: string; lead: string; html: string } | null {
     if (!managed()) return null;
+    if (ourVenue()) return ourVenueBody(key);
     if (key === 'osnovnoe') return { title: role(), lead: '', html: `
       <div class="c-card">
         <p class="a-field__label">Имя</p><p>${esc(data.name)}</p>
@@ -776,9 +799,74 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
     }
     // цена «ведём мы» при тарифах в тексте страницы (Никита 09.11): «одна цена»
     // разошлась бы с тарифами на странице — цены меняем мы, по просьбе
+    // 09.11 (Никита): цифры в своих тарифах владелец меняет сам; название, «за что»
+    // и состав тарифа — наши (просьбой). «Цена от» и «за что» — для каталога
     if (key === 'prays' && textTariffs > 0) {
-      return { title: 'Цена', lead: 'Цены стоят в тарифах на вашей странице. Что поменять — напишите нам, поправим и тарифы, и цену в каталоге.', html: `
-        ${requestField('price', 'Что поменять в тарифах или ценах', 'Например: тариф «Про» — 100 000 ₽ вместо 90 000 ₽')}` };
+      const tp: any[] = data.tariffPrices ?? [];
+      return { title: 'Цена', lead: 'Тарифы — как на вашей странице. Поменяйте цену, остальное в тарифе остаётся нашим', html: `
+        <div class="c-items">
+          ${pageTariffs.map((t, i) => field(`${esc(t.name)}${t.unit ? `, ${esc(t.unit)}` : ''}`, `tariffPrices.${i}.price`, tp[i]?.price, { mode: 'numeric', placeholder: String(t.price) })).join('')}
+        </div>
+        <div class="c-grid2">
+          ${field('Цена от, ₽ (в каталоге)', 'priceFrom', data.priceFrom, { mode: 'numeric', placeholder: '40 000' })}
+          ${field('За что', 'priceNote', data.priceNote, { grow: 'line', max: 300, placeholder: 'за 8 часов съёмки' })}
+        </div>
+        ${requestField('price', 'Что ещё поменять в тарифах', 'Например: добавить тариф «Мини» на 4 часа; в «Про» — ещё 50 кадров')}` };
+    }
+    return null;
+  }
+
+  /** экраны площадки «ведём мы»; null — обычный экран (контакты) */
+  function ourVenueBody(key: SectionKey): { title: string; lead: string; html: string } | null {
+    const page = `/moskva/ploshchadki/${rev.slug}/`;
+    if (key === 'osnovnoe') {
+      const opts = VENUE_QUESTIONS.find((q) => q.key === 'type')?.options ?? [];
+      return { title: role(), lead: '', html: `
+        <div class="c-card">
+          <p class="a-field__label">Название</p><p>${esc(data.name)}</p>
+          ${data.address ? `<p class="a-field__label">Адрес</p><p>${esc(data.address)}</p>` : ''}
+        </div>
+        <div class="c-q">
+          <span class="c-q__label">Тип площадки</span>
+          <div class="c-opts">${opts.map((o) => `<button class="c-opt" type="button" aria-pressed="${data.type === o.value}" data-vtype="${esc(o.value)}">${esc(o.label)}</button>`).join('')}</div>
+        </div>
+        <div class="c-grid2">
+          ${field('Гостей на банкете, до', 'capacityBanquet', data.capacityBanquet, { mode: 'numeric', placeholder: '120', note: 'По нему пары фильтруют каталог' })}
+          ${field('Средний чек от, ₽ на гостя', 'checkFrom', data.checkFrom, { mode: 'numeric', placeholder: '5 000', note: 'Сколько в среднем стоит банкет на одного гостя' })}
+        </div>
+        ${requestField('text', 'Поменять название или адрес', 'Например: новый адрес — Москва, Береговой проезд, 5')}` };
+    }
+    if (key === 'usloviya') {
+      const rows: any[] = data.rows ?? [];
+      const groups = [...new Set(rows.map((r) => r.group))];
+      // группа строк — плашкой, как зал в «Тарифах залов» (одна плашка на объект)
+      return { title: 'Цены и условия', lead: `Строки со страницы: поменяйте значение — подпись строки остаётся нашей. <a href="${page}" target="_blank" rel="noopener">Посмотреть на странице</a>`, html: rows.length ? `
+        <div class="c-items">${groups.map((g) => `
+          <div class="c-item">
+            <p class="c-q__label">${esc(g)}</p>
+            ${rows.map((r, i) => (r.group === g ? field(esc(r.label), `rows.${i}.value`, r.value, { grow: 'line', max: 300 }) : '')).join('')}
+          </div>`).join('')}</div>` : '<p class="a-lead">Строк с ценами на странице нет. Что поменять — напишите в «Описании»</p>' };
+    }
+    if (key === 'zaly') {
+      const halls: any[] = data.hallTariffs ?? [];
+      return { title: 'Тарифы залов', lead: 'Аренда и минимальный заказ по меню — по дням недели, как на странице', html: `
+        <div class="c-items">${halls.map((h, i) => `
+          <div class="c-item">
+            <p class="c-q__label">${esc(h.name)}</p>
+            ${(h.tariff ?? []).map((t: any, j: number) => `
+              <div class="c-grid2">
+                ${field(`${esc(t.day)}: аренда`, `hallTariffs.${i}.tariff.${j}.rent`, t.rent, { placeholder: '100 000 ₽' })}
+                ${field(`${esc(t.day)}: заказ от`, `hallTariffs.${i}.tariff.${j}.deposit`, t.deposit, { placeholder: '250 000 ₽' })}
+              </div>`).join('')}
+          </div>`).join('')}</div>` };
+    }
+    if (key === 'foto') {
+      return { title: 'Фото', lead: `Фото на странице подбирали мы. Что заменить или добавить, напишите — поправим. <a href="${page}" target="_blank" rel="noopener">Посмотреть на странице</a>`, html: `
+        ${requestField('photos', 'Что поменять в фото', 'Например: убрать кадр с ремонтом в зале «Барский»; новые фото — ссылка на Яндекс Диск')}` };
+    }
+    if (key === 'tekst') {
+      return { title: 'Описание', lead: `Текст уже стоит на странице — <a href="${page}" target="_blank" rel="noopener">посмотреть</a>. Что поменять, напишите нам: поправим сами.`, html: `
+        ${requestField('text', 'Что поправить в тексте', 'Например: в разделе о кухне — новое меню от шефа')}` };
     }
     return null;
   }
@@ -1545,6 +1633,12 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
       later();
       return;
     }
+    if (b.dataset.vtype) {
+      data.type = b.dataset.vtype;
+      view.querySelectorAll<HTMLElement>('[data-vtype]').forEach((o) => o.setAttribute('aria-pressed', String(o === b)));
+      later();
+      return;
+    }
     if (b.dataset.hallPhotos) {
       openHallPhotos(Number(b.dataset.hallPhotos));
       return;
@@ -1734,7 +1828,13 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
       if (managed() && rev.specialist) {
         try {
           const card = await api('vendor', 'GET', `/api/collections/specialists/records/${rev.specialist}?fields=page`);
-          textTariffs = (card.page?.story ?? []).reduce((n: number, x: any) => n + (x?.tariffs?.length ?? 0), 0);
+          pageTariffs = (card.page?.story ?? []).flatMap((x: any) => x?.tariffs ?? []).filter((t: any) => t?.name);
+          textTariffs = pageTariffs.length;
+          // цены тарифов в анкете — по названию тарифа; до слепка «на сайте», чтобы
+          // сам этот список правкой не считался
+          if (textTariffs && !Array.isArray(data.tariffPrices)) {
+            data.tariffPrices = pageTariffs.map((t) => ({ name: t.name, price: Number(String(t.price).replace(/\D/g, '')) || '' }));
+          }
         } catch { textTariffs = 0; }
       }
       if (!isNew() && rev.status === 'draft') {

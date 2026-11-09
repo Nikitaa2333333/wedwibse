@@ -355,7 +355,19 @@ export const isFromCabinet = (s: Pick<Specialist, 'categorySlug' | 'slug'>) => f
 type OwnerEdits = {
   priceMode?: string; priceFrom?: number | null; priceNote?: string; filters?: Record<string, string | string[]>;
   tagline?: string; intro?: string; avatar?: string;
+  /** цены тарифов из текста визитки, по названию тарифа (09.11) */
+  tariffPrices?: { name: string; price: number }[];
 };
+
+/** цены владельца в тарифах визитки: меняется только число, по названию тарифа (09.11) */
+function withTariffPrices(story: Specialist['story'], prices: { name: string; price: number }[]): Specialist['story'] {
+  const by = new Map(prices.filter((p) => p?.name && Number(p.price) > 0).map((p) => [p.name, Number(p.price)]));
+  if (!by.size || !story) return story;
+  const rub = (n: number) => `${n.toLocaleString('ru-RU').replace(/\s/g, ' ')} ₽`;
+  return story.map((sec) => (sec.tariffs?.length
+    ? { ...sec, tariffs: sec.tariffs.map((t) => (by.has(t.name) ? { ...t, price: rub(by.get(t.name)!) } : t)) }
+    : sec));
+}
 
 /** «Коротко о себе» владельца — на место первого абзаца текста визитки
  *  (того же, что кабинет показывает ему в поле: крупная фраза или первый абзац) */
@@ -381,6 +393,7 @@ function withOwnerEdits(s: Specialist): Specialist {
   const out: Specialist = { ...s, priceNote: e.priceNote ?? s.priceNote };
   if (e.tagline?.trim()) out.tagline = e.tagline.trim();
   if (e.intro?.trim()) Object.assign(out, withIntro(s, e.intro.trim()));
+  if (e.tariffPrices?.length) out.story = withTariffPrices(out.story, e.tariffPrices);
   if (e.priceFrom && e.priceFrom > 0) out.priceFrom = e.priceFrom;
   else delete out.priceFrom; // «по запросу»
   if (e.filters) {

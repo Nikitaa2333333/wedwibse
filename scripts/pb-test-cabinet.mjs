@@ -52,7 +52,7 @@ const su = await call(null, 'POST', '/api/collections/_superusers/auth-with-pass
 if (su.status !== 200) throw new Error('нет доступа суперпользователя: ' + su.text);
 const SU = su.json.token;
 
-const cleanup = { leads: [], invites: [], signatures: [], revisions: [], specialists: [], vendors: [], video_requests: [], moderators: [], legal_docs: [], max_logins: [] };
+const cleanup = { leads: [], invites: [], signatures: [], revisions: [], specialists: [], venues: [], vendors: [], video_requests: [], moderators: [], legal_docs: [], max_logins: [] };
 
 async function makeVendor(tag) {
   const pass = crypto.randomUUID();
@@ -652,11 +652,14 @@ console.log('\nвход по почте');
     data: {
       ...ed?.data, name: 'Взлом', tagline: 'Своя строка от владельца', intro: INTRO, sections: [{ title: '', body: 'подмена' }],
       priceFrom: 55000, priceNote: 'за 5 часов', filters: { gender: 'м', style: ['humor'] },
+      tariffPrices: [{ name: 'Про', price: 100000 }, { name: '', price: 5 }, { name: 'Мини', price: 999999999 }],
       contacts: { phone: '+79160000077' }, requests: { text: 'Добавьте про выездную регистрацию' },
     },
   });
+  // 09.11: «Коротко о себе» владелец больше не правит; цены тарифов — только число с названием
   check('из анкеты доходит только разрешённое', res.status === 200 && res.json.data.name === ours.name &&
-    res.json.data.tagline === 'Своя строка от владельца' && res.json.data.intro?.length === 600 &&
+    res.json.data.tagline === 'Своя строка от владельца' && !res.json.data.intro &&
+    res.json.data.tariffPrices?.length === 1 && res.json.data.tariffPrices[0].price === 100000 &&
     res.json.data.sections[0].body.includes('Свой звук') &&
     res.json.data.priceFrom === 55000 && res.json.data.requests?.text?.includes('выездную'), res.text);
 
@@ -666,9 +669,9 @@ console.log('\nвход по почте');
   check('портрет владелец ставит сам', res.status === 200 && !!res.json?.avatar, res.text);
   const own = res.json?.data ?? {};
 
-  res = await call(C.token, 'PATCH', `/api/collections/revisions/records/${ed?.id}`, { data: { ...own, intro: 'Люблю свадьбы 😍 ' + own.intro } });
+  res = await call(C.token, 'PATCH', `/api/collections/revisions/records/${ed?.id}`, { data: { ...own, tagline: 'Люблю свадьбы 😍' } });
   res = await call(C.token, 'PATCH', `/api/collections/revisions/records/${ed?.id}`, { status: 'review' });
-  check('смайлик в «Коротко о себе» не пропускается', refused(res) && says(res, 'смайлики'), res.text);
+  check('смайлик в строке под именем не пропускается', refused(res) && says(res, 'смайлики'), res.text);
   await call(C.token, 'PATCH', `/api/collections/revisions/records/${ed?.id}`, { data: own });
 
   res = await call(C.token, 'PATCH', `/api/collections/revisions/records/${ed?.id}`, { status: 'review' });
@@ -680,8 +683,8 @@ console.log('\nвход по почте');
   const p = res.json?.page ?? {};
   check('на сайт едут только правки владельца', p.source !== 'cabinet' && p.ownerEdits?.priceFrom === 55000 &&
     p.ownerEdits?.priceNote === 'за 5 часов' && p.ownerEdits?.filters?.style?.[0] === 'humor' && p.story?.[0]?.items?.length === 1, res.text);
-  check('строка, «О себе» и портрет владельца — в правках для сайта', p.ownerEdits?.tagline === 'Своя строка от владельца' &&
-    p.ownerEdits?.intro?.length === 600 && !!p.ownerEdits?.avatar && res.json?.avatar === p.ownerEdits?.avatar &&
+  check('строка, портрет и цены тарифов владельца — в правках для сайта; «О себе» пустое', p.ownerEdits?.tagline === 'Своя строка от владельца' &&
+    p.ownerEdits?.intro === '' && p.ownerEdits?.tariffPrices?.[0]?.price === 100000 && !!p.ownerEdits?.avatar && res.json?.avatar === p.ownerEdits?.avatar &&
     res.json?.tagline === 'Своя строка от владельца', res.text);
   check('фото владельца — в карточке и в правках для сайта', res.json?.photos?.length === 8 && p.ownerEdits?.photos?.length === 8 &&
     p.ownerEdits.photos.every((n) => res.json.photos.includes(n)), res.text);
@@ -706,6 +709,76 @@ console.log('\nвход по почте');
     res.json.items[0].message === 'Хотим ведущего на 80 гостей', res.text);
   res = await call(A.token, 'GET', '/api/wed/my-leads');
   check('чужие заявки подрядчику не видны', res.status === 200 && !res.json?.items?.some((x) => x.phone === '+79160000011'), res.text);
+}
+
+// ---------- площадка «ведём мы» (09.11) ----------
+// Наша площадка (page — блоки из git) с анкетой venue-forms → приглашение → правка:
+// владелец меняет тип, гостей, чек, значения строк и тарифы залов; название,
+// подписи строк, дни недели, фото и текст — нет; одобрение не трогает страницу.
+{
+  console.log('\nплощадка «ведём мы»');
+  const { venueToForm } = await import('./venue-to-form.mjs');
+  const V = await makeVendor('v');
+  const page = {
+    slug: `test-venue-${stamp}`, citySlug: 'moskva', name: 'Усадьба Тестовая',
+    meta: [{ label: 'Кухня', value: 'своя, меню от 7 000 ₽' }, { label: 'Площадь', value: '300 м²' }],
+    blocks: [{ type: 'stats', items: [] }, { type: 'terms', terms: [{ title: 'Меню', rows: [{ label: 'Заказ по меню', value: 'от 7 000 ₽ на гостя' }] }], included: [], extras: [] }],
+    halls: [{ id: 'big', name: 'Большой', tariff: [{ day: 'Пн–Чт', rent: '80 000 ₽', deposit: '200 000 ₽' }, { day: 'Пятница', rent: '120 000 ₽', deposit: '300 000 ₽' }] }],
+    contacts: { address: 'Москва, Тестовая, 1' },
+  };
+  const card0 = { name: page.name, page, type: 'usadba', checkFrom: 7000, capacityBanquet: 200 };
+  const fd = new FormData();
+  for (let i = 0; i < 3; i++) fd.append('photos', new Blob([PNG], { type: 'image/png' }), `v${i}.png`);
+  for (const [k, v] of Object.entries({
+    slug: page.slug, citySlug: 'moskva', name: page.name, type: 'usadba', checkFrom: '7000', capacityBanquet: '200',
+    status: 'published', page: JSON.stringify(page), form: JSON.stringify(venueToForm(card0)),
+  })) fd.append(k, v);
+  const card = await call(SU, 'POST', '/api/collections/venues/records', fd);
+  check('наша площадка с анкетой заводится', card.status === 200, card.text);
+  cleanup.venues.push(card.json?.id);
+  const key = crypto.randomUUID();
+  const inv = await call(SU, 'POST', '/api/collections/invites/records', {
+    tokenHash: createHash('sha256').update(key).digest('hex'), venue: card.json?.id,
+    expiresAt: new Date(Date.now() + 86400000).toISOString().replace('T', ' '),
+  });
+  cleanup.invites.push(inv.json?.id);
+  res = await call(V.token, 'POST', '/api/wed/invite', { invite: key });
+  check('владелец площадки забирает её по ссылке', res.status === 200, res.text);
+
+  res = await call(V.token, 'POST', '/api/wed/edit', { kind: 'venue', card: card.json?.id });
+  const ed = res.json;
+  cleanup.revisions.push(ed?.id);
+  check('анкета площадки открывается заполненной, без копии фото', res.status === 200 && ed.data?.managed === true &&
+    ed.data?.rows?.length === 3 && ed.data?.hallTariffs?.[0]?.tariff?.length === 2 && !(ed.photos?.length), res.text);
+
+  const rows = ed.data.rows.map((r) => ({ ...r }));
+  rows[0].value = 'своя, меню от 8 000 ₽';
+  rows[1].label = 'Подмена подписи'; rows[1].value = '999 м²';
+  const halls = JSON.parse(JSON.stringify(ed.data.hallTariffs));
+  halls[0].tariff[0].rent = '90 000 ₽';
+  halls[0].tariff[1].day = 'Суббота'; halls[0].tariff[1].rent = '1 ₽';
+  res = await call(V.token, 'PATCH', `/api/collections/revisions/records/${ed?.id}`, {
+    data: { ...ed.data, name: 'Взлом', type: 'loft', checkFrom: 8000, capacityBanquet: 250, rows, hallTariffs: halls,
+      sections: [{ title: '', body: 'подмена' }], contacts: { phone: '+79160000088' }, requests: { photos: 'Убрать кадр 3' } },
+  });
+  const d = res.json?.data ?? {};
+  check('из анкеты площадки доходит только разрешённое', res.status === 200 && d.name === page.name && !d.sections &&
+    d.type === 'loft' && d.checkFrom === 8000 && d.rows[0].value === 'своя, меню от 8 000 ₽' &&
+    d.rows[1].label === 'Площадь' && d.rows[1].value === '300 м²' &&
+    d.hallTariffs[0].tariff[0].rent === '90 000 ₽' && d.hallTariffs[0].tariff[1].day === 'Пятница' && d.hallTariffs[0].tariff[1].rent === '120 000 ₽', res.text);
+
+  res = await call(V.token, 'PATCH', `/api/collections/revisions/records/${ed?.id}`, { status: 'review' });
+  check('правка площадки «ведём мы» уходит на проверку без фото и текста', res.status === 200, res.text);
+  res = await call(M.token, 'PATCH', `/api/collections/revisions/records/${ed?.id}`, { status: 'approved' });
+  check('одобрение правки площадки «ведём мы»', res.status === 200 && res.json.status === 'approved', res.text);
+
+  res = await call(SU, 'GET', `/api/collections/venues/records/${card.json?.id}`);
+  const c = res.json ?? {};
+  const p = c.page ?? {};
+  check('страница площадки наша, правки владельца — отдельно', p.source !== 'cabinet' && p.meta?.[0]?.value === 'своя, меню от 7 000 ₽' &&
+    p.ownerEdits?.rows?.[0]?.value === 'своя, меню от 8 000 ₽' && p.ownerEdits?.hallTariffs?.[0]?.tariff?.[0]?.rent === '90 000 ₽', res.text);
+  check('тип, чек и гости — в колонках каталога; фото на месте', c.type === 'loft' && c.checkFrom === 8000 && c.capacityBanquet === 250 &&
+    c.photos?.length === 3 && c.form?.managed === true && !c.form?.requests && c.contacts?.phone === '+79160000088', res.text);
 }
 
 // ---------- фото с Яндекс Диска (lib/yadisk.js) ----------

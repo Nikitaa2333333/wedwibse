@@ -603,17 +603,60 @@ function mailVendor(app, vendorId, subject, html) {
 // текста визитки) и меняет фото (убрать, добавить до потолка, порядок);
 // остальной текст и тарифы по-прежнему наши.
 // 09.11 (Никита): «Коротко о себе» (intro) владелец больше не правит — текст только просьбой
-const MANAGED_KEYS = ['priceMode', 'priceFrom', 'priceNote', 'filters', 'contacts', 'videos', 'requests', 'tagline'];
+// 09.11: + цены тарифов (tariffPrices) у карточек с тарифами в тексте визитки — только числа,
+// название, «за что» и состав тарифа наши
+const MANAGED_KEYS = ['priceMode', 'priceFrom', 'priceNote', 'filters', 'contacts', 'videos', 'requests', 'tagline', 'tariffPrices'];
+// «Ведём мы» для ПЛОЩАДКИ (Никита 09.11): страницу из блоков держим мы (JSON в git),
+// владелец меняет то, по чему пары выбирают и что видят цифрами: тип, вместимость,
+// средний чек, значения строк «Характеристик» и «Условий» (названия строк наши),
+// тарифы залов по дням, контакты. Текст и фото — просьбой. Анкету (form с
+// rows / hallTariffs) пишет суперпользователь: scripts/pb-cabinet-setup.mjs venue-forms.
+const MANAGED_VENUE_KEYS = ['checkFrom', 'capacityBanquet', 'type', 'rows', 'hallTariffs', 'contacts', 'requests'];
 const MANAGED_TAGLINE_MAX = 80;
 const MANAGED_INTRO_MAX = 600;
 
 /** карточка правки, если она в режиме «ведём мы»; иначе null */
 function managedCard(app, rev) {
-  if (rev.getString('kind') !== 'specialist') return null;
-  const cardId = rev.getString('specialist');
+  const kind = rev.getString('kind') === 'venue' ? 'venue' : 'specialist';
+  const cardId = rev.getString(cardField(kind));
   if (!cardId) return null;
-  const card = findOne(app, 'specialists', 'id = {:id}', { id: cardId });
+  const card = findOne(app, cardCollection(kind), 'id = {:id}', { id: cardId });
   return card && jsonOf(card, 'form').managed === true ? card : null;
+}
+
+/** цены тарифов «ведём мы»: [{ name, price }] — только число цены, по названию тарифа */
+function tariffPricesOf(v) {
+  return (Array.isArray(v) ? v : []).slice(0, 40)
+    .map((t) => ({ name: str(t && t.name, 120), price: int(t && t.price) }))
+    .filter((t) => t.name && t.price !== null && t.price > 0 && t.price <= MAX_PRICE);
+}
+
+/** анкета правки площадки «ведём мы»: строки и залы — те же, что в анкете карточки
+ *  (названия, порядок, дни недели наши), от владельца — только значения */
+function lockManagedVenue(form, data) {
+  const out = JSON.parse(JSON.stringify(form || {}));
+  const d = data || {};
+  for (const k of ['checkFrom', 'capacityBanquet']) if (k in d) out[k] = int(d[k]);
+  if ('type' in d) out.type = str(d.type, 60);
+  if (d.contacts && typeof d.contacts === 'object') out.contacts = d.contacts;
+  if (d.requests && typeof d.requests === 'object') out.requests = d.requests;
+  const rows = Array.isArray(out.rows) ? out.rows : [];
+  const dr = Array.isArray(d.rows) ? d.rows : [];
+  out.rows = rows.map((r, i) => (dr[i] && dr[i].label === r.label ? Object.assign({}, r, { value: str(dr[i].value, 300) || r.value }) : r));
+  const halls = Array.isArray(out.hallTariffs) ? out.hallTariffs : [];
+  const dh = Array.isArray(d.hallTariffs) ? d.hallTariffs : [];
+  out.hallTariffs = halls.map((h, i) => {
+    const mine = dh[i] && dh[i].id === h.id ? dh[i] : null;
+    if (!mine) return h;
+    return Object.assign({}, h, {
+      tariff: (h.tariff || []).map((t, j) => {
+        const m = (mine.tariff || [])[j];
+        return m && m.day === t.day ? { day: t.day, rent: str(m.rent, 60) || t.rent, deposit: str(m.deposit, 60) || t.deposit } : t;
+      }),
+    });
+  });
+  out.managed = true;
+  return out;
 }
 
 /** анкета правки: всё из карточки, от владельца — только разрешённое */
@@ -623,7 +666,8 @@ function lockManaged(form, data) {
   out.managed = true;
   if ('tagline' in out) out.tagline = str(out.tagline, MANAGED_TAGLINE_MAX);
   if ('intro' in out) out.intro = str(out.intro, MANAGED_INTRO_MAX);
-  // тарифы у этих карточек — в тексте визитки, их правим мы
+  if ('tariffPrices' in out) out.tariffPrices = tariffPricesOf(out.tariffPrices);
+  // тарифы у этих карточек — в тексте визитки, их правим мы (цены — tariffPrices)
   out.tariffs = [];
   if (out.priceMode !== 'request') out.priceMode = 'one';
   return out;
@@ -647,13 +691,16 @@ function submitProblems(rev, managed) {
   if (!str(data.name)) problems.push(kind === 'venue' ? 'укажите название площадки' : 'укажите имя или название');
   if (!rev.getString('slug')) problems.push('выберите адрес страницы');
   if (kind === 'specialist' && !rev.getString('categorySlug')) problems.push('выберите категорию');
+  // площадка «ведём мы»: фото и текст наши, в правку не копируются — не проверяем
+  const ourVenue = managed && kind === 'venue';
   const photos = photosOf(rev).length;
-  if (photos < MIN_PHOTOS) problems.push(`загрузите не меньше ${MIN_PHOTOS} фото (сейчас ${photos})`);
-  if (textLength(data) < MIN_ABOUT) problems.push(`напишите текст карточки подробнее — от ${MIN_ABOUT} знаков`);
+  if (!ourVenue && photos < MIN_PHOTOS) problems.push(`загрузите не меньше ${MIN_PHOTOS} фото (сейчас ${photos})`);
+  if (ourVenue) { /* текст площадки наш */ }
+  else if (textLength(data) < MIN_ABOUT) problems.push(`напишите текст карточки подробнее — от ${MIN_ABOUT} знаков`);
   else if (!looksLikeText(data)) problems.push('в тексте карточки должны быть слова — напишите о себе по-настоящему');
   // у «ведём мы» текст наш — проверяем только то, что владелец пишет сам
   // (строку под именем и «О себе», 07.11), как и с контактами ниже
-  if (managed ? hasEmoji(data.tagline) || hasEmoji(data.intro) : emojiInText(data)) {
+  if (ourVenue ? (data.rows || []).some((r) => hasEmoji(r && r.value)) : managed ? hasEmoji(data.tagline) || hasEmoji(data.intro) : emojiInText(data)) {
     problems.push('уберите смайлики из описания — на сайте их не будет');
   }
   // Яндекс Карты (08.11): по ссылке ставим точку на карте и берём рейтинг;
@@ -670,7 +717,8 @@ function submitProblems(rev, managed) {
   if (!str(contacts.phone)) problems.push('укажите телефон в блоке «Контакты» — клиент откроет его кнопкой');
   // у карточки «ведём мы» текст наш, владелец его не правит — проверяем
   // только то, что он вписал сам (просьбы нам — не витрина, их не трогаем)
-  const hit = managed ? findContact({ priceNote: data.priceNote, filters: data.filters, tagline: data.tagline, intro: data.intro }, '') : findContact(data, '');
+  const hit = ourVenue ? findContact({ rows: data.rows, hallTariffs: data.hallTariffs }, '')
+    : managed ? findContact({ priceNote: data.priceNote, filters: data.filters, tagline: data.tagline, intro: data.intro }, '') : findContact(data, '');
   if (hit) {
     problems.push(
       `в разделе «${fieldLabel(hit.path)}» ${hit.what}. Телефон, почту и ссылки на соцсети можно добавлять только в раздел «Контакты»`
@@ -794,7 +842,7 @@ function vendorUpdateRevision(e) {
   const managed = isNewCard ? null : managedCard(e.app, r);
   if (managed) {
     denyExtra(body, ['data', 'status', 'avatar', 'photos']);
-    r.set('data', lockManaged(jsonOf(managed, 'form'), jsonOf(r, 'data')));
+    r.set('data', (r.getString('kind') === 'venue' ? lockManagedVenue : lockManaged)(jsonOf(managed, 'form'), jsonOf(r, 'data')));
   }
 
   if (isNewCard) {
@@ -938,6 +986,7 @@ function approve(app, rev) {
     const stale = staleProblem(app, rev);
     if (stale) throw new BadRequestError(stale + ' Верните правку подрядчику: пусть откроет карточку заново.');
     if (kind === 'specialist' && jsonOf(card, 'form').managed === true) return approveManaged(app, rev, card);
+    if (kind === 'venue' && jsonOf(card, 'form').managed === true) return approveManagedVenue(app, rev, card);
     // Площадка, заведённая нами (страница конвейера venue-page, не 'cabinet'):
     // её page — блоки VenueBlock, а кадры связаны с src/assets через photoIndex.
     // Одобрение анкеты заменило бы и то и другое формой кабинета и стёрло
@@ -1054,12 +1103,46 @@ function approveManaged(app, rev, card) {
     filters: data.filters && typeof data.filters === 'object' ? data.filters : {},
     tagline: str(data.tagline, MANAGED_TAGLINE_MAX),
     intro: '', // 09.11: первый абзац владелец больше не правит; прежняя правка снимается
+    tariffPrices: tariffPricesOf(data.tariffPrices), // 09.11: числа в тарифах визитки (по названию)
     avatar: card.getString('avatar'),
     version: card.getInt('version'),
   };
   card.set('page', page);
   app.save(card);
   rev.set('specialist', card.id);
+  rev.set('reviewedAt', new DateTime());
+  rev.set('rejectReason', '');
+}
+
+/**
+ * Одобрение правки площадки «ведём мы» (09.11): страница — наш JSON в git
+ * (page без source 'cabinet'), фото не трогаем; в карточку — тип, вместимость
+ * и чек (колонки каталога), в page.ownerEdits — строки и тарифы залов: сайт
+ * (lib/live-data.ts → applyVenueEdits) кладёт их поверх страницы.
+ */
+function approveManagedVenue(app, rev, card) {
+  const data = lockManagedVenue(jsonOf(card, 'form'), jsonOf(rev, 'data'));
+  delete data.requests;
+  const allowed = card.collection().fields.getByName('type').values;
+  const type = allowed.indexOf(data.type) !== -1 ? data.type : card.getString('type');
+  card.set('type', type);
+  if (int(data.checkFrom)) card.set('checkFrom', int(data.checkFrom));
+  if (int(data.capacityBanquet)) card.set('capacityBanquet', int(data.capacityBanquet));
+  card.set('version', card.getInt('version') + 1);
+  card.set('form', data);
+  card.set('contacts', data.contacts && typeof data.contacts === 'object' ? data.contacts : {});
+  const page = jsonOf(card, 'page');
+  page.ownerEdits = {
+    type,
+    checkFrom: int(data.checkFrom),
+    capacityBanquet: int(data.capacityBanquet),
+    rows: (data.rows || []).map((r) => ({ at: r.at, label: r.label, value: r.value })),
+    hallTariffs: (data.hallTariffs || []).map((h) => ({ id: h.id, tariff: h.tariff })),
+    version: card.getInt('version'),
+  };
+  card.set('page', page);
+  app.save(card);
+  rev.set('venue', card.id);
   rev.set('reviewedAt', new DateTime());
   rev.set('rejectReason', '');
 }
@@ -1252,7 +1335,10 @@ function startEdit(e) {
     // обрезка здесь стёрла бы лишние кадры с сайта
     // имена сохраняем (сервис фото): нетронутые кадры правки при одобрении
     // остаются файлами карточки, их варианты уже нарезаны
-    rev.set('photos', photos.map((n) => fsys.getReuploadableFile(base + n, true)));
+    // площадка «ведём мы»: фото наши и в правку не идут (просьбой) — не копируем сотню кадров
+    if (!(kind === 'venue' && jsonOf(card, 'form').managed === true)) {
+      rev.set('photos', photos.map((n) => fsys.getReuploadableFile(base + n, true)));
+    }
     if (kind === 'specialist' && card.getString('avatar')) {
       rev.set('avatar', fsys.getReuploadableFile(base + card.getString('avatar'), true));
     }
