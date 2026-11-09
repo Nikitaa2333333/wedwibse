@@ -21,6 +21,7 @@ import type { StorySection } from '../data/specialists';
 import { resolveImage, IMG_WIDTHS } from '../lib/images';
 import { isPortrait, isVideo } from '../lib/media';
 import Avatar from './Avatar.astro';
+import { glue } from '../lib/typo';
 import StatsStrip from './StatsStrip.astro';
 
 interface Props {
@@ -79,12 +80,12 @@ sections.forEach((s, i) => {
       <>
         <section class:list={['story__sec', !sec.title && 'story__sec--cont', !sec.title && !sec.lead && 'story__sec--plain', sec.tone === 'dark' && 'story__sec--dark theme-dark']}>
           {sec.title && <h2 class="t-h2 story__title">{sec.title}</h2>}
-          {sec.lead && <p class:list={[sec.title ? 'story__sublead' : 'story__lead']}>{sec.lead}</p>}
-          {sec.text?.map((p) => <p class="story__text">{p}</p>)}
+          {sec.lead && <p class:list={[sec.title ? 'story__sublead' : 'story__lead']}>{glue(sec.lead)}</p>}
+          {sec.text?.map((p) => <p class="story__text">{glue(p)}</p>)}
           {points.length > 0 && (pills ? (
-            <ul class="plates">{points.map((t) => <li>{t}</li>)}</ul>
+            <ul class="plates">{points.map((t) => <li>{glue(t)}</li>)}</ul>
           ) : (
-            <ul class="list story__list">{points.map((t) => <li>{t}</li>)}</ul>
+            <ul class="list story__list">{points.map((t) => <li>{glue(t)}</li>)}</ul>
           ))}
           {sec.items && (
             <div class:list={['story__items', sec.kind === 'menu' && 'story__items--menu']}>
@@ -93,9 +94,9 @@ sections.forEach((s, i) => {
                   {/* портрет есть хоть у одного — кружок у всех: без фото Avatar ставит инициалы */}
                   {faces && <Avatar src={it.photo} name={it.title} size={72} class="story__face" />}
                   <div>
-                    <h3 class="story__item-title">{it.title}</h3>
-                    {it.text && <p class="story__item-text">{it.text}</p>}
-                    {it.list && <ul class="list story__item-list">{it.list.map((t) => <li>{t}</li>)}</ul>}
+                    <h3 class="story__item-title">{glue(it.title)}</h3>
+                    {it.text && <p class="story__item-text">{glue(it.text)}</p>}
+                    {it.list && <ul class="list story__item-list">{it.list.map((t) => <li>{glue(t)}</li>)}</ul>}
                   </div>
                 </article>
               ))}
@@ -107,22 +108,22 @@ sections.forEach((s, i) => {
               {sec.tariffs.map((t) => (
                 <article class="tariff">
                   <header class="tariff__head">
-                    <h3 class="tariff__name">{t.name}</h3>
+                    <h3 class="tariff__name">{glue(t.name)}</h3>
                     <p class="tariff__price">
-                      {t.price}
+                      {glue(t.price)}
                       {t.unit && <span class="tariff__unit">{t.unit}</span>}
                     </p>
                   </header>
-                  {t.lead && <p class="tariff__lead">{t.lead}</p>}
+                  {t.lead && <p class="tariff__lead">{glue(t.lead)}</p>}
                   {t.includes && (
-                    <ul class="list tariff__list">{t.includes.map((x) => <li>{x}</li>)}</ul>
+                    <ul class="list tariff__list">{t.includes.map((x) => <li>{glue(x)}</li>)}</ul>
                   )}
-                  {t.note && <p class="tariff__note">{t.note}</p>}
+                  {t.note && <p class="tariff__note">{glue(t.note)}</p>}
                 </article>
               ))}
             </div>
           )}
-          {sec.after?.map((p) => <p class="story__text">{p}</p>)}
+          {sec.after?.map((p) => <p class="story__text">{glue(p)}</p>)}
           {/* подпись автора: тёмная плашка — его слова, и читается цитатой */}
           {sec.tone === 'dark' && name && <p class="story__sign">— {name}</p>}
         </section>

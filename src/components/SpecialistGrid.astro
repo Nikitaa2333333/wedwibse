@@ -29,6 +29,7 @@ import Icon from './Icon.astro';
 import type { SpecialistCard } from '../lib/specialist-card';
 import { resolveImage, IMG_WIDTHS } from '../lib/images';
 import { photosOnly } from '../lib/media';
+import { glue } from '../lib/typo';
 
 interface Props {
   cards: SpecialistCard[];
@@ -117,7 +118,7 @@ const { cards } = Astro.props;
           </div>
           {s.priceFrom ? (
             <p class="scard__price">
-              {price}
+              {glue(price)}
               {styleTag && <span class="scard__style">{styleTag}</span>}
             </p>
           ) : (
