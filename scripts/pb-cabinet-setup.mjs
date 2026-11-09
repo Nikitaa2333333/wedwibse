@@ -58,6 +58,35 @@ if (cmd === 'moderator') {
   });
   // ключ показывается один раз: в базе только его хэш
   console.log(`${card.name}: ${SITE}/profi/vhod/?invite=${key}`);
+} else if (cmd === 'review-bind' || cmd === 'review-release') {
+  // Просмотр всех карточек «ведём мы» одной учёткой (Никита 09.11): владелец ставится напрямую,
+  // мимо ссылки и лимита MAX_CARDS. Площадкам — снимок записи (research/venue-before-test/),
+  // review-release отвязывает всё обратно через release (подрядчик — из git, площадка — из снимка).
+  //   node scripts/pb-cabinet-setup.mjs review-bind <id учётки>
+  //   node scripts/pb-cabinet-setup.mjs review-release <id учётки>
+  const [vendorId] = args;
+  if (!vendorId) throw new Error('нужен id учётки (vendors)');
+  const { mkdir, writeFile } = await import('node:fs/promises');
+  await mkdir('research/venue-before-test', { recursive: true });
+  const refs = [];
+  for (const col of ['specialists', 'venues']) {
+    const filter = cmd === 'review-bind' ? 'owner = "" && status = "published"' : `owner = "${vendorId}"`;
+    const list = (await api.list(col, `filter=${encodeURIComponent(filter)}`))?.items ?? [];
+    for (const card of list) {
+      if (card.form?.managed !== true) continue;
+      const ref = col === 'venues' ? `venue:${card.slug}` : `${card.categorySlug}/${card.slug}`;
+      if (cmd === 'review-bind') {
+        if (col === 'venues') await writeFile(`research/venue-before-test/${card.slug}.json`, JSON.stringify({ type: card.type, checkFrom: card.checkFrom, capacityBanquet: card.capacityBanquet, form: card.form, contacts: card.contacts, page: card.page }));
+        await api.update(col, card.id, { owner: vendorId });
+        console.log(`${ref}: привязана`);
+      } else refs.push(ref);
+    }
+  }
+  if (cmd === 'review-release') {
+    console.log(`к отвязке: ${refs.length}`);
+    const { execFileSync } = await import('node:child_process');
+    if (refs.length) execFileSync(process.execPath, ['scripts/pb-cabinet-setup.mjs', 'release', ...refs], { stdio: 'inherit' });
+  }
 } else if (cmd === 'test-invite') {
   // Тестовые ссылки для своей проверки (Никита 09.11): та же ссылка, что владельцу, но
   // с пометкой «тест» и в отдельном файле research/test-links.csv. Площадке — снимок записи
