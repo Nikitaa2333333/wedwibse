@@ -1,5 +1,6 @@
 ---
 import { rowsClass } from '../lib/rows';
+import { glue } from '../lib/typo';
 // Условия площадки: деньги, бронирование, что входит в стоимость,
 // что считается отдельно. Всё «метка — значение» идёт строками (.rows),
 // чистые перечисления — маркированным списком (.list).
@@ -32,7 +33,7 @@ const { title, terms, included, extras } = Astro.props;
               {group.rows.map((row) => (
                 <div class="rows__row">
                   <dt class="rows__label">{row.label}</dt>
-                  <dd class="rows__value">{row.value}</dd>
+                  <dd class="rows__value">{glue(row.value)}</dd>
                 </div>
               ))}
             </dl>
@@ -70,7 +71,7 @@ const { title, terms, included, extras } = Astro.props;
               {group.rows.map((row) => (
                 <div class="rows__row">
                   <dt class="rows__label">{row.label}</dt>
-                  <dd class="rows__value">{row.value}</dd>
+                  <dd class="rows__value">{glue(row.value)}</dd>
                 </div>
               ))}
             </dl>

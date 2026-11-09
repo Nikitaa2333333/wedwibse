@@ -15,6 +15,7 @@ import Reviews from './Reviews.astro';
 import Icon from './Icon.astro';
 import HeroActions from './HeroActions.astro';
 import HeroCta from './HeroCta.astro';
+import { glue } from '../lib/typo';
 import HeroStage from './HeroStage.astro';
 import ReelsRow from './ReelsRow.astro';
 import RelatedCards from './RelatedCards.astro';
@@ -23,7 +24,7 @@ import StickyCta from './StickyCta.astro';
 import StoryText from './StoryText.astro';
 import { similarSpecialists } from '../lib/similar';
 import { specialistCard } from '../lib/similar-cards';
-import { FILTERS_BY_CATEGORY, specialistRole, type Specialist } from '../data/specialists';
+import { FILTERS_BY_CATEGORY, specialistKicker, type Specialist } from '../data/specialists';
 import { reelsOf } from '../data/reels';
 import { resolveImage, favoriteImage, IMG_WIDTHS } from '../lib/images';
 
@@ -124,12 +125,13 @@ const saveData = JSON.stringify({
          Бирка начинается с профессии («Фотограф · …»): из ленты главной
          в карточку попадают без раздела, и один тэглайн не говорит,
          кто это — фотограф, видеограф или ведущий. Тот же приём, что
-         у площадки: «Оранжерея · Быково». -->
+         у площадки: «Оранжерея · Быково». Вариант «разными строками без
+         точки» пробовали 09.11 — заказчик оставил точку. -->
     <HeroStage
       frames={frames}
       alt={s.name}
       title={s.name}
-      kicker={`${specialistRole(s)} · ${s.tagline}`}
+      kicker={specialistKicker(s)}
       rating={s.rating}
       reviews={s.reviews}
       avatar={s.avatar}
@@ -144,9 +146,9 @@ const saveData = JSON.stringify({
            сначала «сколько», потом «заказать». Подпись под ценой только
            о самой цене; «Цена по запросу» без дубля «Стоимость — по запросу». -->
       <div slot="cta" class="phero">
-        <p class="phero__price">{priceLabel}</p>
+        <p class="phero__price">{glue(priceLabel)}</p>
         {priceFacts.length > 0 && <p class="t-caption phero__price-note">{priceFacts.join(' · ')}</p>}
-        <HeroCta orderLabel="Заказать" orderHref="#zayavka" save={saveData} />
+        <HeroCta orderLabel="Заказать" orderHref="#zayavka" />
       </div>
     </HeroStage>
 

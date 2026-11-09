@@ -15,6 +15,7 @@
 // человек должен попадать на ту же фотографию, которую нажал, во весь
 // экран, а не на её уменьшенную копию с текстом под ней.
 import type { Venue } from '../data/venues';
+import { glue } from '../lib/typo';
 import HeroActions from './HeroActions.astro';
 import HeroCta from './HeroCta.astro';
 import HeroStage from './HeroStage.astro';
@@ -97,10 +98,10 @@ const reviews = block?.total ?? feedReviews;
       На карте
     </a>
   )}
-  <!-- Заказ и избранное — сразу под именем, а не под лидом (см. HeroCta) -->
+  <!-- Заказ — сразу под именем, а не под лидом (см. HeroCta) -->
   <!-- «Забронировать», не «Забронировать дату»: на телефоне длинная подпись
        не влезала в половину строки и вылезала за пилюлю (17.09) -->
-  <HeroCta slot="cta" orderLabel="Забронировать" orderHref="#zayavka" save={saveData} />
+  <HeroCta slot="cta" orderLabel="Забронировать" orderHref="#zayavka" />
 </HeroStage>
 
 <section class="vhero">
@@ -123,7 +124,7 @@ const reviews = block?.total ?? feedReviews;
         venue.meta.map((row) => (
           <div class="spec">
             <dt class="spec__label t-caption">{row.label}</dt>
-            <dd class="spec__value">{row.value}</dd>
+            <dd class="spec__value">{glue(row.value)}</dd>
           </div>
         ))
       }

@@ -12,6 +12,7 @@
 import PhotoRail from './PhotoRail.astro';
 import { IMG_WIDTHS } from '../lib/images';
 import type { RelatedCard } from '../lib/similar-cards';
+import { glue } from '../lib/typo';
 
 interface Props {
   title: string;
@@ -62,7 +63,7 @@ const items = cards.slice(0, 6);
                 <a href={card.href}>{card.name}</a>
               </h3>
               <p class="vmini__price">
-                {card.price}
+                {glue(card.price)}
                 {card.type && <span class="vmini__type">{card.type}</span>}
               </p>
               {card.meta && <p class="vmini__meta t-small">{card.meta}</p>}

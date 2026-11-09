@@ -5,6 +5,7 @@
 // тем же способом — свой набор FilterGroup[] и свой массив в SPECIALISTS.
 // ============================================================
 import { FILTERS_BY_CATEGORY as ALL_FILTERS } from './specialist-filters';
+import { joinKicker } from '../lib/kicker';
 
 export interface FilterOption {
   value: string;
@@ -132,6 +133,9 @@ export interface SpecialistCategory {
       раздела. Где единственного числа нет (кейтеринг, шоу, аренда) — то же
       слово, что в label. */
   role: string;
+  /** женский род, где он есть в языке и звучит естественно («Ведущая»);
+      нет поля — у женщин то же слово, что role (09.11.2026) */
+  roleF?: string;
 }
 
 // Порядок здесь — порядок разделов ниже: категории одного раздела идут
@@ -139,7 +143,7 @@ export interface SpecialistCategory {
 export const SPECIALIST_CATEGORIES: SpecialistCategory[] = [
   { slug: 'organizatory', label: 'Организаторы', role: 'Организатор' },
   { slug: 'koordinatory', label: 'Координаторы', role: 'Координатор' },
-  { slug: 'vedushchie', label: 'Ведущие', role: 'Ведущий' },
+  { slug: 'vedushchie', label: 'Ведущие', role: 'Ведущий', roleF: 'Ведущая' },
   { slug: 'dekoratory', label: 'Декораторы', role: 'Декоратор' },
   { slug: 'fotografy', label: 'Фотографы', role: 'Фотограф' },
   { slug: 'videografy', label: 'Видеографы', role: 'Видеограф' },
@@ -151,7 +155,7 @@ export const SPECIALIST_CATEGORIES: SpecialistCategory[] = [
   { slug: 'stilisty', label: 'Стилисты и визажисты', role: 'Стилист и визажист' },
   { slug: 'dj', label: 'Диджеи', role: 'Диджей' },
   { slug: 'kaver-gruppy', label: 'Кавер-группы', role: 'Кавер-группа' },
-  { slug: 'vokalisty', label: 'Вокалисты', role: 'Вокалист' },
+  { slug: 'vokalisty', label: 'Вокалисты', role: 'Вокалист', roleF: 'Вокалистка' },
   { slug: 'muzykanty', label: 'Музыканты', role: 'Музыкант' },
   { slug: 'speceffekty', label: 'Спецэффекты', role: 'Спецэффекты' },
   { slug: 'arenda-zvuka', label: 'Аренда звука', role: 'Аренда звука' },
@@ -159,7 +163,7 @@ export const SPECIALIST_CATEGORIES: SpecialistCategory[] = [
   { slug: 'horeografy', label: 'Хореографы', role: 'Хореограф' },
   { slug: 'animatory', label: 'Аниматоры', role: 'Аниматор' },
   { slug: 'shou', label: 'Шоу', role: 'Шоу' },
-  { slug: 'fokusniki', label: 'Фокусники и иллюзионисты', role: 'Фокусник' },
+  { slug: 'fokusniki', label: 'Фокусники и иллюзионисты', role: 'Фокусник', roleF: 'Фокусница' },
   { slug: 'avto', label: 'Авто и трансфер', role: 'Авто и трансфер' },
 ];
 
@@ -173,10 +177,19 @@ export function specialistRole(s: Pick<Specialist, 'categorySlug' | 'alsoCategor
     .map((slug) => SPECIALIST_CATEGORIES.find((c) => c.slug === slug))
     .filter((c): c is SpecialistCategory => !!c)
     .map((c, i) => {
-      const word = pair ? c.label : c.role;
+      const word = pair ? c.label : s.gender === 'ж' && c.roleF ? c.roleF : c.role;
       return i === 0 ? word : word.toLowerCase();
     })
     .join(' и ');
+}
+
+/** бирка под именем: «Профессия · строка», без повтора профессии (lib/kicker.ts) */
+export function specialistKicker(s: Pick<Specialist, 'categorySlug' | 'alsoCategories' | 'gender' | 'tagline'>): string {
+  const cats = [s.categorySlug, ...(s.alsoCategories ?? [])]
+    .map((slug) => SPECIALIST_CATEGORIES.find((c) => c.slug === slug))
+    .filter((c): c is SpecialistCategory => !!c);
+  const names = cats.flatMap((c) => [c.role, c.label, c.roleF ?? '']).filter(Boolean);
+  return joinKicker(specialistRole(s), s.tagline, names);
 }
 
 // ============ СМЫСЛОВЫЕ ГРУППЫ НАПРАВЛЕНИЙ ============

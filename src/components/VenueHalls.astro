@@ -12,6 +12,7 @@
 import { Image } from 'astro:assets';
 import type { VenueHall } from '../data/venues';
 import { IMG_WIDTHS, resolveImage } from '../lib/images';
+import { glue } from '../lib/typo';
 
 interface Props {
   halls: VenueHall[];
@@ -101,8 +102,8 @@ const { halls } = Astro.props;
                   {hall.tariff.map((t) => (
                     <tr>
                       <th scope="row">{t.day}</th>
-                      <td>{t.rent}</td>
-                      <td>{t.deposit}</td>
+                      <td>{glue(t.rent)}</td>
+                      <td>{glue(t.deposit)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -110,7 +111,7 @@ const { halls } = Astro.props;
             )}
 
             <div class="hall__text">
-              {hall.price && <p class="hall__included"><span class="hall__included-label">Аренда или депозит: </span>от {hall.price}</p>}
+              {hall.price && <p class="hall__included"><span class="hall__included-label">Аренда или депозит: </span>{glue(`от ${hall.price}`)}</p>}
               {(hall.included ?? []).length > 0 && (
                 <p class="hall__included">
                 <span class="hall__included-label">В аренду входит: </span>
@@ -136,17 +137,37 @@ const { halls } = Astro.props;
   /* Сплошная бумажная шапка от верха экрана: фиксированные кнопки
      первого экрана лежат на ней, пилюли — под ними. Фото больше не
      проглядывает полосой между краем экрана и пилюлями (заказчик, 08.10). */
+  /* Поле под кнопки (--halls-under) — не отступом полосы, а липкой
+     высотой: в потоке полоса стоит сразу под плитками залов, и раньше
+     эти ~64 px плюс вырез экрана висели «дырой» между плитками и
+     пилюлями (заказчик, 09.11.2026). Бумага над полосой появляется,
+     только когда та прилипла (класс is-stuck, скрипт ниже): тогда
+     кнопки лежат на ней, и фото под ними не проглядывает. */
   .halls__nav {
+    --halls-under: calc(var(--s-4) + 40px + var(--s-2) + var(--safe-t));
     position: sticky;
-    top: 0;
+    top: var(--halls-under);
     z-index: calc(var(--z-nav) - 1);
     background: var(--bg);
-    padding-top: calc(var(--s-4) + 40px + var(--s-2) + var(--safe-t));
-    padding-bottom: var(--s-2);
+    padding-block: var(--s-2);
   }
 
+  .halls__nav::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 100%;
+    height: var(--halls-under);
+    background: var(--bg);
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .halls__nav.is-stuck::before { visibility: visible; }
+
   @media (min-width: 1024px) {
-    .halls__nav { padding-top: var(--s-2); }
+    .halls__nav { --halls-under: 0px; }
   }
 
   .halls__rail {
@@ -297,6 +318,19 @@ const { halls } = Astro.props;
 </style>
 
 <script>
+  // Полоса залов прилипла — показать бумагу над ней (см. .halls__nav::before).
+  const nav = document.querySelector<HTMLElement>('.halls__nav');
+  if (nav) {
+    let raf = 0;
+    const check = () => {
+      raf = 0;
+      const top = parseFloat(getComputedStyle(nav).top) || 0;
+      nav.classList.toggle('is-stuck', top > 0 && nav.getBoundingClientRect().top <= top + 0.5);
+    };
+    addEventListener('scroll', () => { if (!raf) raf = requestAnimationFrame(check); }, { passive: true });
+    check();
+  }
+
   // Текущий зал в полосе навигации: тот, чья секция пересекает верхнюю
   // треть экрана. Активная пилюля доезжает в видимую часть ряда сама.
   const links = new Map(

@@ -1,71 +1,33 @@
 ---
-// РЯД ДЕЙСТВИЙ ПОД ИМЕНЕМ КАРТОЧКИ: «Заказать» и «В избранное» словами —
-// первое, что стоит на бумаге после кадра, у площадки и у подрядчика.
+// КНОПКА ЗАКАЗА ПОД ИМЕНЕМ КАРТОЧКИ — первое, что стоит на бумаге после
+// кадра, у площадки и у подрядчика.
 //
-// Заказчик (16.09.2026): кнопки «Избранное» и «Заказать» — в самый верх
-// страницы, до них не долистывают. Раньше «Заказать» стояла под лидом
-// (площадка) и под ценой (подрядчик), то есть на втором экране, а сердце
-// поверх кадра значком не читалось как «избранное». Ряд ставится в слот
-// `cta` HeroStage — сразу под именем и рейтингом, до лида.
+// Заказчик (16.09.2026): заказ — в самый верх страницы, до него не
+// долистывают. Ряд ставится в слот `cta` HeroStage — сразу под именем
+// и рейтингом, до лида.
 //
-// Механика избранного — та же, что у сердца поверх кадра и у кнопки в
-// финальном экране (lib/save.ts, data-save): один снимок карточки на
-// страницу, иначе площадка задвоится в разделе. Подпись меняется по
-// aria-pressed, как в VenueContacts.
+// Заказчик (09.11.2026): кнопку «В избранное» из ряда убрали — избранное
+// уже есть сердцем на кадре (HeroActions) и в финальном экране, а пара
+// «контур + заливка» спорила за внимание. Осталось одно действие —
+// большая залитая пилюля во всю ширину на телефоне.
 interface Props {
-  /** подпись действия: «Забронировать» у площадки, «Заказать» у подрядчика.
-   *  Одно слово: кнопка делит строку пополам с «В избранное», и два слова
-   *  в половину телефона не влезают — текст вылезал за пилюлю. */
+  /** подпись действия: «Забронировать» у площадки, «Заказать» у подрядчика */
   orderLabel: string;
   orderHref: string;
-  /** снимок карточки для избранного (lib/favorite-snapshot) — уже в JSON */
-  save: string;
 }
 
-const { orderLabel, orderHref, save } = Astro.props;
+const { orderLabel, orderHref } = Astro.props;
 ---
 
 <div class="hero-cta">
   <!-- Ссылка настоящая (href на блок заявки) — без JS она работает, как
        работала. Скрипт BookingSheet перехватывает клик по data-booking-open
        и поднимает шторку с формой; тот же приём, что у BackButton. -->
-  <a class="pill pill--lg" href={orderHref} data-booking-open>{orderLabel}</a>
-  <button class="pill pill--lg hero-cta__save" type="button" data-save={save} aria-pressed="false">
-    <span class="hero-cta__off">В избранное</span>
-    <span class="hero-cta__on">В избранном</span>
-  </button>
+  <a class="pill pill--lg pill--solid pill--block" href={orderHref} data-booking-open>{orderLabel}</a>
 </div>
 
 <style>
-  /* Две кнопки в одну строку всегда (заказчик, 17.09): на телефоне пилюли
-     с полными полями не влезали и вставали столбиком. Делим ширину
-     пополам, поля пилюли ужимаем — текст центрируется в своей половине. */
-  .hero-cta {
-    display: flex;
-    align-items: stretch; /* <a> и <button> считают строку по-разному: тянем до одной высоты */
-    gap: var(--s-2); /* пара кнопок — одна группа: ближе друг к другу (заказчик, 08.10) */
-  }
-
-  .hero-cta .pill {
-    flex: 1 1 0;
-    min-width: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding-inline: var(--s-4);
-  }
-
   @media (min-width: 640px) {
-    .hero-cta .pill { flex: 0 0 auto; padding-inline: 40px; }
+    .hero-cta .pill { display: inline-flex; width: auto; }
   }
-
-  .hero-cta__on { display: none; }
-  .hero-cta__save[aria-pressed='true'] .hero-cta__on { display: inline; }
-  .hero-cta__save[aria-pressed='true'] .hero-cta__off { display: none; }
 </style>
-
-<script>
-  import { bindSaveButtons } from '../lib/save';
-
-  bindSaveButtons();
-</script>
