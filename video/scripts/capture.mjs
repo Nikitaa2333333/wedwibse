@@ -76,6 +76,16 @@ for (const slug of ['villa-barvikha', 'led']) {
   await p.close();
 }
 
+// 4. Страница LЁD целиком — «сайт-презентация» листается в телефоне
+{
+  const c3 = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: 'ru-RU' });
+  const p = await open('/moskva/ploshchadki/led/', c3);
+  const h = Math.min(6000, await p.evaluate(() => document.documentElement.scrollHeight));
+  rects.ledH = h;
+  await p.screenshot({ path: OUT + 'venue-led-long.jpg', type: 'jpeg', quality: 90, clip: { x: 0, y: 0, width: 390, height: h }, fullPage: true });
+  await p.close();
+}
+
 writeFileSync(OUT + 'rects.json', JSON.stringify(rects, null, 2) + '\n');
 await browser.close();
 console.log('ok →', OUT);

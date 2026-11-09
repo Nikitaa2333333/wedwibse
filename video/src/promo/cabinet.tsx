@@ -204,21 +204,26 @@ export const FieldCard: React.FC<{ label: string; children: React.ReactNode; h: 
   </div>
 );
 
-// ——— «Мои карточки» с интересом пар: карточка на сайте и сколько раз её сохранили ———
+// ——— «Мои карточки» со статистикой: карточка на сайте и сколько раз её сохранили ———
 // ЗАГЛУШКА ДЛЯ РОЛИКА: блока «Интерес пар» в кабинете ещё нет (обещан на /profi/:
 // «Сколько раз открыли контакты и сохранили карточку»); числа — иллюстрация.
-export const INTEREST_RECT = { x: 4, y: 218, w: 382, h: 150 };
+export const INTEREST_RECT = { x: 4, y: 218, w: 382, h: 256 };
+const EYE = 'M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12Zm9.5 2.8a2.8 2.8 0 1 0 0-5.6 2.8 2.8 0 0 0 0 5.6Z';
+const HEART_P = 'M2 9.1371C2 14 6.01943 16.5914 8.96173 18.9109C10 19.7294 11 20.5 12 20.5C13 20.5 14 19.7294 15.0383 18.9109C17.9806 16.5914 22 14 22 9.1371C22 4.27416 16.4998 0.825464 12 5.50063C7.50016 0.825464 2 4.27416 2 9.1371Z';
+/** статистика карточки: просмотры, сохранения, контакты, заявки (числа — иллюстрация) */
 export const InterestSheet: React.FC<{ saved: number; plus: number }> = ({ saved, plus }) => (
   <div style={{ ...base, width: INTEREST_RECT.w, height: INTEREST_RECT.h, boxSizing: 'border-box', background: CAB.card, borderRadius: CAB.sheetRadius, padding: '16px 18px', display: 'grid', gap: 12, alignContent: 'start' }}>
-    <div style={{ fontSize: 17, fontWeight: 600 }}>Интерес пар</div>
-    {[['heart', 'Сохранили в избранное', saved], ['phone', 'Открыли контакты', 5]].map(([ic, t, n], i) => (
-      <div key={String(t)} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+    <div style={{ fontSize: 17, fontWeight: 600 }}>Статистика за неделю</div>
+    {([['eye', 'Просмотры', 248], ['heart', 'Сохранили в избранное', saved], ['phone', 'Открыли контакты', 31], ['mail', 'Заявки', 7]] as [string, string, number][]).map(([ic, t, n]) => (
+      <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <span style={{ width: 36, height: 36, borderRadius: 10, background: CAB.bg, display: 'grid', placeItems: 'center' }}>
-          {ic === 'heart' ? <svg width={20} height={20} viewBox="0 0 24 24"><path d="M2 9.1371C2 14 6.01943 16.5914 8.96173 18.9109C10 19.7294 11 20.5 12 20.5C13 20.5 14 19.7294 15.0383 18.9109C17.9806 16.5914 22 14 22 9.1371C22 4.27416 16.4998 0.825464 12 5.50063C7.50016 0.825464 2 4.27416 2 9.1371Z" fill={CAB.ink} /></svg> : <Glyph n="phone" size={20} />}
+          {ic === 'heart' ? <svg width={20} height={20} viewBox="0 0 24 24"><path d={HEART_P} fill={CAB.ink} /></svg>
+            : ic === 'eye' ? <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={CAB.text} strokeWidth={1.6}><path d={EYE} /></svg>
+            : <Glyph n={ic} size={20} />}
         </span>
         <span style={{ flex: 1, fontSize: 15, fontWeight: 500 }}>{t}</span>
-        {i === 0 && plus > 0 && <span style={{ fontSize: 14, fontWeight: 700, color: CAB.okText, opacity: plus, transform: `translateY(${(1 - plus) * 6}px)` }}>+1</span>}
-        <span style={{ fontSize: 20, fontWeight: 600, fontVariantNumeric: 'tabular-nums', minWidth: 28, textAlign: 'right' }}>{n}</span>
+        {ic === 'heart' && plus > 0 && <span style={{ fontSize: 14, fontWeight: 700, color: CAB.okText, opacity: plus, transform: `translateY(${(1 - plus) * 6}px)` }}>+1</span>}
+        <span style={{ fontSize: 20, fontWeight: 600, fontVariantNumeric: 'tabular-nums', minWidth: 36, textAlign: 'right' }}>{n}</span>
       </div>
     ))}
   </div>
