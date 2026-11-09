@@ -198,7 +198,10 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
 
   /** производные поля — то, что человек не вводит руками */
   function derive() {
-    if (kind === 'venue') {
+    if (kind === 'venue' && data.managed) {
+      // «ведём мы»: залов в анкете нет, гостей владелец вводит сам — пересчёт по залам
+      // затирал вместимость пустым при первом автосохранении (LED, Довиль, Барвиха, 09.11)
+    } else if (kind === 'venue') {
       const halls = (data.halls ?? []).filter((h: any) => h?.name);
       const max = (k: string) => Math.max(0, ...halls.map((h: any) => Number(h?.[k]) || 0)) || '';
       data.capacityBanquet = max('banquet');
