@@ -82,24 +82,46 @@ import CabinetShell from '../../../components/admin/CabinetShell.astro';
     const many = new Set(items.map((l) => l.card)).size > 1;
     box.innerHTML = `<div class="c-leads">${items.map((l) => {
       const old = seen.has(l.id);
-      const tel = String(l.phone).replace(/[^\d+]/g, '');
+      // цифры номера: 8… и 10 цифр → 7… (для tel:, t.me/+, wa.me/)
+      const d0 = String(l.phone).replace(/\D/g, '');
+      const digits = d0.length === 11 && d0[0] === '8' ? '7' + d0.slice(1) : d0.length === 10 ? '7' + d0 : d0;
+      // способ связи пара выбирает в форме: «Связаться: Telegram / WhatsApp / звонок» (BookingSheet)
+      const way = /^Связаться:\s*(.+)$/m.exec(String(l.message || ''))?.[1]?.trim().toLowerCase() ?? '';
+      const text = String(l.message || '').split('\n').filter((s) => !/^Связаться:/.test(s)).join('\n').trim();
+      // «Написать» — туда, где пара ждёт ответа; при звонке кнопки нет (Никита 09.11: СМС — странно)
+      // выбранный парой мессенджер — главной кнопкой, звонок — второй
+      const write = way === 'telegram' ? `<a class="a-btn a-btn--primary" href="https://t.me/+${esc(digits)}" target="_blank" rel="noopener" data-seen="${esc(l.id)}">Написать в Telegram</a>`
+        : way === 'whatsapp' ? `<a class="a-btn a-btn--primary" href="https://wa.me/${esc(digits)}" target="_blank" rel="noopener" data-seen="${esc(l.id)}">Написать в WhatsApp</a>` : '';
+      const wayLabel = way === 'telegram' ? 'Telegram' : way === 'whatsapp' ? 'WhatsApp' : way ? 'звонок' : '';
       return `
-      <article class="c-lead${old ? ' c-lead--seen' : ''}">
+      <article class="c-lead${old ? ' c-lead--seen' : ''}" data-lead="${esc(l.id)}">
         <div class="c-lead__who">
           <span class="c-lead__name">${esc(l.name)}</span>
           <span class="status ${old ? '' : 'status--ok'}">${old ? 'Просмотрена' : 'Новая'}</span>
           <span class="c-lead__date">${esc(wedding(l.eventDate))}</span>
-          ${l.message ? `<span class="c-lead__msg">${esc(l.message)}</span>` : ''}
+          ${wayLabel ? `<span class="c-lead__msg">Удобнее: ${wayLabel}</span>` : ''}
+          ${text ? `<span class="c-lead__msg">${esc(text)}</span>` : ''}
         </div>
         <div class="c-lead__acts">
-          <a class="a-btn a-btn--primary" href="tel:${esc(tel)}">Позвонить</a>
-          <a class="a-btn" href="sms:${esc(tel)}">Написать</a>
+          ${write}
+          <a class="a-btn${write ? '' : ' a-btn--primary'}" href="tel:+${esc(digits)}" data-seen="${esc(l.id)}">Позвонить</a>
         </div>
         <span class="c-lead__when">Заявка пришла ${when(l.created)}${many ? ` · ${esc(l.card)}` : ''}</span>
       </article>`;
     }).join('')}</div>`;
-    // увидел — в следующий раз это уже «Просмотрена»
-    try { localStorage.setItem(SEEN, JSON.stringify([...new Set([...seen, ...items.map((l) => l.id)])].slice(-500))); } catch {}
+    // «Просмотрена» — только та заявка, по которой связались (Никита 09.11: открыл раздел — и серыми
+    // стали все). Отмечаем по нажатию «Позвонить» / «Написать», не по показу списка
+    box.addEventListener('click', (e) => {
+      const id = (e.target as HTMLElement).closest<HTMLElement>('[data-seen]')?.dataset.seen;
+      if (!id) return;
+      const cur = new Set(readSeen());
+      cur.add(id);
+      try { localStorage.setItem(SEEN, JSON.stringify([...cur].slice(-500))); } catch {}
+      const card = box.querySelector<HTMLElement>(`[data-lead="${CSS.escape(id)}"]`);
+      card?.classList.add('c-lead--seen');
+      const st = card?.querySelector('.status');
+      if (st) { st.classList.remove('status--ok'); st.textContent = 'Просмотрена'; }
+    });
   }
 
   // демо (только дев): макет будущих заявок

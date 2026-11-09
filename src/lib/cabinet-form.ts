@@ -228,7 +228,9 @@ export function sectionTodo(key: SectionKey, rev: any, questions: Question[]): s
     case 'voprosy': {
       const left = questions.filter((q) => !filled(d.filters?.[q.key])).length;
       // «ответьте ещё на 8 из 8» — и коряво, и «8» падала на строку одна (Никита 06.11)
-      return left === questions.length ? `ответьте на${NBSP}${left}${NBSP}${plural(left, ['вопрос', 'вопроса', 'вопросов'])}` : `осталось ответить на${NBSP}${left}${NBSP}из${NBSP}${questions.length}`;
+      // без «из 8» (Никита 09.11): сколько осталось — и всё
+      const q = `${left}${NBSP}${plural(left, ['вопрос', 'вопроса', 'вопросов'])}`;
+      return left === questions.length ? `ответьте на${NBSP}${q}` : `осталось ответить на${NBSP}${q}`;
     }
     case 'prays':
       return (d.priceMode ?? ((d.tariffs ?? []).length ? 'tariffs' : 'one')) === 'tariffs'

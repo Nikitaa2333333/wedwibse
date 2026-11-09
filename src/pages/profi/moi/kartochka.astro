@@ -149,11 +149,39 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
   };
   const TYPE_LABELS: Record<string, string> = Object.fromEntries((VENUE_QUESTIONS.find((q) => q.key === 'type')?.options ?? []).map((o) => [o.value, o.label]));
   const mnoteHidden = () => { try { return localStorage.getItem(mnoteKey()) === '1'; } catch { return false; } };
-  /** поле просьбы нам. Кнопки у него нет — и так и задумано: просьба сохраняется
-   *  сама и уходит вместе с остальными изменениями (Никита 07.11: «а что-то
-   *  появится, кнопка отправки?») — об этом и говорит подпись */
-  const requestField = (key: 'text' | 'price' | 'photos', label: string, placeholder: string) =>
-    field(label, `requests.${key}`, data.requests?.[key], { grow: 'area', placeholder, note: 'Сохранится само. Уйдёт нам вместе с остальными изменениями — кнопкой «Отправить изменения на проверку» на странице карточки' });
+  /** «Написать об изменениях» (Никита 09.11): вместо полей-просьб в каждом экране — одна кнопка.
+   *  Окно с одним полем, текст — в requests.text ревизии, уходит модератору с отправкой на проверку */
+  const requestsText = () => {
+    const r = data.requests ?? {};
+    return [r.text, r.price, r.photos].map((x: unknown) => String(x ?? '').trim()).filter(Boolean).join('\n\n');
+  };
+  const writeBtn = () => {
+    const t = requestsText();
+    return `<button class="c-write" type="button" data-write-changes>
+      <span class="c-write__t">Написать об изменениях</span>
+      <span class="c-write__s">${t ? `Ваше сообщение: ${esc(t.length > 90 ? `${t.slice(0, 90)}…` : t)}` : 'Текст, фото, название — что поменять, напишите. Поправим после проверки'}</span>
+      ${icon('next')}
+    </button>`;
+  };
+  function openWriteChanges(onDone: () => void) {
+    const { dlg, close } = openDialog({
+      html: `<div class="c-dialog__body">
+      <button class="c-dialog__x" type="button" data-close aria-label="Закрыть">${X_ICON}</button>
+      <h2 class="a-h2">Написать об изменениях</h2>
+      <p class="a-lead">Что поменять в тексте, фото или названии. Модератор получит это вместе с отправкой на проверку</p>
+      <textarea class="a-field__input c-write__area" rows="6" placeholder="Например: добавьте, что у нас новое меню" data-write-area>${esc(requestsText())}</textarea>
+      <button class="a-btn a-btn--primary a-btn--lg a-btn--block" type="button" data-write-done>Готово</button>
+    </div>`,
+    });
+    const area = dlg.querySelector<HTMLTextAreaElement>('[data-write-area]')!;
+    dlg.querySelector('[data-write-done]')!.addEventListener('click', () => {
+      const v = area.value.trim();
+      data.requests = v ? { text: v.slice(0, 3000) } : {};
+      close();
+      later();
+      onDone();
+    });
+  }
   const role = () => (kind === 'venue' ? 'Площадка' : cfg.roles[rev.categorySlug] ?? rev.categorySlug);
   /** строка под именем так, как её покажет сайт: «Профессия · строка» без повтора профессии */
   const kickerLine = (): string => {
@@ -346,6 +374,7 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
               : `<span class="c-tile__sub c-row__sub">${esc(x.sub)}</span>`}
           </a>`).join('')}
       </div>
+      ${managed() && rev.status !== 'review' ? writeBtn() : ''}
       ${/* Панель прибита к низу: «Отправить на проверку» и под ней превью.
            Полосы «Осталось» нет (Никита 05.11): что сделать — в самих плитках,
            отдельным начертанием подсказки (c-tile__todo), не как данные. */''}
@@ -812,14 +841,13 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
       </dl>
       ${field('Строка под именем', 'tagline', data.tagline, { grow: 'line', placeholder: 'Репортаж без постановки, плёнка по желанию', note: kind === 'venue' ? 'Одна фраза, до 80 знаков — её видно в каталоге' : 'Одна фраза, до 80 знаков. Профессию не пишите — она стоит перед фразой сама', max: 80 })}
       ${avatarField()}
-      ${requestField('text', 'Что ещё поправить', 'Например: писать имя иначе или поменять название студии')}` };
+      ${writeBtn()}` };
     if (key === 'tekst') {
       // текст «ведём мы» правим только мы (Никита 09.11): поле «Коротко о себе»
       // (первый абзац) убрано — оторванный от продолжения абзац правили невпопад,
       // а у WhyNot в нём стоял список и дублировался. Здесь — ссылка и просьба
       const page = `/moskva/podryadchiki/${rev.categorySlug}/${rev.slug}/`;
-      return { title: 'Описание', lead: `Текст уже стоит на карточке — <a href="${page}" target="_blank" rel="noopener">посмотреть на странице</a>. Что поменять, напишите нам: поправим сами.`, html: `
-        ${requestField('text', 'Что поправить в тексте', 'Например: во втором абзаце — «работаю с 2012 года»; добавить раздел про выездную регистрацию')}` };
+      return { title: 'Описание', lead: `<a href="${page}" target="_blank" rel="noopener">Текст на странице</a>`, html: writeBtn() };
     }
     // цена «ведём мы» при тарифах в тексте страницы (Никита 09.11): «одна цена»
     // разошлась бы с тарифами на странице — цены меняем мы, по просьбе
@@ -827,7 +855,7 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
     // и состав тарифа — наши (просьбой). «Цена от» и «за что» — для каталога
     if (key === 'prays' && textTariffs > 0) {
       const tp: any[] = data.tariffPrices ?? [];
-      return { title: 'Цена', lead: 'Тарифы — как на вашей странице. Поменяйте цену, остальное в тарифе остаётся нашим', html: `
+      return { title: 'Цена', lead: 'Поменяйте цены тарифов — на странице обновятся после проверки', html: `
         <div class="c-items">
           ${pageTariffs.map((t, i) => field(`${esc(t.name)}${t.unit ? `, ${esc(t.unit)}` : ''}`, `tariffPrices.${i}.price`, tp[i]?.price, { mode: 'numeric', placeholder: String(t.price) })).join('')}
         </div>
@@ -835,7 +863,7 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
           ${field('Цена от, ₽ (в каталоге)', 'priceFrom', data.priceFrom, { mode: 'numeric', placeholder: '40 000' })}
           ${field('За что', 'priceNote', data.priceNote, { grow: 'line', max: 300, placeholder: 'за 8 часов съёмки' })}
         </div>
-        ${requestField('price', 'Что ещё поменять в тарифах', 'Например: добавить тариф «Мини» на 4 часа; в «Про» — ещё 50 кадров')}` };
+        ${writeBtn()}` };
     }
     return null;
   }
@@ -846,7 +874,8 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
     if (key === 'osnovnoe') {
       const opts = VENUE_QUESTIONS.find((q) => q.key === 'type')?.options ?? [];
       return { title: role(), lead: '', html: `
-        <dl class="c-card c-ro">
+        ${/* название и адрес — крупным текстом без плашки (Никита 09.11): это не поле, его не правят */ ''}
+        <dl class="c-ro c-ro--bare">
           <div class="c-ro__row"><dt class="c-ro__label">Название</dt><dd class="c-ro__value">${esc(data.name)}</dd></div>
           ${data.address ? `<div class="c-ro__row"><dt class="c-ro__label">Адрес</dt><dd class="c-ro__value">${esc(data.address)}</dd></div>` : ''}
         </dl>
@@ -858,18 +887,18 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
           ${field('Гостей на банкете, до', 'capacityBanquet', data.capacityBanquet, { mode: 'numeric', placeholder: '120', note: 'По нему пары фильтруют каталог' })}
           ${field('Средний чек от, ₽ на гостя', 'checkFrom', data.checkFrom, { mode: 'numeric', placeholder: '5 000', note: 'Сколько в среднем стоит банкет на одного гостя' })}
         </div>
-        ${requestField('text', 'Поменять название или адрес', 'Например: новый адрес — Москва, Береговой проезд, 5')}` };
+        ${writeBtn()}` };
     }
     if (key === 'usloviya') {
       const rows: any[] = data.rows ?? [];
       const groups = [...new Set(rows.map((r) => r.group))];
       // группа строк — плашкой, как зал в «Тарифах залов» (одна плашка на объект)
-      return { title: 'Цены и условия', lead: `Цены и условия с вашей страницы. Меняйте значения — названия строк останутся как есть. <a href="${page}" target="_blank" rel="noopener">Посмотреть на странице</a>`, html: rows.length ? `
+      return { title: 'Цены и условия', lead: `Поменяйте цены и условия — на <a href="${page}" target="_blank" rel="noopener">странице</a> обновятся после проверки`, html: rows.length ? `
         <div class="c-items">${groups.map((g) => `
           <div class="c-item">
             <p class="c-q__label">${esc(g)}</p>
             ${rows.map((r, i) => (r.group === g ? field(esc(r.label), `rows.${i}.value`, r.value, { grow: 'line', max: 300 }) : '')).join('')}
-          </div>`).join('')}</div>` : '<p class="a-lead">Строк с ценами на странице нет. Что поменять — напишите в «Описании»</p>' };
+          </div>`).join('')}</div>` : writeBtn() };
     }
     if (key === 'zaly') {
       const halls: any[] = data.hallTariffs ?? [];
@@ -885,12 +914,11 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
           </div>`).join('')}</div>` };
     }
     if (key === 'foto') {
-      return { title: 'Фото', lead: `Фото на странице подбирали мы. Что заменить или добавить, напишите — поправим. <a href="${page}" target="_blank" rel="noopener">Посмотреть на странице</a>`, html: `
-        ${requestField('photos', 'Что поменять в фото', 'Например: убрать кадр с ремонтом в зале «Барский»; новые фото — ссылка на Яндекс Диск')}` };
+      // фото площадки «ведём мы» владелец будет убирать сам, как подрядчик (Никита 09.11) — отдельным шагом с хуками
+      return { title: 'Фото', lead: `<a href="${page}" target="_blank" rel="noopener">Фото на странице</a>`, html: writeBtn() };
     }
     if (key === 'tekst') {
-      return { title: 'Описание', lead: `Текст уже стоит на странице — <a href="${page}" target="_blank" rel="noopener">посмотреть</a>. Что поменять, напишите нам: поправим сами.`, html: `
-        ${requestField('text', 'Что поправить в тексте', 'Например: в разделе о кухне — новое меню от шефа')}` };
+      return { title: 'Описание', lead: `<a href="${page}" target="_blank" rel="noopener">Текст на странице</a>`, html: writeBtn() };
     }
     return null;
   }
@@ -1074,9 +1102,9 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
              подсказку-баннер (как подсказки TipKit у Apple). Превью раздела — кнопкой «Как на сайте» на обзоре */''}
         <h1 class="a-h1 c-title">${b.title}${key === 'foto' || key === 'zaly' || (key === 'prays' && priceMode() === 'tariffs') ? ` <button class="c-help" type="button" data-hint-again="${key}" aria-label="Показать подсказку">?</button>` : ''}</h1>
         ${b.lead ? `<p class="a-lead">${b.lead}</p>` : ''}
-        ${locked() ? '<p class="c-reason c-reason--info">Карточка на проверке — менять её сейчас нельзя.</p>' : ''}
       </div>
       <div class="c-sheet-area">
+        ${/* во всю ширину, как плашки обзора (Никита 09.11: узкая плашка в полях заголовка) */ locked() ? `<div class="c-note-wide c-note-wide--info" role="note"><p><span class="c-note-wide__h">Карточка на проверке</span>Пока она на проверке, менять её нельзя</p></div>` : ''}
         <div class="c-form" data-form>${b.html}</div>
       </div>`;
     savedLabel();
@@ -1238,6 +1266,11 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
     </div>`;
   }
   view.addEventListener('click', (e) => {
+    if ((e.target as HTMLElement).closest('[data-write-changes]')) {
+      if (locked()) return;
+      openWriteChanges(() => route());
+      return;
+    }
     if ((e.target as HTMLElement).closest('[data-halls-hint-close]')) {
       try { localStorage.setItem(HALLS_HINT_KEY, '1'); } catch {}
       view.querySelector('[data-halls-hint]')?.remove();
