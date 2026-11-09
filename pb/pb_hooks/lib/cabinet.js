@@ -851,7 +851,7 @@ function moderateRevision(e) {
   // только статус и причина. Иначе вместе с одобрением можно подменить
   // карточку (specialist/venue + baseVersion), владельца, текст или фото.
   if (!e.hasSuperuserAuth()) {
-    denyExtra(e.requestInfo().body, ['status', 'rejectReason']);
+    denyExtra(e.requestInfo().body, ['status', 'rejectReason', 'remarkPhotos']);
     if (to !== from && to !== 'approved' && to !== 'rejected') {
       throw new BadRequestError('Модератор может одобрить правку или вернуть её с причиной.');
     }
@@ -864,6 +864,7 @@ function moderateRevision(e) {
     // не сохранилось ничего, и повторное одобрение не споткнётся о версию.
     // Письмо — уже после, через основной app: транзакционный к этому
     // моменту закрыт, и письмо через него молча не ушло бы.
+    r.set('remarkPhotos', []);
     const app = e.app;
     app.runInTransaction((txApp) => {
       approve(txApp, r);
@@ -893,6 +894,16 @@ function moderateRevision(e) {
     if (from !== 'review') throw new BadRequestError('Вернуть можно только карточку на проверке.');
     const reason = str(r.getString('rejectReason'));
     if (!reason) throw new BadRequestError('Напишите причину в поле rejectReason — без неё подрядчик не поймёт, что исправить.');
+    // кадры, которые надо заменить (необязательно): только из фото этой ревизии
+    const photos = photosOf(r);
+    let marked = [];
+    try { marked = JSON.parse(r.getString('remarkPhotos') || '[]'); } catch (_) {}
+    if (!Array.isArray(marked)) marked = [];
+    marked = marked.map(String).filter((n, i, a) => a.indexOf(n) === i);
+    if (marked.some((n) => photos.indexOf(n) === -1)) throw new BadRequestError('Отмеченного кадра нет среди фото карточки — обновите страницу.');
+    r.set('remarkPhotos', marked);
+    const nums = marked.map((n) => photos.indexOf(n) + 1).sort((a, b) => a - b);
+    const fix = nums.length ? `Заменить: фото ${nums.join(', ')}` : '';
     r.set('reviewedAt', new DateTime());
     e.next();
     const data = jsonOf(r, 'data');
@@ -903,10 +914,10 @@ function moderateRevision(e) {
         title: str(data.name, 120),
         lines: ['Мы посмотрели карточку и вернули её на доработку. Вот что поправить:'],
         reason,
-        after: ['Поправьте в кабинете и отправьте на проверку снова.'],
+        after: [...(fix ? [fix + '.'] : []), 'Поправьте в кабинете и отправьте на проверку снова.'],
       }),
       `Карточку «${str(data.name, 120)}» вернули на доработку.
-Что исправить: ${reason}
+Что исправить: ${reason}${fix ? '\n' + fix : ''}
 Поправьте в кабинете и отправьте на проверку снова.`);
     return;
   }
@@ -1592,7 +1603,7 @@ function myCards(e) {
         categorySlug: kind === 'venue' ? '' : c.getString('categorySlug'),
         status: c.getString('status'),
         url: cardUrl(kind, c.getString('categorySlug'), c.getString('slug')),
-        revision: open ? { id: open.id, status: open.getString('status'), rejectReason: open.getString('rejectReason') } : null,
+        revision: open ? { id: open.id, status: open.getString('status'), rejectReason: open.getString('rejectReason'), remarkPhotos: [].concat(Array.isArray(jsonOf(open, 'remarkPhotos')) ? jsonOf(open, 'remarkPhotos') : []) } : null,
       });
     }
   }

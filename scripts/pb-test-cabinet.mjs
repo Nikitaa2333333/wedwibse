@@ -206,8 +206,16 @@ check('правка уходит на проверку', res.status === 200, res
 res = await call(null, 'GET', `/api/collections/specialists/records/${cardId}`);
 check('пока правка на проверке, карточка на сайте', res.json?.status === 'published' && res.json?.tagline === '', res.text);
 
-res = await call(M.token, 'PATCH', `/api/collections/revisions/records/${edit.id}`, { status: 'rejected', rejectReason: 'Уберите плёнку' });
-check('возврат с причиной', res.status === 200 && res.json.status === 'rejected', res.text);
+// замечания к кадрам (remarkPhotos): только из фото этой правки
+res = await call(M.token, 'PATCH', `/api/collections/revisions/records/${edit.id}`, { status: 'rejected', rejectReason: 'Уберите плёнку', remarkPhotos: ['chuzhoe.jpg'] });
+check('отметить чужой кадр нельзя', refused(res) && says(res, 'кадр'), res.text);
+const marked = [edit.photos[1], edit.photos[4]];
+res = await call(M.token, 'PATCH', `/api/collections/revisions/records/${edit.id}`, { status: 'rejected', rejectReason: 'Уберите плёнку', remarkPhotos: marked });
+check('возврат с причиной и отмеченными кадрами', res.status === 200 && res.json.status === 'rejected' && JSON.stringify(res.json.remarkPhotos) === JSON.stringify(marked), res.text);
+res = await call(A.token, 'GET', '/api/wed/my-cards');
+check('подрядчик видит отмеченные кадры', JSON.stringify(res.json?.items?.[0]?.revision?.remarkPhotos) === JSON.stringify(marked), res.text);
+res = await call(A.token, 'PATCH', `/api/collections/revisions/records/${edit.id}`, { remarkPhotos: [] });
+check('подрядчик не снимает замечания сам', refused(res), res.text);
 
 res = await call(A.token, 'PATCH', `/api/collections/revisions/records/${edit.id}`, { data: { ...edit.data, tagline: 'Репортаж' }, status: 'review' });
 check('исправленная правка уходит снова', res.status === 200, res.text);
@@ -223,6 +231,8 @@ res = await call(M.token, 'PATCH', `/api/collections/revisions/records/${edit.id
 check('правка одобрена', res.status === 200, res.text);
 res = await call(null, 'GET', `/api/collections/specialists/records/${cardId}`);
 check('карточка обновилась', res.json?.tagline === 'Репортаж' && res.json?.version === 2 && res.json?.photos?.length === 8, res.text);
+res = await call(SU, 'GET', `/api/collections/revisions/records/${edit.id}`);
+check('после одобрения замечаний к кадрам нет', Array.isArray(res.json?.remarkPhotos) && res.json.remarkPhotos.length === 0, JSON.stringify(res.json?.remarkPhotos));
 
 console.log('\nвидео');
 res = await call(A.token, 'POST', '/api/collections/video_requests/records', { owner: A.id, specialist: cardId, url: 'https://example.com/v.mp4' });
