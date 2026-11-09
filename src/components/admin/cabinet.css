@@ -702,7 +702,8 @@ html:has(.cab), html:has(.cab) body { background: var(--adm-bg); }
 /* «Ваша страница на индивидуальном ведении» (Никита 09.11): чёрная плашка во всю ширину наверху
    карточки «ведём мы» — знак ведения и вход в «Написать об изменениях». Искры мерцают
    (только transform и opacity); без анимации — стоят на месте */
-.c-vip { position: relative; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--s-3); row-gap: 4px; align-items: center; width: 100%; padding: 18px var(--adm-pad); border: 0; border-radius: var(--cab-sheet-radius); background: var(--adm-dark); color: var(--adm-on-dark); font: inherit; text-align: left; }
+/* цвет — как у главной кнопки «Отправить» (--adm-primary), Никита 09.11 */
+.c-vip { position: relative; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--s-3); row-gap: 4px; align-items: center; width: 100%; padding: 18px var(--adm-pad); border: 0; border-radius: var(--cab-sheet-radius); background: var(--adm-primary); color: var(--adm-on-dark); font: inherit; text-align: left; }
 button.c-vip { cursor: pointer; }
 .c-vip__t { position: relative; font-size: 18px; line-height: 24px; font-weight: 600; }
 .c-vip__sub { position: relative; grid-row: 2; font-size: var(--adm-fs-sm); line-height: 18px; color: var(--adm-on-dark); }
@@ -710,11 +711,12 @@ button.c-vip { cursor: pointer; }
 .c-vip__sparks { position: absolute; inset: 0; pointer-events: none; }
 .c-vip__sparks i { position: absolute; display: block; color: var(--adm-on-dark); opacity: 0.85; animation: c-vip-twinkle 2.8s var(--ease-inout, ease-in-out) infinite; }
 .c-vip__sparks svg { display: block; width: 100%; height: 100%; }
-.c-vip__s1 { width: 12px; height: 12px; right: 52px; top: 10px; }
-.c-vip__s2 { width: 8px; height: 8px; right: 30px; top: 30px; animation-delay: 0.6s !important; }
-.c-vip__s3 { width: 6px; height: 6px; right: 70px; bottom: 12px; animation-delay: 1.2s !important; }
-.c-vip__s4 { width: 9px; height: 9px; right: 110px; top: 16px; animation-delay: 1.8s !important; }
-.c-vip__s5 { width: 5px; height: 5px; right: 18px; bottom: 16px; animation-delay: 2.2s !important; }
+/* искры крупнее (Никита 09.11) */
+.c-vip__s1 { width: 22px; height: 22px; right: 56px; top: 8px; }
+.c-vip__s2 { width: 14px; height: 14px; right: 26px; top: 34px; animation-delay: 0.6s !important; }
+.c-vip__s3 { width: 12px; height: 12px; right: 86px; bottom: 10px; animation-delay: 1.2s !important; }
+.c-vip__s4 { width: 16px; height: 16px; right: 130px; top: 12px; animation-delay: 1.8s !important; }
+.c-vip__s5 { width: 10px; height: 10px; right: 14px; bottom: 14px; animation-delay: 2.2s !important; }
 @keyframes c-vip-twinkle { 0%, 100% { transform: scale(0.4) rotate(0deg); opacity: 0; } 40% { transform: scale(1) rotate(20deg); opacity: 0.9; } 70% { transform: scale(0.7) rotate(35deg); opacity: 0.5; } }
 @media (prefers-reduced-motion: reduce) { .c-vip__sparks i { animation: none; opacity: 0.6; transform: none; } }
 /* строка-перечень площадки «ведём мы» (09.11): метки капсулами с крестиком, «Добавить» в том же ряду */

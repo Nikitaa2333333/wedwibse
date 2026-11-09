@@ -83,6 +83,9 @@ export function mountGeoPick(o: Opts) {
     okBtn.hidden = k !== 'suggest' || !!o.readOnly;
     // карту показываем, когда есть что на ней показать
     canvas.hidden = k === 'empty' || k === 'notFound';
+    // адреса ещё нет — блока «Точка на карте» не видно вовсе (Никита 09.11): он появляется,
+    // когда адрес выбран из подсказок
+    o.root.hidden = k === 'empty';
     if (!canvas.hidden) map?.container.fitToViewport();
   };
 

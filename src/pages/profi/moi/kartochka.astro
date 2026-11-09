@@ -155,7 +155,6 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
       ...(halls.length ? [{ key: 'zaly', title: 'Тарифы залов', icon: 'catalog', done: true, sub: `${halls.length} ${plural(halls.length, 'зал', 'зала', 'залов')}` }] : []),
       // фото владелец убирает сам, текст — через «Написать об изменениях» (09.11)
       { key: 'foto', title: 'Фото', icon: 'photo', done: true, optional: true, sub: (data.hiddenPhotos ?? []).length ? `убрано ${(data.hiddenPhotos ?? []).length}` : 'как на странице' },
-      { key: 'tekst', title: 'Описание', icon: 'text', done: true, optional: true, sub: requestsText() ? 'есть сообщение' : 'как на странице' },
       { key: 'kontakty', title: 'Контакты', icon: 'phone', done: !!String(c.phone ?? '').trim(), sub: [c.phone && 'телефон', c.telegram && 'Telegram', c.site && 'сайт', c.email && 'почта'].filter(Boolean).join(', ') || 'пусто, нужен телефон' },
     ];
   };
@@ -184,7 +183,7 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
     return `<${open ? 'button type="button" data-write-changes' : 'div'} class="c-vip">
       <span class="c-vip__sparks" aria-hidden="true">${[1, 2, 3, 4, 5].map((i) => `<i class="c-vip__s${i}">${SPARK}</i>`).join('')}</span>
       <span class="c-vip__t">Ваша страница на индивидуальном ведении</span>
-      ${open ? `<span class="c-vip__sub">${t ? `Ваше сообщение: ${esc(t.length > 80 ? `${t.slice(0, 80)}…` : t)}` : 'Написать об изменениях — текст, фото, что угодно'}</span>${icon('next')}` : ''}
+      ${/* без «Ваше сообщение: …» (Никита 09.11: непонятно) — написанное видно в самом окне */ open ? `<span class="c-vip__sub">Напишите нам, что важно обновить${t ? ' — сообщение уже есть' : ''}</span>${icon('next')}` : ''}
     </${open ? 'button' : 'div'}>`;
   };
   function openWriteChanges(onDone: () => void) {
@@ -352,7 +351,8 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
   function renderOverview() {
     const st = cardState(rev.status, !isNew());
     const secs = SECTIONS[kind];
-    const states: any[] = ourVenue() ? ourVenueTiles() : secs.map((x) => ({ ...x, ...sectionState(x.key, rev, questions) }));
+    // «ведём мы»: плитки «Описание» нет (Никита 09.11) — текст меняют через чёрную плашку наверху
+    const states: any[] = ourVenue() ? ourVenueTiles() : secs.filter((x) => !(managed() && x.key === 'tekst')).map((x) => ({ ...x, ...sectionState(x.key, rev, questions) }));
     const must = states.filter((x) => !x.optional);
     // Никита, 02.11: пока обязательное не заполнено — кнопка серая, на замке;
     // нажатие — дрожит, пустые плитки краснеют, внизу подсказка, чего нет
