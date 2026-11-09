@@ -13,6 +13,7 @@ import { Image } from 'astro:assets';
 import type { VenueHall } from '../data/venues';
 import { resolveImage, IMG_WIDTHS } from '../lib/images';
 import { withCount, type PluralForms } from '../lib/plural';
+import { glue } from '../lib/typo';
 
 interface Props {
   title: string;
@@ -64,7 +65,7 @@ const facts = (hall: VenueHall) => {
                 {hall.kicker}
               </span>
               <span class="htile__name">{hall.name}</span>
-              {facts(hall) && <span class="htile__facts t-small">{facts(hall)}</span>}
+              {facts(hall) && <span class="htile__facts t-small">{glue(facts(hall))}</span>}
             </span>
           </a>
         </li>

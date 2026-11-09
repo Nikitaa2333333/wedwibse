@@ -14,6 +14,8 @@ import { SPECIALIST_CATEGORIES, FILTERS_BY_CATEGORY } from '../../../data/specia
 import { STRUCTURES, DEFAULT_STRUCTURE, VENUE_STRUCTURE } from '../../../data/profi-structures';
 
 const roles = Object.fromEntries(SPECIALIST_CATEGORIES.map((c) => [c.slug, c.role]));
+// бирка под именем в предпросмотре — тем же правилом, что на сайте (lib/kicker.ts)
+const kickerRoles = Object.fromEntries(SPECIALIST_CATEGORIES.map((c) => [c.slug, { role: c.role, roleF: c.roleF ?? c.role, label: c.label }]));
 // вопросы подрядчика — фильтры его категории (specialist-filters.ts):
 // по этим ответам пары находят карточку в каталоге
 const questions = Object.fromEntries(
@@ -32,12 +34,13 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
   <div class="cab-col" data-anketa>
     <div data-view aria-busy="true" aria-label="Загружаем"><div class="sk-head"><span class="sk sk--line sk--short"></span><span class="sk sk--title"></span><span class="sk sk--bar"></span></div><div class="sk-tiles"><div class="sk-tile"><span class="sk sk--ic"></span><span class="sk sk--line" style="width:55%;height:18px;margin-top:12px"></span><span class="sk sk--line"></span></div><div class="sk-tile"><span class="sk sk--ic"></span><span class="sk sk--line" style="width:55%;height:18px;margin-top:12px"></span><span class="sk sk--line"></span></div><div class="sk-tile"><span class="sk sk--ic"></span><span class="sk sk--line" style="width:55%;height:18px;margin-top:12px"></span><span class="sk sk--line"></span></div><div class="sk-tile"><span class="sk sk--ic"></span><span class="sk sk--line" style="width:55%;height:18px;margin-top:12px"></span><span class="sk sk--line"></span></div><div class="sk-tile"><span class="sk sk--ic"></span><span class="sk sk--line" style="width:55%;height:18px;margin-top:12px"></span><span class="sk sk--line"></span></div><div class="sk-tile"><span class="sk sk--ic"></span><span class="sk sk--line" style="width:55%;height:18px;margin-top:12px"></span><span class="sk sk--line"></span></div></div></div>
   </div>
-  <script type="application/json" id="anketa-config" set:html={JSON.stringify({ roles, questions, structures, ydIcon: ydIcon.src, mapsKey })} />
+  <script type="application/json" id="anketa-config" set:html={JSON.stringify({ roles, kickerRoles, questions, structures, ydIcon: ydIcon.src, mapsKey })} />
 </CabinetShell>
 
 <script>
   import { api, apiUpload, esc, fileToken, fileUrl, requireSession, errText } from '../../../lib/cabinet-api';
   import { ADMIN_ICONS } from '../../../lib/admin-icons';
+  import { joinKicker } from '../../../lib/kicker';
   import { openDialog, toast, X_ICON, later as undoable, progress, alertBox } from '../../../lib/cab-ui';
   import { mountNotes, blocksHtml } from '../../../lib/notes-editor';
   import { sectionsToBlocks, blocksToSections, plural } from '../../../lib/notes-model';
@@ -128,6 +131,17 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
   const requestField = (key: 'text', label: string, placeholder: string) =>
     field(label, `requests.${key}`, data.requests?.[key], { grow: 'area', placeholder, note: 'Сохранится само. Уйдёт нам вместе с остальными изменениями — кнопкой «Отправить изменения на проверку» на странице карточки' });
   const role = () => (kind === 'venue' ? 'Площадка' : cfg.roles[rev.categorySlug] ?? rev.categorySlug);
+  /** строка под именем так, как её покажет сайт: «Профессия · строка» без повтора профессии */
+  const kickerLine = (): string => {
+    const t = String(data.tagline ?? '').trim();
+    if (kind === 'venue') return t;
+    const k = cfg.kickerRoles?.[rev.categorySlug];
+    if (!k) return t;
+    const g = data.filters?.gender;
+    const female = (Array.isArray(g) ? g[0] : g) === 'ж';
+    const pair = (Array.isArray(g) ? g[0] : g) === 'pair';
+    return joinKicker(pair ? k.label : female ? k.roleF : k.role, t, [k.role, k.roleF, k.label]);
+  };
   const section = () => q.get('s') as SectionKey | null;
   const url = (sec?: string) => `/profi/moi/kartochka/?id=${rev.id}${sec ? `&s=${sec}` : ''}`;
   const time = () => new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
@@ -439,7 +453,7 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
     const price = priceLine();
     const head = `<div class="c-pv-head">
         <h2>${esc(data.name || 'Имя Фамилия')}</h2>
-        ${data.tagline ? `<p class="c-pv-head__tag">${esc(data.tagline)}</p>` : ''}
+        ${kickerLine() ? `<p class="c-pv-head__tag">${esc(kickerLine())}</p>` : ''}
         <p class="c-pv-head__price">${price.label}</p>
         ${price.note ? `<p class="c-pv-head__note">${esc(price.note)}</p>` : ''}
       </div>`;
@@ -463,7 +477,7 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
     return `<div class="c-pv c-pv-card">
         <div class="c-pv-card__img">${cover}</div>
         <p class="c-pv-card__name">${esc(data.name || 'Имя Фамилия')}</p>
-        ${data.tagline ? `<p class="c-pv-card__tag">${esc(data.tagline)}</p>` : ''}
+        ${kickerLine() ? `<p class="c-pv-card__tag">${esc(kickerLine())}</p>` : ''}
         <p class="c-pv-card__price">${price.label}${price.note ? ` · ${esc(price.note)}` : ''}</p>
       </div>`;
   }
@@ -761,7 +775,7 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
       <div class="c-card">
         <p class="a-field__label">Имя</p><p>${esc(data.name)}</p>
       </div>
-      ${field('Строка под именем', 'tagline', data.tagline, { grow: 'line', placeholder: 'Репортаж без постановки, плёнка по желанию', note: 'Одна фраза, до 80 знаков — её видно в каталоге', max: 80 })}
+      ${field('Строка под именем', 'tagline', data.tagline, { grow: 'line', placeholder: 'Репортаж без постановки, плёнка по желанию', note: kind === 'venue' ? 'Одна фраза, до 80 знаков — её видно в каталоге' : 'Одна фраза, до 80 знаков. Профессию не пишите — она стоит перед фразой сама', max: 80 })}
       ${avatarField()}
       ${requestField('text', 'Что ещё поправить', 'Например: имя — «Михаил Галкин, ведущий»')}` };
     if (key === 'tekst') {
@@ -805,7 +819,7 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
                   ? field('Название студии или команды', 'firstName', data.firstName, { placeholder: 'Студия «Свет»' })
                   : field('Имя', 'firstName', data.firstName, { placeholder: 'Елена' }) + field('Фамилия', 'lastName', data.lastName, { placeholder: 'Каморина' })}
               </div>
-              ${field('Строка под именем', 'tagline', data.tagline, { grow: 'line', placeholder: 'Репортаж без постановки, плёнка по желанию', note: 'Одна фраза, до 80 знаков', max: 80 })}
+              ${field('Строка под именем', 'tagline', data.tagline, { grow: 'line', placeholder: 'Репортаж без постановки, плёнка по желанию', note: 'Одна фраза, до 80 знаков. Профессию не пишите — она стоит перед фразой сама', max: 80 })}
               <div class="a-field">
                 <span class="a-field__label">Портрет</span>
                 <label class="c-ava">
