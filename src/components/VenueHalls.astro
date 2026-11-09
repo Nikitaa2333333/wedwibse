@@ -61,6 +61,8 @@ const { halls } = Astro.props;
               <h2 class="hall__title">{hall.name}</h2>
             </header>
 
+            {/* Необязательные части зала (тариф, «входит», текст) — через ?? []: зал без
+                них ронял всю страницу площадки 500-й (Гребнево, «Острова», 09.11) */}
             {/* Три числа, по которым зал сравнивают с соседями. Зал из анкеты
                 кабинета (08.11) приходит без части полей — пустое не рисуем,
                 нулей и пустых таблиц на странице нет */}
@@ -85,7 +87,7 @@ const { halls } = Astro.props;
               )}
             </dl>
 
-            {hall.tariff.length > 0 && (
+            {(hall.tariff ?? []).length > 0 && (
               <table class="tariff">
                 <caption class="tariff__caption t-caption">{hall.tariffNote ?? 'Аренда зала 10:00–23:00 и минимальный заказ по меню'}</caption>
                 <thead>
@@ -109,13 +111,13 @@ const { halls } = Astro.props;
 
             <div class="hall__text">
               {hall.price && <p class="hall__included"><span class="hall__included-label">Аренда или депозит: </span>от {hall.price}</p>}
-              {hall.included.length > 0 && (
+              {(hall.included ?? []).length > 0 && (
                 <p class="hall__included">
                 <span class="hall__included-label">В аренду входит: </span>
-                {hall.included.join(', ')}
+                {(hall.included ?? []).join(', ')}
                 </p>
               )}
-              {hall.body.map((p) => <p class="hall__p">{p}</p>)}
+              {(hall.body ?? []).map((p) => <p class="hall__p">{p}</p>)}
             </div>
 
             {halls.length > 1 && <a class="hall__up t-small" href="#zaly">Все залы ↑</a>}
