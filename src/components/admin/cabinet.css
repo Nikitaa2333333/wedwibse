@@ -672,6 +672,19 @@ html:has(.cab), html:has(.cab) body { background: var(--adm-bg); }
 .c-thint__card--3 { top: 38px; animation-delay: 0.7s; }
 .c-thint__card--2 i { width: 50px; }
 .c-thint__card--3 i { width: 30px; }
+/* подсказка к залам (Никита 09.11): три мини-секции зала выезжают по очереди — кадр, название, цифра,
+   как зал встанет на странице; та же анимация, что у тарифов */
+.c-hhint { position: relative; width: 98px; height: 66px; }
+.c-hhint__row { position: absolute; left: 0; width: 98px; height: 20px; display: flex; align-items: center; gap: 6px; padding: 0 6px 0 3px; border-radius: 5px; background: var(--adm-bg); opacity: 0; animation: c-thint-in 3.6s var(--ease-out) infinite; }
+.c-hhint__row s { display: block; width: 18px; height: 14px; flex: none; border-radius: 3px; background: var(--adm-line-strong); }
+.c-hhint__row i { display: block; height: 4px; width: 34px; border-radius: 2px; background: var(--adm-text); }
+.c-hhint__row b { display: block; height: 4px; width: 14px; margin-left: auto; border-radius: 2px; background: var(--adm-line-strong); }
+.c-hhint__row--1 { top: 0; }
+.c-hhint__row--2 { top: 23px; animation-delay: 0.35s; }
+.c-hhint__row--3 { top: 46px; animation-delay: 0.7s; }
+.c-hhint__row--2 i { width: 26px; }
+.c-hhint__row--3 i { width: 40px; }
+@media (prefers-reduced-motion: reduce) { .c-hhint__row { animation: none; opacity: 1; } }
 @keyframes c-thint-in { 0% { opacity: 0; transform: translateX(-12px); } 18%, 80% { opacity: 1; transform: none; } 100% { opacity: 0; transform: none; } }
 
 /* подсказка в плитке «что сделать» — НЕ как данные (Никита 05.11: ошибка

@@ -1224,7 +1224,12 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
   const HALLS_HINT_KEY = 'wed-cab-hint-halls';
   function hallsHint(): string {
     try { if (localStorage.getItem(HALLS_HINT_KEY)) return ''; } catch {}
-    return `<div class="c-hint c-hint--text" data-halls-hint>
+    return `<div class="c-hint" data-halls-hint>
+      <span class="c-hhint" aria-hidden="true">
+        <span class="c-hhint__row c-hhint__row--1"><s></s><i></i><b></b></span>
+        <span class="c-hhint__row c-hhint__row--2"><s></s><i></i><b></b></span>
+        <span class="c-hhint__row c-hhint__row--3"><s></s><i></i><b></b></span>
+      </span>
       <span class="c-hint__text"><b>Что считать залом</b><span>Любое место, где проходит банкет или церемония: отдельный зал, веранда, шатёр, терраса, площадка у воды. У каждого — свои гости, площадь, цена и кадр</span></span>
       <button class="c-hint__close" type="button" aria-label="Понятно" data-halls-hint-close>${X_ICON}</button>
     </div>`;
