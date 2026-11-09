@@ -118,7 +118,10 @@ jobs:
           # на самом сервере, по сети — только изменившиеся файлы.
           for attempt in 1 2 3; do
             echo "::group::попытка $attempt"
-            if timeout 8m rsync -az --checksum --delete --timeout=60 --stats --exclude '.write-test' --exclude 'registry/' \
+            # --filter 'P _astro/***' (09.11): старые стили и скрипты прошлой сборки не стираются сразу —
+            # служба каталога до перезапуска (шаг ниже) и открытые вкладки ссылаются на них, и
+            # страница грузилась без стилей. Отжившие чистит шаг «Prune old assets» в конце.
+            if timeout 8m rsync -az --checksum --delete --filter 'P _astro/***' --timeout=60 --stats --exclude '.write-test' --exclude 'registry/' \
               -e "ssh -i ~/.ssh/id_ed25519 -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=10 -o ServerAliveCountMax=3" \
               dist/client/ "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_PATH }}/"; then
               echo "::endgroup::"; exit 0
@@ -153,6 +156,18 @@ jobs:
             fi
             sudo /usr/bin/systemctl restart wedsecrets-ssr; sleep 3
             curl -s -o /dev/null -w "превью отвечает: %{http_code}\n" http://127.0.0.1:4321/profi/prevyu/'
+
+      # ОТЖИВШИЕ ФАЙЛЫ СБОРКИ (09.11.2026). Заливка выше не стирает старые /_astro/*
+      # (filter P): служба каталога до перезапуска и открытые вкладки ещё ссылаются на
+      # них — без этого страница грузилась без стилей. rsync -a ставит текущим файлам время
+      # из сборки, поэтому всё, что не обновлялось больше двух суток, — от прошлых сборок.
+      - name: Prune old assets
+        continue-on-error: true
+        timeout-minutes: 3
+        run: |
+          ssh -i ~/.ssh/id_ed25519 -o BatchMode=yes -o ConnectTimeout=20 \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            "find '${{ secrets.DEPLOY_PATH }}/_astro' -type f -mtime +2 -print -delete | wc -l | xargs echo 'удалено старых файлов:'"
 
       # ОБРАБОТЧИК НАРЕЗКИ ФОТО (сервис фото, 07.11.2026, docs/PHOTO-SERVICE.md).
       # Прогрева /_image больше нет: новые кадры сборки дорежет сам обработчик
