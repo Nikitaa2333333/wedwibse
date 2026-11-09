@@ -49,7 +49,7 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
   import { PHONE_COUNTRIES, DEFAULT_PHONE_COUNTRY, findCountry, flagSrc, nationalDigits, isComplete, fullE164, attachPhoneField } from '../../../lib/phone';
   import {
     SECTIONS, VENUE_QUESTIONS, VENUE_TERMS, MAX_PHOTOS, MAX_VIDEOS, MIN_PHOTOS, MIN_TEXT,
-    sectionState, sectionTodo, priceUnits, MAX_TARIFFS, cardState, priceFrom, rub, num, textLength, shrinkPhoto, NBSP,
+    sectionState, sectionTodo, priceUnits, MAX_TARIFFS, HALL_NOTE_MAX, cardState, priceFrom, rub, num, textLength, shrinkPhoto, NBSP,
     type Kind, type SectionKey, type Question,
   } from '../../../lib/cabinet-form';
 
@@ -720,7 +720,13 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
         <span class="a-field__label">Фото зала</span>
         ${names.length ? `<div class="c-photos c-photos--mini">${names.slice(0, 5).map((n) => `<span class="c-photo"><img src="${fileUrl(rev, n, { thumb: '200x0', token })}" alt="" loading="lazy" /></span>`).join('')}</div>` : ''}
         ${locked() ? '' : (rev.photos ?? []).length
-          ? `<button class="c-link" type="button" data-hall-photos="${i}">${names.length ? `Изменить — выбрано ${names.length}` : 'Выбрать из загруженных'}</button>`
+          ? names.length
+            ? `<button class="c-link" type="button" data-hall-photos="${i}">Изменить — выбрано ${names.length}</button>`
+            // ничего не выбрано — мелкий ряд загруженных кадров, чтобы было понятно, из чего выбирать (Никита 09.11)
+            : `<button class="c-hall-pick" type="button" data-hall-photos="${i}">
+                <span class="c-hall-pick__row">${(rev.photos ?? []).slice(0, 6).map((n: string) => `<img src="${fileUrl(rev, n, { thumb: '200x0', token })}" alt="" loading="lazy" />`).join('')}</span>
+                <span class="c-link">Выбрать из загруженных</span>
+              </button>`
           : '<span class="a-field__note">Сначала загрузите фото в разделе «Фото» — здесь выберете кадры этого зала</span>'}
       </div>`;
   };
@@ -902,7 +908,8 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
                   <button type="button" class="c-chipbtn" data-geo-ok hidden>Точка верная</button>
                 </div>
               </div>
-              ${field('Ссылка на вас в Яндекс Картах', 'contacts.maps', data.contacts?.maps, { type: 'url', placeholder: 'https://yandex.ru/maps/org/…', note: 'По желанию. Откройте площадку в Яндекс Картах, нажмите «Поделиться» и скопируйте ссылку — по ней покажем рейтинг' })}
+              ${/* «Ссылка на вас в Яндекс Картах» (contacts.maps) убрана 09.11 (Никита): рейтинг пока не достаём.
+                   Уже присланные ссылки в ревизиях остаются; вернуть поле — эта строка из истории git */ ''}
               <div class="c-grid2">
                 ${field('Аренда от, ₽', 'rentFrom', data.rentFrom, { mode: 'numeric', placeholder: '150 000', note: 'По желанию. Самая низкая аренда за день; аренды нет — оставьте пустым' })}
                 ${field('Средний чек от, ₽ на гостя', 'checkFrom', data.checkFrom, { mode: 'numeric', placeholder: '5 000', note: 'По желанию. Сколько в среднем стоит банкет на одного гостя: по нему пары ищут площадку' })}
@@ -1007,7 +1014,7 @@ const mapsKey = import.meta.env.YANDEX_MAPS_API_KEY ?? '';
                 ${field('Площадь, м²', `halls.${i}.area`, h.area, { mode: 'numeric', placeholder: '300' })}
                 ${field('Аренда или депозит от, ₽', `halls.${i}.priceFrom`, h.priceFrom, { mode: 'numeric', placeholder: '150 000' })}
               </div>
-              ${field('Коротко о зале', `halls.${i}.note`, h.note, { area: true, placeholder: 'Панорамные окна, выход на веранду' })}
+              ${field('Коротко о зале', `halls.${i}.note`, h.note, { area: true, max: HALL_NOTE_MAX, placeholder: 'Панорамные окна, выход на веранду', note: `До ${HALL_NOTE_MAX} знаков — пара–тройка фраз` })}
               ${hallPhotos(h, i)}
               ${tools('halls', i, hs.length)}
             </div>`).join('')}</div>

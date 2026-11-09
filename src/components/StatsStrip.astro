@@ -17,7 +17,7 @@ const { items, inline = false } = Astro.props;
   <div class="stats__grid stats__grid--inline">
     {items.map((item) => (
       <div class="stat">
-        <span class:list={['stat__value t-num', item.value.length > 4 && 'stat__value--long']}>{item.value}</span>
+        <span class:list={['stat__value t-num', item.value.length > 4 && 'stat__value--long']} style={`--len:${Math.max(6, item.value.length)}`}>{item.value}</span>
         <span class="stat__label t-small">{item.label}</span>
       </div>
     ))}
@@ -28,7 +28,7 @@ const { items, inline = false } = Astro.props;
       <div class="stats__grid">
         {items.map((item) => (
           <div class="stat">
-            <span class:list={['stat__value t-num', item.value.length > 4 && 'stat__value--long']}>{item.value}</span>
+            <span class:list={['stat__value t-num', item.value.length > 4 && 'stat__value--long']} style={`--len:${Math.max(6, item.value.length)}`}>{item.value}</span>
             <span class="stat__label t-small">{item.label}</span>
           </div>
         ))}
@@ -64,9 +64,11 @@ const { items, inline = false } = Astro.props;
      а ужимаем кегль под ширину колонки; короткие числа не трогаем. */
   .stat { container-type: inline-size; }
 
+  /* кегль от числа знаков (--len, не меньше 6): 24cqi держал «2 000+», а «150 000 ₽» из кабинета
+     вылезал за край экрана (Никита 09.11). При 6 знаках — те же 24cqi, что раньше */
   .stat__value--long {
     white-space: nowrap;
-    font-size: min(clamp(46px, 8vw, 92px), 24cqi);
+    font-size: min(clamp(46px, 8vw, 92px), calc(145cqi / var(--len, 6)));
   }
 
   .stat__label { font-weight: var(--w-medium); line-height: var(--lh-caption); }

@@ -264,6 +264,11 @@ select.a-field__input { appearance: none; background-image: var(--adm-chevron-do
 /* фото зала под полями зала (08.11): мелкие, это напоминание, а не галерея */
 .c-photos--mini { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-bottom: 8px; }
 @media (min-width: 640px) { .c-photos--mini { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+/* фото зала, ничего не выбрано (09.11): мелкий ряд загруженных кадров и ссылка — всё по левому краю */
+.a-field > button.c-link { justify-self: start; text-align: left; padding: 0; border: 0; background: none; font: inherit; font-weight: 500; min-height: 44px; cursor: pointer; }
+.c-hall-pick { display: grid; justify-items: start; gap: 8px; padding: 0; border: 0; background: none; font: inherit; text-align: left; cursor: pointer; }
+.c-hall-pick__row { display: flex; gap: 4px; }
+.c-hall-pick__row img { width: 40px; height: 40px; object-fit: cover; border-radius: 6px; background: var(--adm-bg); }
 .c-photo { position: relative; aspect-ratio: 4 / 5; border-radius: 10px; overflow: hidden; background: var(--adm-bg); -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 /* перетаскивание (bindPhotoDrag): плитка над остальными, остальные стоят */
 .c-photo.is-drag { z-index: 3; box-shadow: var(--adm-shadow-lift); }
@@ -377,10 +382,12 @@ select.a-field__input { appearance: none; background-image: var(--adm-chevron-do
 .c-geo__map[hidden] { display: none; }
 /* подсказки адреса под полем — всплывающий список (тень только у всплывающего) */
 .a-field:has(> .c-suggest) { position: relative; }
-.c-suggest { position: absolute; left: 0; right: 0; top: 100%; z-index: 20; margin-top: 4px; display: grid; padding: 6px; background: var(--adm-card); border-radius: var(--adm-radius-md); box-shadow: var(--adm-shadow-tip); }
+/* подсказки адреса: серая подложка и тень окна — отделяются от белой плашки поля (Никита 09.11: «всё сливается») */
+.c-suggest { position: absolute; left: 0; right: 0; top: 100%; z-index: 20; margin-top: 8px; display: grid; gap: 2px; padding: 6px; background: var(--adm-bg); border-radius: var(--adm-radius-md); box-shadow: var(--adm-shadow-lg); }
 .c-suggest[hidden] { display: none; }
 .c-suggest__item { min-height: 44px; padding: 10px 12px; border: 0; border-radius: var(--adm-radius-md); background: none; color: var(--adm-text); font: inherit; font-size: 16px; line-height: 1.3; text-align: left; cursor: pointer; }
-@media (hover: hover) { .c-suggest__item:hover { background: var(--adm-bg); } }
+.c-suggest__item { background: var(--adm-card); }
+@media (hover: hover) { .c-suggest__item:hover { background: var(--adm-card); box-shadow: var(--adm-shadow-xs); } }
 @media (min-width: 1024px) { .c-geo__map { height: 300px; } }
 .c-ava { display: flex; align-items: center; gap: var(--s-3); cursor: pointer; justify-self: start; }
 .c-ava__img { width: 112px; height: 112px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: var(--adm-bg); color: var(--adm-text-2); flex: none; }

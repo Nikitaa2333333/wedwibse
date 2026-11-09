@@ -19,6 +19,9 @@ interface Props {
 }
 
 const { halls } = Astro.props;
+// разряды неразрывным пробелом: «1 000», а не «1000» (айфон сырое число из 7 цифр подчёркивал как телефон, 09.11)
+const num = (n: number) => n.toLocaleString('ru-RU').replace(/\s/g, ' ');
+const len = (n: number) => `--len:${Math.max(4, num(n).length)}`;
 ---
 
 <div class="halls">
@@ -70,19 +73,19 @@ const { halls } = Astro.props;
             <dl class="hall__stats">
               {hall.areaM2 > 0 && (
                 <div class="hall__stat">
-                  <dd class="hall__val">{hall.areaM2}<span class="hall__unit"> м²</span></dd>
+                  <dd class="hall__val" style={len(hall.areaM2)}>{num(hall.areaM2)}<span class="hall__unit"> м²</span></dd>
                   <dt class="hall__lbl t-caption">{hall.areaNote ?? 'площадь зала'}</dt>
                 </div>
               )}
               {hall.banquet > 0 && (
                 <div class="hall__stat">
-                  <dd class="hall__val">{hall.banquet}</dd>
+                  <dd class="hall__val" style={len(hall.banquet)}>{num(hall.banquet)}</dd>
                   <dt class="hall__lbl t-caption">гостей на банкете</dt>
                 </div>
               )}
               {hall.buffet > 0 && (
                 <div class="hall__stat">
-                  <dd class="hall__val">{hall.buffet}</dd>
+                  <dd class="hall__val" style={len(hall.buffet)}>{num(hall.buffet)}</dd>
                   <dt class="hall__lbl t-caption">гостей на фуршете</dt>
                 </div>
               )}
@@ -228,10 +231,13 @@ const { halls } = Astro.props;
     margin: 0;
   }
 
-  .hall__stat { min-width: 0; }
+  /* число не переносится и не лезет в соседнюю колонку: кегль ужимается от числа знаков
+     (--len, не меньше 4), как в StatsStrip (Никита 09.11: «1 000 000 м²» наехало на «120») */
+  .hall__stat { min-width: 0; container-type: inline-size; }
 
   .hall__val {
-    font-size: var(--fs-h2);
+    white-space: nowrap;
+    font-size: min(var(--fs-h2), calc(160cqi / var(--len, 4)));
     font-weight: var(--w-head);
     line-height: 1;
     letter-spacing: var(--ls-display);
@@ -239,7 +245,7 @@ const { halls } = Astro.props;
     margin: 0 0 var(--s-1);
   }
 
-  .hall__unit { font-size: var(--fs-small); }
+  .hall__unit { font-size: var(--fs-small); white-space: normal; }
 
   .hall__lbl { font-weight: var(--w-medium); line-height: var(--lh-caption); }
 

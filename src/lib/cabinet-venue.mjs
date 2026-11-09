@@ -165,7 +165,10 @@ export function venueFromPage(p, { slug, name, photos, fileOf = () => undefined 
     str(terms.until) && { label: 'До скольки', value: str(terms.until) },
     str(terms.parking) && { label: 'Парковка', value: str(terms.parking) },
   ].filter(Boolean);
-  const more = str(terms.more).split(/\n\s*\n/).map((x) => x.replace(/\s+/g, ' ').trim()).filter(Boolean);
+  // «Что ещё важно знать» — последней строкой тех же условий, а не отдельной секцией:
+  // две секции подряд давали двойной отступ — «огромная дыра» (Никита 09.11)
+  const more = str(terms.more).replace(/\s+/g, ' ').trim();
+  if (more) termRows.push({ label: 'Что ещё важно знать', value: more });
 
   /** @type {any[]} */
   const blocks = [];
@@ -178,12 +181,11 @@ export function venueFromPage(p, { slug, name, photos, fileOf = () => undefined 
     blocks.push({
       type: 'terms',
       title: 'Условия',
-      terms: [{ title: 'Коротко', rows: termRows }],
+      terms: [{ title: '', rows: termRows }],
       included: [],
       extras: [],
     });
   }
-  if (more.length) blocks.push({ type: 'story', sections: [{ title: 'Что ещё важно знать', text: more }] });
   blocks.push({ type: 'reels', title: 'Видео' }, { type: 'reviews' });
 
   const hero = photos[0];

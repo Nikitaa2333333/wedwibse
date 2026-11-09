@@ -122,6 +122,25 @@ export function toast(text: string, bad = false, ms = 1600, action?: ToastAction
   el.classList.toggle('c-toast--bad', bad);
   // открыта клавиатура (видимая область заметно ниже окна) — тост к верху видимой области:
   // внизу его закрывали клавиатура и панель смайликов (Никита 07.11, «Смайлики не добавляем»)
+  placeToast(el);
+  // клавиатура закрылась или видимая область сдвинулась, пока тост на экране, — переставляем
+  // (09.11: после вставки текста тост оставался посреди экрана, где был верх области с клавиатурой)
+  const vv = window.visualViewport;
+  if (vv && !el.dataset.vv) {
+    el.dataset.vv = '1';
+    const re = () => { if (el!.classList.contains('is-on')) placeToast(el!); };
+    vv.addEventListener('resize', re);
+    vv.addEventListener('scroll', re);
+    document.addEventListener('focusout', () => setTimeout(re, 50));
+  }
+  el.classList.remove('is-on');
+  void el.offsetWidth; // перезапуск анимации кружка на новом тосте
+  el.classList.add('is-on');
+  if (!bad) toastTimer = window.setTimeout(() => { clearInterval(tickTimer); el!.classList.remove('is-on'); }, ms);
+}
+
+/** Где стоит тост: при открытой клавиатуре — у верха видимой области, иначе внизу (по стилям). */
+function placeToast(el: HTMLElement) {
   const vv = window.visualViewport;
   // второй признак — идёт ввод в поле (08.11): в части браузеров айфона окно
   // сжимается вместе с клавиатурой, и по размерам её не видно — тост вставал над ней
@@ -130,10 +149,6 @@ export function toast(text: string, bad = false, ms = 1600, action?: ToastAction
   const kb = (!!vv && vv.height < window.innerHeight - 120) || typing;
   el.classList.toggle('c-toast--kb', kb);
   el.style.top = kb ? `calc(${Math.round(vv?.offsetTop ?? 0)}px + env(safe-area-inset-top) + 12px)` : '';
-  el.classList.remove('is-on');
-  void el.offsetWidth; // перезапуск анимации кружка на новом тосте
-  el.classList.add('is-on');
-  if (!bad) toastTimer = window.setTimeout(() => { clearInterval(tickTimer); el!.classList.remove('is-on'); }, ms);
 }
 
 /** Убрать уведомление сразу. */

@@ -1008,6 +1008,14 @@ mark {
    не нужен. */
 body.has-sticky-cta { padding-bottom: var(--float-cta-space); }
 
+/* Страница площадки кончается тёмным финалом (заявка, «Похожих» нет — площадка из
+   кабинета, превью): запас под док и капсулу уходит внутрь тёмной секции, а не
+   бежевой полосой под ней (Никита 09.11: «коричневым финалим») */
+.venue:has(> .theme-dark:last-child) { padding-bottom: 0; }
+.venue > .theme-dark:last-child { padding-bottom: calc(var(--section-gap) + var(--dock-space)); }
+body.has-sticky-cta .venue > .theme-dark:last-child { padding-bottom: calc(var(--section-gap) + var(--dock-space) + var(--float-cta-space)); }
+body.has-sticky-cta:has(.venue > .theme-dark:last-child) { padding-bottom: 0; }
+
 /* Выбранный пункт в наборе пилюль (переключатель разделов, локация) —
    та же инверсия, что у ховера: выбор читается без второго приёма. */
 .pill.is-active { background: var(--fg); color: var(--bg); }

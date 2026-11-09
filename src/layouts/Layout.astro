@@ -42,6 +42,8 @@ const indexable = import.meta.env.SITE_INDEXABLE === 'true' && !noindex;
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- iOS не превращает числа (площадь, цены) в ссылки-телефоны; телефоны у нас — явные tel: -->
+    <meta name="format-detection" content="telephone=no" />
     {/* Яндекс.Метрика 113797542 — код из панели как есть, ближе к началу
         <head>. Только в боевой сборке: заходы с дев-сервера в статистику
         не пишем. ClientRouter в Layout нет — каждый переход это новая

@@ -28,7 +28,8 @@ const { title, terms, included, extras } = Astro.props;
       {
         terms.map((group) => (
           <div class="group">
-            <h3 class="group__name">{group.title}</h3>
+            {/* группа без названия (площадка из кабинета, 09.11) — без подзаголовка: «Условия» → «Коротко» читалось двумя заголовками подряд */}
+            {group.title && <h3 class="group__name">{group.title}</h3>}
             <dl class={rowsClass(group.rows)}>
               {group.rows.map((row) => (
                 <div class="rows__row">

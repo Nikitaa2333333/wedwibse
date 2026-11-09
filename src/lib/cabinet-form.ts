@@ -32,6 +32,8 @@ export interface Question {
 export const MAX_VIDEOS = 5;
 /** тарифов в разделе «Цена» — не больше (Никита 05.11: больше пара не сравнит) */
 export const MAX_TARIFFS = 5;
+/** «Коротко о зале» — пара фраз под цифрами зала на сайте (09.11) */
+export const HALL_NOTE_MAX = 300;
 
 /** на проверку — от 8 фото, текст от 150 знаков (те же числа, что в хуке) */
 export const MIN_PHOTOS = 8;
@@ -63,7 +65,7 @@ export const SECTIONS: Record<Kind, { key: SectionKey; title: string; icon: stri
     { key: 'osnovnoe', title: 'Основное', icon: 'profile' },
     { key: 'foto', title: 'Фото', icon: 'photo' },
     { key: 'video', title: 'Видео', icon: 'video', optional: true },
-    { key: 'zaly', title: 'Залы', icon: 'catalog' },
+    { key: 'zaly', title: 'Залы', icon: 'catalog', optional: true }, // по желанию (Никита 09.11): у части площадок один зал
     { key: 'usloviya', title: 'Условия', icon: 'notes' },
     { key: 'tekst', title: 'Описание', icon: 'text' },
     { key: 'voprosy', title: 'Вопросы', icon: 'check' },
