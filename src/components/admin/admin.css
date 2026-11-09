@@ -571,7 +571,9 @@ html:has(.adm), html:has(.adm) body { background: var(--adm-bg); }
 }
 /* строка заявки: имя и время вплотную, ниже — телефон, карточка, дата, текст; действия капсулами справа внизу */
 .a-leads { display: grid; }
-.a-lead { display: grid; gap: 12px; padding: 16px var(--adm-pad); border-top: 1px solid var(--adm-line); }
+/* строка заявки — только внутри списка .a-leads: голый .a-lead — это лид раздела анкеты,
+   он получал поля и линию сверху и съезжал вправо от заголовка (09.11) */
+.a-leads > .a-lead { display: grid; gap: 12px; padding: 16px var(--adm-pad); border-top: 1px solid var(--adm-line); }
 .a-leads > .a-lead:first-child { border-top: 0; }
 .a-lead__head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s-3); }
 .a-lead__who { display: grid; gap: 2px; min-width: 0; }

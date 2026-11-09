@@ -157,7 +157,8 @@ export function sectionState(key: SectionKey, rev: any, questions: Question[]): 
   switch (key) {
     case 'osnovnoe': {
       const done = meaningfulName(d.name) && (rev.kind === 'venue' ? filled(d.address) : true);
-      return { done, sub: done ? [d.name, d.tagline || d.address].filter(Boolean).join(', ') : 'пусто', empty: !done };
+      // trim: «Причал ,» — пробел в конце названия вставал перед запятой (09.11)
+      return { done, sub: done ? [d.name, d.tagline || d.address].map((x) => String(x ?? '').trim()).filter(Boolean).join(', ') : 'пусто', empty: !done };
     }
     case 'foto':
       // кадров больше потолка бывает только у наших карточек (у пилотных до 51):
