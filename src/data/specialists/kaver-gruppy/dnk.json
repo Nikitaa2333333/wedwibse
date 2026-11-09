@@ -1,0 +1,121 @@
+{
+  "slug": "dnk",
+  "categorySlug": "kaver-gruppy",
+  "category": "Кавер-группы",
+  "name": "ДНК",
+  "avatar": "/specialists/kaver-gruppy/avatars/dnk.webp",
+  "portrait": "/specialists/kaver-gruppy/dnk/portrait.webp",
+  "photos": [
+    "/specialists/kaver-gruppy/dnk/gal/p01.webp",
+    "/specialists/kaver-gruppy/dnk/gal/p02.webp",
+    "/specialists/kaver-gruppy/dnk/gal/p03.webp",
+    "/specialists/kaver-gruppy/dnk/gal/p04.webp",
+    "/specialists/kaver-gruppy/dnk/gal/p05.webp",
+    "/specialists/kaver-gruppy/dnk/gal/p06.webp",
+    "/specialists/kaver-gruppy/dnk/gal/p07.webp",
+    "/specialists/kaver-gruppy/dnk/gal/p08.webp",
+    "/specialists/kaver-gruppy/dnk/gal/p09.webp",
+    "/specialists/kaver-gruppy/dnk/gal/p10.webp",
+    "/specialists/kaver-gruppy/dnk/gal/p11.webp",
+    "/specialists/kaver-gruppy/dnk/gal/p12.webp",
+    "/specialists/kaver-gruppy/dnk/gal/p13.webp",
+    "/specialists/kaver-gruppy/dnk/gal/p14.webp",
+    "/specialists/kaver-gruppy/dnk/gal/p15.webp",
+    "/specialists/kaver-gruppy/dnk/gal/p16.webp",
+    "/specialists/kaver-gruppy/dnk/gal/p17.webp",
+    "/specialists/kaver-gruppy/dnk/gal/p18.webp",
+    "/specialists/kaver-gruppy/dnk/gal/p19.webp",
+    "/specialists/kaver-gruppy/dnk/gal/p20.webp",
+    "/specialists/kaver-gruppy/dnk/gal/p21.webp",
+    "/specialists/kaver-gruppy/dnk/gal/p22.webp",
+    "/specialists/kaver-gruppy/dnk/gal/p23.webp",
+    "/specialists/kaver-gruppy/dnk/gal/p24.webp",
+    "/specialists/kaver-gruppy/dnk/gal/p25.webp",
+    "/specialists/kaver-gruppy/dnk/gal/p26.webp",
+    "/specialists/kaver-gruppy/dnk/gal/p27.webp",
+    "/specialists/kaver-gruppy/dnk/gal/p28.webp"
+  ],
+  "tagline": "Кавер-группа: современные и любимые хиты",
+  "bio": "Команда талантливых и профессиональных музыкантов. Новое и интересное исполнение как современных, так и давно полюбившихся хитов.\n\nВ составе — музыканты с огромным опытом на разных площадках, от частных мероприятий до городских праздников; каждый участвовал в съёмках телепроектов «Песня года» (Первый канал), «Новая звезда» (телеканал «Звезда») и «Битва каверов» (СТС).",
+  "gender": "pair",
+  "priceFrom": 130000,
+  "priceNote": "стоимость группы",
+  "cities": [
+    "цао",
+    "сао",
+    "свао",
+    "вао",
+    "юво",
+    "юао",
+    "юзао",
+    "зао",
+    "сзао",
+    "mo",
+    "вне-мо"
+  ],
+  "aboutTitle": "О нас",
+  "story": [
+    {
+      "lead": "Уникальная команда талантливых и профессиональных музыкантов, наполняющая всё и вся мощным лучом яркого звучания!",
+      "text": [
+        "Мы — это совершенно новое и интересное исполнение как современных, так и давно полюбившихся хитов!"
+      ]
+    },
+    {
+      "text": [
+        "В состав входят музыканты с огромным опытом работы на разных площадках: от частных мероприятий до городских праздников. Кроме того, каждый из нас принимал участие в съёмках телевизионных проектов: «Песня года» (Первый канал), «Новая звезда» (телеканал «Звезда»), «Битва каверов» (СТС)."
+      ]
+    },
+    {
+      "text": [
+        "Качественный звук, стильный вокал, всепоглощающая энергия драйва, по-настоящему куражная атмосфера — всё то, что сопровождает наши выступления! В репертуаре ДНК ваши самые любимые хиты, популярнейшие треки со всего мира!",
+        "Наша музыка вызывает непреодолимое желание танцевать в режиме нон-стоп! С нами каждый достигает музыкальной нирваны и получает заряд энергии, которая переполняет изнутри!"
+      ]
+    },
+    {
+      "title": "Стоимость",
+      "text": [
+        "Стоимость группы — от 130 000 ₽."
+      ]
+    }
+  ],
+  "filters": {
+    "city": [
+      "цао",
+      "сао",
+      "свао",
+      "вао",
+      "юво",
+      "юао",
+      "юзао",
+      "зао",
+      "сзао",
+      "mo",
+      "вне-мо"
+    ],
+    "lineup": "full",
+    "minBudget": "100-300",
+    "minTime": "30-60m"
+  },
+  "packageIncludes": [
+    "Полный состав",
+    "Современные и любимые хиты",
+    "Танцевальная программа нон-стоп",
+    "Качественный звук и живой вокал"
+  ],
+  "quote": "Стоимость группы — от 130 000 ₽.",
+  "offers": [
+    {
+      "title": "Полный состав — от 130 000 ₽",
+      "text": "Живой вокал и музыканты, программа от 30 до 60 минут."
+    },
+    {
+      "title": "Хиты в новом исполнении",
+      "text": "Современные треки и давно полюбившиеся песни со всего мира."
+    },
+    {
+      "title": "Опыт телепроектов",
+      "text": "«Песня года», «Новая звезда», «Битва каверов»."
+    }
+  ]
+}
