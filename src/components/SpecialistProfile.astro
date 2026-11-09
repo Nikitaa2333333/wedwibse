@@ -24,7 +24,7 @@ import StickyCta from './StickyCta.astro';
 import StoryText from './StoryText.astro';
 import { similarSpecialists } from '../lib/similar';
 import { specialistCard } from '../lib/similar-cards';
-import { FILTERS_BY_CATEGORY, specialistRole, type Specialist } from '../data/specialists';
+import { FILTERS_BY_CATEGORY, specialistKicker, type Specialist } from '../data/specialists';
 import { reelsOf } from '../data/reels';
 import { resolveImage, favoriteImage, IMG_WIDTHS } from '../lib/images';
 
@@ -131,7 +131,7 @@ const saveData = JSON.stringify({
       frames={frames}
       alt={s.name}
       title={s.name}
-      kicker={`${specialistRole(s)} · ${s.tagline}`}
+      kicker={specialistKicker(s)}
       rating={s.rating}
       reviews={s.reviews}
       avatar={s.avatar}
