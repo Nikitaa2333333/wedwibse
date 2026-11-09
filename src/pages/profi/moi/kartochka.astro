@@ -59,6 +59,8 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
   const s = requireSession('vendor');
 
   let rev: any = null;
+  /** «ведём мы»: сколько тарифов стоит в тексте страницы (page.story) — тогда цену правим мы */
+  let textTariffs = 0;
   // СЛЕПОК КАРТОЧКИ НА САЙТЕ (Никита 08.11): у одобренной карточки сразу горела
   // «Отправить изменения на проверку» — нажал, и ушла правка без изменений.
   // base — анкета и фото черновика в момент, когда правку начали (база кладёт
@@ -115,13 +117,13 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
   // экран просто не предлагает лишнего.
   const managed = () => data?.managed === true && !isNew();
   // текст — без «оформили мы» (Никита 07.11: «как будто мы самые главные»); плашку можно закрыть
-  const MANAGED_NOTE = 'Карточка уже заведена администраторами. Вы можете поправить портрет, строку под именем, первый абзац текста, фото, цену, ответы на вопросы, контакты и добавить видео. Остальное в тексте напишите нам — мы быстро поправим.';
+  const MANAGED_NOTE = 'Карточка уже заведена администраторами. Вы можете поправить портрет, строку под именем, фото, цену, ответы на вопросы, контакты и добавить видео. Что поменять в тексте, напишите нам — мы быстро поправим.';
   const mnoteKey = () => `wed-cab-mnote-${rev?.specialist}`;
   const mnoteHidden = () => { try { return localStorage.getItem(mnoteKey()) === '1'; } catch { return false; } };
   /** поле просьбы нам. Кнопки у него нет — и так и задумано: просьба сохраняется
    *  сама и уходит вместе с остальными изменениями (Никита 07.11: «а что-то
    *  появится, кнопка отправки?») — об этом и говорит подпись */
-  const requestField = (key: 'text', label: string, placeholder: string) =>
+  const requestField = (key: 'text' | 'price', label: string, placeholder: string) =>
     field(label, `requests.${key}`, data.requests?.[key], { grow: 'area', placeholder, note: 'Сохранится само. Уйдёт нам вместе с остальными изменениями — кнопкой «Отправить изменения на проверку» на странице карточки' });
   const role = () => (kind === 'venue' ? 'Площадка' : cfg.roles[rev.categorySlug] ?? rev.categorySlug);
   const section = () => q.get('s') as SectionKey | null;
@@ -761,12 +763,18 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       ${avatarField()}
       ${requestField('text', 'Что ещё поправить', 'Например: имя — «Михаил Галкин, ведущий»')}` };
     if (key === 'tekst') {
-      // превью всего текста убрано (Никита 07.11: «я бы не транслировал, это видно
-      // на странице») — вместо него ссылка на саму визитку
+      // текст «ведём мы» правим только мы (Никита 09.11): поле «Коротко о себе»
+      // (первый абзац) убрано — оторванный от продолжения абзац правили невпопад,
+      // а у WhyNot в нём стоял список и дублировался. Здесь — ссылка и просьба
       const page = `/moskva/podryadchiki/${rev.categorySlug}/${rev.slug}/`;
-      return { title: 'Описание', lead: `Вы можете поправить первый абзац. Остальной текст уже стоит на карточке — <a href="${page}" target="_blank" rel="noopener">посмотреть на странице</a>.`, html: `
-        ${field('Коротко о себе', 'intro', data.intro ?? firstParagraph(), { grow: 'area', max: 600, placeholder: 'Пара слов от вас: кто вы и как работаете', note: 'До 600 знаков. Встанет первым абзацем текста на вашей странице' })}
-        ${requestField('text', 'Что поправить в остальном тексте', 'Например: во втором абзаце — «работаю с 2012 года»; добавить раздел про выездную регистрацию')}` };
+      return { title: 'Описание', lead: `Текст уже стоит на карточке — <a href="${page}" target="_blank" rel="noopener">посмотреть на странице</a>. Что поменять, напишите нам: поправим сами.`, html: `
+        ${requestField('text', 'Что поправить в тексте', 'Например: во втором абзаце — «работаю с 2012 года»; добавить раздел про выездную регистрацию')}` };
+    }
+    // цена «ведём мы» при тарифах в тексте страницы (Никита 09.11): «одна цена»
+    // разошлась бы с тарифами на странице — цены меняем мы, по просьбе
+    if (key === 'prays' && textTariffs > 0) {
+      return { title: 'Цена', lead: 'Цены стоят в тарифах на вашей странице. Что поменять — напишите нам, поправим и тарифы, и цену в каталоге.', html: `
+        ${requestField('price', 'Что поменять в тарифах или ценах', 'Например: тариф «Про» — 100 000 ₽ вместо 90 000 ₽')}` };
     }
     return null;
   }
@@ -1688,6 +1696,12 @@ const structures = { ...STRUCTURES, _default: DEFAULT_STRUCTURE, _venue: VENUE_S
       if (!data.sections?.length && data.about) data.sections = [{ title: '', body: data.about }];
       questions = kind === 'venue' ? VENUE_QUESTIONS : cfg.questions[rev.categorySlug] ?? [];
       if (rev.photos?.length || rev.avatar) token = await fileToken('vendor');
+      if (managed() && rev.specialist) {
+        try {
+          const card = await api('vendor', 'GET', `/api/collections/specialists/records/${rev.specialist}?fields=page`);
+          textTariffs = (card.page?.story ?? []).reduce((n: number, x: any) => n + (x?.tariffs?.length ?? 0), 0);
+        } catch { textTariffs = 0; }
+      }
       if (!isNew() && rev.status === 'draft') {
         try { base = JSON.parse(localStorage.getItem(snapKey()) || 'null'); } catch { base = null; }
         // черновик правки не трогали (сохранён в те же секунды, что создан базой

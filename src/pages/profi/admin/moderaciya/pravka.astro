@@ -263,7 +263,7 @@ const QUESTIONS = Object.fromEntries(
       // вопросы, контакты и видео; текст и фото — просьбы, делаем руками в JSON
       if (d.managed) {
         const r = d.requests ?? {};
-        const asks = [r.text && `Текст: ${r.text}`, r.photos && `Фото: ${r.photos}`].filter(Boolean);
+        const asks = [r.text && `Текст: ${r.text}`, r.price && `Тарифы и цены: ${r.price}`, r.photos && `Фото: ${r.photos}`].filter(Boolean);
         rows.unshift(`<dt>Ведём мы — основной текст правим мы</dt><dd>${asks.length ? `Просит поправить — сделать руками в src/data/specialists/${esc(rev.categorySlug)}/${esc(rev.slug)}.json:\n${esc(asks.join('\n'))}` : 'Просьб нет.'}</dd>`);
       }
       // портрет владелец ставит сам (07.11, и «ведём мы», и обычная анкета)

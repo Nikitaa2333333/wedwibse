@@ -602,7 +602,8 @@ function mailVendor(app, vendorId, subject, html) {
 // до 80 знаков), короткое «О себе» (intro, до 600 знаков — первым абзацем
 // текста визитки) и меняет фото (убрать, добавить до потолка, порядок);
 // остальной текст и тарифы по-прежнему наши.
-const MANAGED_KEYS = ['priceMode', 'priceFrom', 'priceNote', 'filters', 'contacts', 'videos', 'requests', 'tagline', 'intro'];
+// 09.11 (Никита): «Коротко о себе» (intro) владелец больше не правит — текст только просьбой
+const MANAGED_KEYS = ['priceMode', 'priceFrom', 'priceNote', 'filters', 'contacts', 'videos', 'requests', 'tagline'];
 const MANAGED_TAGLINE_MAX = 80;
 const MANAGED_INTRO_MAX = 600;
 
@@ -631,7 +632,7 @@ function lockManaged(form, data) {
 /** просьбы владельца одной строкой — для группы модерации и письма */
 function requestsText(data) {
   const r = data.requests && typeof data.requests === 'object' ? data.requests : {};
-  return [['текст', r.text], ['фото', r.photos]]
+  return [['текст', r.text], ['тарифы и цены', r.price], ['фото', r.photos]]
     .filter((x) => str(x[1]))
     .map((x) => `${x[0]}: ${str(x[1], 1000)}`)
     .join('\n');
@@ -1041,7 +1042,7 @@ function approveManaged(app, rev, card) {
     priceNote: str(data.priceNote, 300),
     filters: data.filters && typeof data.filters === 'object' ? data.filters : {},
     tagline: str(data.tagline, MANAGED_TAGLINE_MAX),
-    intro: str(data.intro, MANAGED_INTRO_MAX),
+    intro: '', // 09.11: первый абзац владелец больше не правит; прежняя правка снимается
     avatar: card.getString('avatar'),
     version: card.getInt('version'),
   };
