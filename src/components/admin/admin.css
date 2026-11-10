@@ -543,6 +543,7 @@ html:has(.adm), html:has(.adm) body { background: var(--adm-bg); }
 .a-tile .a-tile__ic svg { width: 26px; height: 26px; }
 .a-tile--info .a-tile__ic, .a-tile--info .a-tile__n { color: var(--st-info-strong); }
 .a-tile--bad .a-tile__ic, .a-tile--bad .a-tile__n { color: var(--st-bad-strong); }
+.a-tile--ok .a-tile__ic, .a-tile--ok .a-tile__n { color: var(--st-ok-strong); }
 .a-tile__ic svg { width: 20px; height: 20px; }
 .a-tile__n { grid-area: n; justify-self: end; font-size: 28px; line-height: 32px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .a-tile__label { grid-area: label; font-size: 15px; font-weight: 600; }
