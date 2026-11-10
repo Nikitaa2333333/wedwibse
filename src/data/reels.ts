@@ -164,6 +164,8 @@ export const REELS: Reel[] = [
   { slug: 'pokrovskaya-hall', src: '/reels/pokrovskaya-hall.mp4', alt: 'Саксофонистка в розовом платье играет в зимнем саду перед гостями', author: 'pokrovskaya', sound: true },
   { slug: 'pokrovskaya-party', src: '/reels/pokrovskaya-party.mp4', alt: 'Саксофон в зале с картинами и синтезатором', author: 'pokrovskaya', sound: true },
   { slug: 'pokrovskaya-red', src: '/reels/pokrovskaya-red.mp4', alt: 'Саксофонистка в красной юбке играет в банкетном зале', author: 'pokrovskaya', sound: true },
+  { slug: 'luxury-band-promo', src: '/reels/luxury-band-promo.mp4', alt: 'Солистка в бордовом платье и вокалист в красном пиджаке на фоне замка: промо Luxury band', author: 'luxury-band', sound: true },
+  { slug: 'luxury-band-live', src: '/reels/luxury-band-live.mp4', alt: 'Солистка в красном и вокалист поют на большой сцене с экранами', author: 'luxury-band', sound: true },
 ];
 
 /** Есть ли у ролика звук — по пути файла: разметка (PhotoRail, HeroStage,

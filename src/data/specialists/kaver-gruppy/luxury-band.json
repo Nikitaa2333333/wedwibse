@@ -1,0 +1,155 @@
+{
+  "slug": "luxury-band",
+  "categorySlug": "kaver-gruppy",
+  "category": "Кавер-группы",
+  "name": "Luxury band",
+  "photos": [
+    "/specialists/kaver-gruppy/luxury-band/gal/p01.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p03.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p04.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p06.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p09.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p11.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p13.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p14.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p15.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p17.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p18.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p20.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p21.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p22.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p24.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p25.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p27.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p29.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p31.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p33.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p34.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p35.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p02.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p05.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p07.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p08.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p10.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p12.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p16.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p19.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p23.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p26.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p28.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p30.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p32.webp"
+  ],
+  "tagline": "Топ-7 лучших групп России по версии RWA",
+  "bio": "Пять человек на сцене: солистка, солист — финалист проекта «Голос», три музыканта и звукорежиссёр. Выступление идёт 90 минут — два сета по 45 минут или три по 30, костюмы меняются каждый сет, всего десять сценических образов.\n\nРепертуар — 350 песен на 7 языках: современные новинки, стильное ретро, итальянские и испанские песни. Трек-лист вы можете выбрать сами.\n\nГруппа входит в топ-7 лучших групп России по версии премии Russian Wedding Awards, выступала лично для Владимира Путина, для самых крупных компаний, известных политиков, на частных мероприятиях класса люкс.",
+  "priceNote": "Минимальный бюджет — 100–300 тыс. ₽, точная стоимость — по запросу",
+  "languages": [
+    "ru",
+    "en",
+    "other"
+  ],
+  "cities": [
+    "цао",
+    "сао",
+    "свао",
+    "вао",
+    "юво",
+    "юао",
+    "юзао",
+    "зао",
+    "сзао",
+    "mo",
+    "вне-мо"
+  ],
+  "styles": [
+    "pop",
+    "rock",
+    "disco",
+    "90s",
+    "latin"
+  ],
+  "aboutTitle": "О группе",
+  "story": [
+    {
+      "title": "О группе",
+      "list": [
+        "Пять человек на сцене: солистка, солист — финалист проекта «Голос», три музыканта и звукорежиссёр",
+        "Выступление 90 минут: два сета по 45 минут или три по 30",
+        "Смена костюмов каждый сет, десять вариантов сценических образов",
+        "Репертуар из 350 песен на 7 языках",
+        "Трек-лист можно выбрать самим"
+      ]
+    },
+    {
+      "lead": "Топ-7 лучших групп России по версии премии Russian Wedding Awards"
+    },
+    {
+      "title": "Репертуар",
+      "text": [
+        "Все современные новинки, стильное ретро, итальянские и испанские песни."
+      ]
+    },
+    {
+      "title": "Где выступали",
+      "text": [
+        "Выступали лично для Владимира Путина, для самых крупных компаний, известных политиков, на частных мероприятиях класса люкс."
+      ]
+    }
+  ],
+  "filters": {
+    "city": [
+      "цао",
+      "сао",
+      "свао",
+      "вао",
+      "юво",
+      "юао",
+      "юзао",
+      "зао",
+      "сзао",
+      "mo",
+      "вне-мо"
+    ],
+    "style": [
+      "pop",
+      "rock",
+      "disco",
+      "90s",
+      "latin"
+    ],
+    "format": [
+      "themed"
+    ],
+    "lineup": "full",
+    "minBudget": "100-300",
+    "minTime": "60m+",
+    "contract": "yes"
+  },
+  "packageIncludes": [
+    "Полный состав: два вокалиста, три музыканта и звукорежиссёр",
+    "Выступление 90 минут: два сета по 45 минут или три по 30",
+    "Смена костюмов каждый сет, десять образов",
+    "Репертуар 350 песен на 7 языках",
+    "Трек-лист по вашему выбору",
+    "Работа по договору"
+  ],
+  "quote": "Минимальный бюджет — 100–300 тыс. ₽. Напишите дату и площадку — подберём сеты и назовём стоимость.",
+  "offers": [
+    {
+      "title": "Пять человек на сцене",
+      "text": "Солистка, солист — финалист проекта «Голос», три музыканта и звукорежиссёр."
+    },
+    {
+      "title": "Два формата выступления",
+      "text": "90 минут: два сета по 45 минут или три по 30."
+    },
+    {
+      "title": "Десять сценических образов",
+      "text": "Костюмы меняются каждый сет."
+    },
+    {
+      "title": "350 песен на 7 языках",
+      "text": "Современные новинки, ретро, итальянские и испанские песни. Трек-лист выбираете сами."
+    }
+  ]
+}
