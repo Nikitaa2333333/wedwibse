@@ -161,7 +161,11 @@ export async function demoApi(method: string, path: string, body?: unknown): Pro
   }
   if (p === '/api/collections/specialists/records' || p === '/api/collections/venues/records') {
     const kind = p.includes('specialists') ? 'specialist' : 'venue';
-    return done({ items: kind === 'specialist' ? [{ id: 'demo-c1', collectionId: 'demo', name: 'Go Show', slug: 'go-show', categorySlug: 'vedushchie', status: 'published', owner: 'v6' }] : [] });
+    // «Карточки» админки: на сайте и в архиве, в нескольких разделах
+    const c = (id: string, name: string, categorySlug: string, status = 'published', owner = '') => ({ id, collectionId: 'demo', collectionName: kind === 'specialist' ? 'specialists' : 'venues', name, slug: id, categorySlug, status, owner, photos: [] });
+    return done({ items: kind === 'specialist'
+      ? [c('demo-c1', 'Go Show', 'vedushchie', 'published', 'v6'), c('demo-c2', 'Анна Дремина', 'konditery'), c('demo-c3', 'Your Food', 'keitering'), c('demo-c4', 'Лешаковы', 'fotografy'), c('demo-c5', 'Старый ведущий', 'vedushchie', 'archived')]
+      : [c('demo-v1', 'Лесная Роса', ''), c('demo-v2', 'Из-за любви', '')] });
   }
   if (p === '/api/wed/mod/remove') return done({ ok: true });
 

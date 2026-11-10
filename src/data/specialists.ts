@@ -148,8 +148,9 @@ export const SPECIALIST_CATEGORIES: SpecialistCategory[] = [
   { slug: 'fotografy', label: 'Фотографы', role: 'Фотограф' },
   { slug: 'videografy', label: 'Видеографы', role: 'Видеограф' },
   { slug: 'rils-meikery', label: 'Reels-мейкеры', role: 'Reels-мейкер' },
-  { slug: 'keitering', label: 'Кейтеринг', role: 'Кейтеринг' },
+  // кондитеры раньше кейтеринга: их ищут чаще (Евгений, 10.11.2026)
   { slug: 'konditery', label: 'Кондитеры', role: 'Кондитер' },
+  { slug: 'keitering', label: 'Кейтеринг', role: 'Кейтеринг' },
   // Раздел без вкладок: стилист и визажист на свадьбе — один заказ
   // (утро невесты целиком), поэтому и категория одна.
   { slug: 'stilisty', label: 'Стилисты и визажисты', role: 'Стилист и визажист' },
@@ -262,9 +263,11 @@ export const SPECIALIST_GROUPS: SpecialistGroup[] = [
   },
   {
     key: 'kuhnya',
-    label: 'Кейтеринг и кондитерка',
-    short: 'Кейтеринг',
-    categories: ['keitering', 'konditery'],
+    // кондитеры первыми — их ищут чаще (Евгений, 10.11.2026); плитка хаба
+    // ведёт в первую категорию группы, то есть сразу к кондитерам
+    label: 'Кондитеры и кейтеринг',
+    short: 'Кондитеры',
+    categories: ['konditery', 'keitering'],
     cover: '/specialists/groups/kuhnya.webp',
     tone: 'beige',
     bg: '#c8a69f',
