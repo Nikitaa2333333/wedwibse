@@ -2,7 +2,7 @@
   "slug": "odri",
   "categorySlug": "konditery",
   "category": "Кондитеры",
-  "name": "Ольга Дериболот",
+  "name": "Кондитерская студия Odri",
   "avatar": "/specialists/konditery/avatars/odri.webp",
   "portrait": "/specialists/konditery/odri/portrait.webp",
   "photos": [
@@ -60,7 +60,7 @@
   "gender": "ж",
   "priceFrom": 3500,
   "priceNote": "за килограмм, декор рассчитывается отдельно",
-  "experienceYears": 9,
+  "experienceYears": 10,
   "cities": [
     "цао",
     "сао",
@@ -118,11 +118,26 @@
     "priceKg": "3-4",
     "productType": [
       "wedding-cake",
-      "mini-desserts"
+      "mini-desserts",
+      "cupcakes",
+      "mousse"
     ],
     "options": [
-      "custom-design"
-    ]
+      "fresh-flowers",
+      "custom-pack",
+      "custom-design",
+      "fondant"
+    ],
+    "style": [
+      "classic",
+      "naked",
+      "minimal",
+      "boho",
+      "rustic"
+    ],
+    "minWeight": "2-3",
+    "minOrder": "10+",
+    "leadTime": "3-7d"
   },
   "packageIncludes": [
     "Свадебные торты",
@@ -144,5 +159,6 @@
       "title": "Доставка лично",
       "text": "Сама привожу торт на площадку по Москве и Московской области."
     }
-  ]
+  ],
+  "age": "25–35"
 }
