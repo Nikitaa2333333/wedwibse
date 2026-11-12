@@ -53,7 +53,7 @@ lines, in_list = [], False
 for kind, text in blocks:
     if kind == 'li':
         if not in_list:
-            lines.append('<ul>')
+            lines.append('<ul class="list">')
             in_list = True
         lines.append(f'  <li>{esc(text)}</li>')
         continue

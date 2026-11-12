@@ -192,6 +192,10 @@ function feedOf(rec: PbRecord & Record<string, any>, venue: Venue): FeedVenue {
     ...(rec.page?.source === 'cabinet'
       ? { city: rec.city || venue.kicker.split(' · ')[1] || 'Москва', type: venue.kicker.split(' · ')[0] }
       : { city: rec.city || (venue as any).city || 'Москва', type: (venue as any).kicker || 'Площадка' }),
+    // фильтры как у wedwed (12.11): колонки записи, их ставит хук одобрения из анкеты
+    typeSlug: rec.type || undefined,
+    districts: Array.isArray(rec.districts) ? rec.districts : [],
+    features: Array.isArray(rec.features) ? rec.features : [],
     capacityMax: cap,
     capacity: cap ? `до ${cap} гостей` : 'вместимость по запросу',
     ...(check ? { checkFrom: check } : {}),

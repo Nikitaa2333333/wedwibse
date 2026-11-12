@@ -59,7 +59,7 @@ export function hideVenuePhotos(page, hidden) {
 export function applyFeedEdits(item, e) {
   if (!e || typeof e !== 'object') return item;
   const out = { ...item };
-  if (TYPE_LABEL[e.type]) out.type = TYPE_LABEL[e.type];
+  if (TYPE_LABEL[e.type]) { out.type = TYPE_LABEL[e.type]; out.typeSlug = e.type; }
   if (Number(e.capacityBanquet) > 0) {
     out.capacityMax = Number(e.capacityBanquet);
     out.capacity = `до ${num(e.capacityBanquet)} гостей`;

@@ -31,6 +31,14 @@ export interface FeedVenue {
   reviews?: number;
   /** фото или видео площадки: листаются вбок */
   media: string[];
+  /** ДЛЯ ФИЛЬТРОВ КАК У WEDWED (12.11.2026, docs/seo/FILTERS-WEDWED.md):
+      тип кодом анкеты (restoran, banketnyj-zal, loft, usadba…), округа
+      (cao…szao, podmoskovie), особенности (u-vody, svoj-alkogol,
+      vyezdnaya-registraciya, za-gorodom). У площадки из базы — колонки
+      записи (их ставит хук одобрения из анкеты), у записанных руками — здесь. */
+  typeSlug?: string;
+  districts?: string[];
+  features?: string[];
 }
 
 export interface FeedAd {
@@ -61,6 +69,9 @@ const venues: FeedVenue[] = [
     name: 'Ривер Лофт',
     city: 'Подольск',
     type: 'Лофт',
+    typeSlug: 'loft',
+    districts: ['podmoskovie'],
+    features: ['svoj-alkogol', 'vyezdnaya-registraciya', 'za-gorodom'],
     capacityMax: 100,
     capacity: 'до 100 гостей',
     checkFrom: 5000,
@@ -73,6 +84,9 @@ const venues: FeedVenue[] = [
     name: 'Лесная Роса',
     city: 'Подольск',
     type: 'Оранжерея',
+    typeSlug: 'oranzhereya',
+    districts: ['podmoskovie'],
+    features: ['u-vody', 'svoj-alkogol', 'vyezdnaya-registraciya', 'za-gorodom'],
     capacityMax: 70,
     capacity: 'до 70 гостей',
     checkFrom: 9000,
@@ -85,6 +99,9 @@ const venues: FeedVenue[] = [
     name: 'Из-за любви',
     city: 'Подольск',
     type: 'Оранжерея',
+    typeSlug: 'oranzhereya',
+    districts: ['podmoskovie'],
+    features: ['svoj-alkogol', 'vyezdnaya-registraciya', 'za-gorodom'],
     capacityMax: 60,
     capacity: 'до 60 гостей',
     checkFrom: 9000,
@@ -97,6 +114,9 @@ const venues: FeedVenue[] = [
     name: 'Spark Hall',
     city: 'Красногорск',
     type: 'Банкетный зал',
+    typeSlug: 'banketnyj-zal',
+    districts: ['podmoskovie'],
+    features: ['vyezdnaya-registraciya', 'za-gorodom'],
     capacityMax: 120,
     capacity: 'до 120 гостей',
     avgCheck: 'цена по запросу',
@@ -108,6 +128,9 @@ const venues: FeedVenue[] = [
     name: 'LЁD',
     city: 'Красногорск',
     type: 'Оранжерея',
+    typeSlug: 'oranzhereya',
+    districts: ['podmoskovie'],
+    features: ['vyezdnaya-registraciya', 'za-gorodom'],
     capacityMax: 60,
     capacity: 'до 60 гостей',
     avgCheck: 'цена по запросу',
@@ -119,6 +142,9 @@ const venues: FeedVenue[] = [
     name: 'Fish Point',
     city: 'Подольск',
     type: 'Банкетный зал',
+    typeSlug: 'banketnyj-zal',
+    districts: ['podmoskovie'],
+    features: ['svoj-alkogol', 'vyezdnaya-registraciya', 'za-gorodom'],
     capacityMax: 200,
     capacity: 'до 200 гостей',
     avgCheck: 'депозитная система',
@@ -130,6 +156,9 @@ const venues: FeedVenue[] = [
     name: 'Отражение',
     city: 'Можайский район',
     type: 'Оранжерея',
+    typeSlug: 'oranzhereya',
+    districts: ['podmoskovie'],
+    features: ['u-vody', 'svoj-alkogol', 'vyezdnaya-registraciya', 'za-gorodom'],
     capacityMax: 60,
     capacity: 'до 60 гостей',
     checkFrom: 9000,
@@ -144,6 +173,9 @@ const venues: FeedVenue[] = [
     name: 'Усадьба Гребнево',
     city: 'Щёлково',
     type: 'Усадьба',
+    typeSlug: 'usadba',
+    districts: ['podmoskovie'],
+    features: ['u-vody', 'svoj-alkogol', 'vyezdnaya-registraciya', 'za-gorodom'],
     capacityMax: 350,
     capacity: '9 залов · до 350 гостей',
     checkFrom: 7000,
@@ -156,6 +188,9 @@ const venues: FeedVenue[] = [
     name: 'Villa Barvikha 135',
     city: 'Барвиха',
     type: 'Усадьба',
+    typeSlug: 'usadba',
+    districts: ['podmoskovie'],
+    features: ['svoj-alkogol', 'vyezdnaya-registraciya', 'za-gorodom'],
     capacityMax: 450,
     capacity: 'до 450 гостей',
     checkFrom: 8500,
@@ -168,6 +203,9 @@ const venues: FeedVenue[] = [
     name: 'Вилла Довиль',
     city: 'Одинцово',
     type: 'Веранда',
+    typeSlug: 'veranda',
+    districts: ['podmoskovie'],
+    features: ['u-vody', 'vyezdnaya-registraciya', 'za-gorodom'],
     capacityMax: 300,
     capacity: 'до 300 гостей',
     checkFrom: 12000,
@@ -195,56 +233,127 @@ export const FEED: FeedItem[] = [...venues];
 /** карточки каталога, записанные руками (по slug) — основа для площадок из базы */
 export const STATIC_FEED: readonly FeedVenue[] = venues;
 
-// Фильтры собираются из самих карточек — руками ничего не дублируем.
-const uniq = (list: string[]) => [...new Set(list)];
-const toOptions = (values: string[]) => uniq(values).map((v) => ({ value: v, label: v }));
+// ============ ФИЛЬТРЫ КАК У WEDWED (Никита 12.11.2026) ============
+// Набор и порядок — с wedwed.ru/catalog/ploschadki/ (docs/seo/FILTERS-WEDWED.md):
+// тип, средний чек, вместимость, расположение, особенности; везде можно
+// выбрать несколько (внутри группы — ИЛИ, между группами — И). «Назначение»
+// не выводим: каталог только про свадьбы. Тип «Оранжерея» добавлен к восьми
+// типам wedwed — у нас таких площадок много, без него их не отобрать.
+// Значения карточки считает страница каталога (filtersOf), корзины — здесь.
+const NB = '\u00a0';
+
+export const VENUE_TYPE_FILTER: Record<string, string> = {
+  restoran: 'restoran-banketnyj-zal',
+  'banketnyj-zal': 'restoran-banketnyj-zal',
+  shater: 'shater',
+  veranda: 'veranda',
+  'restoran-pri-otele': 'restoran-pri-otele',
+  'zagorodnyj-klub': 'zagorodnyj-klub',
+  loft: 'loft',
+  'yaht-klub': 'yaht-klub',
+  usadba: 'usadba',
+  oranzhereya: 'oranzhereya',
+};
+
+/** корзины чека на гостя, ₽: [значение, от, до] */
+export const CHECK_BUCKETS: [string, number, number][] = [
+  ['2-4', 2000, 4000],
+  ['4-6', 4000, 6000],
+  ['6-8', 6000, 8000],
+  ['8-15', 8000, 15000],
+];
+
+/** корзины вместимости, гостей: [значение, от, до] — как у wedwed */
+export const CAPACITY_BUCKETS: [string, number, number][] = [
+  ['0-19', 0, 19],
+  ['20-29', 20, 29],
+  ['30-39', 30, 39],
+  ['40-49', 40, 49],
+  ['50-79', 50, 79],
+  ['80-120', 80, 120],
+  ['121-450', 121, 450],
+];
+
+const rub = (n: number) => n.toLocaleString('ru-RU').replace(/\s/g, NB);
 
 export const VENUE_FILTERS: FilterGroup[] = [
   {
     key: 'type',
     label: 'Тип площадки',
     type: 'multi',
-    // Типов немного — все они «популярные»: идут чипами над каталогом
-    options: toOptions(venues.map((v) => v.type)).map((o) => ({ ...o, popular: true })),
-  },
-  {
-    key: 'city',
-    label: 'Локация',
-    type: 'multi',
-    options: toOptions(venues.map((v) => v.city)),
-  },
-  {
-    key: 'capacity',
-    label: 'Вместимость',
-    type: 'single',
-    quick: true,
     options: [
-      { value: '0-80', label: 'до 80 гостей' },
-      { value: '80-120', label: '80–120 гостей' },
-      { value: '120+', label: 'более 120 гостей' },
+      { value: 'restoran-banketnyj-zal', label: 'Ресторан, банкетный зал', popular: 'Ресторан' },
+      { value: 'shater', label: 'Шатёр', popular: true },
+      { value: 'veranda', label: 'Веранда', popular: true },
+      { value: 'restoran-pri-otele', label: 'Ресторан при отеле' },
+      { value: 'zagorodnyj-klub', label: 'Загородный клуб' },
+      { value: 'loft', label: 'Лофт', popular: true },
+      { value: 'yaht-klub', label: 'Яхт-клуб' },
+      { value: 'usadba', label: 'Усадьба, особняк', popular: 'Усадьба' },
+      { value: 'oranzhereya', label: 'Оранжерея', popular: true },
     ],
   },
   {
     key: 'avgCheck',
-    label: 'Средний чек',
-    type: 'single',
+    label: 'Средний чек на гостя',
+    type: 'multi',
     quick: true,
+    options: CHECK_BUCKETS.map(([value, from, to]) => ({ value, label: `${rub(from)}–${rub(to)}${NB}₽` })),
+  },
+  {
+    key: 'capacity',
+    label: 'Вместимость',
+    type: 'multi',
+    quick: true,
+    options: CAPACITY_BUCKETS.map(([value, from, to]) => ({ value, label: from === 0 ? `до${NB}${to} гостей` : `${from}–${to} гостей` })),
+  },
+  {
+    key: 'district',
+    label: 'Расположение',
+    type: 'multi',
     options: [
-      { value: '0-5', label: 'до 5 000 ₽' },
-      { value: '5-7', label: '5 000–7 000 ₽' },
-      { value: '7-9', label: '7 000–9 000 ₽' },
-      { value: '9+', label: 'от 9 000 ₽' },
+      { value: 'vao', label: 'ВАО' },
+      { value: 'zao', label: 'ЗАО' },
+      { value: 'sao', label: 'САО' },
+      { value: 'svao', label: 'СВАО' },
+      { value: 'szao', label: 'СЗАО' },
+      { value: 'cao', label: 'ЦАО' },
+      { value: 'yuao', label: 'ЮАО' },
+      { value: 'yuvao', label: 'ЮВАО' },
+      { value: 'yuzao', label: 'ЮЗАО' },
+      { value: 'podmoskovie', label: 'Подмосковье' },
+    ],
+  },
+  {
+    key: 'features',
+    label: 'Особенности',
+    type: 'multi',
+    options: [
+      { value: 'u-vody', label: 'У воды', popular: true },
+      { value: 'svoj-alkogol', label: 'Можно свой алкоголь', popular: 'Свой алкоголь' },
+      { value: 'vyezdnaya-registraciya', label: 'С выездной регистрацией', popular: 'Выездная регистрация' },
+      { value: 'za-gorodom', label: 'За городом' },
+    ],
+  },
+  {
+    // Локация шапки (ScopePicker, общая для всех каталогов): Москва или область.
+    // В шторке не показывается — её ведёт чип в шапке; значение карточки —
+    // по округам (podmoskovie → область).
+    key: 'city',
+    label: 'Локация',
+    type: 'single',
+    hidden: true,
+    options: [
+      { value: 'Москва', label: 'Москва' },
+      { value: 'Московская область', label: 'Московская область' },
     ],
   },
 ];
 
 /** САЙТ ИЗ БАЗЫ (этап 3, 05.11.2026): лента каталога из площадок базы —
- *  подставляется на место, фильтры «тип» и «локация» пересчитываются по ней. */
+ *  подставляется на место. Набор фильтров постоянный (как у wedwed), из
+ *  ленты больше не пересчитывается. */
 export function applyLiveFeed(items: FeedVenue[]) {
   FEED.length = 0;
   FEED.push(...items);
-  const type = VENUE_FILTERS.find((g) => g.key === 'type');
-  if (type) type.options = toOptions(items.map((v) => v.type)).map((o) => ({ ...o, popular: true }));
-  const city = VENUE_FILTERS.find((g) => g.key === 'city');
-  if (city) city.options = toOptions(items.map((v) => v.city));
 }

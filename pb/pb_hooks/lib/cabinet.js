@@ -1277,7 +1277,15 @@ function applyData(kind, card, data) {
   const pick = (name, v) => [].concat(v || []).map(String).filter((x) => allowed(name).indexOf(x) !== -1);
   const type = pick('type', filters.type)[0];
   card.set('type', type || '');
-  for (const key of ['districts', 'purposes', 'features']) card.set(key, pick(key, filters[key]));
+  for (const key of ['districts', 'purposes']) card.set(key, pick(key, filters[key]));
+  // фильтры каталога как у wedwed (12.11): «Можно свой алкоголь» — из ответа
+  // про алкоголь в условиях (без сбора или со сбором), «За городом» — из
+  // «Подмосковье»; отдельно эти пункты подрядчика не спрашиваем
+  const features = pick('features', filters.features);
+  const alcohol = data.terms && typeof data.terms === 'object' ? String(data.terms.alcohol || '') : '';
+  if ((alcohol === 'free' || alcohol === 'fee') && features.indexOf('svoj-alkogol') === -1) features.push('svoj-alkogol');
+  if (pick('districts', filters.districts).indexOf('podmoskovie') !== -1 && features.indexOf('za-gorodom') === -1) features.push('za-gorodom');
+  card.set('features', features);
 }
 
 /**

@@ -18,7 +18,7 @@ import ScopePicker from '../../../components/ScopePicker.astro';
 import PhotoRail from '../../../components/PhotoRail.astro';
 import VenueMap from '../../../components/VenueMap.astro';
 import Icon from '../../../components/Icon.astro';
-import { FEED, VENUE_FILTERS, type FeedVenue } from '../../../data/feed';
+import { FEED, VENUE_FILTERS, VENUE_TYPE_FILTER, CHECK_BUCKETS, CAPACITY_BUCKETS, type FeedVenue } from '../../../data/feed';
 import { IMG_WIDTHS, favoriteImage } from '../../../lib/images';
 import { VENUES } from '../../../data/venues';
 import { venueFavorite } from '../../../lib/favorite-snapshot';
@@ -29,19 +29,18 @@ await refreshLive();
 Astro.response.headers.set('cache-control', LIVE_CACHE);
 import { venueMapPoints } from '../../../lib/map-points';
 
-// Бакеты для диапазонных фильтров — считаются на сборке (см. тот же приём
-// в podryadchiki/vedushchie/index.astro).
-function capacityBucket(max: number): string {
-  if (max <= 80) return '0-80';
-  if (max <= 120) return '80-120';
-  return '120+';
-}
-
+// Корзины фильтров как у wedwed (data/feed.ts, 12.11.2026). Чек — одна корзина
+// по «от» площадки; вместимость — корзина КАЖДОГО зала (у wedwed вместимость —
+// свойство зала: усадьба с залами на 30 и на 350 попадает и в «30–39», и в
+// «121–450»); залов нет — по вместимости площадки.
+const inRange = (n: number, [, from, to]: [string, number, number]) => n >= from && n <= to;
 function checkBucket(from: number): string {
-  if (from < 5000) return '0-5';
-  if (from < 7000) return '5-7';
-  if (from < 9000) return '7-9';
-  return '9+';
+  return CHECK_BUCKETS.find((b) => inRange(from, b))?.[0] ?? '';
+}
+function capacityBuckets(item: FeedVenue): string[] {
+  const halls = VENUES.find((v) => v.slug === item.slug)?.halls?.map((h) => h.banquet).filter((n) => n > 0) ?? [];
+  const sizes = halls.length ? halls : item.capacityMax ? [item.capacityMax] : [];
+  return [...new Set(sizes.map((n) => CAPACITY_BUCKETS.find((b) => inRange(n, b))?.[0]).filter(Boolean) as string[])];
 }
 
 // ============ МОЗАИКА БЕЗ ДЫР ============
@@ -73,13 +72,21 @@ function variant(i: number): CardVariant {
 }
 
 // Значения фильтра карточки — одним местом: и в data-filters, и в счётчики чипов
-const filtersOf = (item: FeedVenue) => ({
-  type: item.type,
-  city: item.city,
-  capacity: capacityBucket(item.capacityMax),
-  // без открытого прайса карточка в бакеты чека не попадает
-  avgCheck: item.checkFrom ? checkBucket(item.checkFrom) : '',
-});
+const filtersOf = (item: FeedVenue) => {
+  const districts = item.districts ?? [];
+  const features = new Set(item.features ?? []);
+  if (districts.includes('podmoskovie')) features.add('za-gorodom');
+  return {
+    type: VENUE_TYPE_FILTER[item.typeSlug ?? ''] ?? '',
+    // без открытого прайса карточка в корзины чека не попадает
+    avgCheck: item.checkFrom ? checkBucket(item.checkFrom) : '',
+    capacity: capacityBuckets(item),
+    district: districts,
+    features: [...features],
+    // локация шапки (ScopePicker): область, если площадка в Подмосковье
+    city: districts.length && districts.every((d) => d === 'podmoskovie') ? 'Московская область' : districts.length ? 'Москва' : '',
+  };
+};
 
 let venueIndex = 0;
 const venues = FEED.filter((item): item is FeedVenue => item.kind === 'venue');
@@ -152,7 +159,7 @@ const mapPoints = venueMapPoints();
     <!-- ШТОРКА ФИЛЬТРОВ: на телефоне всплывает снизу, на ПК — эта же
          разметка стоит постоянной колонкой слева (.sheet--dock) -->
     <aside class="sidebar">
-      <FilterSheet groups={VENUE_FILTERS} counts={counts} noun={['площадка', 'площадки', 'площадок']} sortable />
+      <FilterSheet groups={VENUE_FILTERS} counts={counts} noun={['площадка', 'площадки', 'площадок']} sortable search="Название площадки" />
     </aside>
 
     <!-- СЕТКА: мозаика без дыр, фото — главное. Без анимации появления:
@@ -205,6 +212,7 @@ const mapPoints = venueMapPoints();
               data-card
               data-slug={item.slug}
               data-filters={JSON.stringify(filters)}
+              data-name={item.name.toLowerCase()}
               data-sort={JSON.stringify(sortKey)}
             >
               <PhotoRail

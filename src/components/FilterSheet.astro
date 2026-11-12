@@ -34,9 +34,12 @@ interface Props {
   noun?: [string, string, string];
   /** есть ли что сортировать — группа «Сортировка» в колонке на ПК */
   sortable?: boolean;
+  /** поиск по названию первым полем шторки (как у wedwed, 12.11.2026):
+      строка — подсказка в поле; карточки сравниваются по data-name */
+  search?: string;
 }
 
-const { groups, counts = {}, noun = ['предложение', 'предложения', 'предложений'], sortable = false } = Astro.props;
+const { groups, counts = {}, noun = ['предложение', 'предложения', 'предложений'], sortable = false, search } = Astro.props;
 
 const popular = groups.flatMap((g) =>
   g.options
@@ -63,6 +66,12 @@ const popular = groups.flatMap((g) =>
     </header>
 
     <div class="sheet__body fsheet__body" data-sheet-body data-lenis-prevent>
+      {search && (
+        <section class="fsheet__group fsheet__group--search">
+          <input class="input fsheet__search" type="search" placeholder={search} aria-label={search} autocomplete="off" enterkeyhint="search" data-filter-search />
+        </section>
+      )}
+
       {sortable && (
         <section class="fsheet__group fsheet__group--sort">
           <h3 class="fsheet__label">Сортировка</h3>
@@ -92,7 +101,7 @@ const popular = groups.flatMap((g) =>
       )}
 
       {groups.map((group) => (
-        <section class="fsheet__group" data-sheet-group={group.key}>
+        <section class="fsheet__group" data-sheet-group={group.key} hidden={group.hidden}>
           <h3 class="fsheet__label">{group.label}</h3>
           <div class="fsheet__chips">
             {group.options.map((opt) => (
@@ -162,6 +171,10 @@ const popular = groups.flatMap((g) =>
   /* Тач: нажатие на пилюлю — мгновенный отклик, но чернильная «Применить»
      от нажатия не должна «гаснуть» */
   .fsheet__btn.is-active:active { background: var(--fg); color: var(--bg); }
+
+  /* поиск по названию — первым полем, во всю ширину (min-width: 0 — поле в grid) */
+  .fsheet__group--search { min-width: 0; }
+  .fsheet__search { width: 100%; }
 
   /* Сортировка на телефоне живёт своей шторкой (FilterBar) */
   .fsheet__group--sort { display: none; }
@@ -287,6 +300,7 @@ const popular = groups.flatMap((g) =>
     const badge = document.querySelector<HTMLElement>('[data-filters-badge]');
     const cards = Array.from(document.querySelectorAll<HTMLElement>('[data-card]'));
     const emptyEl = document.querySelector<HTMLElement>('[data-results-empty]');
+    const searchEl = sheet.querySelector<HTMLInputElement>('[data-filter-search]');
 
     // Быстрый чип («Цена ▾») открывает шторку, прокрученную к своей группе
     bindSheet(sheet, {
@@ -314,7 +328,7 @@ const popular = groups.flatMap((g) =>
       });
       quickChips.forEach((c) => c.classList.toggle('is-active', Boolean(sel[c.dataset.quickGroup!])));
       if (badge) {
-        const n = Object.values(sel).reduce((sum, v) => sum + v.length, 0);
+        const n = Object.values(sel).reduce((sum, v) => sum + v.length, 0) + (searchEl?.value.trim() ? 1 : 0);
         badge.textContent = String(n);
         badge.hidden = n === 0;
       }
@@ -323,6 +337,7 @@ const popular = groups.flatMap((g) =>
     function applyFilters() {
       const sel = selections();
       const activeKeys = Object.keys(sel);
+      const q = (searchEl?.value ?? '').trim().toLowerCase();
       let visible = 0;
 
       cards.forEach((card) => {
@@ -332,7 +347,7 @@ const popular = groups.flatMap((g) =>
           const value = data[key];
           if (Array.isArray(value)) return value.some((v) => wanted.includes(v));
           return wanted.includes(value);
-        });
+        }) && (!q || (card.dataset.name ?? '').includes(q));
         card.classList.toggle('is-hidden', !match);
         if (match) visible += 1;
       });
@@ -341,6 +356,8 @@ const popular = groups.flatMap((g) =>
       if (cards.length) foundEl.textContent = visible ? `Нашли ${visible} ${plural(visible, noun)}` : 'Ничего не нашли';
       syncChips(sel);
     }
+
+    searchEl?.addEventListener('input', () => applyFilters());
 
     inputs.forEach((input) =>
       input.addEventListener('change', () => {
@@ -369,6 +386,7 @@ const popular = groups.flatMap((g) =>
     sheet.querySelectorAll<HTMLButtonElement>('[data-filters-reset]').forEach((btn) =>
       btn.addEventListener('click', () => {
         inputs.forEach((input) => { input.checked = false; });
+        if (searchEl) searchEl.value = '';
         applyFilters();
         // локацию шапки (ScopePicker) сбрасываем вместе с фильтрами: иначе она
         // запомнена в браузере и возвращалась при следующем заходе (Никита 08.11)
