@@ -1,0 +1,137 @@
+{
+  "slug": "luxury-band",
+  "categorySlug": "kaver-gruppy",
+  "category": "Кавер-группы",
+  "name": "Luxury band",
+  "photos": [
+    "/specialists/kaver-gruppy/luxury-band/gal/p01.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p03.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p04.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p06.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p09.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p11.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p13.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p14.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p15.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p17.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p18.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p20.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p21.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p22.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p24.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p25.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p27.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p29.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p31.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p33.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p34.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p35.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p02.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p05.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p07.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p08.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p10.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p12.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p16.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p19.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p23.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p26.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p28.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p30.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p32.webp"
+  ],
+  "tagline": "Кавер-группа: 350 песен на 7 языках",
+  "bio": "Пять человек на сцене: солистка, солист — финалист проекта «Голос», три музыканта и звукорежиссёр. Группа в числе семи лучших в России по версии премии Russian Wedding Awards.\n\nВыступление — 90 минут, два сета по 45 минут или три по 30, костюмы меняются каждый сет. В репертуаре 350 песен на 7 языках, трек-лист можно выбрать самим.",
+  "gender": "pair",
+  "priceNote": "стоимость от 100 до 300 тыс. ₽ — уточняйте у группы",
+  "cities": [
+    "цао",
+    "сао",
+    "свао",
+    "вао",
+    "юво",
+    "юао",
+    "юзао",
+    "зао",
+    "сзао",
+    "mo",
+    "вне-мо"
+  ],
+  "aboutTitle": "О нас",
+  "story": [
+    {
+      "lead": "Топ-7 лучших групп России по версии премии Russian Wedding Awards.",
+      "text": [
+        "На сцене пять человек: солистка, солист — финалист проекта «Голос», три музыканта и звукорежиссёр."
+      ]
+    },
+    {
+      "title": "Выступление",
+      "text": [
+        "Выступление длится 90 минут: два сета по 45 минут или три по 30. Костюмы меняются каждый сет, всего десять вариантов сценических образов."
+      ]
+    },
+    {
+      "title": "Репертуар",
+      "text": [
+        "В репертуаре 350 песен на 7 языках: современные новинки, стильное ретро, итальянские и испанские песни. Трек-лист можно выбрать самим."
+      ]
+    }
+  ],
+  "filters": {
+    "city": [
+      "цао",
+      "сао",
+      "свао",
+      "вао",
+      "юво",
+      "юао",
+      "юзао",
+      "зао",
+      "сзао",
+      "mo",
+      "вне-мо"
+    ],
+    "style": [
+      "pop",
+      "rock",
+      "disco",
+      "90s",
+      "latin"
+    ],
+    "format": [
+      "themed"
+    ],
+    "lineup": "full",
+    "minBudget": "100-300",
+    "minTime": "60m+",
+    "contract": "yes"
+  },
+  "packageIncludes": [
+    "Полный состав: пять человек на сцене",
+    "Выступление 90 минут",
+    "Десять сценических образов",
+    "350 песен на 7 языках",
+    "Трек-лист выбираете сами",
+    "Звукорежиссёр в составе"
+  ],
+  "quote": "Минимальный бюджет — от 100 до 300 тыс. ₽, точную стоимость уточняйте у группы.",
+  "offers": [
+    {
+      "title": "Пять человек на сцене",
+      "text": "Солистка, солист — финалист проекта «Голос», три музыканта и звукорежиссёр."
+    },
+    {
+      "title": "90 минут программы",
+      "text": "Два сета по 45 минут или три по 30, костюмы меняются каждый сет."
+    },
+    {
+      "title": "350 песен на 7 языках",
+      "text": "Современные новинки, стильное ретро, итальянские и испанские песни; трек-лист выбираете сами."
+    },
+    {
+      "title": "Десять сценических образов",
+      "text": "Каждый сет — в новых костюмах."
+    }
+  ]
+}
