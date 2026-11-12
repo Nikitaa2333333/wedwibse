@@ -13,6 +13,7 @@
 //                    и rejectReason). Опубликованные открыты всем: их читает
 //                    сайт (live-data) и кабинет подрядчика.
 //   venue_reviews  — заготовка 1-го этапа под отзывы с Карт, пустая: удалена.
+//   legal_docs     — + вид bride-terms (правила для молодожёнов).
 //   brides         — + maxId и telegramId: вход невесты через MAX и Telegram,
 //                    как у подрядчика (маршруты /api/wed/bride/*).
 // ============================================================
@@ -37,6 +38,11 @@ migrate(
     brides.listRule = `id = @request.auth.id || ${MOD}`;
     brides.viewRule = `id = @request.auth.id || ${MOD}`;
     app.save(brides);
+
+    // правила для молодожёнов — второй документ невесты рядом с согласием на ПДн
+    const legal = app.findCollectionByNameOrId('legal_docs');
+    legal.fields.getByName('kind').values = ['vendor-offer', 'vendor-pdn', 'bride-pdn', 'bride-terms'];
+    app.save(legal);
 
     const venues = app.findCollectionByNameOrId('venues');
     const specialists = app.findCollectionByNameOrId('specialists');
@@ -86,6 +92,9 @@ migrate(
     try {
       app.delete(app.findCollectionByNameOrId('reviews'));
     } catch (_) {}
+    const legal = app.findCollectionByNameOrId('legal_docs');
+    legal.fields.getByName('kind').values = ['vendor-offer', 'vendor-pdn', 'bride-pdn'];
+    app.save(legal);
     const brides = app.findCollectionByNameOrId('brides');
     brides.removeIndex('idx_brides_telegram');
     brides.removeIndex('idx_brides_max');

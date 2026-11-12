@@ -1,0 +1,43 @@
+---
+// ДОКУМЕНТ — политика конфиденциальности, правила для молодожёнов, правила
+// модерации (src/data/legal.ts). Текст статикой в HTML: страница открыта
+// поиску, ссылки на неё — со входа невесты, формы отзыва, заявки, кабинета.
+import Layout from '../../layouts/Layout.astro';
+import BottomDock from '../../components/BottomDock.astro';
+import BackButton from '../../components/BackButton.astro';
+import { LEGAL_DOCS, legalHtml, legalUrl } from '../../data/legal';
+
+export const prerender = true;
+
+export function getStaticPaths() {
+  return LEGAL_DOCS.map((d) => ({ params: { slug: d.slug }, props: { doc: d } }));
+}
+
+const { doc } = Astro.props;
+const body = legalHtml(doc.slug);
+const others = LEGAL_DOCS.filter((d) => d.slug !== doc.slug);
+---
+
+<Layout title={`${doc.title} — WED Secrets`} description={doc.description}>
+  <main class="container legal">
+    <BackButton href="/" label="На главную" plain />
+    <h1 class="t-h1 legal__title">{doc.title}</h1>
+    <article class="legal__body" set:html={body} />
+    <nav class="legal__more" aria-label="Другие документы">
+      {others.map((d) => <a href={legalUrl(d.slug)}>{d.title}</a>)}
+    </nav>
+  </main>
+  <BottomDock />
+</Layout>
+
+<style>
+  .legal { display: grid; gap: var(--s-5); padding-block: var(--s-6) var(--s-8); }
+  .legal__title { max-width: var(--measure-head); }
+  .legal__body { display: grid; gap: var(--s-3); }
+  .legal__body :global(h2) { margin-top: var(--s-5); font-size: var(--fs-h3); line-height: var(--lh-snug); max-width: var(--measure-text); }
+  .legal__body :global(h3) { margin-top: var(--s-3); font-size: var(--fs-body); font-weight: var(--w-medium); line-height: var(--lh-body); max-width: var(--measure-text); }
+  .legal__body :global(p), .legal__body :global(li) { line-height: var(--lh-body); max-width: var(--measure-text); overflow-wrap: anywhere; }
+  .legal__body :global(ul) { display: grid; gap: var(--s-2); padding-inline-start: var(--s-5); }
+  .legal__more { display: grid; gap: var(--s-2); margin-top: var(--s-5); }
+  .legal__more a { color: inherit; text-decoration: underline; }
+</style>

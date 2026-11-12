@@ -2,10 +2,11 @@
 // отзыв, и «Мои отзывы» на /moy/. Три способа, как у подрядчика: почта
 // с кодом, Telegram, MAX (кнопки — те же компоненты с role="bride").
 // Учётка появляется только вместе с подписью согласия на обработку ПДн
-// (legal_docs, kind = bride-pdn) — галочка стоит прямо на странице входа.
+// и Правил для молодожёнов (legal_docs: bride-pdn, bride-terms; тексты —
+// src/data/legal/) — две галочки прямо на странице входа.
 import { api, session, saveSession } from './cabinet-api';
 
-export const NEEDS_CONSENT = 'Отметьте согласие выше — без него учётку не создать.';
+export const NEEDS_CONSENT = 'Отметьте обе галочки выше — без них учётку не создать.';
 const RETURN_KEY = 'wed-bride-return';
 
 export const brideSession = () => session('bride');
@@ -14,9 +15,10 @@ export function brideLogout() {
   saveSession('bride', null);
 }
 
-/** галочка согласия на странице входа */
+/** обе галочки на странице входа (Политика и Правила) */
 export function brideConsent(): boolean {
-  return !!document.querySelector<HTMLInputElement>('[data-bride-consent]')?.checked;
+  const boxes = [...document.querySelectorAll<HTMLInputElement>('[data-bride-consent]')];
+  return boxes.length > 0 && boxes.every((b) => b.checked);
 }
 
 /** только свои адреса: ?next= не уводит на чужой сайт */
@@ -44,33 +46,28 @@ export function rememberReturn() {
   try { if (next) sessionStorage.setItem(RETURN_KEY, next); } catch {}
 }
 
+const DOC_PAGES: Record<string, string> = { 'bride-pdn': '/dokumenty/politika-konfidencialnosti/', 'bride-terms': '/dokumenty/pravila/' };
+const BRIDE_KINDS = ['bride-terms', 'bride-pdn'];
+
 /**
- * Согласие из базы — галочка с текстом документа по нажатию «читать».
- * false — редакции в базе нет: новые учётки закрыты (войти старой можно).
+ * Документы невесты из базы (legal_docs: Правила и согласие по Политике) —
+ * две галочки, у каждой ссылка на страницу документа. Подпись в базе —
+ * дословно текст галочки. false — редакций в базе нет: новые учётки
+ * закрыты (войти старой можно).
  */
 export async function renderBrideConsent(el: HTMLElement): Promise<boolean> {
-  const res = await api(null, 'GET', `/api/collections/legal_docs/records?sort=-created&perPage=1&filter=${encodeURIComponent('kind = "bride-pdn"')}`);
-  const d = res.items?.[0];
-  if (!d) return false;
+  const res = await api(null, 'GET', `/api/collections/legal_docs/records?sort=-created&perPage=20&filter=${encodeURIComponent(BRIDE_KINDS.map((k) => `kind = "${k}"`).join(' || '))}`);
+  const latest = BRIDE_KINDS.map((k) => res.items?.find((d: any) => d.kind === k)).filter(Boolean);
+  if (latest.length < BRIDE_KINDS.length) return false;
   const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
-  // текст документа пишем мы сами в базе (редактор), поэтому как HTML
-  el.innerHTML = `
+  el.innerHTML = latest.map((d: any) => `
     <div class="auth__doc">
       <label class="check">
         <input class="check__input" type="checkbox" data-bride-consent />
         <span class="check__box"></span>
-        <span>${esc(d.checkbox)} <button class="auth__doc-link" type="button" aria-expanded="false" aria-controls="bride-doc" data-doc-toggle>читать</button></span>
+        <span>${esc(d.checkbox)} <a class="auth__doc-link" href="${DOC_PAGES[d.kind]}" target="_blank" rel="noopener">читать</a></span>
       </label>
-      <div class="auth__doc-text" id="bride-doc" hidden>${d.text}</div>
-    </div>`;
-  const b = el.querySelector<HTMLButtonElement>('[data-doc-toggle]')!;
-  b.addEventListener('click', (ev) => {
-    ev.preventDefault();
-    const text = document.getElementById('bride-doc')!;
-    text.hidden = !text.hidden;
-    b.setAttribute('aria-expanded', String(!text.hidden));
-    b.textContent = text.hidden ? 'читать' : 'скрыть';
-  });
+    </div>`).join('');
   return true;
 }
 

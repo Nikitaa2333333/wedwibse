@@ -42,6 +42,14 @@ const FAQ: { q: string; a: string }[] = [
           ))}
         </div>
       </section>
+      {/* документы для подрядчика (12.11): правила модерации и политика — страницы сайта */}
+      <section class="c-cat">
+        <h2 class="c-cat__h">Документы</h2>
+        <div class="c-rows">
+          <a class="c-row" href="/dokumenty/pravila-moderacii/" target="_blank" rel="noopener"><span class="c-row__title">Правила модерации</span><svg class="c-row__go" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M9 5l6 7-6 7"/></svg></a>
+          <a class="c-row" href="/dokumenty/politika-konfidencialnosti/" target="_blank" rel="noopener"><span class="c-row__title">Политика конфиденциальности</span><svg class="c-row__go" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M9 5l6 7-6 7"/></svg></a>
+        </div>
+      </section>
       {/* Никита, 02.11: кнопка — под вопросами: сперва ответ, потом письмо */}
       {/* Никита 05.11: кнопка стоит всегда; адреса пока нет — никуда не ведёт */}
       <a class="a-btn a-btn--primary a-btn--lg c-support" href={SUPPORT_HREF || undefined} target={SUPPORT_HREF ? '_blank' : undefined} rel="noopener" aria-disabled={SUPPORT_HREF ? undefined : 'true'}>
@@ -57,6 +65,7 @@ const FAQ: { q: string; a: string }[] = [
   /* вопрос — заголовком строки, ответ — отдельным абзацем с отбивкой (как раскрывающиеся строки iOS) */
   details.c-row :global(.c-row__title) { font-weight: 600; }
   details.c-row[open] summary { margin-bottom: var(--s-2); }
+  a.c-row { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); color: inherit; text-decoration: none; }
   .c-details__text { line-height: 1.45; padding-bottom: var(--s-2); }
 </style>
 

@@ -871,13 +871,14 @@ console.log('\nотзывы невест');
   });
   cleanup.specialists.push(draft.json?.id);
 
-  // без опубликованного согласия новой учётки невесты нет
-  res = await call(null, 'POST', '/api/wed/bride/email', { email: `bride-${stamp}@example.com`, accept: true });
-  const hadDoc = !says(res, 'не опубликовано');
-  if (!hadDoc) {
-    const doc = await call(SU, 'POST', '/api/collections/legal_docs/records', { kind: 'bride-pdn', version: 'test', title: 'Согласие', text: '<p>тест</p>', checkbox: 'Согласна' });
+  // документы невесты (согласие по Политике и Правила): нет в базе — заводим на время теста
+  for (const kind of ['bride-pdn', 'bride-terms']) {
+    const have = await call(SU, 'GET', `/api/collections/legal_docs/records?perPage=1&filter=${encodeURIComponent(`kind = "${kind}"`)}`);
+    if (have.json?.items?.length) continue;
+    const doc = await call(SU, 'POST', '/api/collections/legal_docs/records', { kind, version: 'test', title: kind, text: '<p>тест</p>', checkbox: 'Согласна' });
     cleanup.legal_docs.push(doc.json?.id);
   }
+  res = await call(null, 'POST', '/api/wed/bride/email', { email: `bride-${stamp}@example.com`, accept: true });
   res = await call(null, 'POST', '/api/wed/bride/email', { email: `bride2-${stamp}@example.com` });
   check('невеста: без галочки учётка не заводится', res.json?.status === 'needs-accept', res.text);
   res = await call(null, 'POST', '/api/wed/bride/email', { email: `bride2-${stamp}@example.com`, accept: true });
@@ -888,7 +889,7 @@ console.log('\nотзывы невест');
   const other = await call(SU, 'GET', `/api/collections/brides/records?filter=${encodeURIComponent(`email = "bride-${stamp}@example.com"`)}`);
   cleanup.brides.push(other.json?.items?.[0]?.id);
   const sig = await call(SU, 'GET', `/api/collections/signatures/records?filter=${encodeURIComponent(`bride = "${brideId}"`)}`);
-  check('невеста: подпись согласия записана', sig.json?.items?.length === 1 && sig.json.items[0].kind === 'bride-pdn', sig.text);
+  check('невеста: подписаны оба документа', sig.json?.items?.length === 2 && sig.json.items.every((x) => x.kind.startsWith('bride-')), sig.text);
   sig.json?.items?.forEach((x) => cleanup.signatures.push(x.id));
   const imp = await call(SU, 'POST', `/api/collections/brides/impersonate/${brideId}`, { duration: 3600 });
   const B2 = imp.json?.token;

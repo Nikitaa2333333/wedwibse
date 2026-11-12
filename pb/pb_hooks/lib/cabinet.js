@@ -1703,11 +1703,12 @@ function messengerAuth(e, body, field, who, method) {
 // кодом, Telegram, MAX. Появляется только вместе с подписью согласия на
 // обработку ПДн (legal_docs, kind = bride-pdn): нет опубликованной редакции —
 // новых учёток нет, отзыв оставить нельзя. Вошедшая раньше — входит всегда.
-const BRIDE_DOCS = ['bride-pdn'];
+// согласие на ПДн (Политика конфиденциальности) и Правила для молодожёнов — две галочки (12.11)
+const BRIDE_DOCS = ['bride-pdn', 'bride-terms'];
 
 function newBride(e, set, method) {
   const docs = currentDocs(e.app, BRIDE_DOCS);
-  if (docs.some((d) => !d)) throw new BadRequestError('Согласие на обработку данных ещё не опубликовано — оставить отзыв пока нельзя. Напишите нам.');
+  if (docs.some((d) => !d)) throw new BadRequestError('Документы для входа ещё не опубликованы — оставить отзыв пока нельзя. Напишите нам.');
   let bride;
   e.app.runInTransaction((tx) => {
     bride = new Record(tx.findCollectionByNameOrId('brides'));

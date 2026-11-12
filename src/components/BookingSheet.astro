@@ -87,7 +87,7 @@ const WAYS = [
         <button class="pill pill--lg booking__submit" type="submit">{action}</button>
         <p class="booking__error t-small" data-booking-error role="alert" hidden></p>
         <p class="booking__legal t-caption">
-          Отправляя заявку, вы соглашаетесь на обработку своих данных.
+          Отправляя заявку, вы соглашаетесь на обработку своих данных по <a href="/dokumenty/politika-konfidencialnosti/" target="_blank" rel="noopener">политике конфиденциальности</a>.
         </p>
       </footer>
     </form>
@@ -149,6 +149,7 @@ const WAYS = [
   /* Правовая строка — мелким кеглем, но обычным тоном: серым в этой
      шторке не пишем ничего. */
   .booking__legal { font-size: var(--fs-caption); }
+  .booking__legal a { color: inherit; text-decoration: underline; }
   .booking__error { color: var(--error-text); }
 
   /* Экран «принято»: знак, заголовок и строка — по центру панели */
