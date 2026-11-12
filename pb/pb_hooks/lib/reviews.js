@@ -97,6 +97,35 @@ function moderateReview(e) {
   r.set('reviewedAt', status === 'pending' ? '' : new DateTime());
   e.next();
   if (before !== status && status !== 'pending') mailBride(e.app, r, status);
+  if (before !== status && status === 'approved') notifyOwner(e.app, r);
+}
+
+/**
+ * Владельцу карточки — «новый отзыв» (Никита 12.11): письмо и, при
+ * VENDOR_MESSENGER_NOTIFY=1, сообщение в мессенджер входа (notifyVendor).
+ * Только об опубликованном: отзывы на проверке подрядчику не видны.
+ * У карточки без владельца (наша, ещё не передана) — никому.
+ */
+function notifyOwner(app, r) {
+  try {
+    const c = cab();
+    const field = r.getString('venue') ? 'venue' : 'specialist';
+    const card = app.findRecordById(field === 'venue' ? 'venues' : 'specialists', r.getString(field));
+    const owner = card.getString('owner');
+    if (!owner) return;
+    const name = card.getString('name');
+    const stars = '★'.repeat(r.getInt('rating')) + '☆'.repeat(5 - r.getInt('rating'));
+    c.notifyVendor(app, owner, `Новый отзыв — ${name}`,
+      c.vendorMail({
+        status: 'ok',
+        label: 'Новый отзыв',
+        title: name,
+        lines: [`Новый отзыв о вашей карточке, ${stars}, подпись: «${String(r.getString('authorName')).replace(/[&<>"]/g, '')}». Он уже на сайте, а целиком — в кабинете, в разделе «Отзывы».`],
+      }),
+      `Новый отзыв о «${name}»: ${stars}. Он уже на сайте, целиком — в кабинете, в разделе «Отзывы».`);
+  } catch (err) {
+    app.logger().warn('reviews: уведомление владельцу не ушло', 'review', r.id, 'error', String(err));
+  }
 }
 
 /** письмо автору о решении; учётка без почты (вход мессенджером) — без письма */

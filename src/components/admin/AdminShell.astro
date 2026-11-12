@@ -29,7 +29,7 @@ const { title, section, bare = false } = Astro.props;
 
 // счётчик (`count`) — сколько ждёт действия; число ставит скрипт из базы
 // tab — короче для нижнего меню телефона: шесть разделов в 390 px
-const items: { key: AdminSection; href: string; label: string; tab?: string; count?: boolean; tone?: 'info' | 'ok' | 'bad'; gap?: boolean }[] = [
+const items: { key: AdminSection; href: string; label: string; tab?: string; count?: boolean; tone?: 'info' | 'ok' | 'bad'; gap?: boolean; phone?: boolean }[] = [
   { key: 'overview', href: '/profi/admin/', label: 'Сводка' },
   // заявки пар с сайта (07.11, docs/cabinet/LEADS-ADMIN.md); счётчик — новые (status = new)
   { key: 'leads', href: '/profi/admin/zayavki-par/', label: 'Заявки пар', tab: 'Заявки', count: true, tone: 'info' },
@@ -40,7 +40,8 @@ const items: { key: AdminSection; href: string; label: string; tab?: string; cou
   { key: 'reviews', href: '/profi/admin/otzyvy/', label: 'Отзывы', count: true, tone: 'info' },
   { key: 'catalog', href: '/profi/admin/katalog/', label: 'Карточки' },
   // Жалобы важны меньше — отдельно, внизу меню; в базе их пока нет — без счётчика
-  { key: 'complaints', href: '/profi/admin/zhaloby/', label: 'Жалобы', gap: true },
+  // в нижнем меню телефона жалоб нет (12.11): семь разделов в 390 px слипались, а жалоб в базе пока нет
+  { key: 'complaints', href: '/profi/admin/zhaloby/', label: 'Жалобы', gap: true, phone: false },
 ];
 ---
 
@@ -89,7 +90,7 @@ const items: { key: AdminSection; href: string; label: string; tab?: string; cou
     </div>}
     {!bare && (
       <nav class="c-tabs" aria-label="Разделы админки">
-        {items.map((it) => (
+        {items.filter((it) => it.phone !== false).map((it) => (
           <a class="c-tab" href={it.href} aria-current={it.key === section ? 'page' : undefined}>
             <span class="c-tab__ic"><AdminIcon name={it.key} />{it.count && <span class={`c-tab__n${it.tone === 'info' ? ' c-tab__n--info' : ''}`} data-nav-n={it.key} hidden></span>}</span>
             <span>{it.tab ?? it.label}</span>

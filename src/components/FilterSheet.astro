@@ -1,7 +1,8 @@
 ---
 // ШТОРКА ФИЛЬТРОВ (реф. Яндекс Путешествия): поднимается снизу экрана,
-// одна на все каталоги. Внутри: «Популярные фильтры» (сборная из пунктов
-// с popular), затем каждая группа своим блоком чипов. Внизу липкая панель:
+// одна на все каталоги. Внутри: поиск (если задан), затем каждая группа —
+// сворачиваемый раздел со строками-отметками (один вид на телефоне и ПК,
+// 12.11.2026; блок «Популярные» снят). Внизу липкая панель:
 // строка «Нашли N …» и две кнопки — «Сбросить» и «Применить».
 // Оболочка шторки — реестр .sheet в global.css, открытие — lib/sheet.ts.
 //
@@ -41,16 +42,6 @@ interface Props {
 
 const { groups, counts = {}, noun = ['предложение', 'предложения', 'предложений'], sortable = false, search } = Astro.props;
 
-const popular = groups.flatMap((g) =>
-  g.options
-    .filter((o) => o.popular)
-    .map((o) => ({
-      key: g.key,
-      value: o.value,
-      label: typeof o.popular === 'string' ? o.popular : o.label,
-      count: counts[g.key]?.[o.value],
-    }))
-);
 ---
 
 <div class="sheet sheet--dock" data-sheet="filters" data-noun={JSON.stringify(noun)}>
@@ -87,22 +78,15 @@ const popular = groups.flatMap((g) =>
         </section>
       )}
 
-      {popular.length > 0 && (
-        <section class="fsheet__group fsheet__group--popular">
-          <h3 class="fsheet__label">Популярные фильтры</h3>
-          <div class="fsheet__chips">
-            {popular.map((p) => (
-              <button class="chip" type="button" data-chip-proxy data-chip-key={p.key} data-chip-value={p.value} aria-pressed="false">
-                {p.label}
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
-
       {groups.map((group) => (
-        <section class="fsheet__group" data-sheet-group={group.key} hidden={group.hidden}>
-          <h3 class="fsheet__label">{group.label}</h3>
+        <details class="fsheet__group fsheet__fold" data-sheet-group={group.key} hidden={group.hidden}>
+          <summary class="fsheet__sum">
+            <span class="fsheet__sum-text">
+              <span class="fsheet__label">{group.label}</span>
+              <span class="fsheet__picked" data-picked hidden></span>
+            </span>
+            <Icon name="caretDown" class="fsheet__caret" />
+          </summary>
           <div class="fsheet__chips">
             {group.options.map((opt) => (
               <label class="chip-opt">
@@ -114,11 +98,11 @@ const popular = groups.flatMap((g) =>
                   data-filter-key={group.key}
                   data-filter-single={group.type === 'single' ? '' : undefined}
                 />
-                <span class="chip">{opt.label}</span>
+                <span class="chip">{opt.label}{counts[group.key]?.[opt.value] !== undefined && <span class="chip__count">{counts[group.key][opt.value]}</span>}</span>
               </label>
             ))}
           </div>
-        </section>
+        </details>
       ))}
     </div>
 
@@ -133,22 +117,117 @@ const popular = groups.flatMap((g) =>
 </div>
 
 <style>
+  /* ОДИН ВИД НА ТЕЛЕФОНЕ И ПК (Никита 12.11.2026, по образцу wedwed):
+     группа — сворачиваемый раздел (details), под названием группы — что в
+     ней выбрано; пункт — строка с кружком-отметкой и счётчиком. Раньше на
+     телефоне были капсулы и блок «Популярные», а на ПК — строки: два разных
+     вида одного и того же фильтра. */
   .fsheet__body {
     display: grid;
-    gap: var(--s-6);
+    gap: var(--s-4);
   }
 
-  /* Заголовок группы — кеглем корпуса, весом заголовка; над чипами воздух */
+  .fsheet__fold[hidden] { display: none; }
+
+  .fsheet__sum {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-3);
+    min-height: 44px;
+    list-style: none;
+    cursor: pointer;
+  }
+
+  .fsheet__sum::-webkit-details-marker { display: none; }
+
+  .fsheet__sum-text { display: grid; gap: var(--s-1); min-width: 0; }
+
+  /* Заголовок группы — кеглем корпуса, весом заголовка */
   .fsheet__label {
     font-size: var(--fs-body);
     font-weight: var(--w-head);
-    margin-bottom: var(--s-3);
+    line-height: var(--lh-caption);
   }
 
+  /* выбранное в группе — строкой под названием, видно и в свёрнутой */
+  .fsheet__picked {
+    font-size: var(--fs-small);
+    line-height: var(--lh-snug);
+    overflow-wrap: anywhere;
+  }
+
+  .fsheet__caret {
+    flex: none;
+    transition: transform var(--dur-fast) var(--ease-out);
+  }
+
+  .fsheet__fold[open] .fsheet__caret { transform: rotate(180deg); }
+
   .fsheet__chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--s-2);
+    display: grid;
+    padding-block: var(--s-2) var(--s-3);
+  }
+
+  /* Пункт — строка с кружком слева, а не капсула: снимаем у .chip заливку,
+     обводку (--chip-line в тёмной теме) и скругление. Строка — блок с
+     отступом под кружок: при переносе счётчик стоит за последним словом.
+     Высота строки — зона нажатия 44 px. */
+  .fsheet__chips .chip {
+    position: relative;
+    display: block;
+    min-height: 44px;
+    padding: var(--s-2) 0 var(--s-2) calc(20px + var(--s-3));
+    background: none;
+    border: 0;
+    border-radius: 0;
+    white-space: normal;
+    text-align: left;
+    font-size: var(--fs-body);
+    font-weight: var(--w-body);
+    line-height: var(--lh-body);
+    color: var(--fg);
+  }
+
+  .fsheet__chips .chip::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: calc(var(--s-2) + (1em * var(--lh-body) - 20px) / 2);
+    width: 20px;
+    height: 20px;
+    border: 1px solid var(--fg);
+    border-radius: 50%;
+    transition: background var(--dur-fast) var(--ease-out);
+  }
+
+  /* белая точка внутри включённого кружка */
+  .fsheet__chips .chip::after {
+    content: '';
+    position: absolute;
+    left: 7px;
+    top: calc(var(--s-2) + (1em * var(--lh-body) - 20px) / 2 + 7px);
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--bg);
+    opacity: 0;
+  }
+
+  .fsheet__chips .chip__count {
+    margin-left: var(--s-2);
+    font-size: var(--fs-small);
+  }
+
+  .fsheet__chips .chip-opt__input:checked + .chip { background: none; color: var(--fg); }
+  .fsheet__chips .chip-opt__input:checked + .chip::before { background: var(--fg); }
+  .fsheet__chips .chip-opt__input:checked + .chip::after { opacity: 1; }
+  .fsheet__chips .chip-opt__input:focus-visible + .chip { outline: none; }
+  .fsheet__chips .chip-opt__input:focus-visible + .chip::before { outline: 2px solid var(--fg); outline-offset: 3px; }
+
+  @media (hover: hover) {
+    .fsheet__chips .chip:hover,
+    .fsheet__chips .chip-opt__input:not(:checked) + .chip:hover { background: none; }
   }
 
   .fsheet__found {
@@ -179,105 +258,16 @@ const popular = groups.flatMap((g) =>
   /* Сортировка на телефоне живёт своей шторкой (FilterBar) */
   .fsheet__group--sort { display: none; }
 
-  /* ============ ПК: КОЛОНКА СЛЕВА ============
-     Чипы превращаются в строки: кружок-отметка, подпись, счётчик — тот же
-     язык, что у строк .radio-row. Включённый пункт — кружок залит
-     чернилами с белой точкой, сам текст не красится.
-     Строка — блок с отступом под кружок (кружок абсолютом слева), а не
-     flex: подпись и счётчик остаются в одном потоке, и при переносе
-     счётчик стоит сразу за последним словом, а не улетает к краю. */
+  /* ПК (от 1024px): та же шторка постоянной колонкой слева (.sheet--dock),
+     кегль строк мельче — колонка узкая; первой встаёт «Сортировка». */
   @media (min-width: 1024px) {
     .fsheet__group--sort { display: block; }
-    /* «Популярные» — приём телефонной шторки; в колонке всё и так на виду */
-    .fsheet__group--popular { display: none; }
-
-    .fsheet__body { gap: var(--s-6); }
-
-    .fsheet__label {
-      font-size: var(--fs-small);
-      font-weight: var(--w-medium);
-    }
-
-    .fsheet__chips {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: var(--s-2);
-    }
-
-    .fsheet__chips .chip {
-      position: relative;
-      display: block;
-      min-height: 0;
-      padding: 0 0 0 calc(16px + var(--s-3));
-      background: none;
-      /* Здесь чип перестаёт быть капсулой и становится строкой с кружком:
-         снимаем и заливку, и обводку (--chip-line рисует рамку в тёмной
-         теме — вокруг строки списка она читалась бы полем ввода). */
-      border: 0;
-      border-radius: 0;
-      white-space: normal;
-      text-align: left;
-      font-size: var(--fs-small);
-      font-weight: var(--w-body);
-      line-height: var(--lh-body);
-      color: var(--fg);
-    }
-
-    .fsheet__chips .chip::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: calc((1em * var(--lh-body) - 16px) / 2);
-      width: 16px;
-      height: 16px;
-      border: 1px solid var(--fg);
-      border-radius: 50%;
-      transition: background var(--dur-fast) var(--ease-out);
-    }
-
-    /* Белая точка внутри включённого кружка */
-    .fsheet__chips .chip::after {
-      content: '';
-      position: absolute;
-      left: 5px;
-      top: calc((1em * var(--lh-body) - 16px) / 2 + 5px);
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--bg);
-      opacity: 0;
-    }
-
-    .fsheet__chips .chip__count {
-      margin-left: var(--s-2);
-      font-size: var(--fs-caption);
-    }
-
-    .fsheet__chips .chip[aria-pressed='true'],
-    .fsheet__chips .chip-opt__input:checked + .chip {
-      background: none;
-      color: var(--fg);
-    }
-
-    .fsheet__chips .chip[aria-pressed='true']::before,
-    .fsheet__chips .chip-opt__input:checked + .chip::before { background: var(--fg); }
-
-    .fsheet__chips .chip[aria-pressed='true']::after,
-    .fsheet__chips .chip-opt__input:checked + .chip::after { opacity: 1; }
-
-    .fsheet__chips .chip-opt__input:focus-visible + .chip {
-      outline: none;
-    }
-
-    .fsheet__chips .chip-opt__input:focus-visible + .chip::before {
-      outline: 2px solid var(--fg);
-      outline-offset: 3px;
-    }
-  }
-
-  @media (min-width: 1024px) and (hover: hover) {
-    .fsheet__chips .chip:hover,
-    .fsheet__chips .chip-opt__input:not(:checked) + .chip:hover { background: none; }
+    .fsheet__group--sort .fsheet__label { display: block; margin-bottom: var(--s-3); }
+    .fsheet__label { font-size: var(--fs-small); font-weight: var(--w-medium); }
+    .fsheet__chips .chip { font-size: var(--fs-small); min-height: 0; padding-block: var(--s-1); }
+    .fsheet__chips .chip::before { top: calc(var(--s-1) + (1em * var(--lh-body) - 20px) / 2); }
+    .fsheet__chips .chip::after { top: calc(var(--s-1) + (1em * var(--lh-body) - 20px) / 2 + 7px); }
+    .fsheet__chips .chip__count { font-size: var(--fs-caption); }
   }
 </style>
 
@@ -307,6 +297,7 @@ const popular = groups.flatMap((g) =>
       onOpen(opener) {
         const key = opener?.dataset.sheetGroup;
         const target = key ? body.querySelector<HTMLElement>(`[data-sheet-group="${key}"]`) : null;
+        if (target instanceof HTMLDetailsElement) target.open = true;
         body.scrollTo({ top: target ? target.offsetTop - body.offsetTop : 0 });
       },
     });
@@ -321,7 +312,23 @@ const popular = groups.flatMap((g) =>
       return map;
     }
 
+    // ПК: колонка слева — все группы раскрыты, сворачивать там незачем
+    const folds = Array.from(sheet.querySelectorAll<HTMLDetailsElement>('details[data-sheet-group]'));
+    const wide = window.matchMedia('(min-width: 1024px)');
+    const openWide = () => { if (wide.matches) folds.forEach((d) => { d.open = true; }); };
+    openWide();
+    wide.addEventListener('change', openWide);
+
     function syncChips(sel: Record<string, string[]>) {
+      // под названием группы — выбранное через запятую (видно и в свёрнутой)
+      folds.forEach((d) => {
+        const picked = d.querySelector<HTMLElement>('[data-picked]');
+        if (!picked) return;
+        const labels = Array.from(d.querySelectorAll<HTMLInputElement>('[data-filter-key]:checked'))
+          .map((i) => i.nextElementSibling?.firstChild?.textContent?.trim() ?? '');
+        picked.textContent = labels.join(', ');
+        picked.hidden = labels.length === 0;
+      });
       proxies.forEach((p) => {
         const { chipKey: key, chipValue: value } = p.dataset;
         p.setAttribute('aria-pressed', String(sel[key!]?.includes(value!) ?? false));

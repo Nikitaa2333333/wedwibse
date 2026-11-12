@@ -2105,6 +2105,8 @@ function cardDeleted(e) {
 }
 
 module.exports = {
+  notifyVendor,
+  vendorMail,
   brideTelegram,
   brideMax,
   brideEmail,
