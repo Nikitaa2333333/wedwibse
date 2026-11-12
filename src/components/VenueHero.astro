@@ -21,8 +21,7 @@ import HeroCta from './HeroCta.astro';
 import HeroStage from './HeroStage.astro';
 import Icon from './Icon.astro';
 import { venueFavorite } from '../lib/favorite-snapshot';
-import { FEED } from '../data/feed';
-import { venueReviews } from '../data/venue-reviews';
+import { venueReviews } from '../data/reviews';
 import { reelsOfVenue } from '../data/reels';
 
 interface Props {
@@ -51,20 +50,11 @@ const frames = [
 const favorite = await venueFavorite(venue);
 const saveData = JSON.stringify(favorite);
 
-// Оценка и число отзывов: если у площадки есть свой блок отзывов, цифры
-// в первом экране берём оттуда — иначе на кадре стоит одно число, а
-// в блоке ниже другое, и это первое, что человек замечает. Нет блока —
-// падаем на ленту каталога (тот же источник, что у доски главной);
-// нет и её — звезды в подписи просто не будет.
-// Рядом с оценкой стоит число отзывов С ТЕКСТОМ, а не число оценок:
-// «5,0 · 279» под значком сообщения обещает 279 прочитываемых мнений.
-const row = FEED.find((f) => f.kind === 'venue' && f.slug === venue.slug);
-const feedRating = row?.kind === 'venue' ? row.rating ?? null : null;
-const feedReviews = row?.kind === 'venue' ? row.reviews ?? null : null;
-
+// Оценка и число отзывов — из одобренных отзывов невест (data/reviews.ts),
+// те же цифры, что в блоке ниже. Нет отзывов — звезды в подписи нет.
 const block = venueReviews(venue.slug);
-const rating = block?.rating ?? feedRating;
-const reviews = block?.total ?? feedReviews;
+const rating = block?.rating ?? null;
+const reviews = block?.total ?? null;
 ---
 
 <!-- ПЕРВЫЙ ЭКРАН — кадр во весь экран (HeroStage), на стекле внизу имя

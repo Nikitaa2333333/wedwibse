@@ -18,7 +18,9 @@ import { applyVenueEdits, applyFeedEdits, hideVenuePhotos } from './venue-edits.
 import { catalogImage, catalogEntries, setCatalogImages, hasLocalImage } from './images';
 import { applyLive, type OwnerEdits, type Specialist } from '../data/specialists';
 import { applyLiveVenues, type Venue } from '../data/venues';
-import { applyLiveFeed, STATIC_FEED, type FeedVenue } from '../data/feed';
+import { applyLiveFeed, STATIC_FEED, FEED, type FeedVenue } from '../data/feed';
+import { applyLiveReviews, venueKey, specialistKey, venueReviews, specialistReviews, type ReviewsBlock } from '../data/reviews';
+import { SPECIALISTS_BY_CATEGORY } from '../data/specialists';
 
 const PB = (process.env.PB_INTERNAL_URL || 'http://127.0.0.1:8090').replace(/\/$/, '');
 const FILES = (process.env.PREVIEW_FILES_URL || 'https://wed-secrets.ru').replace(/\/$/, '');
@@ -216,6 +218,18 @@ async function cabinetVenue(rec: PbRecord, next: Reg): Promise<Venue | null> {
   return venueFromPage(rec.page, { slug: rec.slug, name: rec.name, photos, fileOf: (n: string) => byName.get(n) }) as Venue;
 }
 
+/**
+ * Строка «5,0 — рейтинг · N отзывов» в цифрах площадки — данные Яндекс Карт,
+ * сняты с сайта 12.11.2026 (отзывы теперь только невест). В git убраны, а в
+ * page записей базы остались; перезаливать page нельзя — затрёт правки
+ * владельцев («ведём мы»), поэтому снимаем при чтении.
+ */
+function dropMapsRating(v: any) {
+  const keep = (items: any) => Array.isArray(items) ? items.filter((i) => !/^рейтинг/i.test(String(i?.label ?? ''))) : items;
+  v.stats = keep(v.stats);
+  for (const b of v.blocks ?? []) if (b?.type === 'stats') b.items = keep(b.items);
+}
+
 async function loadVenues(next: Reg) {
   const recs = await fetchPublished('venues');
   // в базе площадок ещё нет — остаёмся на данных сборки, каталог не обнуляем
@@ -234,6 +248,7 @@ async function loadVenues(next: Reg) {
         : await mapVenueImages(rec, hideVenuePhotos(rec.page, rec.page.ownerEdits?.hiddenPhotos), next)) as Venue | null;
       // площадка «ведём мы»: правки владельца (строки, тарифы залов) поверх нашей страницы (09.11)
       if (venue && rec.page.source !== 'cabinet') venue = applyVenueEdits(venue, rec.page.ownerEdits) as Venue;
+      if (venue) dropMapsRating(venue);
       if (venue) lastVenues.set(rec.slug, venue);
       else {
         // кадр не замерился — прошлая удачная версия площадки, а без неё площадку пропускаем
@@ -287,18 +302,85 @@ async function loadSpecialists(next: Reg) {
   return { cards, edits, cabinetKeys };
 }
 
+// ---------- отзывы невест (12.11.2026) ----------
+const MONTHS = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+const MONTHS_NOM = ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь'];
+
+/** одобренные отзывы → таблица по карточкам; сбой — остаётся прежняя */
+async function loadReviews(): Promise<Map<string, ReviewsBlock>> {
+  const filter = encodeURIComponent('status = "approved"');
+  const fields = 'id,collectionId,rating,text,authorName,weddingMonth,photos,created,expand.venue.slug,expand.specialist.slug,expand.specialist.categorySlug';
+  const items: any[] = [];
+  for (let page = 1; ; page++) {
+    const r = await fetch(`${PB}/api/collections/reviews/records?perPage=500&page=${page}&sort=-created&filter=${filter}&expand=venue,specialist&fields=${fields}`, { signal: AbortSignal.timeout(8000) });
+    if (r.status === 404) return new Map(); // коллекции ещё нет (база до миграции)
+    if (!r.ok) throw new Error(`отзывы: база ответила ${r.status}`);
+    const res = await r.json();
+    items.push(...res.items);
+    if (page >= res.totalPages) break;
+  }
+  const out = new Map<string, ReviewsBlock>();
+  for (const it of items) {
+    const v = it.expand?.venue;
+    const s = it.expand?.specialist;
+    const key = v?.slug ? venueKey(v.slug) : s?.slug ? specialistKey(s.categorySlug, s.slug) : '';
+    if (!key) continue;
+    const d = new Date(String(it.created).replace(' ', 'T'));
+    const [y, m] = String(it.weddingMonth || '').split('-').map(Number);
+    const file = (n: string, thumb?: string) => `${FILES}/api/files/${it.collectionId}/${it.id}/${encodeURIComponent(n)}${thumb ? `?thumb=${thumb}` : ''}`;
+    const block = out.get(key) ?? { rating: 0, total: 0, items: [] };
+    block.items.push({
+      id: it.id,
+      author: it.authorName,
+      date: isNaN(+d) ? '' : `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`,
+      rating: it.rating,
+      text: it.text,
+      wedding: y && m ? `${MONTHS_NOM[m - 1]} ${y}` : undefined,
+      photos: (it.photos ?? []).map((n: string) => ({ thumb: file(n, '480x0'), full: file(n, '1200x0') })),
+    });
+    out.set(key, block);
+  }
+  for (const b of out.values()) {
+    b.total = b.items.length;
+    b.rating = Math.round((b.items.reduce((a, r) => a + r.rating, 0) / b.total) * 10) / 10;
+  }
+  return out;
+}
+
+/** оценка и число отзывов — на плитки каталога и визитки (поля rating/reviews) */
+function decorateRatings() {
+  for (const f of FEED) {
+    if (f.kind !== 'venue') continue;
+    const b = venueReviews(f.slug);
+    f.rating = b?.rating;
+    f.reviews = b?.total;
+  }
+  for (const list of Object.values(SPECIALISTS_BY_CATEGORY)) {
+    for (const s of list) {
+      const b = specialistReviews(s.categorySlug, s.slug);
+      s.rating = b?.rating;
+      s.reviews = b?.total;
+    }
+  }
+}
+
 async function load() {
   measureFailed = false;
   const next: Reg = new Map();
   // площадки и подрядчики — раздельно: сбой одних не трогает других
   const v = await loadVenues(next).catch((err) => { console.error('live-data, площадки:', (err as Error).message); return null; });
   const s = await loadSpecialists(next).catch((err) => { console.error('live-data, подрядчики:', (err as Error).message); return null; });
+  // отзывы — сами по себе: сбой не трогает карточки, остаётся прежняя таблица.
+  // Грузим ДО подмены: подмена ниже идёт одним синхронным куском
+  const rv = await loadReviews().catch((err) => { console.error('live-data, отзывы:', (err as Error).message); return null; });
   // часть осталась на прежних данных — их кадры остаются в реестре
   if (!v || !s) carryAll(next);
   // подмена — синхронно, одним куском: запрос не видит половину обновления
   setCatalogImages(next);
   if (v) { applyLiveVenues(v.venues); applyLiveFeed(v.feed); }
   if (s) applyLive(s.cards, s.edits, s.cabinetKeys);
+  if (rv) applyLiveReviews(rv);
+  decorateRatings();
   if (!s) throw new Error('подрядчики не обновлены');
   // кадр не замерился — повторить через 5 с, остальное как обычно
   freshAt = measureFailed ? Date.now() - FRESH_MS + 5_000 : Date.now();

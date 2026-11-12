@@ -21,11 +21,13 @@ interface Props {
   bare?: boolean;
   section?: Tab;
 }
-type Tab = 'cards' | 'leads' | 'help' | 'profile';
+type Tab = 'cards' | 'leads' | 'reviews' | 'help' | 'profile';
 const { title, bare = false, section = 'cards' } = Astro.props;
 const TABS: { key: Tab; href: string; label: string; icon: AdminIconName }[] = [
   { key: 'cards', href: '/profi/moi/', label: 'Карточки', icon: 'cards' },
   { key: 'leads', href: '/profi/moi/zayavki/', label: 'Заявки', icon: 'mail' },
+  // отзывы невест о моих карточках, опубликованные (12.11.2026)
+  { key: 'reviews', href: '/profi/moi/otzyvy/', label: 'Отзывы', icon: 'reviews' },
   { key: 'help', href: '/profi/moi/pomoshch/', label: 'Помощь', icon: 'help' },
   { key: 'profile', href: '/profi/moi/profil/', label: 'Профиль', icon: 'profile' },
 ];

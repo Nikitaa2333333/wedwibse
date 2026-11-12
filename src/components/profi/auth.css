@@ -98,3 +98,7 @@
 }
 .otp__cell.is-active { border-color: var(--fg); }
 .otp:has([aria-invalid="true"]) .otp__cell { border-color: var(--error-text); }
+
+/* Шаги входа прячутся атрибутом hidden (вход невесты: почта → код);
+   display: grid/flex у блоков выше иначе перебивает его */
+.auth__form[hidden], .auth__methods[hidden], .auth__divider[hidden] { display: none; }

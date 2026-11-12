@@ -26,6 +26,7 @@ import { similarSpecialists } from '../lib/similar';
 import { specialistCard } from '../lib/similar-cards';
 import { FILTERS_BY_CATEGORY, specialistKicker, type Specialist } from '../data/specialists';
 import { reelsOf } from '../data/reels';
+import { specialistReviews, reviewFormUrl } from '../data/reviews';
 import { resolveImage, favoriteImage, IMG_WIDTHS } from '../lib/images';
 
 interface Props {
@@ -183,12 +184,9 @@ const saveData = JSON.stringify({
       </section>
     )}
 
-    <!-- ОТЗЫВЫ — общий компонент с карточкой площадки. Своя верстка тут
-         была ровно такой же, и держать её второй копией значило дождаться,
-         пока две копии разойдутся: так уже случилось с первым экраном. -->
-    {s.reviewsList && (
-      <Reviews reviews={s.reviewsList} rating={s.rating} total={s.reviews} />
-    )}
+    <!-- ОТЗЫВЫ НЕВЕСТ — общий компонент с карточкой площадки (data/reviews.ts);
+         стоит и без отзывов: в нём кнопка «Оставить отзыв». -->
+    <Reviews block={specialistReviews(s.categorySlug, s.slug)} formHref={reviewFormUrl('specialist', s.slug, s.categorySlug)} />
 
     <!-- ЗАЯВКИ ВНИЗУ БОЛЬШЕ НЕТ (заказчик, 19.09.2026): «Заказать» и
          «В избранное» повторяли ряд действий первого экрана (HeroCta) и

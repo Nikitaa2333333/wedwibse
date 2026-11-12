@@ -6,12 +6,14 @@
 interface Props {
   href?: string;
   label?: string;
+  /** bride — вход невесты (/moy/vhod/, lib/bride.ts) */
+  role?: 'vendor' | 'bride';
 }
 
-const { href = '/profi/moi/', label = 'Войти через Telegram' } = Astro.props;
+const { href = '/profi/moi/', label = 'Войти через Telegram', role = 'vendor' } = Astro.props;
 ---
 
-<a class="pill pill--lg pill--solid pill--block tg" href={href} data-tg-login>
+<a class="pill pill--lg pill--solid pill--block tg" href={href} data-tg-login data-role={role}>
   <svg class="tg__mark" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
     <path d="M21.9 4.3c.2-.9-.7-1.6-1.5-1.3L2.6 9.9c-.9.4-.9 1.6 0 1.9l4.5 1.5 1.7 5.4c.2.7 1.1.9 1.6.4l2.5-2.4 4.7 3.4c.6.5 1.5.1 1.7-.7L21.9 4.3Zm-4 3.3-7.6 6.9-.3 3.2-1.3-4.3 8.5-5.9c.4-.3.9.1.7.1Z" />
   </svg>
@@ -23,6 +25,7 @@ const { href = '/profi/moi/', label = 'Войти через Telegram' } = Astro
 <script>
   import { TG_BOT_ID, telegramPopup, signIn, afterLogin } from '../../lib/tg-login';
   import { errText } from '../../lib/cabinet-api';
+  import { brideConsent, brideAfterLogin, NEEDS_CONSENT } from '../../lib/bride';
 
   if (TG_BOT_ID) {
     document.querySelectorAll<HTMLAnchorElement>('[data-tg-login]').forEach((btn) => {
@@ -36,6 +39,12 @@ const { href = '/profi/moi/', label = 'Войти через Telegram' } = Astro
           const tg = await telegramPopup();
           if (!tg) return;
           const q = new URLSearchParams(location.search);
+          if (btn.dataset.role === 'bride') {
+            const out = await signIn({ role: 'bride', tg, accept: brideConsent() });
+            if (out === 'needs-accept') throw new Error(NEEDS_CONSENT);
+            brideAfterLogin();
+            return;
+          }
           const p = { tg, invite: q.get('invite') || undefined, next: q.get('next') || undefined };
           if ((await signIn(p)) === 'needs-accept') location.href = '/profi/usloviya/';
           else afterLogin(p.next);

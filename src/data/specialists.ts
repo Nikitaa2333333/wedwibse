@@ -114,9 +114,6 @@ export interface Specialist {
   /** вертикальные видео-reels; пока только постеры-заглушки, video появится
       с реальными файлами (напр. /reels/anton-1.mp4 в public) */
   reels?: { poster: string; video?: string }[];
-  /** отзывы для блока на визитке (reviews выше — только счётчик для карточки);
-      photo необязательно — без него рендерится кружок с инициалами */
-  reviewsList?: { author: string; date: string; text: string; rating: number; photo?: string }[];
 }
 
 // ============ ВСЕ 19 КАТЕГОРИЙ СПЕЦИАЛИСТОВ ============

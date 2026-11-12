@@ -36,6 +36,22 @@ onRecordCreateRequest((e) => {
 // маршрут: проверяет поля, ставит статус и шлёт заявку в группу модерации.
 routerAdd('POST', '/api/wed/lead', (e) => require(`${__hooks}/lib/cabinet.js`).createLead(e));
 
+// ---------- отзывы невест (12.11.2026, lib/reviews.js) ----------
+onRecordCreateRequest((e) => {
+  if (e.hasSuperuserAuth()) return e.next();
+  return require(`${__hooks}/lib/reviews.js`).brideCreateReview(e);
+}, 'reviews');
+
+onRecordUpdateRequest((e) => {
+  if (e.hasSuperuserAuth()) return e.next();
+  return require(`${__hooks}/lib/reviews.js`).moderateReview(e);
+}, 'reviews');
+
+// вход невесты: почта (дальше штатный request-otp), Telegram, MAX
+routerAdd('POST', '/api/wed/bride/email', (e) => require(`${__hooks}/lib/cabinet.js`).brideEmail(e));
+routerAdd('POST', '/api/wed/bride/telegram', (e) => require(`${__hooks}/lib/cabinet.js`).brideTelegram(e));
+routerAdd('POST', '/api/wed/bride/max', (e) => require(`${__hooks}/lib/cabinet.js`).brideMax(e));
+
 // ---------- учётки ----------
 onRecordCreateRequest((e) => {
   if (e.hasSuperuserAuth()) return e.next();

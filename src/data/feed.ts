@@ -2,8 +2,8 @@
 // ЛЕНТА ПЛОЩАДОК — раздел 2 основного меню.
 // Все карточки — реальные площадки каталога (демо-карточки сняты
 // 13.09.2026: семи настоящих хватает на ритм ленты, а выдуманные
-// мешали бы заливке в базу). Рейтинг и число отзывов — с Яндекс.Карт,
-// те же цифры, что в src/data/reviews. Позже массив заменяется
+// мешали бы заливке в базу). Рейтинг и число отзывов — из отзывов невест
+// (data/reviews.ts), ставит live-data; с Карт сняты 12.11.2026. Позже массив заменяется
 // выборкой из PocketBase (плоские колонки записи venues).
 //
 // Фильтр и мозаика карточек — тот же паттерн, что у «Специалистов»
@@ -25,8 +25,8 @@ export interface FeedVenue {
   /** нет открытого прайса — поля нет, и карточка не попадает в бакеты чека */
   checkFrom?: number;
   avgCheck: string;
-  /** нет отзывов (площадку ещё не оценивали на Картах) — полей нет,
-      и звезда с нулём на карточке не рисуется */
+  /** нет одобренных отзывов — полей нет, и звезда с нулём на карточке
+      не рисуется; ставит live-data из отзывов невест (12.11.2026) */
   rating?: number;
   reviews?: number;
   /** фото или видео площадки: листаются вбок */
@@ -65,8 +65,6 @@ const venues: FeedVenue[] = [
     capacity: 'до 100 гостей',
     checkFrom: 5000,
     avgCheck: 'от 5 000 ₽',
-    rating: 5,
-    reviews: 151,
     media: [`${RL}/gal/g13.webp`, `${RL}/gal/g8.webp`, `${RL}/gal/g2.webp`, `${RL}/gal/g5.webp`],
   },
   {
@@ -79,8 +77,6 @@ const venues: FeedVenue[] = [
     capacity: 'до 70 гостей',
     checkFrom: 9000,
     avgCheck: 'от 9 000 ₽',
-    rating: 5,
-    reviews: 279,
     media: [`${FD}/gal/g1.webp`, `${FD}/s2-hall.webp`, `${FD}/gal/g6.webp`, `${FD}/gal/g3.webp`],
   },
   {
@@ -93,8 +89,6 @@ const venues: FeedVenue[] = [
     capacity: 'до 60 гостей',
     checkFrom: 9000,
     avgCheck: 'от 9 000 ₽',
-    rating: 5,
-    reviews: 141,
     media: [`${DTL}/p58.webp`, `${DTL}/p14.webp`, `${DTL}/p28.webp`, `${DTL}/p74.webp`],
   },
   {
@@ -106,8 +100,6 @@ const venues: FeedVenue[] = [
     capacityMax: 120,
     capacity: 'до 120 гостей',
     avgCheck: 'цена по запросу',
-    rating: 4.5,
-    reviews: 16,
     media: [`${SPARK}/hero-main.webp`, `${SPARK}/gal/g1.webp`, `${SPARK}/gal/g2.webp`, `${SPARK}/gal/g3.webp`],
   },
   {
@@ -119,8 +111,6 @@ const venues: FeedVenue[] = [
     capacityMax: 60,
     capacity: 'до 60 гостей',
     avgCheck: 'цена по запросу',
-    rating: 4.5,
-    reviews: 16,
     media: [`${LED}/hero-main.webp`, `${LED}/gal/g1.webp`, `${LED}/gal/g2.webp`, `${LED}/gal/g3.webp`],
   },
   {
@@ -132,8 +122,6 @@ const venues: FeedVenue[] = [
     capacityMax: 200,
     capacity: 'до 200 гостей',
     avgCheck: 'депозитная система',
-    rating: 5,
-    reviews: 2586,
     media: [`${FP}/p40.webp`, `${FP}/p03.webp`, `${FP}/p21.webp`, `${FP}/p35.webp`],
   },
   {
@@ -146,8 +134,6 @@ const venues: FeedVenue[] = [
     capacity: 'до 60 гостей',
     checkFrom: 9000,
     avgCheck: 'от 9 000 ₽',
-    rating: 4.4,
-    reviews: 10,
     media: [`${OTR}/p56.webp`, `${OTR}/p31.webp`, `${OTR}/p12.webp`, `${OTR}/p21.webp`],
   },
   {
@@ -162,8 +148,6 @@ const venues: FeedVenue[] = [
     capacity: '9 залов · до 350 гостей',
     checkFrom: 7000,
     avgCheck: 'от 7 000 ₽',
-    rating: 4.9,
-    reviews: 55,
     media: [`${GRB}/grand-lesnoy/p10.webp`, `${GRB}/barsky/p04.webp`, `${GRB}/pushkin/p13.webp`, `${GRB}/trubetskoy-hall/p13.webp`],
   },
   {
@@ -176,8 +160,6 @@ const venues: FeedVenue[] = [
     capacity: 'до 450 гостей',
     checkFrom: 8500,
     avgCheck: 'от 8 500 ₽',
-    rating: 5,
-    reviews: 368,
     media: [`${VB}/p21.webp`, `${VB}/p37.webp`, `${VB}/p01.webp`, `${VB}/p16.webp`],
   },
   {
@@ -190,8 +172,6 @@ const venues: FeedVenue[] = [
     capacity: 'до 300 гостей',
     checkFrom: 12000,
     avgCheck: 'от 12 000 ₽',
-    rating: 4.9,
-    reviews: 15,
     media: [`${VD}/p03.webp`, `${VD}/p01.webp`, `${VD}/p02.webp`, `${VD}/p09.webp`],
   },
 ];

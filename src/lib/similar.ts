@@ -125,7 +125,7 @@ export function similarVenues(slug: string, limit = SIMILAR_LIMIT): FeedVenue[] 
   return venues
     .filter((v) => v.slug !== slug)
     .map((v) => ({ v, score: venueScore(self, v) }))
-    .sort((x, y) => y.score - x.score || y.v.rating - x.v.rating || y.v.reviews - x.v.reviews)
+    .sort((x, y) => y.score - x.score || (y.v.rating ?? 0) - (x.v.rating ?? 0) || (y.v.reviews ?? 0) - (x.v.reviews ?? 0))
     .slice(0, limit)
     .map((x) => x.v);
 }

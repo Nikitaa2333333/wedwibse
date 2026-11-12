@@ -29,7 +29,7 @@ import RelatedCards from './RelatedCards.astro';
 import type { Venue } from '../data/venues';
 import { similarVenues } from '../lib/similar';
 import { venueCard } from '../lib/similar-cards';
-import { venueReviews } from '../data/venue-reviews';
+import { venueReviews, reviewFormUrl } from '../data/reviews';
 import { reelsOfVenue } from '../data/reels';
 import { venueBlocks } from '../lib/venue-blocks';
 
@@ -110,19 +110,10 @@ const reels = reelsOfVenue(venue.slug);
               />
             );
 
-          // ОТЗЫВЫ — блок тот же, что на карточке подрядчика; без отзывов
-          // в venue-reviews.ts секция просто не рисуется.
+          // ОТЗЫВЫ НЕВЕСТ — блок тот же, что на карточке подрядчика; стоит и
+          // без отзывов: в нём кнопка «Оставить отзыв» (data/reviews.ts)
           case 'reviews':
-            return (
-              reviews && (
-                <Reviews
-                  reviews={reviews.items}
-                  rating={reviews.rating}
-                  ratings={reviews.ratings}
-                  total={reviews.total}
-                />
-              )
-            );
+            return <Reviews block={reviews} formHref={reviewFormUrl('venue', venue.slug)} />;
 
           case 'reels':
             return <ReelsRow reels={reels} title={block.title} section />;

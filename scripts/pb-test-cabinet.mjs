@@ -52,7 +52,7 @@ const su = await call(null, 'POST', '/api/collections/_superusers/auth-with-pass
 if (su.status !== 200) throw new Error('нет доступа суперпользователя: ' + su.text);
 const SU = su.json.token;
 
-const cleanup = { leads: [], invites: [], signatures: [], revisions: [], specialists: [], venues: [], vendors: [], video_requests: [], moderators: [], legal_docs: [], max_logins: [] };
+const cleanup = { reviews: [], brides: [], leads: [], invites: [], signatures: [], revisions: [], specialists: [], venues: [], vendors: [], video_requests: [], moderators: [], legal_docs: [], max_logins: [] };
 
 async function makeVendor(tag) {
   const pass = crypto.randomUUID();
@@ -857,6 +857,82 @@ console.log('\nвход по почте');
   await call(D.token, 'PATCH', `/api/collections/revisions/records/${d.json?.id}`, { yadisk: {} });
   const map = (await call(SU, 'GET', `/api/collections/revisions/records/${d.json?.id}`)).json?.yadisk;
   check('карту забранного из кабинета не переписать', map && Object.keys(map).length === 3, JSON.stringify(map));
+}
+
+// ---------- отзывы невест (12.11.2026, lib/reviews.js) ----------
+console.log('\nотзывы невест');
+{
+  const card = await call(SU, 'POST', '/api/collections/specialists/records', {
+    slug: `otzyv-test-${stamp}`, categorySlug: 'fotografy', citySlug: 'moskva', name: 'Тест отзывов', status: 'published',
+  });
+  cleanup.specialists.push(card.json?.id);
+  const draft = await call(SU, 'POST', '/api/collections/specialists/records', {
+    slug: `otzyv-draft-${stamp}`, categorySlug: 'fotografy', citySlug: 'moskva', name: 'Черновик', status: 'draft',
+  });
+  cleanup.specialists.push(draft.json?.id);
+
+  // без опубликованного согласия новой учётки невесты нет
+  res = await call(null, 'POST', '/api/wed/bride/email', { email: `bride-${stamp}@example.com`, accept: true });
+  const hadDoc = !says(res, 'не опубликовано');
+  if (!hadDoc) {
+    const doc = await call(SU, 'POST', '/api/collections/legal_docs/records', { kind: 'bride-pdn', version: 'test', title: 'Согласие', text: '<p>тест</p>', checkbox: 'Согласна' });
+    cleanup.legal_docs.push(doc.json?.id);
+  }
+  res = await call(null, 'POST', '/api/wed/bride/email', { email: `bride2-${stamp}@example.com` });
+  check('невеста: без галочки учётка не заводится', res.json?.status === 'needs-accept', res.text);
+  res = await call(null, 'POST', '/api/wed/bride/email', { email: `bride2-${stamp}@example.com`, accept: true });
+  check('невеста: учётка по почте с согласием', res.json?.status === 'ok', res.text);
+  const found = await call(SU, 'GET', `/api/collections/brides/records?filter=${encodeURIComponent(`email = "bride2-${stamp}@example.com"`)}`);
+  const brideId = found.json?.items?.[0]?.id;
+  cleanup.brides.push(brideId);
+  const other = await call(SU, 'GET', `/api/collections/brides/records?filter=${encodeURIComponent(`email = "bride-${stamp}@example.com"`)}`);
+  cleanup.brides.push(other.json?.items?.[0]?.id);
+  const sig = await call(SU, 'GET', `/api/collections/signatures/records?filter=${encodeURIComponent(`bride = "${brideId}"`)}`);
+  check('невеста: подпись согласия записана', sig.json?.items?.length === 1 && sig.json.items[0].kind === 'bride-pdn', sig.text);
+  sig.json?.items?.forEach((x) => cleanup.signatures.push(x.id));
+  const imp = await call(SU, 'POST', `/api/collections/brides/impersonate/${brideId}`, { duration: 3600 });
+  const B2 = imp.json?.token;
+
+  const TEXT = 'Всё прошло прекрасно, команда помогла с таймингом и рассадкой гостей.';
+  res = await call(B2, 'POST', '/api/collections/reviews/records', { specialist: draft.json?.id, rating: 5, text: TEXT, authorName: 'Анна' });
+  check('отзыв о неопубликованной карточке нельзя', refused(res), res.text);
+  res = await call(B2, 'POST', '/api/collections/reviews/records', { specialist: card.json?.id, rating: 5, text: 'Супер', authorName: 'Анна' });
+  check('слишком короткий отзыв не принимается', refused(res) && says(res, 'подробнее'), res.text);
+  res = await call(B2, 'POST', '/api/collections/reviews/records', { specialist: card.json?.id, rating: 5, text: TEXT, authorName: 'Анна', status: 'approved' });
+  check('невеста не ставит статус сама', refused(res), res.text);
+  res = await call(A.token, 'POST', '/api/collections/reviews/records', { specialist: card.json?.id, rating: 5, text: TEXT, authorName: 'Подрядчик' });
+  check('подрядчик отзыв не пишет', refused(res), res.text);
+
+  const form = new FormData();
+  form.append('specialist', card.json?.id);
+  form.append('rating', '4');
+  form.append('text', TEXT);
+  form.append('authorName', 'Анна и Илья');
+  form.append('weddingMonth', '2026-08');
+  form.append('photos', new Blob([PNG], { type: 'image/png' }), 'r.png');
+  res = await call(B2, 'POST', '/api/collections/reviews/records', form);
+  check('отзыв с фото уходит на модерацию', res.status === 200 && res.json?.status === 'pending' && res.json?.bride === brideId && res.json?.photos?.length === 1, res.text);
+  const reviewId = res.json?.id;
+  cleanup.reviews.push(reviewId);
+
+  res = await call(B2, 'POST', '/api/collections/reviews/records', { specialist: card.json?.id, rating: 5, text: TEXT, authorName: 'Анна' });
+  check('второй отзыв на ту же карточку нельзя', refused(res), res.text);
+  res = await call(null, 'GET', `/api/collections/reviews/records/${reviewId}`);
+  check('отзыв на проверке гостю не виден', res.status === 404, String(res.status));
+  res = await call(B2, 'GET', `/api/collections/reviews/records/${reviewId}`);
+  check('автор видит свой отзыв на проверке', res.status === 200, res.text);
+  res = await call(B2, 'PATCH', `/api/collections/reviews/records/${reviewId}`, { status: 'approved' });
+  check('автор не одобряет свой отзыв', refused(res), res.text);
+  res = await call(M.token, 'PATCH', `/api/collections/reviews/records/${reviewId}`, { text: 'подмена' });
+  check('модератор не правит текст', refused(res), res.text);
+  res = await call(M.token, 'PATCH', `/api/collections/reviews/records/${reviewId}`, { status: 'rejected' });
+  check('не опубликовать без причины нельзя', refused(res) && says(res, 'причин'), res.text);
+  res = await call(M.token, 'PATCH', `/api/collections/reviews/records/${reviewId}`, { status: 'approved' });
+  check('модератор публикует', res.status === 200 && res.json?.status === 'approved' && !!res.json?.reviewedAt, res.text);
+  res = await call(null, 'GET', `/api/collections/reviews/records?filter=${encodeURIComponent(`specialist = "${card.json?.id}"`)}`);
+  check('опубликованный отзыв виден всем', res.json?.items?.length === 1, res.text);
+  res = await call(B2, 'DELETE', `/api/collections/reviews/records/${reviewId}`);
+  check('автор может удалить свой отзыв', res.status === 204, res.text);
 }
 
 // ---------- уборка ----------

@@ -17,7 +17,7 @@ import AdminIcon from './AdminIcon.astro';
 import './base.css';
 import './admin.css';
 
-export type AdminSection = 'overview' | 'leads' | 'partners' | 'moderation' | 'catalog' | 'complaints';
+export type AdminSection = 'overview' | 'leads' | 'partners' | 'moderation' | 'reviews' | 'catalog' | 'complaints';
 
 interface Props {
   title: string;
@@ -36,6 +36,8 @@ const items: { key: AdminSection; href: string; label: string; tab?: string; cou
   // новые карточки подрядчиков; адрес /zayavki/ остался с тех пор, как раздел звался «Заявки»
   { key: 'partners', href: '/profi/admin/zayavki/', label: 'Новые карточки', tab: 'Новые', count: true, tone: 'bad' },
   { key: 'moderation', href: '/profi/admin/moderaciya/', label: 'Модерация', count: true, tone: 'info' },
+  // отзывы невест (12.11.2026): счётчик — ждут проверки
+  { key: 'reviews', href: '/profi/admin/otzyvy/', label: 'Отзывы', count: true, tone: 'info' },
   { key: 'catalog', href: '/profi/admin/katalog/', label: 'Карточки' },
   // Жалобы важны меньше — отдельно, внизу меню; в базе их пока нет — без счётчика
   { key: 'complaints', href: '/profi/admin/zhaloby/', label: 'Жалобы', gap: true },
@@ -101,7 +103,7 @@ const items: { key: AdminSection; href: string; label: string; tab?: string; cou
 <script>
   import { bindAdminTables } from '../../lib/admin-table';
   // ClientRouter меняет страницу без перезагрузки — привязки заново на каждой
-  import { session, saveSession } from '../../lib/cabinet-api';
+  import { session, saveSession, api } from '../../lib/cabinet-api';
   import { loadRevisions, counts, setNavCount } from '../../lib/admin-live';
   import { loadLeads, newCount } from '../../lib/admin-leads';
   document.addEventListener('astro:page-load', () => {
@@ -114,6 +116,8 @@ const items: { key: AdminSection; href: string; label: string; tab?: string; cou
       setNavCount('moderation', c.editReview.length);
     }).catch(() => {});
     if (s) loadLeads().then((ls) => setNavCount('leads', newCount(ls))).catch(() => {});
+    if (s) api('moderator', 'GET', `/api/collections/reviews/records?perPage=1&fields=id&filter=${encodeURIComponent('status = "pending"')}`)
+      .then((r) => setNavCount('reviews', r.totalItems)).catch(() => {});
     const user = document.querySelector<HTMLAnchorElement>('[data-adm-user]');
     if (!user || !s) return;
     const name = s.record.name || s.record.email || 'Модератор';

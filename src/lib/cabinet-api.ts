@@ -10,9 +10,10 @@
 
 export const PB_URL = (import.meta.env.PUBLIC_PB_URL || '').replace(/\/$/, '');
 
-export type Role = 'vendor' | 'moderator';
+// bride — невеста (отзывы, 12.11.2026): учётка brides, вход почтой кодом, MAX, Telegram
+export type Role = 'vendor' | 'moderator' | 'bride';
 
-const KEY: Record<Role, string> = { vendor: 'wed-cab-vendor', moderator: 'wed-cab-moderator' };
+const KEY: Record<Role, string> = { vendor: 'wed-cab-vendor', moderator: 'wed-cab-moderator', bride: 'wed-bride' };
 
 export interface Session {
   token: string;

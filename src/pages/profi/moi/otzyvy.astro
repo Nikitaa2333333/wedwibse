@@ -1,0 +1,87 @@
+---
+// ОТЗЫВЫ — раздел нижнего меню кабинета (12.11.2026, docs/cabinet/REVIEWS.md).
+// Опубликованные отзывы невест о карточках владельца: те же, что на сайте.
+// Отзывы на проверке подрядчику не показываем — их судьбу решает модератор.
+// Ответить на отзыв пока нельзя (следующий шаг, BACKLOG).
+import CabinetShell from '../../../components/admin/CabinetShell.astro';
+---
+
+<CabinetShell title="Отзывы" section="reviews">
+  <div class="cab-col">
+    <div class="c-head">
+      <h1 class="a-h1">Отзывы</h1>
+    </div>
+    <div data-list>
+      <p class="c-empty">Загружаем…</p>
+    </div>
+  </div>
+</CabinetShell>
+
+<style>
+  .c-empty { margin-top: var(--s-4); max-width: 40ch; padding-inline: var(--s-4); }
+  :global(.c-rvs) { display: grid; gap: var(--cab-gap-far); }
+  :global(.c-rvs__group) { display: grid; gap: 8px; }
+  :global(.c-rvs__title) { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-inline: var(--s-4); }
+  :global(.c-rvs__name) { font-size: 18px; line-height: 24px; font-weight: 600; color: inherit; }
+  :global(.c-rvs__agg) { font-size: var(--adm-fs-sm); white-space: nowrap; }
+  :global(.c-rv) { display: grid; gap: 12px; padding: 18px; border-radius: var(--cab-sheet-radius); background: var(--adm-card); }
+  :global(.c-rv__who) { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: baseline; }
+  :global(.c-rv__author) { font-weight: 600; }
+  :global(.c-rv__when) { grid-column: 1 / -1; font-size: var(--adm-fs-sm); }
+  :global(.c-rv__text) { font-size: 16px; line-height: 22px; white-space: pre-line; overflow-wrap: anywhere; }
+  :global(.c-rv__photos) { display: flex; flex-wrap: wrap; gap: 8px; }
+  :global(.c-rv__photo) { width: 72px; aspect-ratio: 1; border-radius: var(--adm-radius-md); overflow: hidden; background: var(--adm-bg); }
+  :global(.c-rv__photo img) { width: 100%; height: 100%; object-fit: cover; display: block; }
+</style>
+
+<script>
+  import { api, esc, errText, requireSession, PB_URL } from '../../../lib/cabinet-api';
+  import { plural } from '../../../lib/plural';
+
+  const box = document.querySelector<HTMLElement>('[data-list]')!;
+  const fmt = (iso: string) => new Date(String(iso).replace(' ', 'T')).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+  const file = (r: any, n: string, thumb: string) => `${PB_URL}/api/files/${r.collectionId}/${r.id}/${encodeURIComponent(n)}?thumb=${thumb}`;
+
+  async function load() {
+    const cards = (await api('vendor', 'GET', '/api/wed/my-cards')).items.filter((c: any) => c.status === 'published');
+    if (!cards.length) {
+      box.innerHTML = '<p class="c-empty">Отзывы появятся здесь, когда карточка будет на сайте и пары начнут их оставлять</p>';
+      return;
+    }
+    const filter = `status = "approved" && (${cards.map((c: any) => `${c.kind} = "${c.id}"`).join(' || ')})`;
+    const res = await api('vendor', 'GET', `/api/collections/reviews/records?perPage=200&sort=-created&filter=${encodeURIComponent(filter)}`);
+    if (!res.items.length) {
+      box.innerHTML = '<p class="c-empty">Отзывов пока нет. Пары оставляют их на странице вашей карточки, после проверки они появятся и здесь, и на сайте</p>';
+      return;
+    }
+    box.innerHTML = `<div class="c-rvs">${cards.map((c: any) => {
+      const mine = res.items.filter((r: any) => r[c.kind] === c.id);
+      if (!mine.length) return '';
+      const avg = (mine.reduce((a: number, r: any) => a + r.rating, 0) / mine.length).toFixed(1).replace('.', ',');
+      return `
+        <section class="c-rvs__group">
+          <div class="c-rvs__title">
+            <a class="c-rvs__name" href="${c.url}" target="_blank" rel="noopener">${esc(c.name)}</a>
+            <span class="c-rvs__agg">★ ${avg}, ${mine.length} ${plural(mine.length, ['отзыв', 'отзыва', 'отзывов'])}</span>
+          </div>
+          ${mine.map((r: any) => `
+            <article class="c-rv">
+              <div class="c-rv__who">
+                <span class="c-rv__author">${esc(r.authorName)}</span>
+                <span aria-label="Оценка ${r.rating} из 5">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</span>
+                <span class="c-rv__when">${fmt(r.created)}</span>
+              </div>
+              <p class="c-rv__text">${esc(r.text)}</p>
+              ${(r.photos ?? []).length ? `<div class="c-rv__photos">${r.photos.map((n: string) => `<a class="c-rv__photo" href="${file(r, n, '1200x0')}" target="_blank" rel="noopener"><img src="${file(r, n, '480x0')}" alt="" loading="lazy" /></a>`).join('')}</div>` : ''}
+            </article>`).join('')}
+        </section>`;
+    }).join('')}</div>`;
+  }
+
+  if (requireSession('vendor')) {
+    load().catch((err) => {
+      box.innerHTML = `<p class="c-empty">${esc(errText(err))} <button class="a-btn a-btn--sm" type="button" data-retry>Повторить</button></p>`;
+      box.querySelector('[data-retry]')?.addEventListener('click', () => location.reload());
+    });
+  }
+</script>

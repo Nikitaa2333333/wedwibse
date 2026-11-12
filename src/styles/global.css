@@ -166,6 +166,7 @@
   --measure-text: 66ch;
   --measure-head: 26ch;
   --measure-prose: 72ch;   /* длинный ответ/описание в одну колонку */
+  --review-photo: 72px;    /* квадратик фото к отзыву невесты (Reviews) */
 
   /* ============ МАРКЕР СПИСКА ============
      Один маркер на весь проект. Размер/отступ крутятся здесь,
@@ -2164,4 +2165,16 @@ body:has(.scta.is-shown) .fav-toast {
 }
 @media (min-width: 1024px) {
   .draft-bar { padding-top: var(--s-3); }
+}
+
+/* Текст только для экранного диктора: подпись звезды оценки, скрытое поле
+   файла под кнопкой (форма отзыва /moy/otzyv/, 12.11.2026) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }

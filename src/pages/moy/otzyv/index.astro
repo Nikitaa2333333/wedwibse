@@ -1,0 +1,204 @@
+---
+// ФОРМА ОТЗЫВА (12.11.2026, docs/cabinet/REVIEWS.md).
+// ?ploshchadka=<slug> или ?podryadchik=<категория>/<slug> — о ком отзыв.
+// Не вошла — на /moy/vhod/ с возвратом сюда. Оценка, текст, месяц свадьбы,
+// подпись, до 5 фото → коллекция reviews; автора и статус «на модерации»
+// ставит хук базы (lib/reviews.js). На сайте — после одобрения.
+import Layout from '../../../layouts/Layout.astro';
+import BottomDock from '../../../components/BottomDock.astro';
+import '../../../components/profi/auth.css';
+---
+
+<Layout title="Отзыв — WED Secrets" description="Отзыв о площадке или подрядчике." noindex>
+  <main class="container auth rv" data-root>
+    <div class="auth__head">
+      <h1 class="t-h1" data-title>Отзыв</h1>
+      <p class="auth__sub" data-sub>Загружаем…</p>
+    </div>
+
+    <form class="auth__form" data-form hidden>
+      <fieldset class="rv__stars" data-stars>
+        <legend class="rv__label">Оценка</legend>
+        <div class="rv__row">
+          {[5, 4, 3, 2, 1].map((n) => (
+            <label class="rv__star">
+              <input type="radio" name="rating" value={n} required />
+              <span aria-hidden="true">★</span>
+              <span class="sr-only">{n} из 5</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      <label class="rv__field">
+        <span class="rv__label">Как всё прошло</span>
+        <textarea class="input" name="text" rows="7" minlength="20" maxlength="4000" required placeholder="Что понравилось, что стоит знать другим парам"></textarea>
+      </label>
+
+      <label class="rv__field">
+        <span class="rv__label">Месяц свадьбы</span>
+        <input class="input" type="month" name="weddingMonth" data-month />
+      </label>
+
+      <label class="rv__field">
+        <span class="rv__label">Подпись под отзывом</span>
+        <input class="input" name="authorName" maxlength="80" autocomplete="given-name" placeholder="Например, Анна и Илья" required />
+      </label>
+
+      <div class="rv__field">
+        <span class="rv__label">Фото, до 5</span>
+        <div class="rv__photos" data-photos></div>
+        <label class="pill rv__add" data-add>
+          Добавить фото
+          <input class="sr-only" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" multiple data-file />
+        </label>
+      </div>
+
+      <p class="auth__sub">Отзыв появится на странице после проверки — обычно в течение дня.</p>
+      <p class="auth__error" role="alert" data-error hidden></p>
+      <button class="pill pill--lg pill--solid pill--block" type="submit">Отправить</button>
+    </form>
+
+    <div class="rv__done" data-done hidden>
+      <p class="auth__sub">Спасибо! Отзыв ушёл на проверку — как только опубликуем, он появится на странице.</p>
+      <a class="pill pill--lg pill--solid pill--block" href="/" data-back>Вернуться к карточке</a>
+      <a class="auth__alt" href="/moy/">Мои отзывы</a>
+    </div>
+  </main>
+
+  <BottomDock />
+</Layout>
+
+<style>
+  .rv__field { display: grid; gap: var(--s-2); min-width: 0; }
+  .rv__label { font-size: var(--fs-small); font-weight: var(--w-medium); }
+  .rv__stars { border: 0; padding: 0; margin: 0; display: grid; gap: var(--s-2); }
+  .rv__row { display: flex; gap: 0; margin-inline-start: calc(-1 * var(--s-2)); flex-direction: row-reverse; justify-content: flex-end; }
+  /* зона нажатия не меньше 44 px (HIG), звезда по центру */
+  .rv__star { cursor: pointer; display: grid; place-items: center; min-width: 44px; min-height: 44px; font-size: var(--fs-h2); line-height: 1; color: var(--hairline); }
+  .rv__star input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  /* звезда и все левее неё (порядок в разметке перевёрнут через row-reverse) */
+  .rv__star:has(input:checked), .rv__star:has(input:checked) ~ .rv__star { color: var(--fg); }
+  .rv__star:has(input:focus-visible) { outline: 2px solid var(--fg); outline-offset: 2px; border-radius: var(--radius-card); }
+  @media (hover: hover) {
+    .rv__row:hover .rv__star { color: var(--hairline); }
+    .rv__row .rv__star:hover, .rv__row .rv__star:hover ~ .rv__star { color: var(--fg); }
+  }
+  .rv__photos { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+  .rv__photos:empty { display: none; }
+  .rv__thumb { position: relative; width: var(--review-photo); aspect-ratio: 1; border-radius: var(--radius-card); overflow: hidden; background: var(--surface-dim); }
+  .rv__thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .rv__thumb button { position: absolute; inset: auto 0 0 auto; border: 0; background: var(--bg); color: var(--fg); font: inherit; font-size: var(--fs-small); padding: 0 var(--s-2); border-radius: var(--radius-card) 0 0 0; cursor: pointer; }
+  .rv__add { justify-self: start; cursor: pointer; }
+  .rv__add[hidden] { display: none; }
+  .rv__done { display: grid; gap: var(--s-4); }
+  .rv__done[hidden] { display: none; }
+</style>
+
+<script>
+  import { api, errText } from '../../../lib/cabinet-api';
+  import { requireBride, brideSession } from '../../../lib/bride';
+
+  const MAX_PHOTOS = 5;
+  const root = document.querySelector<HTMLElement>('[data-root]')!;
+  const form = root.querySelector<HTMLFormElement>('[data-form]')!;
+  const sub = root.querySelector<HTMLElement>('[data-sub]')!;
+  const error = form.querySelector<HTMLElement>('[data-error]')!;
+  const fail = (m: string) => { error.textContent = m; error.hidden = false; };
+
+  const q = new URLSearchParams(location.search);
+  const venueSlug = q.get('ploshchadka') || '';
+  const [cat, specSlug] = (q.get('podryadchik') || '').split('/');
+  const ok = /^[a-z0-9-]+$/;
+
+  async function findCard(): Promise<{ id: string; name: string; field: 'venue' | 'specialist'; href: string } | null> {
+    if (ok.test(venueSlug)) {
+      const r = await api(null, 'GET', `/api/collections/venues/records?perPage=1&fields=id,name&filter=${encodeURIComponent(`slug = "${venueSlug}" && status = "published"`)}`);
+      const c = r.items?.[0];
+      return c ? { id: c.id, name: c.name, field: 'venue', href: `/moskva/ploshchadki/${venueSlug}/` } : null;
+    }
+    if (ok.test(cat || '') && ok.test(specSlug || '')) {
+      const r = await api(null, 'GET', `/api/collections/specialists/records?perPage=1&fields=id,name&filter=${encodeURIComponent(`slug = "${specSlug}" && categorySlug = "${cat}" && status = "published"`)}`);
+      const c = r.items?.[0];
+      return c ? { id: c.id, name: c.name, field: 'specialist', href: `/moskva/podryadchiki/${cat}/${specSlug}/` } : null;
+    }
+    return null;
+  }
+
+  if (requireBride()) {
+    const card = await findCard().catch(() => null);
+    if (!card) {
+      sub.textContent = 'Карточка не найдена — вернитесь на её страницу и нажмите «Оставить отзыв» ещё раз.';
+    } else {
+      sub.textContent = `О «${card.name}»`;
+      document.title = `Отзыв о «${card.name}» — WED Secrets`;
+      root.querySelector<HTMLAnchorElement>('[data-back]')!.href = card.href;
+      form.hidden = false;
+
+      const name = brideSession()?.record?.name;
+      if (name) form.querySelector<HTMLInputElement>('[name=authorName]')!.value = name;
+      // свадьба уже прошла: месяц не позже текущего
+      const now = new Date();
+      form.querySelector<HTMLInputElement>('[data-month]')!.max = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+      // ---- фото: копим выбранные, превью квадратиками, «×» убирает ----
+      const files: File[] = [];
+      const box = form.querySelector<HTMLElement>('[data-photos]')!;
+      const add = form.querySelector<HTMLElement>('[data-add]')!;
+      const input = form.querySelector<HTMLInputElement>('[data-file]')!;
+      const paint = () => {
+        box.innerHTML = '';
+        files.forEach((f, i) => {
+          const el = document.createElement('div');
+          el.className = 'rv__thumb';
+          const img = document.createElement('img');
+          img.alt = '';
+          img.src = URL.createObjectURL(f);
+          const del = document.createElement('button');
+          del.type = 'button';
+          del.textContent = '×';
+          del.setAttribute('aria-label', 'Убрать фото');
+          del.addEventListener('click', () => { files.splice(i, 1); paint(); });
+          el.append(img, del);
+          box.append(el);
+        });
+        add.hidden = files.length >= MAX_PHOTOS;
+      };
+      input.addEventListener('change', () => {
+        for (const f of input.files ?? []) {
+          if (files.length >= MAX_PHOTOS) break;
+          if (f.size > 15_000_000) { fail('Фото больше 15 МБ не подойдёт — выберите поменьше.'); continue; }
+          files.push(f);
+        }
+        input.value = '';
+        paint();
+      });
+
+      form.addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        error.hidden = true;
+        const btn = form.querySelector<HTMLButtonElement>('button[type=submit]')!;
+        btn.disabled = true;
+        try {
+          const f = new FormData(form);
+          const body = new FormData();
+          body.append(card.field, card.id);
+          body.append('rating', String(f.get('rating') || ''));
+          body.append('text', String(f.get('text') || '').trim());
+          body.append('authorName', String(f.get('authorName') || '').trim());
+          if (f.get('weddingMonth')) body.append('weddingMonth', String(f.get('weddingMonth')));
+          for (const file of files) body.append('photos', file);
+          await api('bride', 'POST', '/api/collections/reviews/records', body);
+          form.hidden = true;
+          sub.textContent = `О «${card.name}»`;
+          root.querySelector<HTMLElement>('[data-done]')!.hidden = false;
+        } catch (err) {
+          if ((err as { status?: number }).status === 401) { requireBride(); return; }
+          fail(errText(err));
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    }
+  }
+</script>

@@ -12,23 +12,26 @@ import maxMark from '../../assets/profi/max-mark.webp';
 interface Props {
   href?: string;
   label?: string;
+  /** bride — вход невесты (/moy/vhod/, lib/bride.ts) */
+  role?: 'vendor' | 'bride';
 }
 
-const { href = '/profi/moi/', label = 'Войти через' } = Astro.props;
+const { href = '/profi/moi/', label = 'Войти через', role = 'vendor' } = Astro.props;
 ---
 
-<a class="pill pill--lg pill--solid pill--block mx" href={href} data-max-login>
+<a class="pill pill--lg pill--solid pill--block mx" href={href} data-max-login data-role={role}>
   <Image class="mx__mark" src={maxMark} alt="" width={26} height={26} widths={[26, 52, 78]} sizes="26px" />
   <span>{label} <b class="mx__word">MAX</b></span>
 </a>
 
-<p class="mx__note" data-max-note hidden>Нажмите «Начать» в MAX — кабинет откроется здесь сам.</p>
+<p class="mx__note" data-max-note hidden>{role === 'bride' ? 'Нажмите «Начать» в MAX — вход случится здесь сам.' : 'Нажмите «Начать» в MAX — кабинет откроется здесь сам.'}</p>
 <p class="mx__error" role="alert" data-max-error hidden></p>
 
 <script>
   import { MAX_BOT, prepareMaxLink, waitMaxSignIn, pendingMax } from '../../lib/max-login';
   import { afterLogin } from '../../lib/tg-login';
   import { errText } from '../../lib/cabinet-api';
+  import { brideConsent, brideAfterLogin, NEEDS_CONSENT } from '../../lib/bride';
 
   if (MAX_BOT) {
     // одно ожидание на страницу, сколько бы кнопок MAX на ней ни стояло
@@ -42,14 +45,18 @@ const { href = '/profi/moi/', label = 'Войти через' } = Astro.props;
       const { note, error } = parts(btn);
       note.hidden = true; error.textContent = m; error.hidden = false;
     };
-    const wait = async (btn: HTMLAnchorElement, code: string, p: { invite?: string; next?: string }, at?: number) => {
+    const wait = async (btn: HTMLAnchorElement, code: string, p: { invite?: string; next?: string; role?: 'bride'; accept?: boolean }, at?: number) => {
       if (waiting === code) return;
       waiting = code;
       const { note, error } = parts(btn);
       error.hidden = true;
       note.hidden = false;
       try {
-        if ((await waitMaxSignIn(code, p, at)) === 'needs-accept') location.href = '/profi/usloviya/';
+        const out = await waitMaxSignIn(code, p, at);
+        if (p.role === 'bride') {
+          if (out === 'needs-accept') throw new Error(NEEDS_CONSENT);
+          brideAfterLogin();
+        } else if (out === 'needs-accept') location.href = '/profi/usloviya/';
         else afterLogin(p.next);
       } catch (err) {
         fail(btn, errText(err));
@@ -66,13 +73,18 @@ const { href = '/profi/moi/', label = 'Войти через' } = Astro.props;
         if (btn.closest('[aria-disabled="true"]') || !c) { ev.preventDefault(); return; }
         // переход по ссылке (новая вкладка / приложение MAX) — браузер делает сам
         const q = new URLSearchParams(location.search);
-        wait(btn, c.code, { invite: q.get('invite') || undefined, next: q.get('next') || undefined });
+        if (btn.dataset.role === 'bride') wait(btn, c.code, { role: 'bride', accept: brideConsent() });
+        else wait(btn, c.code, { invite: q.get('invite') || undefined, next: q.get('next') || undefined });
       });
     });
     // ушли в MAX, а вкладка перезагрузилась или вернулась «назад» — ждём дальше
     const resume = () => {
       const w = pendingMax();
-      if (w && buttons[0]) wait(buttons[0], w.code, { invite: w.invite, next: w.next }, w.at);
+      // ожидание невесты (/moy/vhod/) подхватывает её страница, не вход подрядчика
+      if (!w || !buttons[0]) return;
+      const isBride = buttons[0].dataset.role === 'bride';
+      if (isBride && w.role === 'bride') wait(buttons[0], w.code, { role: 'bride', accept: w.accept }, w.at);
+      else if (!isBride && !w.role) wait(buttons[0], w.code, { invite: w.invite, next: w.next }, w.at);
     };
     resume();
     window.addEventListener('pageshow', (e) => { if (e.persisted) resume(); });

@@ -1,0 +1,110 @@
+---
+// ВХОД НЕВЕСТЫ (12.11.2026, docs/cabinet/REVIEWS.md) — чтобы оставить отзыв.
+// Почта с кодом, Telegram, MAX — как у подрядчика, учётка своя (brides).
+// Новая учётка — только с галочкой согласия на обработку ПДн: она стоит
+// здесь же, над способами входа (у подрядчика — отдельный экран условий).
+// ?next= — куда вернуть после входа (форма отзыва). Экран в стиле сайта.
+import Layout from '../../../layouts/Layout.astro';
+import BottomDock from '../../../components/BottomDock.astro';
+import TelegramButton from '../../../components/profi/TelegramButton.astro';
+import MaxButton from '../../../components/profi/MaxButton.astro';
+import CodeInput from '../../../components/profi/CodeInput.astro';
+import '../../../components/profi/auth.css';
+---
+
+<Layout title="Вход — WED Secrets" description="Вход, чтобы оставить отзыв о площадке или подрядчике." noindex>
+  <main class="container auth">
+    <div class="auth__head">
+      <h1 class="t-h1">Вход</h1>
+      <p class="auth__sub">Отзыв оставляют со своей учётки — так другие пары знают, что его написал живой человек.</p>
+    </div>
+
+    <div class="auth__checks" data-consent></div>
+
+    <form class="auth__form" data-email-form>
+      <input class="input" type="email" name="email" placeholder="Почта" aria-label="Почта" autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false" required />
+      <p class="auth__error" role="alert" data-error hidden></p>
+      <button class="pill pill--lg pill--solid pill--block" type="submit">Получить код</button>
+    </form>
+
+    <form class="auth__form" data-code-form hidden>
+      <p class="auth__sub" data-sent></p>
+      <CodeInput />
+      <p class="auth__error" role="alert" data-code-error hidden></p>
+      <button class="pill pill--lg pill--solid pill--block" type="submit">Войти</button>
+      <button class="auth__doc-link auth__alt" type="button" data-again>Другая почта</button>
+    </form>
+
+    <p class="auth__divider" data-alt>или</p>
+
+    <div class="auth__methods" data-alt>
+      <TelegramButton role="bride" href="#" label="Войти через Telegram" />
+      <MaxButton role="bride" href="#" label="Войти через" />
+    </div>
+  </main>
+
+  <BottomDock />
+</Layout>
+
+<script>
+  import { errText } from '../../../lib/cabinet-api';
+  import { brideSession, brideAfterLogin, rememberReturn, renderBrideConsent, brideSendCode, brideCheckCode } from '../../../lib/bride';
+
+  if (brideSession()) brideAfterLogin();
+  rememberReturn();
+
+  const consent = document.querySelector<HTMLElement>('[data-consent]')!;
+  renderBrideConsent(consent).then((ok) => {
+    if (!ok) consent.innerHTML = '<p class="auth__sub">Новые учётки пока не открыты — войти можно, если вы уже входили раньше.</p>';
+  }).catch(() => {});
+
+  const emailForm = document.querySelector<HTMLFormElement>('[data-email-form]')!;
+  const codeForm = document.querySelector<HTMLFormElement>('[data-code-form]')!;
+  const alts = document.querySelectorAll<HTMLElement>('[data-alt]');
+  let otpId = '';
+
+  const show = (el: HTMLElement, text: string) => { el.textContent = text; el.hidden = false; };
+
+  emailForm.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const error = emailForm.querySelector<HTMLElement>('[data-error]')!;
+    error.hidden = true;
+    const btn = emailForm.querySelector('button')!;
+    btn.disabled = true;
+    try {
+      const email = String(new FormData(emailForm).get('email')).trim();
+      otpId = await brideSendCode(email);
+      codeForm.querySelector('[data-sent]')!.textContent = `Код отправили на ${email}. Письмо приходит за минуту; нет — проверьте «Спам».`;
+      emailForm.hidden = true;
+      codeForm.hidden = false;
+      alts.forEach((el) => { el.hidden = true; });
+      codeForm.querySelector<HTMLInputElement>('input[name=code]')!.focus();
+    } catch (err) {
+      show(error, errText(err));
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  codeForm.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const error = codeForm.querySelector<HTMLElement>('[data-code-error]')!;
+    error.hidden = true;
+    const btn = codeForm.querySelector<HTMLButtonElement>('button[type=submit]')!;
+    btn.disabled = true;
+    try {
+      await brideCheckCode(otpId, String(new FormData(codeForm).get('code')));
+      brideAfterLogin();
+    } catch (err) {
+      show(error, (err as { status?: number }).status === 400 ? 'Код не подошёл. Проверьте цифры или запросите новый.' : errText(err));
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  codeForm.querySelector('[data-again]')!.addEventListener('click', () => {
+    codeForm.hidden = true;
+    emailForm.hidden = false;
+    alts.forEach((el) => { el.hidden = false; });
+  });
+</script>

@@ -1541,13 +1541,14 @@ function vendorCreateVideoRequest(e) {
 const VENDOR_DOCS = ['vendor-offer', 'vendor-pdn'];
 
 /** действующая редакция каждого документа подрядчика; нет хоть одной — регистрация закрыта */
-function currentDocs(app) {
-  return VENDOR_DOCS.map((kind) => app.findRecordsByFilter('legal_docs', 'kind = {:kind}', '-created', 1, 0, { kind })[0] || null);
+function currentDocs(app, kinds) {
+  return (kinds || VENDOR_DOCS).map((kind) => app.findRecordsByFilter('legal_docs', 'kind = {:kind}', '-created', 1, 0, { kind })[0] || null);
 }
 
-function sign(app, e, vendor, doc, method) {
+/** who — field: 'vendor' (по умолчанию) или 'bride' (отзывы невест, 12.11) */
+function sign(app, e, vendor, doc, method, who) {
   const sig = new Record(app.findCollectionByNameOrId('signatures'));
-  sig.set('vendor', vendor.id);
+  sig.set(who || 'vendor', vendor.id);
   sig.set('doc', doc.id);
   sig.set('kind', doc.getString('kind'));
   sig.set('docVersion', doc.getString('version'));
@@ -1695,6 +1696,71 @@ function messengerAuth(e, body, field, who, method) {
     e.app.runInTransaction((tx) => claimInvite(tx, vendor, body.invite));
   }
   return $apis.recordAuthResponse(e, vendor, method);
+}
+
+// ---------- вход невесты (отзывы, 12.11.2026, docs/cabinet/REVIEWS.md) ----------
+// Учётка невесты (brides) — те же три способа, что у подрядчика: почта
+// кодом, Telegram, MAX. Появляется только вместе с подписью согласия на
+// обработку ПДн (legal_docs, kind = bride-pdn): нет опубликованной редакции —
+// новых учёток нет, отзыв оставить нельзя. Вошедшая раньше — входит всегда.
+const BRIDE_DOCS = ['bride-pdn'];
+
+function newBride(e, set, method) {
+  const docs = currentDocs(e.app, BRIDE_DOCS);
+  if (docs.some((d) => !d)) throw new BadRequestError('Согласие на обработку данных ещё не опубликовано — оставить отзыв пока нельзя. Напишите нам.');
+  let bride;
+  e.app.runInTransaction((tx) => {
+    bride = new Record(tx.findCollectionByNameOrId('brides'));
+    for (const k of Object.keys(set)) bride.set(k, set[k]);
+    bride.setPassword($security.randomString(40));
+    tx.save(bride);
+    for (const d of docs) sign(tx, e, bride, d, method, 'bride');
+  });
+  return bride;
+}
+
+/** мессенджер: учётка есть — вход; нет — нужна галочка согласия (accept) */
+function brideMessenger(e, body, field, who, method) {
+  let bride = findOne(e.app, 'brides', `${field} = {:id}`, { id: who.id });
+  if (!bride) {
+    if (body.accept !== true) return e.json(200, { status: 'needs-accept', name: who.name });
+    bride = newBride(e, { [field]: who.id, name: str(who.name, 120) }, method);
+  }
+  return $apis.recordAuthResponse(e, bride, method);
+}
+
+/** POST /api/wed/bride/telegram { tg, accept? } */
+function brideTelegram(e) {
+  const body = e.requestInfo().body || {};
+  const botToken = $os.getenv('TG_BOT_TOKEN');
+  if (!botToken) throw new BadRequestError('Вход через Telegram ещё не настроен.');
+  const tg = require(`${__hooks}/lib/telegram.js`).verifyTelegram(body.tg, botToken);
+  return brideMessenger(e, body, 'telegramId', tg, 'telegram');
+}
+
+/** POST /api/wed/bride/max { code, accept? } — бот подтверждает аккаунт, как у подрядчика */
+function brideMax(e) {
+  const body = e.requestInfo().body || {};
+  const who = require(`${__hooks}/lib/max.js`).confirmed(e.app, body.code);
+  if (!who) return e.json(200, { status: 'waiting' });
+  const res = brideMessenger(e, body, 'maxId', { id: who.id, name: who.name }, 'max');
+  if (findOne(e.app, 'brides', 'maxId = {:id}', { id: who.id })) e.app.delete(who.login);
+  return res;
+}
+
+/**
+ * POST /api/wed/bride/email { email, accept? } — подготовить вход кодом:
+ * учётка есть — { status: 'ok' }, сайт просит код штатным request-otp;
+ * нет и accept не стоит — { status: 'needs-accept' }; нет и accept — учётка + подпись.
+ */
+function brideEmail(e) {
+  const body = e.requestInfo().body || {};
+  const email = str(body.email, 200).toLowerCase();
+  if (!EMAIL_RE.test(email)) throw new BadRequestError('Проверьте адрес почты.');
+  if (findOne(e.app, 'brides', 'email = {:email}', { email })) return e.json(200, { status: 'ok' });
+  if (body.accept !== true) return e.json(200, { status: 'needs-accept' });
+  newBride(e, { email, emailVisibility: false, verified: false }, 'otp');
+  return e.json(200, { status: 'ok' });
 }
 
 // ---------- вход по почте ----------
@@ -2030,6 +2096,14 @@ function cardDeleted(e) {
 }
 
 module.exports = {
+  brideTelegram,
+  brideMax,
+  brideEmail,
+  findOne,
+  str,
+  denyExtra,
+  telegram,
+  SITE_URL,
   createLead,
   myLeads,
   modRemove,

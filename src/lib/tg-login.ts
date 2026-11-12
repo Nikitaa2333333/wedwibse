@@ -40,6 +40,10 @@ export async function telegramPopup(): Promise<Record<string, unknown> | null> {
 
 /** вход ждёт условий: данные Telegram или код MAX (lib/max-login.ts) */
 export interface Pending {
+  /** чья учётка: подрядчик (по умолчанию) или невеста (/moy/vhod/, маршруты /api/wed/bride/*) */
+  role?: 'vendor' | 'bride';
+  /** невеста отметила согласие на странице входа */
+  accept?: boolean;
   tg?: Record<string, unknown>;
   max?: string;
   name?: string;
@@ -61,6 +65,15 @@ export function pending(): Pending | null {
  * и ведём на экран условий: учётка появится только с их подписью.
  */
 export async function signIn(p: Pending & { accept?: boolean }): Promise<'in' | 'needs-accept' | 'waiting'> {
+  if (p.role === 'bride') {
+    // невеста: галочка согласия стоит на самой странице входа, отдельного экрана условий нет
+    const res = p.max
+      ? await api(null, 'POST', '/api/wed/bride/max', { code: p.max, accept: p.accept === true })
+      : await api(null, 'POST', '/api/wed/bride/telegram', { tg: p.tg, accept: p.accept === true });
+    if (res?.status === 'waiting' || res?.status === 'needs-accept') return res.status;
+    saveSession('bride', { token: res.token, record: res.record });
+    return 'in';
+  }
   if (linkVia()) {
     // «Подключить» из профиля: тот же аккаунт мессенджера — к открытой учётке, новой не заводим
     const res = await api('vendor', 'POST', '/api/wed/link', p.max ? { code: p.max } : { tg: p.tg });

@@ -107,7 +107,7 @@ export type VenueBlock =
   | { type: 'rules'; title?: string; rules: Venue['rules'] }
   /** документы для подрядчиков */
   | { type: 'docs'; title?: string; lead?: string; docs: NonNullable<Venue['docs']> }
-  /** отзывы из venue-reviews.ts — блок сам пропадает, если их нет */
+  /** отзывы невест (data/reviews.ts): одобренные и кнопка «Оставить отзыв» */
   | { type: 'reviews' }
   /** ряд роликов площадки (ReelsRow): берутся из data/reels.ts по venue = slug,
    *  без роликов блок не рисуется. Ролики в первом экране — отдельно, кадрами gallery */
@@ -575,7 +575,6 @@ export const forestDew: Venue = {
     { value: '150', label: 'м² стеклянная оранжерея' },
     { value: '70', label: 'гостей на банкете' },
     { value: '14', label: 'км от МКАД' },
-    { value: '5,0', label: 'рейтинг · 279 отзывов' },
   ],
 
   scenes: [

@@ -1,0 +1,155 @@
+---
+// ОТЗЫВЫ НЕВЕСТ — модерация (12.11.2026, docs/cabinet/REVIEWS.md).
+// Невеста пишет отзыв со своей учётки → он ждёт здесь («На проверке») →
+// «Опубликовать» (сразу на сайте, с «Отменить» в тосте) или «Не публиковать»
+// с причиной в окне (HIG: Sheets) — причину получит автор письмом.
+// Менять можно только решение: текст отзыва модератор не правит (хук reviews.js).
+import AdminShell from '../../../../components/admin/AdminShell.astro';
+
+const tabs = [
+  { v: 'pending', label: 'На проверке' },
+  { v: 'approved', label: 'Опубликованы' },
+  { v: 'rejected', label: 'Не опубликованы' },
+];
+---
+
+<AdminShell title="Отзывы" section="reviews">
+  <div class="a-title">
+    <h1 class="a-h1">Отзывы невест</h1>
+  </div>
+
+  <div class="a-seg rv-tabs" role="group" aria-label="Статус">
+    {tabs.map((t, i) => <button class="a-seg__btn" type="button" data-tab={t.v} aria-pressed={i === 0 ? 'true' : 'false'}>{t.label}</button>)}
+  </div>
+
+  <div class="rv-list" data-list></div>
+</AdminShell>
+
+<style>
+  .rv-tabs { margin-bottom: var(--cab-gap); }
+  .rv-list { display: grid; gap: var(--cab-gap); }
+  :global(.rv-item) { display: grid; gap: var(--s-3); }
+  :global(.rv-item__head) { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--s-3); }
+  :global(.rv-item__who) { display: grid; gap: 4px; min-width: 0; }
+  :global(.rv-item__card) { font-weight: 600; color: inherit; }
+  :global(.rv-item__meta) { font-size: var(--adm-fs-sm); color: var(--adm-text-2); }
+  :global(.rv-item__text) { white-space: pre-line; overflow-wrap: anywhere; line-height: 1.45; max-width: 70ch; }
+  :global(.rv-item__photos) { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+  :global(.rv-item__photo) { width: 88px; aspect-ratio: 1; border-radius: var(--adm-radius-md); overflow: hidden; background: var(--adm-bg); }
+  :global(.rv-item__photo img) { width: 100%; height: 100%; object-fit: cover; display: block; }
+  :global(.rv-item__acts) { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-1); }
+  :global(.rv-item__note) { padding: 10px 14px; border-radius: var(--adm-radius-md); background: var(--adm-bg); font-size: var(--adm-fs-sm); }
+  :global(.c-dialog__body.rv-why) { gap: var(--s-2); }
+  :global(.rv-why .a-input) { width: 100%; resize: vertical; min-height: 120px; height: auto; padding: var(--s-3); font-size: 16px; line-height: 1.4; }
+</style>
+
+<script>
+  import { api, esc, errText, requireSession, PB_URL } from '../../../../lib/cabinet-api';
+  import { openDialog, toast, X_ICON } from '../../../../lib/cab-ui';
+  import { fieldError, clearFieldError } from '../../../../lib/form-check';
+  import { setNavCount } from '../../../../lib/admin-live';
+
+  document.addEventListener('astro:page-load', () => {
+    const list = document.querySelector<HTMLElement>('[data-list]');
+    if (!list || !requireSession('moderator')) return;
+    let tab = 'pending';
+
+    const fmt = (iso: string) => new Date(String(iso).replace(' ', 'T')).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+    const file = (r: any, n: string, thumb: string) => `${PB_URL}/api/files/${r.collectionId}/${r.id}/${encodeURIComponent(n)}?thumb=${thumb}`;
+
+    const row = (r: any) => {
+      const v = r.expand?.venue;
+      const s = r.expand?.specialist;
+      const card = v ?? s;
+      const href = v ? `/moskva/ploshchadki/${v.slug}/` : s ? `/moskva/podryadchiki/${s.categorySlug}/${s.slug}/` : '';
+      const status = r.status === 'approved' ? '<span class="status status--ok">Опубликован</span>'
+        : r.status === 'rejected' ? '<span class="status status--bad">Не опубликован</span>'
+        : '<span class="status status--info">Проверить</span>';
+      const acts = r.status === 'pending'
+        ? `<button class="a-btn a-btn--primary" type="button" data-act="approve">Опубликовать</button>
+           <button class="a-btn" type="button" data-act="reject">Не публиковать</button>`
+        : r.status === 'approved'
+          ? '<button class="a-btn" type="button" data-act="reject">Снять с сайта</button>'
+          : '<button class="a-btn" type="button" data-act="approve">Опубликовать</button>';
+      return `
+        <article class="a-card rv-item" data-id="${r.id}">
+          <div class="rv-item__head">
+            <div class="rv-item__who">
+              ${card ? `<a class="rv-item__card" href="${href}" target="_blank" rel="noopener">${esc(card.name)}</a>` : '<span class="rv-item__card">Карточка удалена</span>'}
+              <span class="rv-item__meta">${esc(r.authorName)}, ${fmt(r.created)}${r.weddingMonth ? `, свадьба ${esc(r.weddingMonth.split('-').reverse().join('.'))}` : ''}${r.expand?.bride?.email ? `, ${esc(r.expand.bride.email)}` : ''}</span>
+            </div>
+            ${status}
+          </div>
+          <p aria-label="Оценка ${r.rating} из 5">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</p>
+          <p class="rv-item__text">${esc(r.text)}</p>
+          ${(r.photos ?? []).length ? `<div class="rv-item__photos">${r.photos.map((n: string) => `<a class="rv-item__photo" href="${file(r, n, '1200x0')}" target="_blank" rel="noopener"><img src="${file(r, n, '480x0')}" alt="" loading="lazy" /></a>`).join('')}</div>` : ''}
+          ${r.status === 'rejected' && r.rejectReason ? `<div class="rv-item__note">Причина: ${esc(r.rejectReason)}</div>` : ''}
+          <div class="rv-item__acts">${acts}</div>
+        </article>`;
+    };
+
+    async function render() {
+      list!.innerHTML = '<p class="a-empty">Загружаем…</p>';
+      try {
+        const res = await api('moderator', 'GET', `/api/collections/reviews/records?perPage=200&sort=-created&expand=venue,specialist,bride&filter=${encodeURIComponent(`status = "${tab}"`)}`);
+        if (tab === 'pending') setNavCount('reviews', res.totalItems);
+        list!.innerHTML = res.items.length
+          ? res.items.map(row).join('')
+          : `<p class="a-empty">${tab === 'pending' ? 'Новых отзывов нет. Когда невеста оставит отзыв, он появится здесь' : 'Пусто'}</p>`;
+      } catch (err) {
+        list!.innerHTML = `<p class="a-empty">${esc(errText(err))} <button class="a-btn a-btn--sm" type="button" data-retry>Повторить</button></p>`;
+      }
+    }
+
+    async function decide(id: string, body: Record<string, string>, done: string, undo?: Record<string, string>) {
+      try {
+        await api('moderator', 'PATCH', `/api/collections/reviews/records/${id}`, body);
+        await render();
+        toast(done, false, 5000, undo ? async () => {
+          try { await api('moderator', 'PATCH', `/api/collections/reviews/records/${id}`, undo); await render(); } catch (err) { toast(errText(err), true); }
+        } : undefined);
+      } catch (err) {
+        toast(errText(err), true);
+      }
+    }
+
+    document.querySelectorAll<HTMLButtonElement>('[data-tab]').forEach((b) => b.addEventListener('click', () => {
+      tab = b.dataset.tab!;
+      document.querySelectorAll<HTMLButtonElement>('[data-tab]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      render();
+    }));
+
+    list.addEventListener('click', (ev) => {
+      const t = ev.target as HTMLElement;
+      if (t.closest('[data-retry]')) { render(); return; }
+      const btn = t.closest<HTMLButtonElement>('[data-act]');
+      if (!btn) return;
+      const id = btn.closest<HTMLElement>('[data-id]')!.dataset.id!;
+      const from = tab;
+      if (btn.dataset.act === 'approve') {
+        decide(id, { status: 'approved' }, 'Опубликован', { status: from });
+        return;
+      }
+      const { dlg, close } = openDialog({ html: `
+        <div class="c-dialog__body rv-why">
+          <button class="c-dialog__x" type="button" data-close aria-label="Закрыть">${X_ICON}</button>
+          <h2 class="a-h2">${from === 'approved' ? 'Снять с сайта' : 'Не публиковать'}</h2>
+          <label class="a-field__label" for="rv-reason">Причина — её получит автор</label>
+          <textarea class="a-input" id="rv-reason" rows="4" placeholder="Например: отзыв о другой площадке" data-reason></textarea>
+          <button class="a-btn a-btn--primary a-btn--lg a-btn--block" type="button" data-send>Отправить</button>
+          <button class="a-btn a-btn--lg a-btn--block" type="button" data-close>Отмена</button>
+        </div>` });
+      const ta = dlg.querySelector<HTMLTextAreaElement>('[data-reason]')!;
+      ta.addEventListener('input', () => clearFieldError(ta as unknown as HTMLInputElement));
+      ta.focus();
+      dlg.querySelector('[data-send]')!.addEventListener('click', () => {
+        const reason = ta.value.trim();
+        if (!reason) return fieldError(ta as unknown as HTMLInputElement, 'Напишите причину — без неё автор не поймёт, что не так');
+        close();
+        decide(id, { status: 'rejected', rejectReason: reason }, from === 'approved' ? 'Снят с сайта' : 'Не опубликован');
+      });
+    });
+
+    render();
+  });
+</script>

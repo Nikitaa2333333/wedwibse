@@ -1,61 +1,36 @@
 ---
 // ОТЗЫВЫ — один блок на карточку площадки и карточку подрядчика.
+// С 12.11.2026 — только отзывы невест из базы, прошедшие модерацию
+// (data/reviews.ts, docs/cabinet/REVIEWS.md); отзывы с Карт сняты.
 // Вид у отзыва один и тот же независимо от того, о ком он: шапка
-// (кружок автора, имя, дата, оценка) и текст под ней. Разметка выросла
-// из блока на карточке подрядчика; вынесена в компонент сразу, чтобы
-// на второй карточке не завелась вторая верстка того же — так уже
-// разошёлся первый экран, и сводить обратно пришлось отдельным заходом.
+// (кружок автора, имя, дата, оценка), текст, фото невесты под ним.
 //
-// Шапка блока показывает агрегат: крупная оценка, под ней — из скольких
-// оценок она сложилась и сколько отзывов с текстом. Это разные числа,
-// и подменять одно другим нельзя: оценку ставят молча гораздо чаще,
-// чем пишут текст.
+// Блок стоит всегда, даже без отзывов: в нём кнопка «Оставить отзыв».
+// Агрегат в шапке считается из одобренных: оценка и число отзывов.
 //
 // Линий между отзывами нет (правило проекта): пункт от пункта отделяет
 // подложка карточки, а не полоска.
 import Avatar from './Avatar.astro';
 import Icon from './Icon.astro';
 import { plural } from '../lib/plural';
-import { showcaseReviews } from '../data/venue-reviews';
-
-interface Review {
-  author: string;
-  date: string;
-  rating: number;
-  text: string;
-  /** портрет автора, если он есть; нет — Avatar сам поставит инициалы */
-  photo?: string;
-}
+import type { ReviewsBlock } from '../data/reviews';
 
 interface Props {
-  reviews: Review[];
-  /** средняя оценка: не считаем её из показанных — показаны не все */
-  rating?: number | null;
-  /** сколько всего оценок (с текстом и без) */
-  ratings?: number | null;
-  /** сколько всего отзывов с текстом */
-  total?: number | null;
+  block: ReviewsBlock | null;
+  /** адрес формы отзыва (reviewFormUrl) */
+  formHref: string;
   id?: string;
   title?: string;
 }
 
-const { reviews, rating = null, ratings = null, total = null, id = 'otzyvy', title = 'Отзывы' } = Astro.props;
+const { block, formHref, id = 'otzyvy', title = 'Отзывы' } = Astro.props;
+const items = block?.items ?? [];
+const rating = block?.rating ?? null;
+const total = block?.total ?? 0;
 
-// ЧТО ИМЕННО ПОКАЗЫВАЕМ — решает одно правило на весь проект
-// (showcaseReviews в data/venue-reviews): последние десять с оценкой
-// 4 и выше. Фильтруем здесь, а не на каждой странице: блок общий для
-// площадки и подрядчика, и страница, которая забыла бы фильтр, молча
-// выставила бы на витрину единицы.
-const items = showcaseReviews(reviews);
-
-const shown = items.length;
-
-// ПОРОГ СВОРАЧИВАНИЯ. Пока отзывы шли столбиком, сворачивать имело смысл
-// только простыни (900 знаков): средний отзыв никому не мешал. В ленте
-// вбок карточки стоят в один ряд и тянутся до высоты самой длинной —
-// один разговорчивый гость задавал рост всему ряду. Порог опущен до
-// шести строк карточки (~260 знаков): обрезано ровно то, у чего есть
-// кнопка «Читать целиком», без обрезков без кнопки.
+// ПОРОГ СВОРАЧИВАНИЯ. В ленте вбок карточки стоят в один ряд и тянутся
+// до высоты самой длинной — порог в шесть строк карточки (~260 знаков):
+// обрезано ровно то, у чего есть кнопка «Читать целиком».
 const LONG = 260;
 ---
 
@@ -71,15 +46,14 @@ const LONG = 260;
               <Icon name="star" />
               {rating.toFixed(1).replace('.', ',')}
             </span>
-            <span class="reviews__count t-small">
-              {ratings !== null && <>{ratings}&nbsp;{plural(ratings, ['оценка', 'оценки', 'оценок'])}</>}
-              {ratings !== null && total !== null && ' · '}
-              {total !== null && <>{total}&nbsp;{plural(total, ['отзыв', 'отзыва', 'отзывов'])}</>}
-            </span>
+            <span class="reviews__count t-small">{total}&nbsp;{plural(total, ['отзыв', 'отзыва', 'отзывов'])}</span>
           </p>
         )
       }
     </header>
+
+    {!items.length && <p class="reviews__empty">Отзывов пока нет. Были здесь на своей свадьбе — расскажите, как всё прошло.</p>}
+    <a class="pill reviews__write" href={formHref} rel="nofollow">Оставить отзыв</a>
 
     <!-- ЛЕНТА ВБОК, а не столбик (заказчик, 21.09.2026): десять отзывов
          в столбик растягивали карточку на несколько экранов, и всё, что
@@ -90,10 +64,10 @@ const LONG = 260;
         items.map((r) => (
           <article class="review">
             <header class="review__head">
-              <Avatar src={r.photo} name={r.author} size={44} />
+              <Avatar name={r.author} size={44} />
               <div class="review__who">
                 <p class="review__author">{r.author}</p>
-                <p class="review__date t-caption">{r.date}</p>
+                <p class="review__date t-caption">{r.wedding ? `Свадьба — ${r.wedding}` : r.date}</p>
               </div>
               <p class="review__rate" aria-label={`Оценка ${r.rating} из 5`}>
                 {'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}
@@ -107,18 +81,24 @@ const LONG = 260;
             {r.text.length > LONG && (
               <button class="review__more pill pill--sm" type="button" data-review-more aria-expanded="false">Читать целиком</button>
             )}
+            {/* Фото невесты к отзыву — файлы базы с готовыми превью (thumbs
+                коллекции reviews), а не кадры каталога: astro:assets их не
+                режет, превью база делает один раз и хранит. Полный кадр —
+                по нажатию, обычной ссылкой. */}
+            {r.photos.length > 0 && (
+              <div class="review__photos">
+                {r.photos.map((p, i) => (
+                  <a class="review__photo" href={p.full} target="_blank" rel="noopener">
+                    <img src={p.thumb} alt={`Фото к отзыву ${r.author}, ${i + 1}`} loading="lazy" decoding="async" />
+                  </a>
+                ))}
+              </div>
+            )}
           </article>
         ))
       }
     </div>
 
-    {
-      total !== null && total > shown && (
-        <p class="reviews__more t-small">
-          Показаны {shown} из {total} {plural(total, ['отзыва', 'отзывов', 'отзывов'])}
-        </p>
-      )
-    }
   </div>
 </section>
 
@@ -159,7 +139,6 @@ const LONG = 260;
     align-self: center;
   }
 
-  .reviews__count { opacity: 0.6; }
 
   /* Лента отзывов: ряд карточек, который крутится вбок. Идёт от края до
      края экрана — поля контейнера снимаются отрицательным полем и тут же
@@ -207,7 +186,6 @@ const LONG = 260;
 
   .review__author { font-weight: var(--w-medium); }
 
-  .review__date { opacity: 0.6; }
 
   /* Звёзды строкой символов, а не иконками: пять иконок в ряд на карточке
      отзыва весят больше, чем сам факт оценки. */
@@ -237,9 +215,34 @@ const LONG = 260;
 
   .review__more { margin-top: var(--s-3); }
 
-  .reviews__more {
+  .reviews__empty {
     margin-top: var(--s-4);
-    opacity: 0.6;
+    max-width: var(--measure-text);
+    line-height: var(--lh-body);
+  }
+
+  .reviews__write { margin-top: var(--s-4); }
+
+  /* фото к отзыву: квадратики в ряд, кадр целиком по нажатию */
+  .review__photos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+    margin-top: var(--s-4);
+  }
+
+  .review__photo {
+    width: var(--review-photo);
+    aspect-ratio: 1;
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    background: var(--bg);
+  }
+
+  .review__photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 </style>
 
