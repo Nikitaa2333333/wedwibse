@@ -2,7 +2,7 @@
 // Обновлять в том же коммите, где закрыт шаг: поменять s (done/work/todo/bad/block) и updated.
 // Собрано 05.11.2026 из STAGE2, CABINET, BACKLOG, кода и аудитов research/audit-2026-11-05.
 window.MAP = {
- "updated": "10.11.2026",
+ "updated": "12.11.2026",
  "stages": [
   {
    "id": "1",
@@ -6741,6 +6741,25 @@ window.MAP = {
   }
  ],
  "sessions": [
+  {
+   "title": "Карточка кавер-группы Luxury band",
+   "where": "облако",
+   "summary": "Завели визитку Luxury band (Кавер-группы) по реестру и Яндекс.Диску: 33 кадра галереи, портрет и аватар, текст структурой исходника (сверка 100 %). Записи в PocketBase нет — из облака база недоступна.",
+   "done": [
+    "src/data/specialists/kaver-gruppy/luxury-band.json: story, фильтры кавер-групп, offers, packageIncludes",
+    "Фото: 33 в галерее + portrait + avatar в src/assets/specialists/kaver-gruppy/",
+    "verify-specialist — ок, text-coverage — 100 %"
+   ],
+   "decided": [],
+   "next": [
+    "С ноутбука: pb-tunnel, pb-seed-specialists luxury-band --publish, pb-pull --all",
+    "Ролики группы (все исходники от 386 МБ до 3,4 ГБ) — нарезать на сервере по docs/VIDEO.md"
+   ],
+   "tracks": [],
+   "commits": [],
+   "date": "12.11.2026",
+   "id": "12.11.2026-карточка-кавер-группы-luxury-band"
+  },
   {
    "title": "Просьбы Евгения 09–10.11: карточки в админке, кондитеры, статистика",
    "where": "облако",

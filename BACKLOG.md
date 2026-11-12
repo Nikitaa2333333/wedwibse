@@ -21,6 +21,8 @@
 
 ## Реестр (09.11)
 
+- Luxury band (`kaver-gruppy/luxury-band`) заведена в облаке без базы: нет записи в PocketBase, на сайте карточки нет → с ноутбука после слияния: `bash scripts/pb-tunnel.sh`, `node scripts/pb-seed-specialists.mjs luxury-band --publish`, `node scripts/pb-pull.mjs --all`. Ролики (Promo 1,1 ГБ, live video 1 386 МБ, live video 2 808 МБ, «Концерт. ФИНАЛ» 1,6 ГБ, live 2026 3,4 ГБ) не заведены — резать на сервере по docs/VIDEO.md (12.11).
+
 - `verify-venue` не проверяет обязательные поля зала (`included`, `tariff`, `body` — массивы): 09.11 зал «Острова» без `included` уронил страницу Гребнево в 500 на ~5 минут (`VenueHalls`: `hall.included.length`) → добавить проверку полей зала (09.11).
 - `registry-watch` не читает вкладку «Залы»: новый зал («Острова» в Гребнево, 07.11) прошёл мимо → сверять залы с `venues/*.json` по `venueName` + `name` (09.11).
 

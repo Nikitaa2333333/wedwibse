@@ -1,0 +1,113 @@
+{
+  "slug": "luxury-band",
+  "categorySlug": "kaver-gruppy",
+  "category": "Кавер-группы",
+  "name": "Luxury band",
+  "avatar": "/specialists/kaver-gruppy/avatars/luxury-band.webp",
+  "portrait": "/specialists/kaver-gruppy/luxury-band/portrait.webp",
+  "photos": [
+    "/specialists/kaver-gruppy/luxury-band/gal/p11.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p14.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p18.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p22.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p24.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p27.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p20.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p21.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p13.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p09.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p03.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p29.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p33.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p31.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p34.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p25.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p04.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p06.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p15.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p17.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p02.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p05.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p07.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p08.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p10.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p12.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p16.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p19.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p23.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p26.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p28.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p30.webp",
+    "/specialists/kaver-gruppy/luxury-band/gal/p32.webp"
+  ],
+  "tagline": "Топ-7 групп России, Russian Wedding Awards",
+  "bio": "Пять человек на сцене: солистка, солист — финалист проекта «Голос» и три музыканта, плюс звукорежиссёр.\n\nВыступление длится 90 минут — два сета по 45 минут или три по 30, с переодеванием в каждом сете и десятью вариантами сценических образов. В репертуаре 350 песен на семи языках: современные новинки, стильное ретро, итальянские и испанские песни; трек-лист можно выбрать самим.\n\nГруппа выступала лично для Владимира Путина, для крупных компаний, известных политиков и на частных мероприятиях класса люкс.",
+  "gender": "pair",
+  "priceNote": "Стоимость — по запросу",
+  "aboutTitle": "О группе",
+  "story": [
+    {
+      "lead": "Топ-7 лучших групп России по версии премии Russian Wedding Awards"
+    },
+    {
+      "text": ["5 человек на сцене: шикарная солистка, солист — финалист проекта «Голос» и 3 музыканта, плюс звукорежиссёр."]
+    },
+    {
+      "title": "Выступление",
+      "list": [
+        "90 минут: 2 сета по 45 минут или 3 по 30 минут",
+        "Смена костюмов каждый сет",
+        "10 вариантов сценических образов",
+        "Огромный репертуар из 350 песен на 7 языках",
+        "Вы сможете сами выбрать трек-лист",
+        "Все современные новинки, стильное ретро, итальянские и испанские песни"
+      ]
+    },
+    {
+      "text": ["Выступали лично для Владимира Путина, для самых крупных компаний, известных политиков, на частных мероприятиях класса люкс."]
+    }
+  ],
+  "languages": ["ru", "en", "other"],
+  "cities": ["цао", "сао", "свао", "вао", "юво", "юао", "юзао", "зао", "сзао", "mo", "вне-мо"],
+  "styles": ["pop", "rock", "disco", "90s", "latin"],
+  "filters": {
+    "city": ["цао", "сао", "свао", "вао", "юво", "юао", "юзао", "зао", "сзао", "mo", "вне-мо"],
+    "style": ["pop", "rock", "disco", "90s", "latin"],
+    "format": ["themed"],
+    "lineup": "full",
+    "minBudget": "100-300",
+    "minTime": "60m+",
+    "contract": "yes"
+  },
+  "packageIncludes": [
+    "Солистка, солист и три музыканта",
+    "Звукорежиссёр",
+    "90 минут: два сета по 45 или три по 30 минут",
+    "Смена костюмов каждый сет",
+    "Трек-лист на ваш выбор",
+    "Песни на русском, английском и других языках"
+  ],
+  "quote": "Выберите трек-лист из 350 песен — группа сыграет его в двух или трёх сетах.",
+  "offers": [
+    {
+      "title": "Солист из «Голоса»",
+      "text": "Вокальная пара: солистка и солист — финалист проекта «Голос»."
+    },
+    {
+      "title": "Два или три сета",
+      "text": "90 минут на сцене: два сета по 45 минут или три по 30."
+    },
+    {
+      "title": "Десять сценических образов",
+      "text": "Костюмы меняются в каждом сете."
+    },
+    {
+      "title": "350 песен на семи языках",
+      "text": "Современные новинки, стильное ретро, итальянские и испанские песни."
+    },
+    {
+      "title": "Russian Wedding Awards",
+      "text": "Группа — в топ-7 лучших групп России по версии премии."
+    }
+  ]
+}
