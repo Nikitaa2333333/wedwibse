@@ -217,7 +217,11 @@ check('подрядчик видит отмеченные кадры', JSON.stri
 res = await call(A.token, 'PATCH', `/api/collections/revisions/records/${edit.id}`, { remarkPhotos: [] });
 check('подрядчик не снимает замечания сам', refused(res), res.text);
 
-res = await call(A.token, 'PATCH', `/api/collections/revisions/records/${edit.id}`, { data: { ...edit.data, tagline: 'Репортаж' }, status: 'review' });
+// обложка в кабинете — первый кадр: перетащили четвёртый на первое место (12.11, баг обложки)
+const newCover = edit.photos[3];
+res = await call(A.token, 'PATCH', `/api/collections/revisions/records/${edit.id}`, {
+  data: { ...edit.data, tagline: 'Репортаж' }, photos: [newCover, ...edit.photos.filter((n) => n !== newCover)], status: 'review',
+});
 check('исправленная правка уходит снова', res.status === 200, res.text);
 
 await call(SU, 'PATCH', `/api/collections/specialists/records/${cardId}`, { version: 5 });
@@ -231,6 +235,7 @@ res = await call(M.token, 'PATCH', `/api/collections/revisions/records/${edit.id
 check('правка одобрена', res.status === 200, res.text);
 res = await call(null, 'GET', `/api/collections/specialists/records/${cardId}`);
 check('карточка обновилась', res.json?.tagline === 'Репортаж' && res.json?.version === 2 && res.json?.photos?.length === 8, res.text);
+check('новая обложка (первый кадр правки) на сайте', res.json?.page?.photos?.[res.json?.page?.cover ?? 0] && res.json?.photos?.[0] === newCover && (res.json?.page?.cover ?? 0) === 0, JSON.stringify({ cover: res.json?.page?.cover, first: res.json?.photos?.[0], want: newCover }));
 res = await call(SU, 'GET', `/api/collections/revisions/records/${edit.id}`);
 check('после одобрения замечаний к кадрам нет', Array.isArray(res.json?.remarkPhotos) && res.json.remarkPhotos.length === 0, JSON.stringify(res.json?.remarkPhotos));
 

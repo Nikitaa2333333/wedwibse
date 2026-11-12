@@ -1145,7 +1145,12 @@ function approve(app, rev) {
   // page собирается после сохранения: имена файлов карточки известны
   // только теперь (PocketBase дописывает к ним случайный суффикс)
   const saved = photosOf(card);
-  const coverIndex = Math.max(0, names.indexOf(rev.getString('cover')));
+  // ОБЛОЖКА — ПЕРВЫЙ КАДР ПРАВКИ (12.11.2026). Кабинет меняет обложку только
+  // перетаскиванием кадра на первое место и поле cover не пишет; раньше
+  // здесь искали rev.cover — а его ставил startEdit по СТАРОЙ обложке, и
+  // одобрение возвращало старую на место («менял обложку — не поменялась»).
+  // startEdit теперь ставит текущую обложку первой, так что 0 — всегда она.
+  const coverIndex = 0;
   // фото залов (08.11) — имена файлов ревизии; у карточки набор в том же
   // порядке, имя обычно то же (сохраняем при копировании), но сверяем по месту
   if (kind === 'venue' && Array.isArray(data.halls)) {
@@ -1371,7 +1376,8 @@ function previewData(e) {
   // revision подставляется вместо карточки: slug, категория и портрет у неё свои;
   // площадка (08.11) — тем же buildPage, страницу рисует components/VenuePage
   const kind = rev.getString('kind') === 'venue' ? 'venue' : 'specialist';
-  const page = buildPage(kind, rev, data, names, Math.max(0, names.indexOf(rev.getString('cover'))));
+  // обложка — первый кадр, как в одобрении (approve, 12.11.2026)
+  const page = buildPage(kind, rev, data, names, 0);
   // Файлы ревизии закрыты. Раньше здесь выдавался ключ владельца на чтение
   // файлов — он уходил в адреса картинок страницы и открывал ВСЕ закрытые
   // файлы подрядчика (аудит 05.11). Теперь кадры отдаёт previewFile по той же
@@ -1453,8 +1459,12 @@ function startEdit(e) {
     fsys.close();
   }
   const page = jsonOf(card, 'page');
-  const cover = photosOf(rev)[page.cover || 0];
+  // текущая обложка карточки — первым кадром правки: в кабинете обложка
+  // это первый кадр, и одобрение берёт именно его (approve, 12.11.2026)
+  const names = photosOf(rev);
+  const cover = names[page.cover || 0];
   if (cover) {
+    if (names[0] !== cover) rev.set('photos', [cover].concat(names.filter((n) => n !== cover)));
     rev.set('cover', cover);
     e.app.save(rev);
   }
