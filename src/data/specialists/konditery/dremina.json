@@ -87,12 +87,12 @@
     ],
     "priceKg": "3-4",
     "productType": [
-      "wedding-cake",
-      "mini-desserts"
+      "wedding-cake"
     ],
     "options": [
       "custom-design"
-    ]
+    ],
+    "delivery": "yes"
   },
   "packageIncludes": [
     "Свадебные торты",
@@ -119,5 +119,6 @@
       "title": "Восемь начинок",
       "text": "Красный бархат, баноффи, малина-фисташка, вишня-шоколад, сникерс и другие."
     }
-  ]
+  ],
+  "age": "25–35"
 }
