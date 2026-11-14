@@ -1,0 +1,43 @@
+---
+// ПЕРЕХОД В КАБИНЕТ НЕВЕСТЫ И ОБРАТНО (Никита 14.11.2026: «резкий переход,
+// не ожидаю его»). Как раздел суперприложения: кабинет выезжает снизу поверх
+// главной, крестик уводит его вниз. Кросс-документный View Transitions API:
+// обе стороны (главная и экраны кабинета) подключают этот компонент в <head>.
+// Между разделами кабинета анимации нет — только вход и выход.
+// Браузер без поддержки или prefers-reduced-motion — обычный переход.
+---
+
+<style is:global>
+  @media (prefers-reduced-motion: no-preference) {
+    @view-transition { navigation: auto; }
+    ::view-transition-old(root),
+    ::view-transition-new(root) { animation: none; }
+    html:active-view-transition-type(cab-in)::view-transition-new(root) {
+      animation: cab-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    html:active-view-transition-type(cab-out)::view-transition-old(root) {
+      z-index: 1;
+      animation: cab-out 340ms cubic-bezier(0.4, 0, 1, 1) both;
+    }
+    @keyframes cab-in { from { transform: translateY(100%); } }
+    @keyframes cab-out { to { transform: translateY(100%); } }
+  }
+</style>
+
+<script is:inline>
+  // Тип перехода — по тому, откуда и куда: в кабинет (/moy/ кроме входа и
+  // формы отзыва — они в стиле сайта) — снизу вверх, из кабинета — вниз.
+  (() => {
+    const cab = (u) => {
+      try { const p = new URL(u, location.href).pathname; return p.startsWith('/moy/') && !/^\/moy\/(vhod|otzyv)\//.test(p); } catch { return false; }
+    };
+    addEventListener('pagereveal', (e) => {
+      if (!e.viewTransition || !window.navigation?.activation?.from) return;
+      const from = cab(navigation.activation.from.url);
+      const to = cab(location.href);
+      if (!from && to) e.viewTransition.types.add('cab-in');
+      else if (from && !to) e.viewTransition.types.add('cab-out');
+      else e.viewTransition.skipTransition();
+    });
+  })();
+</script>

@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import BottomDock from '../components/BottomDock.astro';
 import AccountSheet from '../components/AccountSheet.astro';
+import CabTransition from '../components/CabTransition.astro';
 import EntryRail from '../components/EntryRail.astro';
 import PhotoBoard from '../components/PhotoBoard.astro';
 import ThemeToggle from '../components/ThemeToggle.astro';
@@ -28,6 +29,7 @@ const logoCreamSvg = `<svg viewBox="${creamViewBox}" xmlns="http://www.w3.org/20
 ---
 
 <Layout title="Свадебные Секреты — лучшие площадки и специалисты">
+  <Fragment slot="head"><CabTransition /></Fragment>
   <div class="page">
     <!-- ГЕРОЙ: шапка (бренд / меню / метка) + крупный заголовок с лидом
          сразу под ней — без пустого экрана, плашки идут следующим блоком. -->

@@ -12,6 +12,7 @@ import './base.css';
 import './admin.css';
 import './cabinet.css';
 import { ADMIN_ICONS, type AdminIconName } from '../../lib/admin-icons';
+import CabTransition from '../CabTransition.astro';
 
 interface Props {
   title: string;
@@ -29,6 +30,7 @@ const TABS: { key: Tab; href: string; label: string; icon: AdminIconName }[] = [
 <Layout title={`${title} — Wed Secrets`} description="Личный кабинет Wed Secrets." noindex>
   <Fragment slot="head">
     <link rel="preload" href="/fonts/inter-cyrillic.woff2" as="font" type="font/woff2" crossorigin />
+    <CabTransition />
     <script is:inline>document.querySelector('meta[name="theme-color"]')?.setAttribute('content', getComputedStyle(document.documentElement).getPropertyValue('--adm-bg').trim());</script>
   </Fragment>
 
