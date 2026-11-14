@@ -1,90 +1,87 @@
 ---
-// КАБИНЕТ НЕВЕСТЫ — пока только «Мои отзывы» (12.11.2026, docs/cabinet/REVIEWS.md).
-// Дальше сюда же — заявки, избранное на всех устройствах, данные свадьбы
-// (docs/cabinet/CABINET.md §21). Данные рисует браузер по токену невесты.
-import Layout from '../../layouts/Layout.astro';
-import BottomDock from '../../components/BottomDock.astro';
+// КАБИНЕТ НЕВЕСТЫ → ЗАЯВКИ (14.11.2026): первый экран кабинета. Заявки,
+// которые невеста оставила с карточек, пока была в учётке (хук createLead
+// ставит leads.bride; правило коллекции даёт ей только свои). Отправленные
+// без входа сюда не попадают — они не знают, чьи они.
+// Оболочка — BrideShell (система кабинета подрядчика, своя нижняя полоса).
+import BrideShell from '../../components/admin/BrideShell.astro';
 ---
 
-<Layout title="Мои отзывы — WED Secrets" description="Отзывы, которые вы оставили на WED Secrets." noindex>
-  <main class="container my" data-root>
-    <header class="my__head">
-      <h1 class="t-h1">Мои отзывы</h1>
-      <p class="my__who" data-who></p>
-    </header>
-    <div class="my__list" data-list><p>Загружаем…</p></div>
-    <button class="pill my__out" type="button" data-logout>Выйти</button>
-  </main>
-  <BottomDock />
-</Layout>
+<BrideShell title="Заявки" section="leads">
+  <div class="cab-col">
+    <div class="c-head">
+      <h1 class="a-h1">Заявки</h1>
+    </div>
+    <div class="c-sheet-area" data-leads>
+      <p class="c-empty">Загружаем…</p>
+    </div>
+  </div>
+</BrideShell>
 
 <style>
-  .my { display: grid; gap: var(--s-6); padding-block: var(--s-6) var(--s-8); max-width: 640px; }
-  .my__head { display: grid; gap: var(--s-2); }
-  .my__who { font-size: var(--fs-small); }
-  .my__list { display: grid; gap: var(--s-3); }
-  .my__out { justify-self: start; }
-  .my :global(.my-r) { display: grid; gap: var(--s-2); padding: var(--s-5); background: var(--surface-dim); border-radius: var(--radius-card); }
-  .my :global(.my-r__top) { display: flex; justify-content: space-between; gap: var(--s-3); align-items: baseline; }
-  .my :global(.my-r__card) { font-weight: var(--w-medium); color: inherit; }
-  .my :global(.my-r__state) { font-size: var(--fs-small); white-space: nowrap; }
-  .my :global(.my-r__text) { overflow-wrap: anywhere; line-height: var(--lh-body); max-width: var(--measure-text); }
-  .my :global(.my-r__note) { font-size: var(--fs-small); line-height: var(--lh-body); }
-  .my :global(.my-r__del) { justify-self: start; background: none; border: 0; padding: 0; font: inherit; font-size: var(--fs-small); text-decoration: underline; color: inherit; cursor: pointer; }
+  .c-empty { margin-top: var(--s-4); max-width: 40ch; padding-inline: var(--s-4); }
+  :global(.b-leads) { display: grid; gap: var(--cab-gap); }
+  :global(.b-lead) { display: grid; gap: 12px; padding: 18px; border-radius: var(--cab-sheet-radius); background: var(--adm-card); color: inherit; text-decoration: none; }
+  /* «кто и что» вплотную (4 px) — меньше, чем до сообщения (12 px) */
+  :global(.b-lead__top) { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 12px; }
+  :global(.b-lead__card) { font-size: 18px; line-height: 24px; font-weight: 600; overflow-wrap: anywhere; }
+  :global(.b-lead__when) { grid-column: 1 / -1; font-size: var(--adm-fs-sm); }
+  :global(.b-lead__msg) { font-size: 16px; line-height: 22px; white-space: pre-line; overflow-wrap: anywhere; }
+  :global(.b-empty) { display: grid; gap: 16px; justify-items: start; margin-top: var(--s-4); padding-inline: var(--s-4); }
+  :global(.b-empty p) { max-width: 40ch; }
 </style>
 
 <script>
   import { api, esc, errText } from '../../lib/cabinet-api';
-  import { requireBride, brideSession, brideLogout } from '../../lib/bride';
+  import { requireBride, brideSession } from '../../lib/bride';
 
-  const list = document.querySelector<HTMLElement>('[data-list]')!;
-  const STATE: Record<string, string> = { pending: 'На проверке', approved: 'Опубликован', rejected: 'Не опубликован' };
+  const box = document.querySelector<HTMLElement>('[data-leads]')!;
+  // статус заявки глазами пары; цвета — как LEAD_STATUS админки
+  // (новая — синий, в работе — серый, закрыта — зелёный; спам паре не показываем)
+  const STATE: Record<string, [string, string]> = {
+    new: ['Отправлена', 'status--info'],
+    'in-progress': ['В работе', ''],
+    closed: ['Закрыта', 'status--ok'],
+  };
+  const fmt = (iso: string) => new Date(String(iso).replace(' ', 'T')).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
 
   async function load() {
     const me = brideSession()!;
-    const who = me.record.email || me.record.name;
-    if (who) document.querySelector('[data-who]')!.textContent = `Вы вошли как ${who}`;
-    const res = await api('bride', 'GET', `/api/collections/reviews/records?perPage=100&sort=-created&expand=venue,specialist&filter=${encodeURIComponent(`bride = "${me.record.id}"`)}`);
+    const filter = encodeURIComponent(`bride = "${me.record.id}" && status != "spam"`);
+    const res = await api('bride', 'GET', `/api/collections/leads/records?perPage=100&sort=-created&expand=venue,specialist&filter=${filter}`);
     if (!res.items.length) {
-      list.innerHTML = '<p>Отзывов пока нет. Откройте страницу площадки или подрядчика и нажмите «Оставить отзыв».</p>';
+      box.innerHTML = `
+        <div class="b-empty">
+          <p>Заявок пока нет. Оставьте телефон на странице площадки или специалиста — заявка появится здесь, и вы увидите, когда её взяли в работу</p>
+          <a class="a-btn" href="/moskva/ploshchadki/">Выбрать площадку</a>
+        </div>`;
       return;
     }
-    list.innerHTML = res.items.map((r: any) => {
-      const v = r.expand?.venue;
-      const s = r.expand?.specialist;
+    box.innerHTML = `<div class="b-leads">${res.items.map((l: any) => {
+      const v = l.expand?.venue;
+      const s = l.expand?.specialist;
       const card = v ?? s;
       const href = v ? `/moskva/ploshchadki/${v.slug}/` : s ? `/moskva/podryadchiki/${s.categorySlug}/${s.slug}/` : '';
+      const [label, tone] = STATE[l.status] ?? STATE.new;
+      // служебные строки сообщения («Карточка: …», «Связаться: звонок») паре не нужны
+      const msg = String(l.message || '').split('\n').filter((x: string) => !/^Карточка: |^Связаться: |^Из избранного, всем сразу/.test(x)).join('\n').trim();
+      const name = card ? esc(card.name) : esc((String(l.message).match(/^Карточка: (.+)$/m) || [])[1] || 'Заявка');
       return `
-        <article class="my-r">
-          <div class="my-r__top">
-            ${card ? `<a class="my-r__card" href="${href}">${esc(card.name)}</a>` : '<span class="my-r__card">Карточка снята с сайта</span>'}
-            <span class="my-r__state">${STATE[r.status] ?? ''}</span>
+        <${href ? `a href="${href}"` : 'div'} class="b-lead">
+          <div class="b-lead__top">
+            <span class="b-lead__card">${name}</span>
+            <span class="status ${tone}">${label}</span>
+            <span class="b-lead__when">${fmt(l.created)}</span>
           </div>
-          <p aria-label="Оценка ${r.rating} из 5">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</p>
-          <p class="my-r__text">${esc(r.text)}</p>
-          ${r.status === 'rejected' && r.rejectReason ? `<p class="my-r__note">Причина: ${esc(r.rejectReason)}. Отзыв можно удалить и написать заново.</p>` : ''}
-          <button class="my-r__del" type="button" data-del="${r.id}">Удалить отзыв</button>
-        </article>`;
-    }).join('');
+          ${msg ? `<p class="b-lead__msg">${esc(msg)}</p>` : ''}
+        </${href ? 'a' : 'div'}>`;
+    }).join('')}</div>`;
   }
 
-  list.addEventListener('click', async (ev) => {
-    const btn = (ev.target as HTMLElement).closest<HTMLButtonElement>('[data-del]');
-    if (!btn || !confirm('Удалить отзыв? Его нельзя будет вернуть.')) return;
-    btn.disabled = true;
-    try {
-      await api('bride', 'DELETE', `/api/collections/reviews/records/${btn.dataset.del}`);
-      await load();
-    } catch (err) {
-      alert(errText(err));
-      btn.disabled = false;
-    }
-  });
-
-  document.querySelector('[data-logout]')!.addEventListener('click', () => {
-    brideLogout();
-    location.href = '/';
-  });
-
-  if (requireBride()) load().catch((err) => { list.innerHTML = `<p>${esc(errText(err))}</p>`; });
+  if (requireBride()) {
+    load().catch((err) => {
+      box.innerHTML = `<p class="c-empty">${esc(errText(err))} <button class="a-btn a-btn--sm" type="button" data-retry>Повторить</button></p>`;
+      box.querySelector('[data-retry]')?.addEventListener('click', () => location.reload());
+    });
+  }
 </script>

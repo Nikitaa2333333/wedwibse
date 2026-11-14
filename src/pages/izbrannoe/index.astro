@@ -707,7 +707,8 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
 
 <script>
   import { getFavorites, removeFavorite, CHANGE_EVENT, STORAGE_KEY, type FavoriteItem } from '../../lib/favorites';
-  import { api, errText } from '../../lib/cabinet-api';
+  import { errText } from '../../lib/cabinet-api';
+  import { postLead } from '../../lib/bride';
   import { bindSheet } from '../../lib/sheet';
   import { withCount } from '../../lib/plural';
   import { icons, type IconName } from '../../lib/icons';
@@ -1188,7 +1189,7 @@ const coversJson = JSON.stringify(await compareCovers()).replace(/</g, '\\u003c'
     if (writeError) writeError.hidden = true;
     writeSend.disabled = true;
     try {
-      await api(null, 'POST', '/api/wed/lead', {
+      await postLead({
         name: get('name'),
         phone: get('phone'),
         message: [get('date') && `Дата свадьбы: ${get('date')}`, get('comment')].filter(Boolean).join('\n'),

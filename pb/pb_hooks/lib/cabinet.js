@@ -1943,9 +1943,13 @@ function createLead(e) {
   const eventDate = /^\d{4}-\d{2}-\d{2}$/.test(str(body.eventDate)) ? str(body.eventDate) + ' 12:00:00.000Z' : '';
   const col = e.app.findCollectionByNameOrId('leads');
   const linked = [];
+  // вошедшая невеста (14.11): заявка — к её учётке, видна в кабинете /moy/.
+  // Учётку берём только из токена, не из тела запроса.
+  const bride = e.auth && e.auth.collection().name === 'brides' ? e.auth.id : '';
   const save = (app, msg, url, batch) => {
     const r = new Record(col);
     r.set('kind', 'client');
+    if (bride) r.set('bride', bride);
     r.set('name', name);
     r.set('phone', phone);
     r.set('message', msg);

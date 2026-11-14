@@ -1,0 +1,99 @@
+---
+// КАБИНЕТ НЕВЕСТЫ → ОТЗЫВЫ (12.11.2026 на /moy/, с 14.11 — раздел кабинета).
+// Свои отзывы со статусом модерации; удалить можно любой (docs/cabinet/REVIEWS.md).
+// Плашки — те же, что у отзывов в кабинете подрядчика (.c-rv).
+import BrideShell from '../../../components/admin/BrideShell.astro';
+---
+
+<BrideShell title="Отзывы" section="reviews">
+  <div class="cab-col">
+    <div class="c-head">
+      <h1 class="a-h1">Отзывы</h1>
+    </div>
+    <div class="c-sheet-area" data-list>
+      <p class="c-empty">Загружаем…</p>
+    </div>
+  </div>
+</BrideShell>
+
+<style>
+  .c-empty { margin-top: var(--s-4); max-width: 40ch; padding-inline: var(--s-4); }
+  :global(.c-rvs) { display: grid; gap: var(--cab-gap); }
+  :global(.c-rv) { display: grid; gap: 12px; padding: 18px; border-radius: var(--cab-sheet-radius); background: var(--adm-card); }
+  :global(.c-rv__who) { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; }
+  :global(.c-rv__card) { font-size: 18px; line-height: 24px; font-weight: 600; color: inherit; overflow-wrap: anywhere; }
+  :global(.c-rv__when) { grid-column: 1 / -1; font-size: var(--adm-fs-sm); }
+  :global(.c-rv__text) { font-size: 16px; line-height: 22px; white-space: pre-line; overflow-wrap: anywhere; }
+  :global(.c-rv__note) { font-size: var(--adm-fs-sm); line-height: 20px; }
+  :global(.c-rv__acts) { display: flex; justify-content: flex-end; }
+</style>
+
+<script>
+  import { api, esc, errText } from '../../../lib/cabinet-api';
+  import { requireBride, brideSession } from '../../../lib/bride';
+  import { toast } from '../../../lib/cab-ui';
+
+  const box = document.querySelector<HTMLElement>('[data-list]')!;
+  const STATE: Record<string, [string, string]> = {
+    pending: ['На проверке', 'status--info'],
+    approved: ['Опубликован', 'status--ok'],
+    rejected: ['Не опубликован', 'status--bad'],
+  };
+  const fmt = (iso: string) => new Date(String(iso).replace(' ', 'T')).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  async function load() {
+    const me = brideSession()!;
+    const res = await api('bride', 'GET', `/api/collections/reviews/records?perPage=100&sort=-created&expand=venue,specialist&filter=${encodeURIComponent(`bride = "${me.record.id}"`)}`);
+    if (!res.items.length) {
+      box.innerHTML = '<p class="c-empty">Отзывов пока нет. Откройте страницу площадки или специалиста и нажмите «Оставить отзыв»</p>';
+      return;
+    }
+    box.innerHTML = `<div class="c-rvs">${res.items.map((r: any) => {
+      const v = r.expand?.venue;
+      const s = r.expand?.specialist;
+      const card = v ?? s;
+      const href = v ? `/moskva/ploshchadki/${v.slug}/` : s ? `/moskva/podryadchiki/${s.categorySlug}/${s.slug}/` : '';
+      const [label, tone] = STATE[r.status] ?? STATE.pending;
+      return `
+        <article class="c-rv">
+          <div class="c-rv__who">
+            ${card ? `<a class="c-rv__card" href="${href}">${esc(card.name)}</a>` : '<span class="c-rv__card">Карточка снята с сайта</span>'}
+            <span class="status ${tone}">${label}</span>
+            <span class="c-rv__when">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}, ${fmt(r.created)}</span>
+          </div>
+          <p class="c-rv__text">${esc(r.text)}</p>
+          ${r.status === 'rejected' && r.rejectReason ? `<p class="c-rv__note">Причина: ${esc(r.rejectReason)}. Отзыв можно удалить и написать заново</p>` : ''}
+          <div class="c-rv__acts"><button class="a-btn a-btn--sm a-btn--soft" type="button" data-del="${r.id}">Удалить</button></div>
+        </article>`;
+    }).join('')}</div>`;
+  }
+
+  // Отмена вместо «Вы уверены?» (cabinet-ui, правило 10): отзыв прячем сразу,
+  // удаляем через 5 с, если не нажали «Отменить»
+  box.addEventListener('click', (ev) => {
+    const btn = (ev.target as HTMLElement).closest<HTMLButtonElement>('[data-del]');
+    if (!btn) return;
+    const card = btn.closest<HTMLElement>('.c-rv')!;
+    card.hidden = true;
+    let undone = false;
+    toast('Отзыв удалён', false, 5000, () => { undone = true; card.hidden = false; });
+    setTimeout(async () => {
+      if (undone) return;
+      try {
+        await api('bride', 'DELETE', `/api/collections/reviews/records/${btn.dataset.del}`);
+        card.remove();
+        if (!box.querySelector('.c-rv')) load();
+      } catch (err) {
+        card.hidden = false;
+        toast(errText(err), true);
+      }
+    }, 5000);
+  });
+
+  if (requireBride()) {
+    load().catch((err) => {
+      box.innerHTML = `<p class="c-empty">${esc(errText(err))} <button class="a-btn a-btn--sm" type="button" data-retry>Повторить</button></p>`;
+      box.querySelector('[data-retry]')?.addEventListener('click', () => location.reload());
+    });
+  }
+</script>

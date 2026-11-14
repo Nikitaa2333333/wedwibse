@@ -4,7 +4,23 @@
 // Учётка появляется только вместе с подписью согласия на обработку ПДн
 // и Правил для молодожёнов (legal_docs: bride-pdn, bride-terms; тексты —
 // src/data/legal/) — две галочки прямо на странице входа.
-import { api, session, saveSession } from './cabinet-api';
+import { api, session, saveSession, ApiError } from './cabinet-api';
+
+/**
+ * Заявка с сайта (карточка, избранное). Вошедшая невеста шлёт её со своим
+ * токеном — хук привязывает заявку к учётке, и она видна в кабинете (14.11).
+ * Токен протух или чужой — повторяем без него: заявка важнее привязки.
+ */
+export async function postLead<T = any>(body: unknown): Promise<T> {
+  if (session('bride')) {
+    try {
+      return await api<T>('bride', 'POST', '/api/wed/lead', body);
+    } catch (err) {
+      if (!(err instanceof ApiError) || (err.status !== 401 && err.status !== 403)) throw err;
+    }
+  }
+  return api<T>(null, 'POST', '/api/wed/lead', body);
+}
 
 export const NEEDS_CONSENT = 'Отметьте обе галочки выше — без них учётку не создать.';
 const RETURN_KEY = 'wed-bride-return';

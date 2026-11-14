@@ -1,0 +1,73 @@
+---
+// КАБИНЕТ НЕВЕСТЫ → ПРОФИЛЬ (14.11.2026): кто вошла, какими способами,
+// выход. Строки и плашки — как «Профиль» кабинета подрядчика (.c-cat / .c-row);
+// «Выйти» — отдельной плашкой внизу (cabinet-ui).
+import BrideShell from '../../../components/admin/BrideShell.astro';
+import AdminIcon from '../../../components/admin/AdminIcon.astro';
+import { Image } from 'astro:assets';
+import maxMark from '../../../assets/profi/max-mark.webp';
+---
+
+<BrideShell title="Профиль" section="profile">
+  <div class="cab-col">
+    <div class="c-head">
+      <h1 class="a-h1" data-name>Профиль</h1>
+    </div>
+    <div class="c-sheet-area">
+      <section class="c-cat">
+        <h2 class="c-cat__h">Способы входа</h2>
+        <div class="c-rows">
+          <div class="c-row" data-m="email">
+            <span class="c-row__ic"><AdminIcon name="mail" /></span>
+            <span class="c-row__body"><span class="c-row__title">Почта</span><span class="c-row__sub" data-sub></span></span>
+            <span data-st></span><span></span>
+          </div>
+          <div class="c-row" data-m="telegram">
+            <span class="c-row__ic c-row__ic--tg"><AdminIcon name="tgLogo" /></span>
+            <span class="c-row__body"><span class="c-row__title">Telegram</span><span class="c-row__sub" data-sub></span></span>
+            <span data-st></span><span></span>
+          </div>
+          <div class="c-row" data-m="max">
+            <span class="c-row__ic c-row__ic--ink"><Image src={maxMark} alt="" width={22} height={22} widths={[22, 44, 66]} sizes="22px" /></span>
+            <span class="c-row__body"><span class="c-row__title">MAX</span><span class="c-row__sub" data-sub></span></span>
+            <span data-st></span><span></span>
+          </div>
+        </div>
+      </section>
+      <section class="c-cat">
+        <h2 class="c-cat__h">Документы</h2>
+        <div class="c-rows">
+          <a class="c-row" href="/dokumenty/politika-konfidencialnosti/"><span></span><span class="c-row__title">Политика конфиденциальности</span><span></span><span></span></a>
+          <a class="c-row" href="/dokumenty/pravila/"><span></span><span class="c-row__title">Правила для молодожёнов</span><span></span><span></span></a>
+        </div>
+      </section>
+      <section class="c-cat c-cat--far"><a class="c-row c-row--action" href="#" data-logout><span class="c-row__title">Выйти</span></a></section>
+    </div>
+  </div>
+</BrideShell>
+
+<script>
+  import { api } from '../../../lib/cabinet-api';
+  import { requireBride, brideSession, brideLogout } from '../../../lib/bride';
+
+  async function load() {
+    const me = brideSession()!;
+    // свежая учётка из базы (вдруг подключили способ на другом устройстве); нет сети — то, что в сессии
+    const rec = await api('bride', 'GET', `/api/collections/brides/records/${me.record.id}`).catch(() => me.record);
+    if (rec.name) document.querySelector('[data-name]')!.textContent = rec.name;
+    const on: Record<string, string> = { email: rec.email || '', telegram: rec.telegramId ? 'подключён' : '', max: rec.maxId ? 'подключён' : '' };
+    document.querySelectorAll<HTMLElement>('[data-m]').forEach((row) => {
+      const v = on[row.dataset.m!];
+      row.querySelector('[data-sub]')!.textContent = v && v !== 'подключён' ? v : '';
+      row.querySelector('[data-st]')!.innerHTML = v ? '<span class="status status--ok">Подключён</span>' : '<span class="status">Не подключён</span>';
+    });
+  }
+
+  document.querySelector('[data-logout]')!.addEventListener('click', (e) => {
+    e.preventDefault();
+    brideLogout();
+    location.href = '/';
+  });
+
+  if (requireBride()) load();
+</script>
