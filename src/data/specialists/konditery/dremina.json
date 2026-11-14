@@ -30,6 +30,7 @@
   "priceFrom": 3500,
   "priceNote": "за килограмм, декор считается отдельно",
   "experienceYears": 10,
+  "age": "25–35",
   "cities": [
     "цао",
     "сао",
@@ -85,10 +86,10 @@
       "сзао",
       "mo"
     ],
+    "delivery": "yes",
     "priceKg": "3-4",
     "productType": [
-      "wedding-cake",
-      "mini-desserts"
+      "wedding-cake"
     ],
     "options": [
       "custom-design"
