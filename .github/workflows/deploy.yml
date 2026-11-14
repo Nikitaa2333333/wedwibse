@@ -157,17 +157,34 @@ jobs:
             sudo /usr/bin/systemctl restart wedsecrets-ssr; sleep 3
             curl -s -o /dev/null -w "превью отвечает: %{http_code}\n" http://127.0.0.1:4321/profi/prevyu/'
 
-      # ОТЖИВШИЕ ФАЙЛЫ СБОРКИ (09.11.2026). Заливка выше не стирает старые /_astro/*
-      # (filter P): служба каталога до перезапуска и открытые вкладки ещё ссылаются на
-      # них — без этого страница грузилась без стилей. rsync -a ставит текущим файлам время
-      # из сборки, поэтому всё, что не обновлялось больше двух суток, — от прошлых сборок.
+      # ОТЖИВШИЕ ФАЙЛЫ СБОРКИ (09.11.2026, переделано 14.11). Заливка выше не стирает
+      # старые /_astro/* (filter P): служба каталога до перезапуска, открытые вкладки и
+      # кэш страниц nginx (wedlive, inactive=1d, отдаёт устаревшую копию, пока
+      # обновляет) ещё ссылаются на них — без этого страница грузилась без стилей.
+      # Считаем возраст НЕ по времени сборки, а по тому, когда файл выпал из сборки:
+      # 14.11 прошлая выкладка была 10.11, её стили (время сборки — 10.11) стёрлись
+      # сразу, и кэш отдал Никите карточку без стилей. Журнал ~/.astro-obsolete:
+      # «секунды имя» — с какого деплоя файла нет в сборке; стираем через двое суток.
       - name: Prune old assets
         continue-on-error: true
         timeout-minutes: 3
         run: |
-          ssh -i ~/.ssh/id_ed25519 -o BatchMode=yes -o ConnectTimeout=20 \
-            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            "find '${{ secrets.DEPLOY_PATH }}/_astro' -type f -mtime +2 -print -delete | wc -l | xargs echo 'удалено старых файлов:'"
+          SSH="ssh -i ~/.ssh/id_ed25519 -o BatchMode=yes -o ConnectTimeout=20"
+          TARGET="${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}"
+          ls dist/client/_astro | sort > astro-current.txt
+          test -s astro-current.txt || { echo "список сборки пуст — уборку пропускаем"; exit 0; }
+          $SSH "$TARGET" 'cat > ~/.astro-current' < astro-current.txt
+          $SSH "$TARGET" "set -e; cd '${{ secrets.DEPLOY_PATH }}/_astro'
+            now=\$(date +%s); lim=\$((now - 172800)); log=~/.astro-obsolete
+            touch \$log
+            ls | sort > ~/.astro-here
+            comm -23 ~/.astro-here ~/.astro-current > ~/.astro-gone
+            awk -v now=\$now -v L=\$log 'BEGIN { while ((getline s < L) > 0) { split(s, a, \" \"); t[a[2]] = a[1] } } { print ((\$1 in t) ? t[\$1] : now), \$1 }' ~/.astro-gone > \$log.new
+            awk -v lim=\$lim '\$1 < lim { print \$2 }' \$log.new > ~/.astro-del
+            xargs -r rm -f -- < ~/.astro-del
+            awk -v lim=\$lim '\$1 >= lim' \$log.new > \$log
+            rm -f \$log.new ~/.astro-here ~/.astro-gone
+            echo \"вне сборки: \$(wc -l < \$log) ждут двое суток, удалено сейчас: \$(wc -l < ~/.astro-del)\""
 
       # ОБРАБОТЧИК НАРЕЗКИ ФОТО (сервис фото, 07.11.2026, docs/PHOTO-SERVICE.md).
       # Прогрева /_image больше нет: новые кадры сборки дорежет сам обработчик
