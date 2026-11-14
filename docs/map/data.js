@@ -3632,9 +3632,9 @@ window.MAP = {
    "t": "Поддомен profi.wed-secrets.ru для специалистов",
    "sev": "mid",
    "area": "деплой",
-   "fix": "DNS A-запись profi → 193.124.47.78 в reg.ru (доступ у Никиты), затем nginx + сертификат на сервере",
+   "fix": "14.11: DNS, nginx (301 на /profi/), сертификат Let’s Encrypt с автопродлением",
    "where": "",
-   "s": "bad",
+   "s": "done",
    "src": "сессия 14.11.2026"
   },
   {
