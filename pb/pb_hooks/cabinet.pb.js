@@ -103,3 +103,13 @@ routerAdd('POST', '/api/wed/invite', (e) => require(`${__hooks}/lib/cabinet.js`)
 routerAdd('GET', '/api/wed/my-cards', (e) => require(`${__hooks}/lib/cabinet.js`).myCards(e), $apis.requireAuth('vendors'));
 // заявки на мои карточки — ВРЕМЕННО, на время показа (lib/cabinet.js, LEADS_TO_VENDORS)
 routerAdd('GET', '/api/wed/my-leads', (e) => require(`${__hooks}/lib/cabinet.js`).myLeads(e), $apis.requireAuth('vendors'));
+
+// ---------- статистика карточек (14.11.2026, lib/stats.js, docs/cabinet/STATS.md) ----------
+// сердце «в избранное» на сайте — +1 к счётчику дня (sendBeacon, без учётки)
+routerAdd('POST', '/api/wed/hit', (e) => require(`${__hooks}/lib/stats.js`).hit(e));
+// подрядчик — свои карточки; модератор — все; досчёт истории из Метрики
+routerAdd('GET', '/api/wed/my-stats', (e) => require(`${__hooks}/lib/stats.js`).myStats(e), $apis.requireAuth('vendors'));
+routerAdd('GET', '/api/wed/mod/stats', (e) => require(`${__hooks}/lib/stats.js`).modStats(e), $apis.requireAuth('moderators', '_superusers'));
+routerAdd('POST', '/api/wed/mod/stats-sync', (e) => require(`${__hooks}/lib/stats.js`).syncRoute(e), $apis.requireAuth('moderators', '_superusers'));
+// Метрика → card_stats раз в час (вчера и сегодня); без METRIKA_TOKEN молчит
+cronAdd('wed-stats-metrika', '17 * * * *', () => require(`${__hooks}/lib/stats.js`).cron());

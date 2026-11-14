@@ -33,6 +33,14 @@ import AdminShell from '../../../components/admin/AdminShell.astro';
     <div class="a-tasks" data-ov-stale></div>
   </section>
 
+  {/* статистика (14.11) — отдельный раздел; в нижнем меню телефона места нет, вход отсюда */}
+  <section class="a-card a-card--flush a-card--far">
+    <a class="a-card__head a-stats-link" href="/profi/admin/statistika/">
+      <h2 class="a-h2">Статистика</h2>
+      <span class="a-more">Переходы, избранное и заявки</span>
+    </a>
+  </section>
+
 </AdminShell>
 
 <script>

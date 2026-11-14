@@ -56,3 +56,5 @@ src/assets/cabinet/
 
 # локальный вход невестой (research/dev-bride.mjs) — только для ноутбука, в сборку не идёт
 public/dev-nevesta.html
+public/dev-podryadchik.html
+public/dev-admin.html

@@ -1,0 +1,101 @@
+---
+// СТАТИСТИКА — раздел нижнего меню кабинета (14.11.2026, задание Евгения 09.11,
+// docs/cabinet/STATS.md). «Просто и понятно, как мобильный Яндекс Директ»:
+// строки «подпись — крупное число — график за период». Подрядчик видит только
+// свои опубликованные карточки (маршрут /api/wed/my-stats, хук lib/stats.js).
+// Несколько карточек — сверху выбор: все вместе или одна.
+// Расходы появятся с балансом (третий этап) — до того строки нет совсем.
+import CabinetShell from '../../../components/admin/CabinetShell.astro';
+---
+
+<CabinetShell title="Статистика" section="stats">
+  <div class="cab-col">
+    <div class="c-head">
+      <h1 class="a-h1">Статистика</h1>
+    </div>
+    <div class="c-seg" role="group" aria-label="Период" data-period>
+      <button type="button" data-days="7" aria-pressed="false">7 дней</button>
+      <button type="button" data-days="30" aria-pressed="true">30 дней</button>
+      <button type="button" data-days="90" aria-pressed="false">90 дней</button>
+    </div>
+    <div class="st-picks" data-picks hidden></div>
+    <div class="c-sheet-area" data-box aria-busy="true">
+      <div class="sk-card">
+        {[1, 2, 3].map(() => (
+          <div class="sk-row" style="grid-template-columns:minmax(0,1fr) 42%"><span class="sk-row__body"><span class="sk sk--line sk--short"></span><span class="sk sk--title"></span></span><span class="sk sk--line"></span></div>
+        ))}
+      </div>
+    </div>
+  </div>
+</CabinetShell>
+
+<style>
+  .c-empty { margin-top: var(--s-4); max-width: 40ch; padding-inline: var(--s-4); }
+</style>
+
+<script>
+  import { api, esc, errText, requireSession } from '../../../lib/cabinet-api';
+  import { statRow, sumSeries, visitorsTotal, sources, sourcesBlock, bindRows, type StatsData } from '../../../lib/stats-ui';
+  import { plural } from '../../../lib/plural';
+
+  const box = document.querySelector<HTMLElement>('[data-box]')!;
+  const picks = document.querySelector<HTMLElement>('[data-picks]')!;
+  const period = document.querySelector<HTMLElement>('[data-period]')!;
+  let days = 30;
+  let pick = ''; // '' — все карточки, иначе id
+  let data: StatsData | null = null;
+
+  function render() {
+    if (!data) return;
+    if (!data.cards.length) {
+      box.innerHTML = '<p class="c-empty">Статистика появится, когда карточка будет на сайте: переходы, добавления в избранное и заявки по дням</p>';
+      picks.hidden = true;
+      return;
+    }
+    if (data.cards.length > 1) {
+      picks.hidden = false;
+      picks.innerHTML = [`<button class="a-seg__btn" type="button" data-pick="" aria-pressed="${pick === ''}">Все карточки</button>`]
+        .concat(data.cards.map((c) => `<button class="a-seg__btn" type="button" data-pick="${c.id}" aria-pressed="${pick === c.id}">${esc(c.name)}</button>`)).join('');
+      picks.classList.add('a-seg');
+    }
+    const cards = pick ? data.cards.filter((c) => c.id === pick) : data.cards;
+    const v = visitorsTotal(data, cards);
+    box.innerHTML = `
+      <div class="st-card">
+        ${statRow('views', sumSeries(data, cards, 'views'), data, v ? `${v.toLocaleString('ru-RU')} ${plural(v, ['посетитель', 'посетителя', 'посетителей'])}` : '')}
+        ${statRow('favs', sumSeries(data, cards, 'favs'), data)}
+        ${statRow('leads', sumSeries(data, cards, 'leads'), data)}
+      </div>
+      ${sourcesBlock(sources(cards))}`;
+    box.removeAttribute('aria-busy');
+    bindRows(box);
+  }
+
+  async function load() {
+    data = await api<StatsData>('vendor', 'GET', `/api/wed/my-stats?days=${days}`);
+    if (pick && !data.cards.some((c) => c.id === pick)) pick = '';
+    render();
+  }
+
+  period.addEventListener('click', (ev) => {
+    const b = (ev.target as HTMLElement).closest<HTMLButtonElement>('[data-days]');
+    if (!b) return;
+    days = Number(b.dataset.days);
+    period.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    box.setAttribute('aria-busy', 'true');
+    load().catch(fail);
+  });
+  picks.addEventListener('click', (ev) => {
+    const b = (ev.target as HTMLElement).closest<HTMLButtonElement>('[data-pick]');
+    if (!b) return;
+    pick = b.dataset.pick ?? '';
+    render();
+  });
+
+  function fail(err: unknown) {
+    box.innerHTML = `<p class="c-empty">${esc(errText(err))} <button class="a-btn a-btn--sm" type="button" data-retry>Повторить</button></p>`;
+    box.querySelector('[data-retry]')?.addEventListener('click', () => load().catch(fail));
+  }
+
+  if (requireSession('vendor')) load().catch(fail);
+</script>

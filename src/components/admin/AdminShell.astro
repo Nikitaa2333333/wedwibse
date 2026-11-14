@@ -17,7 +17,7 @@ import AdminIcon from './AdminIcon.astro';
 import './base.css';
 import './admin.css';
 
-export type AdminSection = 'overview' | 'leads' | 'partners' | 'moderation' | 'reviews' | 'catalog' | 'complaints';
+export type AdminSection = 'overview' | 'leads' | 'partners' | 'moderation' | 'reviews' | 'catalog' | 'stats' | 'complaints';
 
 interface Props {
   title: string;
@@ -39,6 +39,8 @@ const items: { key: AdminSection; href: string; label: string; tab?: string; cou
   // отзывы невест (12.11.2026): счётчик — ждут проверки
   { key: 'reviews', href: '/profi/admin/otzyvy/', label: 'Отзывы', count: true, tone: 'info' },
   { key: 'catalog', href: '/profi/admin/katalog/', label: 'Карточки' },
+  // статистика (14.11.2026, docs/cabinet/STATS.md): на телефоне — вход из «Сводки», меню и так полное
+  { key: 'stats', href: '/profi/admin/statistika/', label: 'Статистика', phone: false },
   // Жалобы важны меньше — отдельно, внизу меню; в базе их пока нет — без счётчика
   // в нижнем меню телефона жалоб нет (12.11): семь разделов в 390 px слипались, а жалоб в базе пока нет
   { key: 'complaints', href: '/profi/admin/zhaloby/', label: 'Жалобы', gap: true, phone: false },

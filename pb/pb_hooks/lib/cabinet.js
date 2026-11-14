@@ -2120,6 +2120,7 @@ module.exports = {
   telegram,
   SITE_URL,
   createLead,
+  cardOfUrl,
   myLeads,
   modRemove,
   cardDeleted,

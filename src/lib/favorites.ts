@@ -51,7 +51,23 @@ export function toggleFavorite(item: FavoriteItem): boolean {
 
   localStorage.setItem(KEY, JSON.stringify(list));
   window.dispatchEvent(new CustomEvent(CHANGE_EVENT));
+  if (nowSaved) countFavorite(item.href);
   return nowSaved;
+}
+
+/**
+ * Статистика карточки (14.11.2026, docs/cabinet/STATS.md): «добавили в избранное»
+ * +1 к счётчику дня в базе — подрядчик видит это в кабинете. Только адрес
+ * карточки, без учётки и персональных данных; sendBeacon не держит страницу.
+ * Убрали из избранного — не вычитаем: считаем интерес, а не текущий список.
+ */
+function countFavorite(href: string | undefined) {
+  if (!href) return;
+  try {
+    const base = String(import.meta.env.PUBLIC_PB_URL || '').replace(/\/$/, '');
+    const body = new Blob([JSON.stringify({ url: new URL(href, location.origin).href })], { type: 'application/json' });
+    navigator.sendBeacon?.(`${base}/api/wed/hit`, body);
+  } catch {}
 }
 
 export function removeFavorite(id: string): void {

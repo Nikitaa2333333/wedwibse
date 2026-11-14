@@ -110,6 +110,8 @@
   --adm-shadow-tip: 0 10px 30px rgba(15, 20, 30, 0.10), 0 2px 8px rgba(15, 20, 30, 0.06); /* облачко: мягкая тень без обводки, как у Apple */
   --adm-shadow-lift: 0 12px 32px rgba(0, 0, 0, 0.28); /* фото, которое тащат */
   --adm-shadow-drag: 0 6px 14px rgba(15, 20, 30, 0.25); /* кадр в подсказке «перетащите» */
+  --adm-chart: #3866e0;                 /* график статистики: линия и столбики (14.11), один цвет на весь кабинет; не статусный синий */
+  --adm-chart-fill: rgba(56, 102, 224, 0.14); /* заливка под линией графика */
   --adm-hint-dot: rgba(15, 20, 30, 0.35);    /* палец в подсказке */
   --adm-hint-ring: rgba(255, 255, 255, 0.85);
   --adm-viewer-bg: #000;                     /* просмотр фото во весь экран */
@@ -321,3 +323,32 @@
 /* и где решение стоит последней плашкой (разбор правки): тост внизу закрывал «Вернули» (Никита 06.11) */
 body:has(.c-bar) .c-toast, body:has([data-toast-top]) .c-toast { bottom: auto; top: calc(env(safe-area-inset-top) + var(--s-3)); transform: translate(-50%, -8px); }
 body:has(.c-bar) .c-toast.is-on, body:has([data-toast-top]) .c-toast.is-on { transform: translate(-50%, 0); }
+
+/* ---------- статистика (14.11.2026, lib/stats-ui.ts) ----------
+   Строка как в мобильном Директе: подпись, крупное число, график справа.
+   Внутреннее меньше внешнего: подпись → число → подстрока вплотную (2–4 px),
+   между строками — линия и 16 px поля. Цвет — только у графика (--adm-chart),
+   текст всегда чёрный. */
+.st-card { background: var(--adm-card); border-radius: var(--cab-sheet-radius); overflow: hidden; }
+.st-row { display: grid; grid-template-columns: minmax(0, 1fr) 42%; align-items: center; gap: 16px; padding: 16px 18px; border-bottom: 1px solid var(--adm-line); }
+.st-card > .st-row:last-child { border-bottom: 0; }
+.st-row__text { display: grid; gap: 2px; min-width: 0; }
+.st-row__label { font-size: var(--adm-fs); line-height: 20px; }
+.st-row__num { font-size: 28px; line-height: 34px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.st-row__sub { font-size: var(--adm-fs-sm); line-height: 16px; min-height: 16px; }
+.st-spark { width: 100%; height: 48px; display: block; touch-action: pan-y; cursor: crosshair; }
+.st-spark--empty { height: 48px; border-bottom: 2px dashed var(--adm-line); }
+.st-spark__area { fill: var(--adm-chart-fill); }
+.st-spark__line { fill: none; stroke: var(--adm-chart); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.st-spark__cursor { stroke: var(--adm-text); stroke-width: 1; }
+.st-h { font-size: var(--adm-fs-h2); line-height: 28px; font-weight: 600; }
+.st-src { display: grid; gap: 12px; padding: 18px; background: var(--adm-card); border-radius: var(--cab-sheet-radius); }
+.st-src__lead { font-size: var(--adm-fs-sm); line-height: 16px; margin-top: -8px; }
+.st-src__row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; }
+.st-src__name { font-size: var(--adm-fs); line-height: 20px; }
+.st-src__val { font-size: var(--adm-fs); line-height: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.st-src__pct { font-weight: 400; }
+.st-src__bar { grid-column: 1 / -1; height: 6px; border-radius: 999px; background: var(--adm-bg); overflow: hidden; }
+.st-src__bar > span { display: block; height: 100%; border-radius: 999px; background: var(--adm-chart); }
+.st-picks { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.st-picks::-webkit-scrollbar { display: none; }
