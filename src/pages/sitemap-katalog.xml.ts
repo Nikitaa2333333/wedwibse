@@ -14,7 +14,10 @@ export const GET: APIRoute = async ({ site }) => {
   const base = (site?.href ?? 'https://wed-secrets.ru/').replace(/\/$/, '');
   // главная тоже рисуется сервером (этап 4) — в статической карте её нет
   const urls = new Set<string>([`${base}/`, `${base}/moskva/podryadchiki/`]);
-  for (const c of SPECIALIST_CATEGORIES) urls.add(`${base}/moskva/podryadchiki/${c.slug}/`);
+  // пустая категория («скоро на WED Secrets») стоит с noindex — в карту её не кладём (14.11)
+  for (const c of SPECIALIST_CATEGORIES) {
+    if ((SPECIALISTS_BY_CATEGORY[c.slug] ?? []).length) urls.add(`${base}/moskva/podryadchiki/${c.slug}/`);
+  }
   for (const list of Object.values(SPECIALISTS_BY_CATEGORY)) {
     for (const s of list) {
       // одна карточка — один адрес, по родной категории
