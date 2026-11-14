@@ -1,6 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import BottomDock from '../components/BottomDock.astro';
+import AccountSheet from '../components/AccountSheet.astro';
 import EntryRail from '../components/EntryRail.astro';
 import PhotoBoard from '../components/PhotoBoard.astro';
 import ThemeToggle from '../components/ThemeToggle.astro';
@@ -52,7 +53,7 @@ const logoCreamSvg = `<svg viewBox="${creamViewBox}" xmlns="http://www.w3.org/20
           <ThemeToggle />
         </div>
 
-        <a class="icon-btn hero__account" href="/moy/" aria-label="Личный кабинет">
+        <a class="icon-btn hero__account" href="/moy/" aria-label="Личный кабинет" data-account-open>
           <Icon name="account" />
         </a>
       </header>
@@ -69,6 +70,7 @@ const logoCreamSvg = `<svg viewBox="${creamViewBox}" xmlns="http://www.w3.org/20
     <PhotoBoard />
 
     <BottomDock active="feed" />
+    <AccountSheet />
   </div>
 </Layout>
 

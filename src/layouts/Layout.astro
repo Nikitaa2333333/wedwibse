@@ -72,7 +72,12 @@ const indexable = import.meta.env.SITE_INDEXABLE === 'true' && !noindex;
         держит color-scheme в global.css — он меняется вместе с палитрой. */}
     <meta name="theme-color" content="#f6efe5" />
     {!indexable && <meta name="robots" content="noindex, nofollow" />}
+    {/* Иконка сайта (14.11.2026): буква «С» из логотипа «Свадебные секреты»,
+        кремом на тёплом чёрном. Было — логотип Astro из стартового шаблона. */}
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
     {/* Самохостинг Onest (public/fonts/, @font-face — src/styles/global.css).
         Preload только кириллического файла: сайт русский, латиница дальше
         подтянется сама по unicode-range в кегле обычного набора. */}

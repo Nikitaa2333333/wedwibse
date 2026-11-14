@@ -58,17 +58,20 @@ const steps = [
   { t: 'Обновляйте, когда нужно', d: 'Новые фото, цены, видео. На сайте всё это время висит прежняя версия.' },
 ];
 
+// Евгений 11.11: «выглядит как неинформативный список» — каждый пункт говорит,
+// что именно получает подрядчик и как это работает; на ПК — плитки 3×2.
 const gets = [
-  { t: 'Своя страница', d: 'С адресом, фото, видео и ценами' },
-  { t: 'Каталог и фильтры', d: 'Пары находят вас по своим ответам' },
-  { t: 'Яндекс и Google', d: 'Страница открыта поиску' },
-  { t: 'Лента главной', d: 'Ваши ролики среди лучших' },
-  { t: 'Подборки в блоге', d: 'Статьи ведут на карточку' },
-  { t: 'Интерес пар', d: 'Сколько раз открыли контакты и сохранили карточку' },
-];
+  { icon: 'account', t: 'Своя страница', d: 'Адрес на wed-secrets.ru с портфолио: до 50 фото, ролики, цены и описание. Ссылку можно отправлять клиентам вместо презентации.' },
+  { icon: 'list', t: 'Каталог и фильтры', d: 'Пары отбирают по бюджету, вместимости, стилю и району — карточка показывается тем, кому вы подходите.' },
+  { icon: 'share', t: 'Яндекс и Google', d: 'Страница открыта поиску: вас находят и те, кто ещё не знает о нашем каталоге.' },
+  { icon: 'play', t: 'Лента главной', d: 'Лучшие ролики и кадры встают в ленту на первом экране сайта — их видят все, кто заходит.' },
+  { icon: 'chat', t: 'Подборки в блоге', d: 'Статьи о подготовке к свадьбе ссылаются на подходящие карточки и приводят пар к вам.' },
+  { icon: 'heart', t: 'Интерес пар', d: 'В кабинете видно, сколько пар открыли карточку, сохранили её в избранное и оставили заявку.' },
+] as const;
 
 const faq = [
-  { q: 'Сколько это стоит?', a: ['На старте размещение бесплатное. Если появятся тарифы, мы объявим их заранее, и вы решите сами.'] },
+  // Евгений 11.11: размещение бесплатное, плюс 30 дней продвижения после регистрации
+  { q: 'Сколько это стоит?', a: ['Размещение на нашей платформе абсолютно бесплатное. Также после регистрации вы получаете 30 дней бесплатного продвижения.'] },
   { q: 'Кто может разместиться?', a: ['Площадки и подрядчики свадеб в Москве и области: фотографы, видеографы, ведущие, декораторы, флористы, стилисты и другие.'] },
   { q: 'Сколько фото и видео можно загрузить?', a: ['До 50 фото и до 10 роликов по минуте на карточку. С телефона или ссылкой на папку Яндекс.Диска — сервер заберёт файлы сам.'] },
   { q: 'Можно ли указать телефон в описании?', a: ['Нет. Контакты живут в отдельном поле и открываются паре по кнопке «Показать контакты». Так мы видим, сколько пар вами заинтересовались.'] },
@@ -95,7 +98,7 @@ const faq = [
       </div>
       <div class="hero__body container">
         <h1 class="t-display hero__title">Красивая витрина для вашей работы</h1>
-        <p class="t-lead hero__lead">Свадебный каталог Москвы и области, где пары выбирают глазами: фото, видео, честные цены.</p>
+        <p class="t-lead hero__lead">Свадебный каталог, где пары выбирают глазами: фото, видео, честные цены.</p>
         <div class="hero__cta">
           <a class="pill pill--lg pill--solid" href="/profi/registraciya/">Разместиться бесплатно</a>
         </div>
@@ -187,6 +190,7 @@ const faq = [
       <ul class="gets">
         {gets.map((g, i) => (
           <li class="gets__item" data-fx style={`--d:${i}`}>
+            <span class="gets__ic" aria-hidden="true"><Icon name={g.icon} /></span>
             <span class="gets__t">{g.t}</span>
             <span class="gets__d">{g.d}</span>
           </li>
@@ -247,8 +251,9 @@ const faq = [
      бумаги, не затемнение: текст тёмный и читается, кадр сверху чистый. */
   .hero__stage {
     position: relative;
-    height: 72svh;
-    min-height: 420px;
+    /* Евгений 11.11: «уменьшим шторку» — было 72svh / 420px */
+    height: 52svh;
+    min-height: 320px;
     overflow: hidden;
     background: var(--surface);
   }
@@ -286,7 +291,7 @@ const faq = [
     z-index: 1;
     background: linear-gradient(to bottom, transparent 0%, color-mix(in srgb, var(--bg) 85%, transparent) 45%, var(--bg) 72%);
   }
-  .hero__body { position: relative; z-index: 2; margin-top: -22svh; }
+  .hero__body { position: relative; z-index: 2; margin-top: -16svh; }
   .hero__title { font-size: clamp(40px, 10.5vw, 104px); max-width: 16ch; }
   .hero__lead { margin-top: var(--s-4); max-width: 34ch; }
   .hero__cta { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-6); }
@@ -358,11 +363,12 @@ const faq = [
   }
   .how__shot {
     position: relative;
-    min-height: 300px;
+    /* Евгений 11.11: «убираем пустоты» — было 300px */
+    min-height: 150px;
     display: grid;
     place-items: center;
   }
-  .how__text { display: grid; align-content: start; gap: var(--s-2); padding-top: var(--s-5); }
+  .how__text { display: grid; align-content: start; gap: var(--s-2); padding-top: var(--s-4); }
   .how__num { font-size: var(--fs-small); font-weight: var(--w-medium); }
   .how__t { font-size: var(--fs-h3); line-height: var(--lh-heading); }
   .how__d { font-size: var(--fs-small); line-height: var(--lh-snug); }
@@ -426,9 +432,9 @@ const faq = [
 
   /* шаг 3: пара нашла карточку и поставила сердце — одно крупное сердце */
   .demo--heart { justify-items: center; }
-  .demo__heart { position: relative; width: 96px; height: 96px; animation-name: none; }
-  .demo__heart .tap { width: 120px; height: 120px; margin: -60px 0 0 -60px; }
-  .demo__heart :global(.demo__h) { position: absolute; inset: 0; width: 96px; height: 96px; }
+  .demo__heart { position: relative; width: 72px; height: 72px; animation-name: none; }
+  .demo__heart .tap { width: 96px; height: 96px; margin: -48px 0 0 -48px; }
+  .demo__heart :global(.demo__h) { position: absolute; inset: 0; width: 72px; height: 72px; }
   .demo__heart :global(.demo__h--off) { animation: heartOff var(--loop) var(--ease-out) infinite; animation-play-state: inherit; }
   .demo__heart :global(.demo__h--on) { --icon-fill: currentColor; animation: heartOn var(--loop) var(--ease-out) infinite; animation-play-state: inherit; }
   @keyframes heartOff { 0%, 14% { opacity: 1; } 16%, 92% { opacity: 0; } 100% { opacity: 1; } }
@@ -452,16 +458,36 @@ const faq = [
   @keyframes nB { 0%, 30% { opacity: 0; } 36%, 94% { opacity: 1; } 100% { opacity: 0; } }
 
   /* ---------- 4. что получаете ----------
-     Простой список: заголовок и строка под ним, без плашек и линий. */
+     Плитки (Евгений 11.11: список читался пустым): значок, заголовок и
+     фраза о том, как это работает. Одна плашка на пункт, внутри — отступом
+     и кеглем; внутреннее (значок → заголовок → текст) меньше, чем между
+     плитками. На телефоне — столбиком, на ПК — 3×2. */
   .gets {
     list-style: none;
     display: grid;
-    gap: var(--s-6);
+    gap: var(--s-3);
     margin-top: var(--section-gap-tight);
   }
-  .gets__item { display: grid; gap: var(--s-1); max-width: var(--measure-text); }
+  .gets__item {
+    display: grid;
+    align-content: start;
+    gap: var(--s-2);
+    padding: var(--s-5);
+    background: var(--surface);
+    border-radius: calc(var(--radius-card) * 1.5);
+  }
+  .gets__ic {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    margin-bottom: var(--s-2);
+    border-radius: var(--radius-pill);
+    background: var(--bg);
+  }
+  .gets__ic :global(svg) { width: 22px; height: 22px; }
   .gets__t { font-size: var(--fs-h3); font-weight: var(--w-head-lg); line-height: var(--lh-heading); letter-spacing: -0.02em; }
-  .gets__d { font-size: var(--fs-body); line-height: var(--lh-snug); }
+  .gets__d { font-size: var(--fs-small); line-height: var(--lh-body); }
 
   /* ---------- 5. видео ---------- */
   .vid {
@@ -493,8 +519,8 @@ const faq = [
 
   /* ---------- широкий экран ---------- */
   @media (min-width: 1024px) {
-    .hero__stage { height: 70svh; }
-    .gets { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-7) var(--s-6); }
+    .hero__stage { height: 56svh; }
+    .gets { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-4); }
     .how__rail {
       grid-auto-flow: row;
       grid-template-columns: repeat(4, 1fr);

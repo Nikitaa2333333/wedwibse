@@ -1,0 +1,59 @@
+---
+// ВЫБОР «КТО ВЫ» ПО ИКОНКЕ ЧЕЛОВЕЧКА (Никита и Евгений, 14.11.2026, «как на
+// Профи»): главное — вход невесты (крупно), специалист и площадка — мелкой
+// строкой ниже, ведёт на промо /profi/ (там регистрация и вход в кабинет).
+// Подрядчик, не сохранивший промо в закладки, находит вход с главной сайта.
+// Невеста уже вошла — шторку не показываем, сразу кабинет /moy/.
+// Без JS ссылка-иконка ведёт на /moy/ как раньше.
+import Icon from './Icon.astro';
+---
+
+<div class="sheet" data-sheet="account">
+  <div class="sheet__backdrop" data-sheet-close></div>
+  <section class="sheet__panel acc" role="dialog" aria-modal="true" aria-labelledby="acc-title">
+    <header class="sheet__head">
+      <h2 class="sheet__title" id="acc-title">Личный кабинет</h2>
+      <button class="icon-btn" type="button" data-sheet-close aria-label="Закрыть">
+        <Icon name="close" />
+      </button>
+    </header>
+    <div class="sheet__body acc__body" data-lenis-prevent>
+      <p class="acc__lead">Заявки, отзывы и всё, что вы выбрали для свадьбы, — в одном месте</p>
+      <a class="pill pill--lg pill--solid pill--block" href="/moy/">Войти или зарегистрироваться</a>
+      <a class="acc__pro" href="/profi/">Я специалист или площадка</a>
+    </div>
+  </section>
+</div>
+
+<style>
+  .acc__body { display: grid; gap: var(--s-4); padding-bottom: var(--s-5); }
+  .acc__lead { max-width: var(--measure-lead); }
+  /* вход специалиста — тихой строкой под главной кнопкой, но с зоной нажатия 44 px */
+  .acc__pro {
+    justify-self: center;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-size: var(--fs-small);
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+</style>
+
+<script>
+  import { bindSheet } from '../lib/sheet';
+  import { brideSession } from '../lib/bride';
+
+  const sheet = document.querySelector<HTMLElement>('[data-sheet="account"]');
+  if (sheet) {
+    const handle = bindSheet(sheet);
+    document.querySelectorAll<HTMLAnchorElement>('[data-account-open]').forEach((a) =>
+      a.addEventListener('click', (e) => {
+        if (brideSession()) return; // уже вошла — ссылка ведёт в кабинет
+        e.preventDefault();
+        handle.open(a);
+      })
+    );
+  }
+</script>
