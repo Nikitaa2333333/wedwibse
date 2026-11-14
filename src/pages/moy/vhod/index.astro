@@ -4,6 +4,9 @@
 // Новая учётка — только с галочкой согласия на обработку ПДн: она стоит
 // здесь же, над способами входа (у подрядчика — отдельный экран условий).
 // ?next= — куда вернуть после входа (форма отзыва). Экран в стиле сайта.
+// С 14.11 — единый вход в личный кабинет с иконки человечка, как у Профи.ру:
+// акцент на невесте, внизу мелкая строка «Вход и регистрация для специалистов»
+// сразу на вход подрядчика /profi/vhod/ (у Профи — так же, на backoffice).
 import Layout from '../../../layouts/Layout.astro';
 import BottomDock from '../../../components/BottomDock.astro';
 import TelegramButton from '../../../components/profi/TelegramButton.astro';
@@ -12,11 +15,11 @@ import CodeInput from '../../../components/profi/CodeInput.astro';
 import '../../../components/profi/auth.css';
 ---
 
-<Layout title="Вход — WED Secrets" description="Вход, чтобы оставить отзыв о площадке или подрядчике." noindex>
+<Layout title="Вход и регистрация — WED Secrets" description="Вход в личный кабинет: заявки и отзывы." noindex>
   <main class="container auth">
     <div class="auth__head">
-      <h1 class="t-h1">Вход</h1>
-      <p class="auth__sub">Отзыв оставляют со своей учётки — так другие пары знают, что его написал живой человек.</p>
+      <h1 class="t-h1">Вход и регистрация</h1>
+      <p class="auth__sub">Ваши заявки и отзывы — в одном месте. Отзыв оставляют со своей учётки: так другие пары знают, что его написал живой человек.</p>
     </div>
 
     <div class="auth__checks" data-consent></div>
@@ -41,10 +44,18 @@ import '../../../components/profi/auth.css';
       <TelegramButton role="bride" href="#" label="Войти через Telegram" />
       <MaxButton role="bride" href="#" label="Войти через" />
     </div>
+
+    <a class="auth__alt auth__pro" href="/profi/vhod/">Вход и регистрация для специалистов</a>
   </main>
 
   <BottomDock />
 </Layout>
+
+<style>
+  /* вход специалиста — тихой строкой внизу, отдельно от способов входа невесты;
+     зона нажатия 44 px */
+  .auth__pro { display: block; margin-top: var(--s-5); padding-block: 12px; color: inherit; text-underline-offset: 3px; }
+</style>
 
 <script>
   import { errText } from '../../../lib/cabinet-api';

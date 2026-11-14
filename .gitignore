@@ -53,3 +53,6 @@ public/**/*.webm
 # карточки из кабинета: кладёт scripts/pb-pull-cabinet.mjs на раннере деплоя, в git не попадают
 src/data/cabinet/
 src/assets/cabinet/
+
+# локальный вход невестой (research/dev-bride.mjs) — только для ноутбука, в сборку не идёт
+public/dev-nevesta.html

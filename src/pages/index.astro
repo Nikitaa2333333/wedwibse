@@ -1,7 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import BottomDock from '../components/BottomDock.astro';
-import AccountSheet from '../components/AccountSheet.astro';
 import CabTransition from '../components/CabTransition.astro';
 import EntryRail from '../components/EntryRail.astro';
 import PhotoBoard from '../components/PhotoBoard.astro';
@@ -55,9 +54,12 @@ const logoCreamSvg = `<svg viewBox="${creamViewBox}" xmlns="http://www.w3.org/20
           <ThemeToggle />
         </div>
 
-        <a class="icon-btn hero__account" href="/moy/" aria-label="Личный кабинет" data-account-open>
+        {/* Как у Профи.ру (14.11): не вошла — сразу вход и регистрация невесты
+            (внизу строка для специалистов); вошла — кабинет, он выезжает снизу */}
+        <a class="icon-btn hero__account" href="/moy/vhod/" aria-label="Личный кабинет" data-account>
           <Icon name="account" />
         </a>
+        <script is:inline>try { if (localStorage.getItem('wed-bride')) document.querySelectorAll('[data-account]').forEach((a) => { a.href = '/moy/'; }); } catch {}</script>
       </header>
     </section>
 
@@ -72,7 +74,6 @@ const logoCreamSvg = `<svg viewBox="${creamViewBox}" xmlns="http://www.w3.org/20
     <PhotoBoard />
 
     <BottomDock active="feed" />
-    <AccountSheet />
   </div>
 </Layout>
 
